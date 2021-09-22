@@ -16,10 +16,10 @@
 # limitations under the License.
 #
 
-mkdir ~/.m2
+# mkdir ~/.m2
 
-wget https://atlan-build-artifacts.s3-ap-south-1.amazonaws.com/artifact/maven_local_repository.zip
-unzip maven_local_repository.zip -d ~/.m2
+# wget https://atlan-build-artifacts.s3-ap-south-1.amazonaws.com/artifact/maven_local_repository.zip
+# unzip maven_local_repository.zip -d ~/.m2
 
 echo "Maven Building"
 mvn -T 100 -pl '!addons/hdfs-model,!addons/hive-bridge,!addons/hive-bridge-shim,!addons/falcon-bridge-shim,!addons/falcon-bridge,!addons/sqoop-bridge,!addons/sqoop-bridge-shim,!addons/hbase-bridge,!addons/hbase-bridge-shim' -Dmaven.test.skip -DskipTests -Drat.skip=true package -Pdist
@@ -27,6 +27,6 @@ mvn -T 100 -pl '!addons/hdfs-model,!addons/hive-bridge,!addons/hive-bridge-shim,
 echo "[DEBUG listing distro/target"
 ls distro/target
 
-echo "[DEBUG] listting local directory"
-ls
+echo "[DEBUG] listing local directory"
+ls target
 
