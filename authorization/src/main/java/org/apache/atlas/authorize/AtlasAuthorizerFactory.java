@@ -32,7 +32,7 @@ public class AtlasAuthorizerFactory {
 
     private static final String NONE_AUTHORIZER   = AtlasNoneAuthorizer.class.getName();
     private static final String SIMPLE_AUTHORIZER = AtlasSimpleAuthorizer.class.getName();
-    private static final String RANGER_AUTHORIZER = "org.apache.ranger.authorization.atlas.authorizer.RangerAtlasAuthorizer";
+    private static final String RANGER_AUTHORIZER = "org.apache.atlas.authorize.SimpleAtlasAuthorizer";
 
     private static volatile AtlasAuthorizer INSTANCE = null;
 
