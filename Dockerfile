@@ -64,10 +64,10 @@ COPY atlas-hub/pre-conf/atlas-log4j2.xml /opt/apache-atlas/conf/
 COPY atlas-hub/pre-conf/ranger/ /opt/ranger-atlas-plugin/
 COPY atlas-hub/env_change.sh /
 
-# RUN cd /opt/apache-atlas/bin \
-#     && sed "s~ATLAS_INSTALL_DIR~/opt/apache-atlas~g" /opt/ranger-atlas-plugin/install.properties > /tmp/install.properties \
-#     && cp /tmp/install.properties /opt/ranger-atlas-plugin/install.properties \
-#     && chmod +x /env_change.sh
+RUN cd /opt/apache-atlas/bin \
+    && sed "s~ATLAS_INSTALL_DIR~/opt/apache-atlas~g" /opt/ranger-atlas-plugin/install.properties > /tmp/install.properties \
+    && cp /tmp/install.properties /opt/ranger-atlas-plugin/install.properties \
+    && chmod +x /env_change.sh
 
 RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true
