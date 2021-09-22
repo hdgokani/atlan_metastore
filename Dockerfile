@@ -65,8 +65,6 @@ COPY atlas-hub/pre-conf/ranger/ /opt/ranger-atlas-plugin/
 COPY atlas-hub/env_change.sh /
 
 RUN cd /opt/apache-atlas/bin \
-    && patch -b -f < atlas_start.py.patch \
-    && patch -b -f < atlas_config.py.patch \
     && sed "s~ATLAS_INSTALL_DIR~/opt/apache-atlas~g" /opt/ranger-atlas-plugin/install.properties > /tmp/install.properties \
     && cp /tmp/install.properties /opt/ranger-atlas-plugin/install.properties \
     && chmod +x /env_change.sh
