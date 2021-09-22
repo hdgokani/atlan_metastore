@@ -717,7 +717,7 @@ if [ "${HCOMPONENT_NAME}" = "atlas" ]
 then
 	if [ "${action}" = "enable" ]
 	then
-		authName="org.apache.ranger.authorization.atlas.authorizer.RangerAtlasAuthorizer"
+		authName="org.apache.atlas.authorize.SimpleAtlasAuthorizer"
 	else
 		authName="org.apache.atlas.authorize.SimpleAtlasAuthorizer"
 	fi
