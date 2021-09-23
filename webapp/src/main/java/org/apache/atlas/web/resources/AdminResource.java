@@ -67,6 +67,7 @@ import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
+import org.apache.atlas.web.service.ActiveInstanceElectorService;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
@@ -101,6 +102,10 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import org.apache.atlas.model.general.HealthStatus;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.SecureRandom;
@@ -115,6 +120,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import java.util.*;
 
 import static org.apache.atlas.web.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
 
@@ -144,6 +150,9 @@ public class AdminResource {
     private static final String UI_DATE_DEFAULT_FORMAT         = "MM/DD/YYYY hh:mm:ss A";
     private static final String OPERATION_STATUS               = "operationStatus";
     private static final List TIMEZONE_LIST                    = Arrays.asList(TimeZone.getAvailableIDs());
+
+    @Inject
+    private ActiveInstanceElectorService electorService;
 
     @Context
     private HttpServletRequest httpServletRequest;
