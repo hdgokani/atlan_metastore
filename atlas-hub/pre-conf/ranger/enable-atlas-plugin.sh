@@ -1,4 +1,5 @@
 #!/bin/bash
+JAVA_HOME='/usr/lib/jvm/java-1.8.0-openjdk-amd64'
 
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -694,7 +695,9 @@ addPropertyToFile(){
 #Update Properties to File
 #$1 -> propertyName; $2 -> newPropertyValue; $3 -> fileName
 updatePropertyToFile(){
-	sed -i 's@^'$1'=[^ ]*$@'$1'='$2'@g' $3
+	sed 's@^'$1'=[^ ]*$@'$1'='$2'@g' $3 > /tmp/temporaryfile
+	cp /tmp/temporaryfile $3
+	rm /tmp/temporaryfile
 	validate=$(sed '/^\#/d' $3 | grep "^$1"  | tail -n 1 | cut -d "=" -f2-) # for validation
 	if test -z "$validate" ; then log "[E] '$1' not found in $3 file while Updating....!!"; exit 1; fi
 	echo "Property $1 updated successfully with : '$2'"
