@@ -390,6 +390,75 @@ public class AdminResource {
     }
 
     @GET
+    @Path("health")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response healthCheck() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.healthCheck()");
+        }
+
+        Map<String, HealthStatus> result = new HashMap<>();
+
+        AtlasGraph<Object, Object> graph = AtlasGraphProvider.getGraphInstance();
+
+        boolean cassandraFailed = false;
+        try {
+            GraphTraversal t = graph.V().limit(1);
+            t.hasNext();
+            result.put("cassandra", new HealthStatus("cassandra", "ok", true, new Date().toString(), ""));
+        } catch (Exception e) {
+            result.put("cassandra", new HealthStatus("cassandra", "error", true, new Date().toString(), e.toString()));
+            cassandraFailed = true;
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.healthCheck()");
+        }
+
+        if (cassandraFailed) {
+            return Response.status(500).entity(result).build();
+        }
+
+        return Response.status(200).entity(result).build();
+    }
+
+    @GET
+    @Path("killtheleader")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response killTheLeader() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.killTheLeader()");
+        }
+
+        System.out.println(electorService);
+        try{
+            return Response.status(200).build();
+        } finally {
+            //do after actions
+            electorService.quitElection();
+        }
+    }
+
+    @GET
+    @Path("isactive")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response isActive() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.isActive()");
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.isActive()");
+        }
+
+        if (serviceState.getState().toString().equals(ServiceState.ServiceStateValue.ACTIVE.toString())) {
+            return Response.ok().build();
+        }
+
+        return Response.serverError().build();
+    }
+
+    @GET
     @Path("metrics")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasMetrics getMetrics() {
@@ -404,6 +473,23 @@ public class AdminResource {
         }
 
         return metrics;
+    }
+
+    @GET
+    @Path("pushMetricsToStatsd")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response pushMetricsToStatsd() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.pushMetricsToStatsd()");
+        }
+
+        metricsService.pushMetricsToStatsd();
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AdminResource.pushMetricsToStatsd()");
+        }
+
+        return Response.ok().build();
     }
 
     private void releaseExportImportLock() {
