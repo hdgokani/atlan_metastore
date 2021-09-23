@@ -484,22 +484,22 @@ public class AdminResource {
         return metrics;
     }
 
-    @GET
-    @Path("pushMetricsToStatsd")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response pushMetricsToStatsd() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AdminResource.pushMetricsToStatsd()");
-        }
-
-        metricsService.pushMetricsToStatsd();
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AdminResource.pushMetricsToStatsd()");
-        }
-
-        return Response.ok().build();
-    }
+//    @GET
+//    @Path("pushMetricsToStatsd")
+//    @Produces(Servlets.JSON_MEDIA_TYPE)
+//    public Response pushMetricsToStatsd() {
+//        if (LOG.isDebugEnabled()) {
+//            LOG.debug("==> AdminResource.pushMetricsToStatsd()");
+//        }
+//
+//        metricsService.pushMetricsToStatsd();
+//
+//        if (LOG.isDebugEnabled()) {
+//            LOG.debug("<== AdminResource.pushMetricsToStatsd()");
+//        }
+//
+//        return Response.ok().build();
+//    }
 
     private void releaseExportImportLock() {
         importExportOperationLock.unlock();
