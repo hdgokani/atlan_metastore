@@ -66,10 +66,10 @@ COPY atlas-hub/env_change.sh /
 
 RUN curl https://repo1.maven.org/maven2/org/jolokia/jolokia-jvm/1.6.2/jolokia-jvm-1.6.2-agent.jar -o /opt/apache-atlas/libext/jolokia-jvm-agent.jar
 
-# RUN cd /opt/apache-atlas/bin \
+RUN cd /opt/apache-atlas/bin \
 #     && sed "s~ATLAS_INSTALL_DIR~/opt/apache-atlas~g" /opt/ranger-atlas-plugin/install.properties > /tmp/install.properties \
 #     && cp /tmp/install.properties /opt/ranger-atlas-plugin/install.properties \
-#     && chmod +x /env_change.sh
+    && chmod +x /env_change.sh
 #     && patch -b -f < atlas_start.py.patch \
 #     && patch -b -f < atlas_config.py.patch \
 
