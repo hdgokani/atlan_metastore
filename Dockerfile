@@ -60,7 +60,7 @@ COPY atlas-hub/pre-conf/atlas-env.sh /opt/apache-atlas/conf/atlas-env.sh
 # COPY atlas-hub/pre-conf/ranger/lib/ /opt/apache-atlas/libext/
 # COPY atlas-hub/pre-conf/ranger/install/conf.templates/enable/ /opt/apache-atlas/conf/
 COPY atlas-hub/pre-conf/atlas-log4j.xml /opt/apache-atlas/conf/
-COPY atlas-hub/pre-conf/atlas-log4j2.xml /opt/apache-atlas/conf/
+# COPY atlas-hub/pre-conf/atlas-log4j2.xml /opt/apache-atlas/conf/
 # COPY atlas-hub/pre-conf/ranger/ /opt/ranger-atlas-plugin/
 COPY atlas-hub/env_change.sh /
 
