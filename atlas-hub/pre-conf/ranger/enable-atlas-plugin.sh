@@ -784,6 +784,7 @@ then
 	fi
 fi
 
+<<<<<<< HEAD
 # if [ "${HCOMPONENT_NAME}" = "presto" ]
 # then
 # 	if [ "${action}" = "enable" ]
@@ -810,6 +811,34 @@ fi
 # 	cd ${HCOMPONENT_LIB_DIR}/ranger-presto-plugin-impl/
 # 	ln -sf ${HCOMPONENT_CONF_DIR} conf
 # fi
+=======
+if [ "${HCOMPONENT_NAME}" = "presto" ]
+then
+	if [ "${action}" = "enable" ]
+	then
+		controlName="ranger"
+	else
+		controlName="allow-all"
+	fi
+	dt=`date '+%Y%m%d%H%M%S'`
+	fn=`ls ${HCOMPONENT_CONF_DIR}/access-control.properties 2> /dev/null`
+	if [ -f "${fn}" ]
+	then
+		dn=`dirname ${fn}`
+		bn=`basename ${fn}`
+		bf=${dn}/.${bn}.${dt}
+		echo "backup of ${fn} to ${bf} ..."
+		cp ${fn} ${bf}
+	else
+	    fn=${HCOMPONENT_CONF_DIR}/access-control.properties
+	fi
+	echo "Add or Update properties file: [${fn}] ... "
+	addOrUpdatePropertyToFile access-control.name $controlName ${fn}
+	echo "Linking config files"
+	cd ${HCOMPONENT_LIB_DIR}/ranger-presto-plugin-impl/
+	ln -sf ${HCOMPONENT_CONF_DIR} conf
+fi
+>>>>>>> parent of 823841e39 (updates to ranger scripts)
 
 
 #
