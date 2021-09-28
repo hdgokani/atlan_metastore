@@ -594,9 +594,11 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
     protected String createQualifiedName(AtlasGlossaryCategory cat) throws AtlasBaseException {
         return createQualifiedName(cat, null, false);
     }
+
     protected String createQualifiedName(AtlasGlossaryCategory cat, boolean parentRemoval)  throws AtlasBaseException {
         return createQualifiedName(cat, null, parentRemoval);
     }
+
     protected String createQualifiedName(AtlasGlossaryCategory cat, AtlasGlossaryCategory parentCategory, boolean parentRemoval) throws AtlasBaseException {
         String ret = "" ;
         String qName = "";
@@ -611,13 +613,16 @@ public class GlossaryCategoryUtils extends GlossaryUtils {
         if (parentRemoval) {
             AtlasGlossary glossary = dataAccess.load(getGlossarySkeleton(cat.getAnchor().getGlossaryGuid()));
             ret = qName + "@" + glossary.getQualifiedName();
+
         } else if (parentCategory != null) {
             String[] parentCatQname = parentCategory.getQualifiedName().split("@");
             ret = parentCatQname[0] + "." + qName + "@" + parentCatQname[1];
+
         } else if (cat.getParentCategory() != null) {
             AtlasGlossaryCategory parentCat = dataAccess.load(getAtlasGlossaryCategorySkeleton(cat.getParentCategory().getCategoryGuid()));
-                    String[] parentCatQname = parentCat.getQualifiedName().split("@");
+            String[] parentCatQname = parentCat.getQualifiedName().split("@");
             ret = parentCatQname[0] + "." + qName + "@" + parentCatQname[1];
+
         } else {
             String anchorGlossaryGuid = cat.getAnchor().getGlossaryGuid();
             AtlasGlossary glossary = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
