@@ -1486,13 +1486,11 @@ public class EntityGraphMapper {
         boolean                             ret                       = false;
         String                              entityTypeName            = AtlasGraphUtilsV2.getTypeName(entityVertex);
         AtlasEntityDef                      entityDef                 = typeRegistry.getEntityDefByName(entityTypeName);
-        if (entityDef != null) {
-            List<AtlasRelationshipAttributeDef> relationshipAttributeDefs = entityDef.getRelationshipAttributeDefs();
+        List<AtlasRelationshipAttributeDef> relationshipAttributeDefs = entityDef.getRelationshipAttributeDefs();
 
-            if (CollectionUtils.isNotEmpty(relationshipAttributeDefs)) {
-                ret = relationshipAttributeDefs.stream().anyMatch(relationshipAttrDef -> relationshipAttrDef.getName().equals(relationshipAttributeName)
-                        && relationshipAttrDef.isAppendOnPartialUpdate());
-            }
+        if (CollectionUtils.isNotEmpty(relationshipAttributeDefs)) {
+            ret = relationshipAttributeDefs.stream().anyMatch(relationshipAttrDef -> relationshipAttrDef.getName().equals(relationshipAttributeName)
+                    && relationshipAttrDef.isAppendOnPartialUpdate());
         }
 
         return ret;
