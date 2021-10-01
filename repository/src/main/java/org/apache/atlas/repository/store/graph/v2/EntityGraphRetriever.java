@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v2;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
@@ -324,12 +325,12 @@ public class EntityGraphRetriever {
             }
 
             Map<String, Object> attributes = new HashMap<>();
-            if (allowAttributesObjectId && attributesObjectIdMap.containsKey(typeName)) {
-                for (String attributeName : attributesObjectIdMap.get(typeName)) {
+            Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
+            if (CollectionUtils.isNotEmpty(relationAttributes)) {
+                for (String attributeName : relationAttributes) {
                     AtlasAttribute attribute = entityType.getAttribute(attributeName);
                     if (attribute != null
-                            && !uniqueAttributes.containsKey(attributeName)
-                            && attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE)) {
+                            && !uniqueAttributes.containsKey(attributeName)) {
                         Object attrValue = getVertexAttribute(entityVertex, attribute);
                         if (attrValue != null) {
                             attributes.put(attribute.getName(), attrValue);
@@ -359,12 +360,12 @@ public class EntityGraphRetriever {
             }
 
             Map<String, Object> attributes = new HashMap<>();
-            if (allowAttributesObjectId && attributesObjectIdMap.containsKey(entity.getTypeName())) {
-                for (String attributeName : attributesObjectIdMap.get(entity.getTypeName())) {
+            Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
+            if (CollectionUtils.isNotEmpty(relationAttributes)) {
+                for (String attributeName : relationAttributes) {
                     AtlasAttribute attribute = entityType.getAttribute(attributeName);
                     if (attribute != null
-                            && !uniqueAttributes.containsKey(attributeName)
-                            && attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE)) {
+                            && !uniqueAttributes.containsKey(attributeName)) {
                         Object attrValue = entity.getAttribute(attributeName);
                         if (attrValue != null) {
                             attributes.put(attribute.getName(), attrValue);

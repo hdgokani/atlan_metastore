@@ -104,6 +104,9 @@ public class SearchContext {
         this.entityTypes        = getEntityTypes(searchParameters.getTypeName());
         this.classificationNames = getClassificationNames(searchParameters.getClassification());
         this.classificationTypes = getClassificationTypes(this.classificationNames);
+        //Set<String> attrsForRel = RequestContext.get().getRelationAttrsForSearch();
+        //attrsForRel.addAll(searchParameters.getRelationAttributes());
+        RequestContext.get().setRelationAttrsForSearch(searchParameters.getRelationAttributes());
 
         AtlasVertex glossaryTermVertex = getGlossaryTermVertex(searchParameters.getTermName());
 
