@@ -431,7 +431,7 @@ public class GlossaryService {
         }
 
         if (!storeObject.equals(atlasGlossaryTerm)) {
-            if (termExists(atlasGlossaryTerm)) {
+            if (!storeObject.getName().equals(atlasGlossaryTerm.getName()) && termExists(atlasGlossaryTerm)) {
                 throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, atlasGlossaryTerm.getName());
             }
 
