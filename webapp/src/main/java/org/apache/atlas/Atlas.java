@@ -259,6 +259,7 @@ public final class Atlas {
             LOG.error("Caught exception: ", es.toString());
         }
         if (!exists) {
+            /*
             String vertexIndex = INDEX_PREFIX + VERTEX_INDEX;
             PutIndexTemplateRequest request = new PutIndexTemplateRequest("atlan-template");
             request.patterns(Arrays.asList(vertexIndex));
@@ -277,7 +278,7 @@ public final class Atlas {
             } catch (Exception e) {
                 LOG.error("Caught exception: ", e.toString());
                 throw e;
-            }
+            } */
         }
     }
 }
