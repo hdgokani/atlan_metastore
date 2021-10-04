@@ -395,7 +395,8 @@ public class TypesREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.createAtlasTypeDefs(" +
                                                                AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
-
+            //Override name or set it
+            typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomName);
             return typeDefStore.createTypesDef(typesDef);
         } finally {
             AtlasPerfTracer.log(perf);
