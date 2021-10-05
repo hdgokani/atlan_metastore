@@ -112,8 +112,8 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         //validate uniqueness of display name for BM
         AtlasVertex ret = typeDefStore.findTypeVertexByDisplayName(businessMetadataDef.getDisplayName());
-        if (businessMetadataDef.getGuid() == null ||
-                (ret != null && !businessMetadataDef.getGuid().equals(ret.getProperty(Constants.GUID_PROPERTY_KEY, String.class)))) {
+        if (ret != null && (
+                businessMetadataDef.getGuid() == null || !businessMetadataDef.getGuid().equals(ret.getProperty(Constants.GUID_PROPERTY_KEY, String.class)))) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS, businessMetadataDef.getDisplayName());
         }
 

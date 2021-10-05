@@ -105,14 +105,18 @@ public class AtlasBusinessMetadataDef extends AtlasStructDef implements Serializ
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
     }
-    public void setRandomName() {
+
+    public void setRandomNameForEntityAndAttributeDefs() {
         setName(generateRandomName());
+        this.getAttributeDefs().forEach((attr) -> attr.setName(generateRandomName()));
     }
+
     public static String generateRandomName() {
         return RandomStringUtils.randomAlphabetic(1) + RandomStringUtils.randomAlphanumeric(21);
     }
+
     @Override
     public int hashCode() {
-        return super.hashCode() + (this.displayName == null ? 0 : this.displayName.hashCode() * 31);
+        return (this.displayName == null ? 0 : this.displayName.hashCode()) + super.hashCode() * 31;
     }
 }

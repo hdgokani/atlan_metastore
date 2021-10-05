@@ -124,15 +124,15 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             ListIterator<AtlasAttributeDef> iter = attributeDefs.listIterator(attributeDefs.size());
             while (iter.hasPrevious()) {
                 AtlasAttributeDef attributeDef = iter.previous();
-                String            attribName   = attributeDef != null ? attributeDef.getName() : null;
+                String            displayName   = attributeDef != null ? attributeDef.getDisplayName() : null;
 
-                if (attribName != null) {
-                    attribName = attribName.toLowerCase();
+                if (displayName != null) {
+                    displayName = displayName.toLowerCase();
 
-                    if (!attribNames.contains(attribName)) {
+                    if (!attribNames.contains(displayName)) {
                         tmpList.add(new AtlasAttributeDef(attributeDef));
 
-                        attribNames.add(attribName);
+                        attribNames.add(displayName);
                     }
                 }
             }
