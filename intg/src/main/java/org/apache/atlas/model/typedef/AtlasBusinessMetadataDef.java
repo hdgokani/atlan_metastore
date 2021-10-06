@@ -119,4 +119,9 @@ public class AtlasBusinessMetadataDef extends AtlasStructDef implements Serializ
     public int hashCode() {
         return (this.displayName == null ? 0 : this.displayName.hashCode()) + super.hashCode() * 31;
     }
+
+    @Override
+    protected String getAttributeUniqueField(AtlasAttributeDef attribute) {
+        return attribute != null ? attribute.getDisplayName() : null;
+    }
 }
