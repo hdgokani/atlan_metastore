@@ -154,7 +154,7 @@
         "__internal"
       ],
       "serviceType": "atlas_core",
-      "typeVersion": "1.1",
+      "typeVersion": "1.3",
       "attributeDefs": [
         {
           "name": "qualifiedName",
