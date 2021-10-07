@@ -42,6 +42,7 @@ public class SearchParameters implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String  query;
+    private Map<String, Float>  queryFields;
     private String  typeName;
     private String  classification;
     private String  termName;
@@ -57,6 +58,7 @@ public class SearchParameters implements Serializable {
     private FilterCriteria entityFilters;
     private FilterCriteria tagFilters;
     private Set<String>    attributes;
+    private Set<String>    relationAttributes;
     private SortOrder      sortOrder;
 
     public static final String WILDCARD_CLASSIFICATIONS = "*";
@@ -78,6 +80,21 @@ public class SearchParameters implements Serializable {
      */
     public void setQuery(String query) {
         this.query = query;
+    }
+
+    /**
+     * @return The type of query
+     */
+    public Map<String, Float> getQueryFields() {
+        return queryFields;
+    }
+
+    /**
+     * Set query type
+     * @param queryFields type
+     */
+    public void setQueryFields(Map<String, Float> queryFields) {
+        this.queryFields = queryFields;
     }
 
     /**
@@ -298,6 +315,22 @@ public class SearchParameters implements Serializable {
      */
     public void setSortOrder(SortOrder sortOrder) { this.sortOrder = sortOrder; }
 
+    /**
+     * Attributes values for related entities in the result response
+     */
+    public Set<String> getRelationAttributes() {
+        return relationAttributes;
+    }
+
+    /**
+     * Return these attributes for related entities in the result response
+     * @param relationAttributes
+     */
+    public void setRelationAttributes(Set<String> relationAttributes) {
+        this.relationAttributes = relationAttributes;
+    }
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -310,6 +343,7 @@ public class SearchParameters implements Serializable {
                 limit == that.limit &&
                 offset == that.offset &&
                 Objects.equals(query, that.query) &&
+                Objects.equals(queryFields, that.queryFields) &&
                 Objects.equals(typeName, that.typeName) &&
                 Objects.equals(classification, that.classification) &&
                 Objects.equals(termName, that.termName) &&
@@ -322,7 +356,7 @@ public class SearchParameters implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(query, typeName, classification, termName, includeSubTypes, includeSubClassifications,
+        return Objects.hash(query, queryFields, typeName, classification, termName, includeSubTypes, includeSubClassifications,
                             excludeDeletedEntities, includeClassificationAttributes, limit, offset, entityFilters,
                             tagFilters, attributes, sortBy, sortOrder);
     }
@@ -334,6 +368,7 @@ public class SearchParameters implements Serializable {
 
         sb.append('{');
         sb.append("query='").append(query).append('\'');
+        sb.append(", queryFields='").append(queryFields).append('\'');
         sb.append(", typeName='").append(typeName).append('\'');
         sb.append(", classification='").append(classification).append('\'');
         sb.append(", termName='").append(termName).append('\'');

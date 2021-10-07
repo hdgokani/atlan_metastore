@@ -18,9 +18,12 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TimeBoundary;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.glossary.enums.AtlasTermAssignmentStatus;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -142,6 +145,31 @@ public class EntityGraphRetriever {
     private final boolean ignoreRelationshipAttr;
     private final AtlasGraph graph;
 
+    private static boolean allowAttributesObjectId = false;
+    private static Map<String, Set<String>> attributesObjectIdMap = new HashMap<>();
+
+    static {
+        allowAttributesObjectId = AtlasConfiguration.ALLOW_ATTRIBUTES_OBJECT_ID.getBoolean();
+        if (allowAttributesObjectId) {
+            try {
+                List<String> typeNameAttrPairs = Arrays.stream(AtlasConfiguration.ATTRIBUTES_OBJECT_ID.getStringArray()).collect(Collectors.toList());
+                for (String pair : typeNameAttrPairs) {
+                    String typeName = pair.split(":")[0];
+                    String attr = pair.split(":")[1];
+                    if (attributesObjectIdMap.containsKey(typeName)) {
+                        attributesObjectIdMap.get(typeName).add(attr);
+                    } else {
+                        attributesObjectIdMap.put(typeName, Collections.singleton(attr));
+                    }
+                }
+                LOG.info("attributesObjectIdMap {}", attributesObjectIdMap);
+            } catch (Exception e) {
+                LOG.info("Failed to parse property value {}, {}", AtlasConfiguration.ATTRIBUTES_OBJECT_ID.getPropertyName(), e);
+                allowAttributesObjectId = false;
+            }
+        }
+    }
+
     @Inject
     public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
         this(graph, typeRegistry, false);
@@ -152,6 +180,7 @@ public class EntityGraphRetriever {
         this.graphHelper            = new GraphHelper(graph);
         this.typeRegistry           = typeRegistry;
         this.ignoreRelationshipAttr = ignoreRelationshipAttr;
+
     }
 
     public AtlasEntity toAtlasEntity(String guid, boolean includeReferences) throws AtlasBaseException {
@@ -295,7 +324,21 @@ public class EntityGraphRetriever {
                 }
             }
 
-            ret = new AtlasObjectId(entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class), typeName, uniqueAttributes);
+            Map<String, Object> attributes = new HashMap<>();
+            Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
+            if (CollectionUtils.isNotEmpty(relationAttributes)) {
+                for (String attributeName : relationAttributes) {
+                    AtlasAttribute attribute = entityType.getAttribute(attributeName);
+                    if (attribute != null
+                            && !uniqueAttributes.containsKey(attributeName)) {
+                        Object attrValue = getVertexAttribute(entityVertex, attribute);
+                        if (attrValue != null) {
+                            attributes.put(attribute.getName(), attrValue);
+                        }
+                    }
+                }
+            }
+            ret = new AtlasObjectId(entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class), typeName, uniqueAttributes, attributes);
         }
 
         return ret;
@@ -316,7 +359,22 @@ public class EntityGraphRetriever {
                 }
             }
 
-            ret = new AtlasObjectId(entity.getGuid(), entity.getTypeName(), uniqueAttributes);
+            Map<String, Object> attributes = new HashMap<>();
+            Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
+            if (CollectionUtils.isNotEmpty(relationAttributes)) {
+                for (String attributeName : relationAttributes) {
+                    AtlasAttribute attribute = entityType.getAttribute(attributeName);
+                    if (attribute != null
+                            && !uniqueAttributes.containsKey(attributeName)) {
+                        Object attrValue = entity.getAttribute(attributeName);
+                        if (attrValue != null) {
+                            attributes.put(attribute.getName(), attrValue);
+                        }
+                    }
+                }
+            }
+
+            ret = new AtlasObjectId(entity.getGuid(), entity.getTypeName(), uniqueAttributes, attributes);
         }
 
         return ret;

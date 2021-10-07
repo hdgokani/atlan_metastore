@@ -697,7 +697,7 @@
         <curator.version>4.3.0</curator.version>
         <doxia.version>1.8</doxia.version>
         <dropwizard-metrics>3.2.2</dropwizard-metrics>
-        <elasticsearch.version>6.8.17</elasticsearch.version>
+        <elasticsearch.version>7.6.2</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
         <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
         <failsafe.version>2.18.1</failsafe.version>
@@ -737,7 +737,7 @@
         <lucene-solr.version>8.6.3</lucene-solr.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <MaxPermGen>512m</MaxPermGen>
-        <node-for-v2.version>v12.16.0</node-for-v2.version>
+        <node-for-v2.version>v9.11.1</node-for-v2.version>
         <npm-for-v2.version>6.13.7</npm-for-v2.version>
         <opencsv.version>5.0</opencsv.version>
         <paranamer.version>2.7</paranamer.version>
@@ -769,7 +769,7 @@
         <testng.version>6.9.4</testng.version>
         <tinkerpop.version>3.4.10</tinkerpop.version>
         <woodstox-core.version>5.0.3</woodstox-core.version>
-        <zookeeper.version>3.5.7</zookeeper.version>
+        <zookeeper.version>3.4.6</zookeeper.version>
     </properties>
 
     <modules>
@@ -1065,13 +1065,13 @@
                 <version>${zookeeper.version}</version>
             </dependency>
 
-            <dependency>
+            <!-- <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
                 <version>4.1.61.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
+            </dependency> -->
 
             <dependency>
                 <groupId>org.springframework</groupId>
@@ -1638,6 +1638,14 @@
                         <groupId>junit</groupId>
                         <artifactId>junit</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-handler</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-transport-native-epoll</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
 
@@ -1647,7 +1655,7 @@
                 <version>${project.version}</version>
             </dependency>
 
-          <!-- Fix for cassandra-all tranitive dependency CVE-2017-18640 : https://nvd.nist.gov/vuln/detail/CVE-2017-18640 -->
+            <!-- Fix for cassandra-all tranitive dependency CVE-2017-18640 : https://nvd.nist.gov/vuln/detail/CVE-2017-18640 -->
             <dependency>
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
@@ -1677,7 +1685,7 @@
         <dependency>
             <groupId>cglib</groupId>
             <artifactId>cglib</artifactId>
-            <version>2.2.2</version>
+            <version>3.3.0</version>
         </dependency>
 
     </dependencies>
@@ -2101,7 +2109,7 @@
                         <exclude>**/docz-lib/**</exclude>
                         <exclude>**/.docz/**</exclude>
                         <exclude>**/*.svg</exclude>
-                        
+
                     </excludes>
                 </configuration>
                 <executions>
