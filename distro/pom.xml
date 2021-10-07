@@ -510,7 +510,7 @@ atlas.graph.storage.conf-file=${sys:atlas.home}/conf/cassandra.yml
                 <version>1.2.1</version>
                 <inherited>false</inherited>
                 <executions>
-                    <execution>
+<!--                     <execution>
                         <configuration>
                             <skip>${skipTests}</skip>
                             <executable>python</executable>
@@ -527,7 +527,7 @@ atlas.graph.storage.conf-file=${sys:atlas.home}/conf/cassandra.yml
                         <goals>
                             <goal>exec</goal>
                         </goals>
-                    </execution>
+                    </execution> -->
                 </executions>
             </plugin>
 
