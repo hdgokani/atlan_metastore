@@ -280,11 +280,6 @@ public class AtlasClassificationDef extends AtlasStructDef implements AtlasNamed
     }
 
     @Override
-    protected String getAttributeUniqueField(AtlasAttributeDef attribute) {
-        return attribute == null ? null : attribute.getDisplayName();
-    }
-
-    @Override
     public String getDisplayName() {
         return displayName;
     }
@@ -292,6 +287,11 @@ public class AtlasClassificationDef extends AtlasStructDef implements AtlasNamed
     @Override
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    @Override
+    public void setAttributeDefs(List<AtlasAttributeDef> attributeDefs) {
+       super.setAttributeDefs(attributeDefs, false);
     }
 
     public void setRandomNameForEntityAndAttributeDefs() {

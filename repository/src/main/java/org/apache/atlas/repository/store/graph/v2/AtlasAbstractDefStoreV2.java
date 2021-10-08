@@ -25,6 +25,7 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasNamedTypeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.query.AtlasDSL;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -106,6 +107,17 @@ import java.util.regex.Pattern;
     public void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
         if (!isValidName(typeDef.getName())) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID_FORMAT, typeDef.getName(), typeDef.getCategory().name());
+        }
+
+        if (typeDef instanceof AtlasNamedTypeDef) {
+            if (StringUtils.isEmpty(((AtlasNamedTypeDef) typeDef).getDisplayName())) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPEDEF_DISPLAY_NAME_IS_REQUIRED);
+            }
+            for (AtlasStructDef.AtlasAttributeDef attr : ((AtlasStructDef) typeDef).getAttributeDefs()) {
+                if (StringUtils.isEmpty(attr.getDisplayName())){
+                    throw new AtlasBaseException(AtlasErrorCode.TYPEDEF_ATTR_DISPLAY_NAME_IS_REQUIRED, typeDef.getName());
+                }
+            }
         }
 
         try {
