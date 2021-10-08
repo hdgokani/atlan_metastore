@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -128,6 +129,11 @@ public class AtlasBusinessMetadataDef extends AtlasStructDef implements AtlasNam
         }
     }
 
+    @Override
+    public void setAttributeDefs(List<AtlasAttributeDef> attributeDefs) {
+        super.setAttributeDefs(attributeDefs, false);
+    }
+
     private void setRandomName() {
         setName(generateRandomName());
     }
@@ -135,10 +141,5 @@ public class AtlasBusinessMetadataDef extends AtlasStructDef implements AtlasNam
     @Override
     public int hashCode() {
         return (this.displayName == null ? 0 : this.displayName.hashCode()) + super.hashCode() * 31;
-    }
-
-    @Override
-    protected String getAttributeUniqueField(AtlasAttributeDef attribute) {
-        return attribute != null ? attribute.getDisplayName() : null;
     }
 }

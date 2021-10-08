@@ -110,17 +110,19 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         return attributeDefs;
     }
 
-    protected String getAttributeUniqueField(AtlasAttributeDef attribute) {
-        return attribute != null ? attribute.getName() : null;
+    public void setAttributeDefs(List<AtlasAttributeDef> attributeDefs) {
+        setAttributeDefs(attributeDefs, true);
     }
 
-    public void setAttributeDefs(List<AtlasAttributeDef> attributeDefs) {
+    public void setAttributeDefs(List<AtlasAttributeDef> attributeDefs, boolean removeRedundancy) {
         if (this.attributeDefs != null && this.attributeDefs == attributeDefs) {
             return;
         }
 
         if (CollectionUtils.isEmpty(attributeDefs)) {
             this.attributeDefs = new ArrayList<>();
+        } else if (!removeRedundancy) {
+            this.attributeDefs = new ArrayList<>(attributeDefs);
         } else {
             // if multiple attributes with same name are present, keep only the last entry
             List<AtlasAttributeDef> tmpList     = new ArrayList<>(attributeDefs.size());
@@ -129,7 +131,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             ListIterator<AtlasAttributeDef> iter = attributeDefs.listIterator(attributeDefs.size());
             while (iter.hasPrevious()) {
                 AtlasAttributeDef attributeDef = iter.previous();
-                String            attribName   = getAttributeUniqueField(attributeDef);
+                String            attribName   = attributeDef != null ? attributeDef.getName() : null;
 
                 if (attribName != null) {
                     attribName = attribName.toLowerCase();
@@ -146,7 +148,6 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             this.attributeDefs = tmpList;
         }
     }
-
     public AtlasAttributeDef getAttribute(String attrName) {
         return findAttribute(this.attributeDefs, attrName);
     }
