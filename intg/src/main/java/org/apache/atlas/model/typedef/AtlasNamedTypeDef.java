@@ -17,10 +17,12 @@
  */
 package org.apache.atlas.model.typedef;
 
-import org.apache.commons.lang3.RandomStringUtils;
-
 import java.io.Serializable;
 
+/**
+ * Interface to provide name/rename capability for {@link AtlasStructDef}
+ * works by adding displayName for the type def and it's attributes
+ */
 public interface AtlasNamedTypeDef extends Serializable {
     void setDisplayName(String displayName);
     String getDisplayName();

@@ -175,7 +175,9 @@ public enum AtlasErrorCode {
     ATTRIBUTE_NAME_ALREADY_EXISTS_IN_PARENT_TYPE(400, "ATLAS-400-00-09D", "Invalid attribute name: {0}.{1}. Attribute already exists in parent type: {2}"),
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
     MISSING_CLASSIFICATION_DISPLAY_NAME(400, "ATLAS-400-00-09E", "Classification displayName is empty/null"),
+    TYPEDEF_ATTR_DISPLAY_NAME_IS_REQUIRED(400, "ATLAS-400-00-09F", "displayName is required for typedef \"{0}\" attribute"),
     EMPTY_REQUEST(400, "ATLAS-400-00-100", "Empty Request or null, expects Map of List of RelatedObjects with term-id as key"),
+    TYPEDEF_DISPLAY_NAME_IS_REQUIRED(400, "ATLAS-400-00-101", "displayName is required for typedef"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
