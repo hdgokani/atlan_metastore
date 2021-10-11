@@ -184,7 +184,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
     }
 
     @Override
-    public AtlasStructDef update(AtlasStructDef structDef) throws AtlasBaseException {
+    public AtlasStructDef update(AtlasStructDef structDef, boolean allowAttributeDeletion) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasStructDefStoreV1.update({})", structDef);
         }
@@ -376,8 +376,12 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
     public static void updateVertexPreUpdate(AtlasStructDef structDef, AtlasStructType structType,
                                              AtlasVertex vertex, AtlasTypeDefGraphStoreV2 typeDefStore)
-        throws AtlasBaseException {
+            throws AtlasBaseException {
+        updateVertexPreUpdate(structDef, structType, vertex, typeDefStore, false, null);
+    }
 
+    public static void updateVertexPreUpdate(AtlasStructDef structDef, AtlasStructType structType, AtlasVertex vertex, AtlasTypeDefGraphStoreV2 typeDefStore,
+                                             boolean allowAttributeDeletion, AtlasIValidator<String> attributeHasRefsValidator) throws AtlasBaseException {
         List<String> attrNames = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(structDef.getAttributeDefs())) {
             for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
@@ -408,8 +412,13 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
                         LOG.warn("REMOVED ATTRIBUTE: {}.{}", structDef.getName(), currAttrName);
                     } else {
-                        throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_DELETION_NOT_SUPPORTED,
-                                structDef.getName(), currAttrName);
+                        if (!allowAttributeDeletion){
+                            throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_DELETION_NOT_SUPPORTED,
+                                    structDef.getName(), currAttrName);
+                        }
+                        if (attributeHasRefsValidator != null) {
+                            attributeHasRefsValidator.validate(currAttrName);
+                        }
                     }
                 }
             }
@@ -680,6 +689,9 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         ret.setSearchWeight(attrDef.getSearchWeight());
         ret.setIndexType(attrDef.getIndexType());
         return ret;
+    }
+    public interface AtlasIValidator<T> {
+        void validate(T t) throws AtlasBaseException;
     }
 }
 

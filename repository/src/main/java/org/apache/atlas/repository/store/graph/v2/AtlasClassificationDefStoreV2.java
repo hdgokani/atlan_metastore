@@ -199,7 +199,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
     }
 
     @Override
-    public AtlasClassificationDef update(AtlasClassificationDef classifiDef) throws AtlasBaseException {
+    public AtlasClassificationDef update(AtlasClassificationDef classifiDef, boolean allowAttributeDeletion) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.update({})", classifiDef);
         }

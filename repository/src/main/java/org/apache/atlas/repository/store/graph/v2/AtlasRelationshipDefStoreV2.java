@@ -213,7 +213,7 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
     }
 
     @Override
-    public AtlasRelationshipDef update(AtlasRelationshipDef relationshipDef) throws AtlasBaseException {
+    public AtlasRelationshipDef update(AtlasRelationshipDef relationshipDef, boolean allowAttributeDeletion) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasRelationshipDefStoreV1.update({})", relationshipDef);
         }

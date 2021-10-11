@@ -156,7 +156,7 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
     }
 
     @Override
-    public AtlasEnumDef update(AtlasEnumDef enumDef) throws AtlasBaseException {
+    public AtlasEnumDef update(AtlasEnumDef enumDef, boolean allowAttributeDeletion) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEnumDefStoreV2.update({})", enumDef);
         }

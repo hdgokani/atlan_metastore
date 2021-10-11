@@ -444,7 +444,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         AtlasTypesDef ret = addToGraphStore(typesToCreate, ttr);
 
         if (!typesToUpdate.isEmpty()) {
-            AtlasTypesDef updatedTypes = updateGraphStore(typesToUpdate, ttr);
+            AtlasTypesDef updatedTypes = updateGraphStore(typesToUpdate, ttr, false);
 
             if (CollectionUtils.isNotEmpty(updatedTypes.getEnumDefs())) {
                 for (AtlasEnumDef enumDef : updatedTypes.getEnumDefs()) {
@@ -484,9 +484,15 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         return ret;
     }
 
+
+    @Override
+    public AtlasTypesDef updateTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
+        return updateTypesDef(typesDef, false);
+    }
+
     @Override
     @GraphTransaction
-    public AtlasTypesDef updateTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
+    public AtlasTypesDef updateTypesDef(AtlasTypesDef typesDef, boolean allowAttributeDeletion) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasTypeDefGraphStore.updateTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships{}, businessMetadataDefs={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
@@ -510,7 +516,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             }
         }
 
-        AtlasTypesDef ret = updateGraphStore(typesDef, ttr);
+        AtlasTypesDef ret = updateGraphStore(typesDef, ttr, allowAttributeDeletion);
 
         try {
             ttr.updateTypes(ret);
@@ -1059,7 +1065,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         return ret;
     }
 
-    private AtlasTypesDef updateGraphStore(AtlasTypesDef typesDef, AtlasTransientTypeRegistry ttr) throws AtlasBaseException {
+    private AtlasTypesDef updateGraphStore(
+            AtlasTypesDef typesDef, AtlasTransientTypeRegistry ttr, boolean allowAttributeDeletion) throws AtlasBaseException {
         AtlasTypesDef ret = new AtlasTypesDef();
 
         AtlasDefStore<AtlasEnumDef>             enumDefStore             = getEnumDefStore(ttr);
@@ -1101,7 +1108,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
             for (AtlasBusinessMetadataDef businessMetadataDef : typesDef.getBusinessMetadataDefs()) {
-                ret.getBusinessMetadataDefs().add(businessMetadataDefStore.update(businessMetadataDef));
+                ret.getBusinessMetadataDefs().add(businessMetadataDefStore.update(businessMetadataDef, allowAttributeDeletion));
             }
         }
 

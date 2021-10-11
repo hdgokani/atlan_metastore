@@ -97,6 +97,8 @@ public interface AtlasTypeDefStore {
 
     AtlasTypesDef updateTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException;
 
+    AtlasTypesDef updateTypesDef(AtlasTypesDef typesDef, boolean allowAttributeDeletion) throws AtlasBaseException;
+
     AtlasTypesDef createUpdateTypesDef(AtlasTypesDef typesToCreateUpdate) throws AtlasBaseException;
 
     AtlasTypesDef createUpdateTypesDef(AtlasTypesDef typesToCreate, AtlasTypesDef typesToUpdate) throws AtlasBaseException;

@@ -102,7 +102,6 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
     public AtlasStructDef(AtlasStructDef other) {
         super(other);
-
         setAttributeDefs(other != null ? other.getAttributeDefs() : null);
     }
 

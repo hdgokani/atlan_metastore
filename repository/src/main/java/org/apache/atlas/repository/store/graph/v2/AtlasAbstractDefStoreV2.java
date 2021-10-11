@@ -179,4 +179,9 @@ import java.util.regex.Pattern;
             LOG.debug("<== AtlasAbstractDefStoreV1.deleteByGuid({}, {})", guid, preDeleteResult);
         }
     }
+
+    @Override
+    public T update(T typeDef) throws AtlasBaseException {
+        return update(typeDef, false);
+    }
 }

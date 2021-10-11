@@ -39,6 +39,8 @@ public interface AtlasDefStore<T extends AtlasBaseTypeDef> {
 
     T update(T typeDef) throws AtlasBaseException;
 
+    T update(T typeDef, boolean allowAttributeDeletion) throws AtlasBaseException;
+
     T updateByName(String name, T typeDef) throws AtlasBaseException;
 
     T updateByGuid(String guid, T typeDef) throws AtlasBaseException;

@@ -168,7 +168,7 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
     }
 
     @Override
-    public AtlasEntityDef update(AtlasEntityDef entityDef) throws AtlasBaseException {
+    public AtlasEntityDef update(AtlasEntityDef entityDef, boolean allowAttributeDeletion) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.update({})", entityDef);
         }
