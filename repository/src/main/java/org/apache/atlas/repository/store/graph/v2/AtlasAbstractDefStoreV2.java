@@ -38,7 +38,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -110,12 +112,19 @@ import java.util.regex.Pattern;
         }
 
         if (typeDef instanceof AtlasNamedTypeDef) {
-            if (StringUtils.isEmpty(((AtlasNamedTypeDef) typeDef).getDisplayName())) {
+            AtlasNamedTypeDef namedTypeDef = (AtlasNamedTypeDef) typeDef;
+            if (StringUtils.isEmpty(namedTypeDef.getDisplayName())) {
                 throw new AtlasBaseException(AtlasErrorCode.TYPEDEF_DISPLAY_NAME_IS_REQUIRED);
             }
+            Set<String> names = new HashSet<>();
             for (AtlasStructDef.AtlasAttributeDef attr : ((AtlasStructDef) typeDef).getAttributeDefs()) {
                 if (StringUtils.isEmpty(attr.getDisplayName())){
                     throw new AtlasBaseException(AtlasErrorCode.TYPEDEF_ATTR_DISPLAY_NAME_IS_REQUIRED, typeDef.getName());
+                }
+                if (names.contains(attr.getDisplayName())){
+                    throw new AtlasBaseException(AtlasErrorCode.TYPE_ATTR_WITH_DISPLAY_NAME_ALREADY_EXISTS, attr.getDisplayName(), typeDef.getName());
+                }else{
+                    names.add(attr.getDisplayName());
                 }
             }
         }
