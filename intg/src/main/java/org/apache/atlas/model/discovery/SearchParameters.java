@@ -38,14 +38,13 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SearchParameters implements Serializable {
+public class SearchParameters extends SearchParams implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String  query;
     private Map<String, Float>  queryFields;
     private String  typeName;
     private String  classification;
-    private String  termName;
     private String  sortBy;
     private boolean excludeDeletedEntities;
     private boolean includeClassificationAttributes;
@@ -57,8 +56,6 @@ public class SearchParameters implements Serializable {
 
     private FilterCriteria entityFilters;
     private FilterCriteria tagFilters;
-    private Set<String>    attributes;
-    private Set<String>    relationAttributes;
     private SortOrder      sortOrder;
 
     public static final String WILDCARD_CLASSIFICATIONS = "*";
@@ -110,22 +107,6 @@ public class SearchParameters implements Serializable {
      */
     public void setTypeName(String typeName) {
         this.typeName = typeName;
-    }
-
-    /**
-     *
-     * @return termName to search on
-     */
-    public String getTermName() {
-        return termName;
-    }
-
-    /**
-     * Set the classification/tag to search on
-     * @param termName classification/tag name
-     */
-    public void setTermName(String termName) {
-        this.termName = termName;
     }
 
     /**
@@ -275,21 +256,6 @@ public class SearchParameters implements Serializable {
         this.tagFilters = tagFilters;
     }
 
-    /**
-     * Attribute values included in the results
-     * @return
-     */
-    public Set<String> getAttributes() {
-        return attributes;
-    }
-
-    /**
-     * Return these attributes in the result response
-     * @param attributes
-     */
-    public void setAttributes(Set<String> attributes) {
-        this.attributes = attributes;
-    }
 
     /**
      * @return Attribute on which to sort the results
@@ -315,20 +281,6 @@ public class SearchParameters implements Serializable {
      */
     public void setSortOrder(SortOrder sortOrder) { this.sortOrder = sortOrder; }
 
-    /**
-     * Attributes values for related entities in the result response
-     */
-    public Set<String> getRelationAttributes() {
-        return relationAttributes;
-    }
-
-    /**
-     * Return these attributes for related entities in the result response
-     * @param relationAttributes
-     */
-    public void setRelationAttributes(Set<String> relationAttributes) {
-        this.relationAttributes = relationAttributes;
-    }
 
 
     @Override
