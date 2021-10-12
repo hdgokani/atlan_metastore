@@ -2,28 +2,12 @@ package org.apache.atlas.model.discovery;
 
 import java.util.Set;
 
-public class SearchParams {
+public abstract class SearchParams {
 
-    String query;
-    String termName;
     Set<String> attributes;
     Set<String> relationAttributes;
 
-    public String getQuery() {
-        return query;
-    }
-
-    public void setQuery(String query) {
-        this.query = query;
-    }
-
-    public String getTermName() {
-        return termName;
-    }
-
-    public void setTermName(String termName) {
-        this.termName = termName;
-    }
+    public abstract String getQuery();
 
     public Set<String> getAttributes() {
         return attributes;

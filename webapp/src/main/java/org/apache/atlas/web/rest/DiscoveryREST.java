@@ -363,7 +363,7 @@ public class DiscoveryREST {
      * @throws AtlasBaseException
      * @HTTP 200 On successful search
      */
-    @Path("indexSearch")
+    @Path("indexsearch")
     @POST
     @Timed
     public AtlasSearchResult indexSearch(IndexSearchParams parameters) throws AtlasBaseException {
