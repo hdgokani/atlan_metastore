@@ -45,6 +45,7 @@ public class SearchParameters extends SearchParams implements Serializable {
     private Map<String, Float>  queryFields;
     private String  typeName;
     private String  classification;
+    private String  termName;
     private String  sortBy;
     private boolean excludeDeletedEntities;
     private boolean includeClassificationAttributes;
@@ -67,6 +68,7 @@ public class SearchParameters extends SearchParams implements Serializable {
     /**
      * @return The type of query
      */
+    @Override
     public String getQuery() {
         return query;
     }
@@ -107,6 +109,22 @@ public class SearchParameters extends SearchParams implements Serializable {
      */
     public void setTypeName(String typeName) {
         this.typeName = typeName;
+    }
+
+    /**
+     *
+     * @return termName to search on
+     */
+    public String getTermName() {
+        return termName;
+    }
+
+    /**
+     * Set the classification/tag to search on
+     * @param termName classification/tag name
+     */
+    public void setTermName(String termName) {
+        this.termName = termName;
     }
 
     /**

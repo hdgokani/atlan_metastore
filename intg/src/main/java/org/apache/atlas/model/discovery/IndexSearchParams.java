@@ -3,7 +3,9 @@ package org.apache.atlas.model.discovery;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.type.AtlasType;
 
+import java.util.Map;
 import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -13,6 +15,17 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class IndexSearchParams extends SearchParams {
+
+    private Map query;
+
+    @Override
+    public String getQuery() {
+        return AtlasType.toJson(query);
+    }
+
+    public void setQuery(Map query) {
+        this.query = query;
+    }
 
     private Set<String> relationAttributes;
 
