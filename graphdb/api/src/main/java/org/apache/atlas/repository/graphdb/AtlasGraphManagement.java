@@ -168,7 +168,8 @@ public interface AtlasGraphManagement {
      * @param vertexIndex
      * @param propertyKey
      * @param isStringField
-     * @param multifields
+     * @param indexTypeESConfig
+     * @param indexTypeESFields
      * @return the index field name used for the given property
      */
     String addMixedIndex(String vertexIndex, AtlasPropertyKey propertyKey, boolean isStringField, HashMap<String, Object> indexTypeESConfig, HashMap<String, HashMap<String, Object>> indexTypeESFields);

@@ -227,7 +227,6 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
                 Object esPropertyValue = indexTypeESConfig.get(esPropertyKey);
                 params.add(Parameter.of(ParameterType.customParameterName(esPropertyKey), esPropertyValue));
             }
-            params.add(Parameter.of(ParameterType.customParameterName("fields"), fieldMap));
         }
 
         if (indexTypeESFields != null) {
