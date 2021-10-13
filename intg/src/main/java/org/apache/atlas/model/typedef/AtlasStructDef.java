@@ -307,7 +307,8 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         private List<AtlasConstraintDef> constraints;
         private Map<String, String>      options;
         private String                   displayName;
-        private ArrayList<String>        multifields;
+        HashMap<String, Object> indexTypeESConfig;
+        HashMap<String, HashMap<String, Object>> indexTypeESFields;
 
         public AtlasAttributeDef() { this(null, null); }
 
@@ -389,7 +390,8 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setSearchWeight(other.getSearchWeight());
                 setIndexType(other.getIndexType());
                 setDisplayName(other.getDisplayName());
-                setMultifields(other.getMultifields());
+                setIndexTypeESConfig(other.getIndexTypeESConfig());
+                setIndexTypeESFields(other.getIndexTypeESFields());
             }
         }
 
@@ -566,12 +568,16 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             this.description = description;
         }
 
-        public ArrayList<String> getMultifields() {
-            return multifields;
+        public void setIndexTypeESConfig(HashMap<String, Object> indexTypeESConfig) { this.indexTypeESConfig = indexTypeESConfig; }
+
+        public HashMap<String, Object> getIndexTypeESConfig() {
+            return this.indexTypeESConfig;
         }
 
-        public void setMultifields(ArrayList<String> multifields) {
-            this.multifields = multifields;
+        public void setIndexTypeESFields(HashMap<String, HashMap<String, Object>> indexTypeESFields) { this.indexTypeESFields = indexTypeESFields; }
+
+        public HashMap<String, HashMap<String, Object>> getIndexTypeESFields() {
+            return this.indexTypeESFields;
         }
 
         public StringBuilder toString(StringBuilder sb) {
@@ -595,7 +601,8 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append(", searchWeight='").append(searchWeight).append('\'');
             sb.append(", indexType='").append(indexType).append('\'');
             sb.append(", displayName='").append(displayName).append('\'');
-            sb.append(", multifields='").append(multifields).append('\'');
+            sb.append(", indexTypeESConfig='").append(indexTypeESConfig).append('\'');
+            sb.append(", indexTypeESFields='").append(indexTypeESFields).append('\'');
             sb.append(", constraints=[");
             if (CollectionUtils.isNotEmpty(constraints)) {
                 int i = 0;
@@ -634,12 +641,13 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     Objects.equals(searchWeight, that.searchWeight) &&
                     Objects.equals(indexType, that.indexType) &&
                     Objects.equals(displayName, that.displayName) &&
-                    Objects.equals(multifields, that.multifields);
+                    Objects.equals(indexTypeESConfig, that.indexTypeESConfig) &&
+                    Objects.equals(indexTypeESFields, that.indexTypeESFields);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, multifields);
+            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, indexTypeESConfig, indexTypeESFields);
         }
 
         @Override

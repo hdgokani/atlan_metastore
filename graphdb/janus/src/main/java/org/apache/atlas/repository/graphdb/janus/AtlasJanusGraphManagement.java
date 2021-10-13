@@ -207,11 +207,11 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
     @Override
     public String addMixedIndex(String indexName, AtlasPropertyKey propertyKey, boolean isStringField) {
-        return addMixedIndex(indexName, propertyKey, isStringField, new ArrayList<>());
+        return addMixedIndex(indexName, propertyKey, isStringField, new HashMap<>(), new HashMap<>());
     }
 
     @Override
-    public String addMixedIndex(String indexName, AtlasPropertyKey propertyKey, boolean isStringField, ArrayList<String> multifields) {
+    public String addMixedIndex(String indexName, AtlasPropertyKey propertyKey, boolean isStringField, HashMap<String, Object> indexTypeESConfig, HashMap<String, HashMap<String, Object>> indexTypeESFields) {
         PropertyKey     janusKey        = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
         JanusGraphIndex janusGraphIndex = management.getGraphIndex(indexName);
 
@@ -222,20 +222,16 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
             LOG.debug("string type for {} with janueKey {}.", propertyKey.getName(), janusKey);
         }
 
-        if (multifields != null && multifields.size() > 0) {
-            HashMap<String, HashMap<String, String>> fieldMap = new HashMap<>();
-            if (multifields.contains("keyword")) {
-                HashMap<String, String> keywordMap = new HashMap<>();
-                keywordMap.put("type", "keyword");
-                fieldMap.put("keyword", keywordMap);
-            }
-            if (multifields.contains("simple")) {
-                HashMap<String, String> simpleMap = new HashMap<>();
-                simpleMap.put("type", "text");
-                simpleMap.put("analyzer", "simple");
-                fieldMap.put("simple", simpleMap);
+        if (indexTypeESConfig != null) {
+            for (String esPropertyKey : indexTypeESConfig.keySet()) {
+                Object esPropertyValue = indexTypeESConfig.get(esPropertyKey);
+                params.add(Parameter.of(ParameterType.customParameterName(esPropertyKey), esPropertyValue));
             }
             params.add(Parameter.of(ParameterType.customParameterName("fields"), fieldMap));
+        }
+
+        if (indexTypeESFields != null) {
+            params.add(Parameter.of(ParameterType.customParameterName("fields"), indexTypeESFields));
         }
 
         if (params.size() > 0) {

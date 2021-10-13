@@ -57,13 +57,14 @@ public class AttributeDefinition implements Serializable {
     private Map<String, String>                        options;
     private int                                        searchWeight = DEFAULT_SEARCHWEIGHT;
     private AtlasStructDef.AtlasAttributeDef.IndexType indexType    = null;
-    private ArrayList<String>                          multifields  = new ArrayList<>();
+    HashMap<String, Object> indexTypeESConfig = new HashMap<>();
+    HashMap<String, HashMap<String, Object>> indexTypeESFields = new HashMap<>();
 
     public AttributeDefinition() {
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity) {
-        this(name, dataTypeName, multiplicity, false, false, true, null, null, DEFAULT_SEARCHWEIGHT, null, new ArrayList<>());
+        this(name, dataTypeName, multiplicity, false, false, true, null, null, DEFAULT_SEARCHWEIGHT, null, new HashMap<>(), new HashMap<>());
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
@@ -73,18 +74,18 @@ public class AttributeDefinition implements Serializable {
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
                                String reverseAttributeName, int searchWeight, AtlasStructDef.AtlasAttributeDef.IndexType indexType) {
-        this(name, dataTypeName, multiplicity, isComposite, false, false, reverseAttributeName, null, searchWeight, indexType, new ArrayList<>());
+        this(name, dataTypeName, multiplicity, isComposite, false, false, reverseAttributeName, null, searchWeight, indexType, new HashMap<>(), new HashMap<>());
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
                                boolean isUnique, boolean isIndexable, String reverseAttributeName,
                                Map<String, String> options) {
-        this(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable,reverseAttributeName, options, DEFAULT_SEARCHWEIGHT, null, new ArrayList<>());
+        this(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable,reverseAttributeName, options, DEFAULT_SEARCHWEIGHT, null, new HashMap<>(), new HashMap<>());
     }
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
                                boolean isUnique, boolean isIndexable, String reverseAttributeName,
-                               Map<String, String> options, int searchWeight, AtlasStructDef.AtlasAttributeDef.IndexType indexType, ArrayList<String> multifields) {
+                               Map<String, String> options, int searchWeight, AtlasStructDef.AtlasAttributeDef.IndexType indexType, HashMap<String, Object> indexTypeESConfig, HashMap<String, HashMap<String, Object>> indexTypeESFields) {
         this.name                 = name;
         this.dataTypeName         = dataTypeName;
         this.multiplicity         = multiplicity;
@@ -95,7 +96,8 @@ public class AttributeDefinition implements Serializable {
         this.options              = options;
         this.searchWeight         = searchWeight;
         this.indexType            = indexType;
-        this.multifields          = multifields;
+        this.indexTypeESConfig    = indexTypeESConfig;
+        this.indexTypeESFields    = indexTypeESFields;
     }
 
 
@@ -171,14 +173,6 @@ public class AttributeDefinition implements Serializable {
         this.description = description;
     }
 
-    public ArrayList<String> getMultifields() {
-        return multifields;
-    }
-
-    public void setMultifields(final ArrayList<String> multifields) {
-        this.multifields = multifields;
-    }
-
     public Map<String, String> getOptions() {
         return options;
     }
@@ -237,4 +231,17 @@ public class AttributeDefinition implements Serializable {
   public AtlasStructDef.AtlasAttributeDef.IndexType getIndexType() {
         return this.indexType;
   }
+
+  public void setIndexTypeESConfig(HashMap<String, Object> indexTypeESConfig) { this.indexTypeESConfig = indexTypeESConfig; }
+
+    public HashMap<String, Object> getIndexTypeESConfig() {
+        return this.indexTypeESConfig;
+    }
+
+    public void setIndexTypeESFields(HashMap<String, HashMap<String, Object>> indexTypeESFields) { this.indexTypeESFields = indexTypeESFields; }
+
+    public HashMap<String, HashMap<String, Object>> getIndexTypeESFields() {
+        return this.indexTypeESFields;
+    }
+
 }
