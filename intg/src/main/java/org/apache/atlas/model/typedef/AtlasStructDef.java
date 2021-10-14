@@ -44,6 +44,7 @@ import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.hadoop.util.StringUtils;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -110,12 +111,18 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
     }
 
     public void setAttributeDefs(List<AtlasAttributeDef> attributeDefs) {
+        setAttributeDefs(attributeDefs, true);
+    }
+
+    public void setAttributeDefs(List<AtlasAttributeDef> attributeDefs, boolean removeRedundancy) {
         if (this.attributeDefs != null && this.attributeDefs == attributeDefs) {
             return;
         }
 
         if (CollectionUtils.isEmpty(attributeDefs)) {
             this.attributeDefs = new ArrayList<>();
+        } else if (!removeRedundancy) {
+            this.attributeDefs = new ArrayList<>(attributeDefs);
         } else {
             // if multiple attributes with same name are present, keep only the last entry
             List<AtlasAttributeDef> tmpList     = new ArrayList<>(attributeDefs.size());
@@ -141,7 +148,6 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             this.attributeDefs = tmpList;
         }
     }
-
     public AtlasAttributeDef getAttribute(String attrName) {
         return findAttribute(this.attributeDefs, attrName);
     }
@@ -251,6 +257,11 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         return toString(new StringBuilder()).toString();
     }
 
+
+    public static String generateRandomName() {
+        return RandomStringUtils.randomAlphabetic(1) + RandomStringUtils.randomAlphanumeric(21);
+    }
+
     /**
      * class that captures details of a struct-attribute.
      */
@@ -297,6 +308,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         private Map<String, String>      options;
         private String                   displayName;
         private ArrayList<String>        multifields;
+        private String                   defaultFieldType;
 
         public AtlasAttributeDef() { this(null, null); }
 
@@ -379,6 +391,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setIndexType(other.getIndexType());
                 setDisplayName(other.getDisplayName());
                 setMultifields(other.getMultifields());
+                setDefaultFieldType(other.getDefaultFieldType());
             }
         }
 
@@ -563,6 +576,14 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             this.multifields = multifields;
         }
 
+        public String getDefaultFieldType() {
+            return defaultFieldType;
+        }
+
+        public void setDefaultFieldType(String defaultFieldType) {
+            this.defaultFieldType = defaultFieldType;
+        }
+
         public StringBuilder toString(StringBuilder sb) {
             if (sb == null) {
                 sb = new StringBuilder();
@@ -585,6 +606,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append(", indexType='").append(indexType).append('\'');
             sb.append(", displayName='").append(displayName).append('\'');
             sb.append(", multifields='").append(multifields).append('\'');
+            sb.append(", defaultFieldType='").append(defaultFieldType).append('\'');
             sb.append(", constraints=[");
             if (CollectionUtils.isNotEmpty(constraints)) {
                 int i = 0;
@@ -623,12 +645,13 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                     Objects.equals(searchWeight, that.searchWeight) &&
                     Objects.equals(indexType, that.indexType) &&
                     Objects.equals(displayName, that.displayName) &&
-                    Objects.equals(multifields, that.multifields);
+                    Objects.equals(multifields, that.multifields) &&
+                    Objects.equals(defaultFieldType, that.defaultFieldType);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, multifields);
+            return Objects.hash(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, defaultValue, constraints, options, description, searchWeight, indexType, displayName, multifields, defaultFieldType);
         }
 
         @Override

@@ -49,14 +49,12 @@ RUN cd / \
     && mkdir /opt/apache-atlas/libext \
     && mv /atlas-index-repair-tool-${VERSION}.jar /opt/apache-atlas/libext/ \
     && rm -rf /atlas-index-repair-tool-${VERSION}.tar.gz
-COPY atlas-hub/pre-conf/atlas-script-application.properties /opt/apache-atlas/conf/atlas-script-application.properties
+
 COPY atlas-hub/repair_index.py /opt/apache-atlas/bin/
 
 RUN chmod +x /opt/apache-atlas/bin/repair_index.py
 
 COPY atlas-hub/atlas_start.py.patch atlas-hub/atlas_config.py.patch /opt/apache-atlas/bin/
-COPY atlas-hub/pre-conf/atlas-application.properties /opt/apache-atlas/conf/atlas-application.properties
-COPY atlas-hub/pre-conf/atlas-env.sh /opt/apache-atlas/conf/atlas-env.sh
 COPY atlas-hub/pre-conf/ranger/lib/ /opt/apache-atlas/libext/
 COPY atlas-hub/pre-conf/ranger/install/conf.templates/enable/ /opt/apache-atlas/conf/
 COPY atlas-hub/pre-conf/atlas-log4j.xml /opt/apache-atlas/conf/
