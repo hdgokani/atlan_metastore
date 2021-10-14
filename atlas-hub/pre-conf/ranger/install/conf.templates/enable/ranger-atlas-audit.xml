@@ -43,6 +43,16 @@
 		<name>xasecure.audit.destination.solr.collection</name>
 		<value>NONE</value>
 	</property>	
+
+	<property>
+		<name>xasecure.audit.destination.elasticsearch</name>
+		<value>true</value>
+	</property>
+
+	<property>
+		<name>xasecure.audit.destination.elasticsearch.urls</name>
+		<value>logging-master.logging.svc.cluster.local:9200</value>
+	</property>
 	
 	
 	<!-- HDFS audit provider configuration -->
