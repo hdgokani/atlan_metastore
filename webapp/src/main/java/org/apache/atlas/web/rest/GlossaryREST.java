@@ -479,13 +479,18 @@ public class GlossaryREST {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "PartialUpdates missing or empty");
             }
 
-            AtlasGlossaryTerm glossaryTermOrig = glossaryService.getTerm(termGuid);
+            AtlasGlossaryTerm glossaryTerm = glossaryService.getTerm(termGuid);
 
             AtlasGlossaryTerm partialGlossaryTerm = AtlasType.fromJson(AtlasType.toJson(partialUpdates), AtlasGlossaryTerm.class);
 
-            GlossaryTermUtils.mapNonNullValuesFromOtherObjectToOriginalTerm(glossaryTermOrig, partialGlossaryTerm);
-
-            return glossaryService.updateTerm(glossaryTermOrig);
+            for (Map.Entry<String, Object> entry : partialUpdates.entrySet()) {
+                try {
+                    glossaryTerm.setTermAttribute(entry.getKey(), partialGlossaryTerm);
+                } catch (IllegalArgumentException e) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARTIAL_UPDATE_ATTR, "Glossary Term", entry.getKey());
+                }
+            }
+            return glossaryService.updateTerm(glossaryTerm);
         } finally {
             AtlasPerfTracer.log(perf);
         }
