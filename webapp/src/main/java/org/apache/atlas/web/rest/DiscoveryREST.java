@@ -324,6 +324,10 @@ public class DiscoveryREST {
     @Timed
     public AtlasSearchResult searchWithParameters(SearchParameters parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
+        if (parameters == null) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Please provide parameters for search");
+        }
+
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -368,6 +372,9 @@ public class DiscoveryREST {
     @Timed
     public AtlasSearchResult indexSearch(IndexSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
+        if (parameters == null) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Please provide parameters for search");
+        }
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
