@@ -685,7 +685,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         // relationshipDef is defined as end1 (hive_db) and end2 (hive_table) and tagPropagation = ONE_TO_TWO
         // relationship edge exists from [hive_table --> hive_db]
         // swap the tagPropagation property for such cases.
-        if (fromVertexTypes.contains(endDef2.getType()) && toVertexTypes.contains(endDef1.getType())) {
+        if (!fromVertexTypes.equals(toVertexTypes) && fromVertexTypes.contains(endDef2.getType()) && toVertexTypes.contains(endDef1.getType())) {
             if (ret == ONE_TO_TWO) {
                 ret = TWO_TO_ONE;
             } else if (ret == TWO_TO_ONE) {
