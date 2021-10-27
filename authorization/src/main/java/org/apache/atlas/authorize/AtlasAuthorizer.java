@@ -106,7 +106,6 @@ public interface AtlasAuthorizer {
     }
 
     default void scrubEntityHeader(AtlasEntityHeader entity, AtlasTypeRegistry typeRegistry) {
-        entity.setGuid("-1");
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
