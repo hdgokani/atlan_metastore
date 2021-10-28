@@ -360,7 +360,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return createOrUpdate(entityStream, isPartialUpdate, false, false);
     }
 
-    public EntityMutationResponse createOrUpdateGlossary(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassification, boolean replaceBm) throws AtlasBaseException {
+    @Override
+    @GraphTransaction
+    public EntityMutationResponse createOrUpdateGlossary(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassification) throws AtlasBaseException {
         return createOrUpdate(entityStream, isPartialUpdate, true, false);
     }
 

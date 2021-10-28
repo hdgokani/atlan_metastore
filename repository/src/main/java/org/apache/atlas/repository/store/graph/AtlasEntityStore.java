@@ -149,7 +149,7 @@ public interface AtlasEntityStore {
      * @return EntityMutationResponse Entity mutations operations with the corresponding set of entities on which these operations were performed
      * @throws AtlasBaseException
      */
-    EntityMutationResponse createOrUpdateGlossary(EntityStream entityStream, boolean isPartialUpdate,  boolean replaceClassifications, boolean replaceBusinessAttributes) throws AtlasBaseException;
+    EntityMutationResponse createOrUpdateGlossary(EntityStream entityStream, boolean isPartialUpdate,  boolean replaceClassifications) throws AtlasBaseException;
 
 
     /**
