@@ -145,6 +145,15 @@ public interface AtlasEntityStore {
     EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate) throws AtlasBaseException;
 
     /**
+     * Create or update  entities in the stream
+     * @param entityStream AtlasEntityStream
+     * @return EntityMutationResponse Entity mutations operations with the corresponding set of entities on which these operations were performed
+     * @throws AtlasBaseException
+     */
+    EntityMutationResponse createOrUpdateGlossary(EntityStream entityStream, boolean isPartialUpdate,  boolean replaceClassifications, boolean replaceBusinessAttributes) throws AtlasBaseException;
+
+
+    /**
      * Create or update  entities with parameters necessary for import process
      * @param entityStream AtlasEntityStream
      * @return EntityMutationResponse Entity mutations operations with the corresponding set of entities on which these operations were performed
