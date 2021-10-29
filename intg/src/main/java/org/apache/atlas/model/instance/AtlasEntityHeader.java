@@ -63,7 +63,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private List<AtlasTermAssignmentHeader> meanings            = null;
     private Boolean                         isIncomplete        = Boolean.FALSE;
     private Set<String>                     labels              = null;
-    private Boolean                         isAuthorized        = null;
+    private Boolean                         isScrubbed          = null;
 
     public AtlasEntityHeader() {
         this(null, null);
@@ -185,12 +185,13 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         this.isIncomplete = isIncomplete;
     }
 
-    public Boolean getAuthorized() {
-        return isAuthorized;
+
+    public Boolean getScrubbed() {
+        return isScrubbed;
     }
 
-    public void setAuthorized(Boolean authorized) {
-        this.isAuthorized = authorized;
+    public void setScrubbed(Boolean scrubbed) {
+        isScrubbed = scrubbed;
     }
 
     @Override
