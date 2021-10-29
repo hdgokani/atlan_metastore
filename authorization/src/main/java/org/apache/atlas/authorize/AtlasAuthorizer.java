@@ -118,18 +118,20 @@ public interface AtlasAuthorizer {
     default void scrubEntityHeader(AtlasEntityHeader entity, AtlasTypeRegistry typeRegistry) {
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-
+        boolean isScrubbed = false;
 
         if (entityType != null) {
             if (entity.getAttributes() != null) {
                 for (AtlasStructType.AtlasAttribute attribute : entityType.getAllAttributes().values()) {
                     if (!attribute.getAttributeDef().getSkipScrubbing()) {
                         entity.getAttributes().remove(attribute.getAttributeDef().getName());
+                        isScrubbed = true;
                     }
                 }
             }
         }
 
+        entity.setScrubbed(isScrubbed);
 
         if (entity.getClassifications() != null) {
             entity.getClassifications().clear();
