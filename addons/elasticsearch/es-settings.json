@@ -55,7 +55,7 @@
       "number_filter":{
         "type":"pattern_replace",
         "pattern":"\\d+",
-        "replacement":""
+        "replacement":" $0"
       }
     }
   }
