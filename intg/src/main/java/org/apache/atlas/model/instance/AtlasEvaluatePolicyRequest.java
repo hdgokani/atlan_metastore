@@ -45,6 +45,7 @@ public class AtlasEvaluatePolicyRequest implements Serializable {
 
     private String typeName;
     private String entityGuid;
+    private String entityId;
     private String action;
 
 
@@ -75,6 +76,14 @@ public class AtlasEvaluatePolicyRequest implements Serializable {
         this.action = action;
     }
 
+
+    public String getEntityId() {
+        return entityId;
+    }
+
+    public void setEntityId(String entityId) {
+        this.entityId = entityId;
+    }
 
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
