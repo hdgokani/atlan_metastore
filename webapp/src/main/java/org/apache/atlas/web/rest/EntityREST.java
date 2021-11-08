@@ -144,10 +144,14 @@ public class EntityREST {
 
             for (int i=0; i < entities.size(); i++) {
                 try {
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), new AtlasEntityHeader(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), null)), entities.get(i).getAction() + "guid=", entities.get(i).getEntityGuid());
-                    response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), true));
+                    Map<String, Object> attributes = new HashMap<>();
+                    if(entities.get(i).getEntityId()!=null){
+                        attributes.put("qualifiedName", entities.get(i).getEntityId() );
+                    }
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), new AtlasEntityHeader(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), attributes)), entities.get(i).getAction() + "guid=", entities.get(i).getEntityGuid());
+                    response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(),entities.get(i).getEntityId(),  true));
                 } catch (AtlasBaseException e) {
-                    response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), false));
+                    response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(),entities.get(i).getEntityId() , false));
                 }
             }
         } finally {

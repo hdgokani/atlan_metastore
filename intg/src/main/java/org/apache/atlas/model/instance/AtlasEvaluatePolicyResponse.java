@@ -48,11 +48,21 @@ public class AtlasEvaluatePolicyResponse implements Serializable {
     private String action;
     private Boolean allowed;
 
+    public String getEntityId() {
+        return entityId;
+    }
 
-    public AtlasEvaluatePolicyResponse(String typeName, String entityGuid, String action, Boolean allowed) {
+    public void setEntityId(String entityId) {
+        this.entityId = entityId;
+    }
+
+    private String entityId;
+
+    public AtlasEvaluatePolicyResponse(String typeName, String entityGuid, String action, String entityId , Boolean allowed) {
         this.typeName = typeName;
         this.entityGuid = entityGuid;
         this.action = action;
+        this.entityId = entityId;
         this.allowed = allowed;
     }
 
