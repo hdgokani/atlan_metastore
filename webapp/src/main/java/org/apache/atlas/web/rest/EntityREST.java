@@ -71,6 +71,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
 
+import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.authorize.AtlasPrivilege.*;
 
 
@@ -149,8 +150,11 @@ public class EntityREST {
 
                 String action = entities.get(i).getAction();
 
-                if (ENTITY_READ.name().equals(action) || ENTITY_CREATE.name().equals(action) || ENTITY_UPDATE.name().equals(action) || ENTITY_DELETE.name().equals(action)
-                        || ENTITY_READ_CLASSIFICATION.name().equals(action) || ENTITY_UPDATE_CLASSIFICATION.name().equals(action) || ENTITY_REMOVE_CLASSIFICATION.name().equals(action)) {
+                if(action == null){
+                    throw new AtlasBaseException(BAD_REQUEST, "action is null");
+                }
+
+                if (ENTITY_READ.name().equals(action) || ENTITY_CREATE.name().equals(action) || ENTITY_UPDATE.name().equals(action) || ENTITY_DELETE.name().equals(action)) {
 
                     try {
 
@@ -162,6 +166,25 @@ public class EntityREST {
                         response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), true));
                     } catch (AtlasBaseException e) {
                         response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), false));
+                    }
+
+                } else if (ENTITY_REMOVE_CLASSIFICATION.name().equals(action) || ENTITY_ADD_CLASSIFICATION.name().equals(action) || ENTITY_UPDATE_CLASSIFICATION.name().equals(action)) {
+
+                    if (entities.get(i).getClassification() == null) {
+                        throw new AtlasBaseException(BAD_REQUEST, "classification needed for " + action + " authorization");
+                    }
+
+                    Map<String, Object> attributes = new HashMap<>();
+                    if (entities.get(i).getEntityId() != null) {
+                        attributes.put("qualifiedName", entities.get(i).getEntityId());
+                    }
+
+                    try {
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), new AtlasEntityHeader(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), attributes), new AtlasClassification(entities.get(i).getClassification())));
+                        response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), entities.get(i).getClassification(), true));
+
+                    } catch (AtlasBaseException e) {
+                        response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), entities.get(i).getClassification(), false));
                     }
 
                 } else if (RELATIONSHIP_ADD.name().equals(action) || RELATIONSHIP_REMOVE.name().equals(action) || RELATIONSHIP_UPDATE.name().equals(action)) {
@@ -946,7 +969,7 @@ public class EntityREST {
             }
 
             if (CollectionUtils.isEmpty(classificationList)) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "classification list should be specified");
+                throw new AtlasBaseException(BAD_REQUEST, "classification list should be specified");
             }
 
             Map<String, List<AtlasClassification>> entityGuidClassificationMap = new HashMap<>();
@@ -1050,7 +1073,7 @@ public class EntityREST {
             long  tagUpdateEndTime = System.currentTimeMillis();
 
             if (tagUpdateStartTime > tagUpdateEndTime) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "fromTimestamp should be less than toTimestamp");
+                throw new AtlasBaseException(BAD_REQUEST, "fromTimestamp should be less than toTimestamp");
             }
 
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {

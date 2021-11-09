@@ -59,6 +59,9 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
     private String entityIdEnd2;
 
 
+    private String classification;
+
+
     public AtlasEvaluatePolicyRequest() {
     }
 
@@ -151,6 +154,14 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
         this.relationShipTypeName = relationShipTypeName;
     }
 
+
+    public String getClassification() {
+        return classification;
+    }
+
+    public void setClassification(String classification) {
+        this.classification = classification;
+    }
 
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
