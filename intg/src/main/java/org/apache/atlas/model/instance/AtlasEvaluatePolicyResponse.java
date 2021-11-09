@@ -48,6 +48,8 @@ public class AtlasEvaluatePolicyResponse implements Serializable {
     private String action;
     private String entityId;
 
+    private String classification;
+
     private String relationShipTypeName;
     private String entityTypeEnd1;
     private String entityGuidEnd1;
@@ -65,6 +67,15 @@ public class AtlasEvaluatePolicyResponse implements Serializable {
         this.entityGuid = entityGuid;
         this.action = action;
         this.entityId = entityId;
+        this.allowed = allowed;
+    }
+
+    public AtlasEvaluatePolicyResponse(String typeName, String entityGuid, String action, String entityId , String classification, Boolean allowed) {
+        this.typeName = typeName;
+        this.entityGuid = entityGuid;
+        this.action = action;
+        this.entityId = entityId;
+        this.classification = classification;
         this.allowed = allowed;
     }
 
@@ -136,7 +147,13 @@ public class AtlasEvaluatePolicyResponse implements Serializable {
         this.entityIdEnd2 = entityIdEnd2;
     }
 
+    public String getClassification() {
+        return classification;
+    }
 
+    public void setClassification(String classification) {
+        this.classification = classification;
+    }
 
     public String getEntityId() {
         return entityId;
