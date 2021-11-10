@@ -204,9 +204,9 @@ public class EntityREST {
                     AtlasEntityHeader end2Entity = new AtlasEntityHeader(entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(), attributesEnd2);
                     try {
                         AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entities.get(i).getRelationShipTypeName(), end1Entity, end2Entity));
-                        response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityIdEnd2(), entities.get(i).getEntityGuidEnd2(), true));
+                        response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(),  entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(),  entities.get(i).getEntityIdEnd2(), true));
                     } catch (AtlasBaseException e) {
-                        response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityIdEnd2(), entities.get(i).getEntityGuidEnd2(), false));
+                        response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(),  entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(),  entities.get(i).getEntityIdEnd2(), false));
                     }
                 }
 
