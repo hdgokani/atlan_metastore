@@ -334,7 +334,10 @@ public class EntityGraphMapper {
                 AtlasEntityType entityType = context.getType(guid);
 
                 PreProcessor preProcessor = getPreProcessor(createdEntity, CREATE);
-                context.setPreProcessor(preProcessor);
+                if (preProcessor != null) {
+                    preProcessor.processAttributes(createdEntity, vertex, context);
+                    preProcessor.processRelationshipAttributes(createdEntity, vertex, context);
+                }
 
                 mapAttributes(createdEntity, entityType, vertex, CREATE, context);
                 mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
@@ -359,7 +362,11 @@ public class EntityGraphMapper {
                 AtlasEntityType entityType = context.getType(guid);
 
                 PreProcessor preProcessor = getPreProcessor(updatedEntity, UPDATE);
-                context.setPreProcessor(preProcessor);
+
+                if (preProcessor != null) {
+                    preProcessor.processAttributes(updatedEntity, vertex, context);
+                    preProcessor.processRelationshipAttributes(updatedEntity, vertex, context);
+                }
 
                 mapAttributes(updatedEntity, entityType, vertex, updateType, context);
                 mapRelationshipAttributes(updatedEntity, entityType, vertex, UPDATE, context);
@@ -739,11 +746,6 @@ public class EntityGraphMapper {
 
             List<String> timestampAutoUpdateAttributes = new ArrayList<>();
             List<String> userAutoUpdateAttributes = new ArrayList<>();
-
-
-            if (context.getPreProcessor() != null) {
-                context.getPreProcessor().processAttributes(struct, vertex);
-            }
 
             if (op.equals(CREATE)) {
                 for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
