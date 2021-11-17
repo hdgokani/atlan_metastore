@@ -20,6 +20,7 @@ package org.apache.atlas.model.notification;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 
@@ -27,6 +28,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -110,6 +112,8 @@ public class EntityNotification implements Serializable {
         private OperationType     operationType;
         private long              eventTime;
 
+        private List<AtlasClassification> classifications;
+
         public EntityNotificationV2() {
             super(ENTITY_NOTIFICATION_V2);
 
@@ -128,6 +132,16 @@ public class EntityNotification implements Serializable {
             setEntity(entity);
             setOperationType(operationType);
             setEventTime(eventTime);
+        }
+
+        public EntityNotificationV2(AtlasEntityHeader entity,List<AtlasClassification> classifications, OperationType operationType, long eventTime) {
+            super(ENTITY_NOTIFICATION_V2);
+
+            setEntity(entity);
+            setOperationType(operationType);
+            setEventTime(eventTime);
+            setClassifications(classifications);
+
         }
 
         public EntityNotificationV2(AtlasRelationshipHeader relationship, OperationType operationType, long eventTime) {
@@ -168,6 +182,14 @@ public class EntityNotification implements Serializable {
 
         public void setEventTime(long eventTime) {
             this.eventTime = eventTime;
+        }
+
+        public List<AtlasClassification> getClassifications() {
+            return classifications;
+        }
+
+        public void setClassifications(List<AtlasClassification> classifications) {
+            this.classifications = classifications;
         }
 
         @Override

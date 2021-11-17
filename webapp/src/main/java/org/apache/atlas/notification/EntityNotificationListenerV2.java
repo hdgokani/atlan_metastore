@@ -84,17 +84,17 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
     @Override
     public void onEntitiesAdded(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
-        notifyEntityEvents(entities, ENTITY_CREATE);
+        notifyEntityEvents(entities, null, ENTITY_CREATE);
     }
 
     @Override
     public void onEntitiesUpdated(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
-        notifyEntityEvents(entities, ENTITY_UPDATE);
+        notifyEntityEvents(entities, null, ENTITY_UPDATE);
     }
 
     @Override
     public void onEntitiesDeleted(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
-        notifyEntityEvents(entities, ENTITY_DELETE);
+        notifyEntityEvents(entities, null, ENTITY_DELETE);
     }
 
     @Override
@@ -104,12 +104,12 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
     @Override
     public void onClassificationsAdded(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
-        notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_ADD);
+        notifyEntityEvents(Collections.singletonList(entity), classifications, CLASSIFICATION_ADD);
     }
 
     @Override
     public void onClassificationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
-        notifyEntityEvents(entities, CLASSIFICATION_ADD);
+        notifyEntityEvents(entities, classifications, CLASSIFICATION_ADD);
     }
 
     @Override
@@ -118,20 +118,20 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         Map<String, List<AtlasClassification>> removedPropagations = RequestContext.get().getRemovedPropagations();
 
         if (addedPropagations.containsKey(entity.getGuid())) {
-            notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_ADD);
+            notifyEntityEvents(Collections.singletonList(entity), classifications, CLASSIFICATION_ADD);
         } else if (!removedPropagations.containsKey(entity.getGuid())) {
-            notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_UPDATE);
+            notifyEntityEvents(Collections.singletonList(entity), classifications, CLASSIFICATION_UPDATE);
         }
     }
 
     @Override
     public void onClassificationsDeleted(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
-        notifyEntityEvents(Collections.singletonList(entity), CLASSIFICATION_DELETE);
+        notifyEntityEvents(Collections.singletonList(entity), classifications, CLASSIFICATION_DELETE);
     }
 
     @Override
     public void onClassificationsDeleted(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
-        notifyEntityEvents(entities, CLASSIFICATION_DELETE);
+        notifyEntityEvents(entities, classifications, CLASSIFICATION_DELETE);
     }
 
     @Override
@@ -154,7 +154,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         // do nothing -> notification not sent out for label assignment to entities
     }
 
-    private void notifyEntityEvents(List<AtlasEntity> entities, OperationType operationType) throws AtlasBaseException {
+    private void notifyEntityEvents(List<AtlasEntity> entities, List<AtlasClassification> classifications, OperationType operationType) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
         List<EntityNotificationV2> messages = new ArrayList<>();
 
@@ -163,7 +163,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                 continue;
             }
 
-            messages.add(new EntityNotificationV2(toNotificationHeader(entity), operationType, RequestContext.get().getRequestTime()));
+            messages.add(new EntityNotificationV2(toNotificationHeader(entity), classifications, operationType, RequestContext.get().getRequestTime()));
         }
 
         sendNotifications(operationType, messages);
