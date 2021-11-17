@@ -58,10 +58,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
-import org.apache.atlas.repository.store.graph.v2.glossary.GlossaryPreProcessor;
-import org.apache.atlas.repository.store.graph.v2.glossary.PreProcessor;
-import org.apache.atlas.repository.store.graph.v2.glossary.TermPreProcessor;
-import org.apache.atlas.repository.store.graph.v2.glossary.Utils;
+import org.apache.atlas.repository.store.graph.v2.glossary.*;
 import org.apache.atlas.tasks.TaskManagement;
  import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
@@ -336,7 +333,7 @@ public class EntityGraphMapper {
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
 
-                PreProcessor preProcessor = getPreProcessor(createdEntity, vertex, CREATE);
+                PreProcessor preProcessor = getPreProcessor(createdEntity, CREATE);
                 context.setPreProcessor(preProcessor);
 
                 mapAttributes(createdEntity, entityType, vertex, CREATE, context);
@@ -361,7 +358,7 @@ public class EntityGraphMapper {
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
 
-                PreProcessor preProcessor = getPreProcessor(updatedEntity, vertex, UPDATE);
+                PreProcessor preProcessor = getPreProcessor(updatedEntity, UPDATE);
                 context.setPreProcessor(preProcessor);
 
                 mapAttributes(updatedEntity, entityType, vertex, updateType, context);
@@ -410,7 +407,7 @@ public class EntityGraphMapper {
         return resp;
     }
 
-    private PreProcessor getPreProcessor(AtlasEntity entity, AtlasVertex vertex, EntityOperation op) throws AtlasBaseException {
+    private PreProcessor getPreProcessor(AtlasEntity entity, EntityOperation op) throws AtlasBaseException {
         PreProcessor preProcessor = null;
 
         switch (entity.getTypeName()) {
@@ -420,6 +417,10 @@ public class EntityGraphMapper {
 
             case Utils.ATLAS_GLOSSARY_TERM_TYPENAME:
                 preProcessor = new TermPreProcessor(typeRegistry, entityRetriever, op);
+                break;
+
+            case Utils.ATLAS_GLOSSARY_CATEGORY_TYPENAME:
+                preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever, op);
                 break;
 
         }
