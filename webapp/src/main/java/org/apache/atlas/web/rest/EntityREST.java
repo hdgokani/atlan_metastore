@@ -30,16 +30,16 @@ import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.audit.AuditSearchParams;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
+import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
-import org.apache.atlas.repository.patches.PatchContext;
-import org.apache.atlas.repository.patches.ReIndexPatch;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
@@ -1085,16 +1085,52 @@ public class EntityREST {
             } else {
                 List events = auditRepository.listEvents(guid, startKey, count);
 
-                for (Object event : events) {
-                    if (event instanceof EntityAuditEventV2) {
-                        ret.add((EntityAuditEventV2) event);
-                    } else if (event instanceof EntityAuditEvent) {
-                        ret.add(instanceConverter.toV2AuditEvent((EntityAuditEvent) event));
-                    } else {
-                        LOG.warn("unknown entity-audit event type {}. Ignored", event != null ? event.getClass().getCanonicalName() : "null");
+                if (events != null) {
+                    for (Object event : events) {
+                        if (event instanceof EntityAuditEventV2) {
+                            ret.add((EntityAuditEventV2) event);
+                        } else if (event instanceof EntityAuditEvent) {
+                            ret.add(instanceConverter.toV2AuditEvent((EntityAuditEvent) event));
+                        } else {
+                            LOG.warn("unknown entity-audit event type {}. Ignored", event != null ? event.getClass().getCanonicalName() : "null");
+                        }
                     }
                 }
             }
+
+            return ret;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("{guid}/auditSearch")
+    @Timed
+    public EntityAuditSearchResult getAuditEvents(AuditSearchParams parameters, @PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getAuditEvents(" + guid +  ")");
+            }
+
+            // Enforces authorization for entity-read
+            try {
+                entitiesStore.getHeaderById(guid);
+            } catch (AtlasBaseException e) {
+                if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
+                    AtlasEntityHeader entityHeader = getEntityHeaderFromPurgedAudit(guid);
+
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, ENTITY_READ, entityHeader), "read entity audit: guid=", guid);
+                } else {
+                    throw e;
+                }
+            }
+
+            String dslString = parameters.getQueryString(guid);
+
+            EntityAuditSearchResult ret = auditRepository.searchEvents(dslString);
 
             return ret;
         } finally {
