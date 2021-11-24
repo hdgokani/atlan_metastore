@@ -119,6 +119,9 @@ import static org.apache.atlas.repository.graph.GraphHelper.string;
 import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.ATLAS_GLOSSARY_CATEGORY_TYPENAME;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.ATLAS_GLOSSARY_TYPENAME;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -129,6 +132,7 @@ import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
+
 
 @Component
 public class EntityGraphMapper {
@@ -315,26 +319,31 @@ public class EntityGraphMapper {
 
         if (CollectionUtils.isNotEmpty(createdEntities)) {
             for (AtlasEntity createdEntity : createdEntities) {
-                String          guid       = createdEntity.getGuid();
-                AtlasVertex     vertex     = context.getVertex(guid);
-                AtlasEntityType entityType = context.getType(guid);
+                try {
+                    String guid = createdEntity.getGuid();
+                    AtlasVertex vertex = context.getVertex(guid);
+                    AtlasEntityType entityType = context.getType(guid);
 
-                PreProcessor preProcessor = getPreProcessor(entityType.getTypeName(), CREATE);
-                if (preProcessor != null) {
-                    preProcessor.processAttributes(createdEntity, vertex, context);
+                    PreProcessor preProcessor = getPreProcessor(entityType.getTypeName(), CREATE);
+                    if (preProcessor != null) {
+                        preProcessor.processAttributes(createdEntity, vertex, context);
+                    }
+
+                    mapAttributes(createdEntity, entityType, vertex, CREATE, context);
+                    mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
+
+                    setCustomAttributes(vertex, createdEntity);
+
+                    resp.addEntity(CREATE, constructHeader(createdEntity, vertex));
+                    addClassifications(context, guid, createdEntity.getClassifications());
+
+                    addOrUpdateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes());
+
+                    reqContext.cache(createdEntity);
+                } catch (AtlasBaseException baseException) {
+                    setEntityGuidToException(createdEntity, baseException, context);
+                    throw baseException;
                 }
-
-                mapAttributes(createdEntity, entityType, vertex, CREATE, context);
-                mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
-
-                setCustomAttributes(vertex,createdEntity);
-
-                resp.addEntity(CREATE, constructHeader(createdEntity, vertex));
-                addClassifications(context, guid, createdEntity.getClassifications());
-
-                addOrUpdateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes());
-
-                reqContext.cache(createdEntity);
             }
         }
 
@@ -342,31 +351,37 @@ public class EntityGraphMapper {
 
         if (CollectionUtils.isNotEmpty(updatedEntities)) {
             for (AtlasEntity updatedEntity : updatedEntities) {
-                String          guid       = updatedEntity.getGuid();
-                AtlasVertex     vertex     = context.getVertex(guid);
-                AtlasEntityType entityType = context.getType(guid);
+                try {
+                    String          guid       = updatedEntity.getGuid();
+                    AtlasVertex     vertex     = context.getVertex(guid);
+                    AtlasEntityType entityType = context.getType(guid);
 
-                PreProcessor preProcessor = getPreProcessor(entityType.getTypeName(), UPDATE);
-                if (preProcessor != null) {
-                    preProcessor.processAttributes(updatedEntity, vertex, context);
+                    PreProcessor preProcessor = getPreProcessor(entityType.getTypeName(), UPDATE);
+                    if (preProcessor != null) {
+                        preProcessor.processAttributes(updatedEntity, vertex, context);
+                    }
+
+                    mapAttributes(updatedEntity, entityType, vertex, updateType, context);
+                    mapRelationshipAttributes(updatedEntity, entityType, vertex, UPDATE, context);
+
+                    setCustomAttributes(vertex,updatedEntity);
+
+                    if (replaceClassifications) {
+                        deleteClassifications(guid);
+                        addClassifications(context, guid, updatedEntity.getClassifications());
+                    }
+
+                    if (replaceBusinessAttributes) {
+                        setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
+                    }
+
+                    resp.addEntity(updateType, constructHeader(updatedEntity, vertex));
+                    reqContext.cache(updatedEntity);
+
+                } catch (AtlasBaseException baseException) {
+                    setEntityGuidToException(updatedEntity, baseException, context);
+                    throw baseException;
                 }
-
-                mapAttributes(updatedEntity, entityType, vertex, updateType, context);
-                mapRelationshipAttributes(updatedEntity, entityType, vertex, UPDATE, context);
-
-                setCustomAttributes(vertex,updatedEntity);
-
-                if (replaceClassifications) {
-                    deleteClassifications(guid);
-                    addClassifications(context, guid, updatedEntity.getClassifications());
-                }
-
-                if (replaceBusinessAttributes) {
-                    setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
-                }
-
-                resp.addEntity(updateType, constructHeader(updatedEntity, vertex));
-                reqContext.cache(updatedEntity);
             }
         }
 
@@ -397,19 +412,30 @@ public class EntityGraphMapper {
         return resp;
     }
 
+    private void setEntityGuidToException(AtlasEntity entity, AtlasBaseException exception, EntityMutationContext context) {
+        String guid;
+        try {
+            guid = context.getGuidAssignments().entrySet().stream().filter(x -> entity.getGuid().equals(x.getValue())).findFirst().get().getKey();
+        } catch (NoSuchElementException noSuchElementException) {
+            guid = entity.getGuid();
+        }
+
+        exception.setEntityGuid(guid);
+    }
+
     private PreProcessor getPreProcessor(String typeName, EntityOperation op) throws AtlasBaseException {
         PreProcessor preProcessor = null;
 
         switch (typeName) {
-            case Utils.ATLAS_GLOSSARY_TYPENAME:
+            case ATLAS_GLOSSARY_TYPENAME:
                 preProcessor = new GlossaryPreProcessor(typeRegistry, entityRetriever, op);
                 break;
 
-            case Utils.ATLAS_GLOSSARY_TERM_TYPENAME:
+            case ATLAS_GLOSSARY_TERM_TYPENAME:
                 preProcessor = new TermPreProcessor(typeRegistry, entityRetriever, op);
                 break;
 
-            case Utils.ATLAS_GLOSSARY_CATEGORY_TYPENAME:
+            case ATLAS_GLOSSARY_CATEGORY_TYPENAME:
                 preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever, op);
                 break;
 
