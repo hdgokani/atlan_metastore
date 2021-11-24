@@ -119,6 +119,9 @@ import static org.apache.atlas.repository.graph.GraphHelper.string;
 import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.ATLAS_GLOSSARY_CATEGORY_TYPENAME;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.ATLAS_GLOSSARY_TYPENAME;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -129,6 +132,7 @@ import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
+
 
 @Component
 public class EntityGraphMapper {
@@ -401,15 +405,15 @@ public class EntityGraphMapper {
         PreProcessor preProcessor = null;
 
         switch (typeName) {
-            case Utils.ATLAS_GLOSSARY_TYPENAME:
+            case ATLAS_GLOSSARY_TYPENAME:
                 preProcessor = new GlossaryPreProcessor(typeRegistry, entityRetriever, op);
                 break;
 
-            case Utils.ATLAS_GLOSSARY_TERM_TYPENAME:
+            case ATLAS_GLOSSARY_TERM_TYPENAME:
                 preProcessor = new TermPreProcessor(typeRegistry, entityRetriever, op);
                 break;
 
-            case Utils.ATLAS_GLOSSARY_CATEGORY_TYPENAME:
+            case ATLAS_GLOSSARY_CATEGORY_TYPENAME:
                 preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever, op);
                 break;
 
