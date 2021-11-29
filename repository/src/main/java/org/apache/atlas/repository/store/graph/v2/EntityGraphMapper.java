@@ -131,6 +131,7 @@ import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.CATEGORIES_PARENT_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 
@@ -154,6 +155,7 @@ public class EntityGraphMapper {
     private static final String TYPE_GLOSSARY= "AtlasGlossary";
     private static final String TYPE_CATEGORY= "AtlasGlossaryCategory";
     private static final String TYPE_TERM = "AtlasGlossaryTerm";
+    private static final String TYPE_PROCESS = "Process";
     private static final String ATTR_MEANINGS = "meanings";
     private static final String ATTR_ANCHOR = "anchor";
     private static final String ATTR_CATEGORIES = "categories";
@@ -1656,6 +1658,10 @@ public class EntityGraphMapper {
 
             case CATEGORY_PARENT_EDGE_LABEL: addCatParentAttr(ctx, newElementsCreated, removedElements);
                 break;
+
+            case PROCESS_INPUTS:
+            case PROCESS_OUTPUTS: addHasLineage(ctx, newElementsCreated, removedElements);
+                break;
         }
 
         if (LOG.isDebugEnabled()) {
@@ -1765,6 +1771,69 @@ public class EntityGraphMapper {
         if (CollectionUtils.isNotEmpty(removedElements)) {
             List<AtlasVertex> termVertices = removedElements.stream().map(x -> x.getInVertex()).collect(Collectors.toList());
             termVertices.stream().forEach(v -> v.removeProperty(CATEGORIES_PROPERTY_KEY));
+        }
+    }
+
+    private void addHasLineage(AttributeMutationContext ctx, List<Object> newElementsCreated, List<AtlasEdge> removedElements){
+        AtlasVertex toVertex = ctx.getReferringVertex();
+
+        if (CollectionUtils.isNotEmpty(newElementsCreated)) {
+            AtlasGraphUtilsV2.setEncodedProperty(toVertex, HAS_LINEAGE, true);
+
+            List<AtlasVertex> vertices;
+            if (TYPE_PROCESS.equals(getTypeName(toVertex))) {
+                vertices = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getInVertex()).collect(Collectors.toList());
+            } else {
+                vertices = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
+            }
+
+            vertices.stream().forEach(v -> AtlasGraphUtilsV2.setEncodedProperty(v, HAS_LINEAGE, true));
+
+        } else if (CollectionUtils.isNotEmpty(removedElements)) {
+            Set<String> removedGuids = removedElements.stream().map(x ->  GraphHelper.getRelationshipGuid(x)).collect(Collectors.toSet());
+            boolean removeAttr = true;
+            Iterator<AtlasEdge> edgeIterator;
+
+            if (ctx.getAttribute().getRelationshipEdgeLabel().equals(PROCESS_INPUTS)) {
+                edgeIterator = toVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_OUTPUTS).iterator();
+            } else {
+                edgeIterator = toVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_INPUTS).iterator();
+            }
+
+            while (edgeIterator.hasNext()) {
+                if (ACTIVE.equals(getStatus(edgeIterator.next()))) {
+                    removeAttr = false; break;
+                }
+            }
+
+            if (removeAttr) {
+                toVertex.removeProperty(HAS_LINEAGE);
+            }
+
+            String[] edgeLabels = {PROCESS_OUTPUTS, PROCESS_INPUTS};
+
+            List<AtlasVertex> vertices;
+            if (TYPE_PROCESS.equals(getTypeName(toVertex))) {
+                vertices = removedElements.stream().map(x -> ((AtlasEdge) x).getInVertex()).collect(Collectors.toList());
+            } else {
+                vertices = removedElements.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
+            }
+
+            for (AtlasVertex vertex : vertices) {
+                removeAttr = true;
+                edgeIterator = vertex.getEdges(AtlasEdgeDirection.BOTH, edgeLabels).iterator();
+
+                while (edgeIterator.hasNext()) {
+                    AtlasEdge edg = edgeIterator.next();
+                    if (ACTIVE.equals(getStatus(edg)) && !removedGuids.contains(GraphHelper.getRelationshipGuid(edg))) {
+                        removeAttr = false; break;
+                    }
+                }
+
+                if (removeAttr) {
+                    vertex.removeProperty(HAS_LINEAGE);
+                }
+            }
         }
     }
 
