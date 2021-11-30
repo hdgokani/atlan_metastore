@@ -1660,7 +1660,7 @@ public class EntityGraphMapper {
                 break;
 
             case PROCESS_INPUTS:
-            case PROCESS_OUTPUTS: addHasLineage(ctx, newElementsCreated, removedElements);
+            case PROCESS_OUTPUTS: addHasLineage(ctx, context, newElementsCreated, removedElements);
                 break;
         }
 
@@ -1774,7 +1774,8 @@ public class EntityGraphMapper {
         }
     }
 
-    private void addHasLineage(AttributeMutationContext ctx, List<Object> newElementsCreated, List<AtlasEdge> removedElements){
+    private void addHasLineage(AttributeMutationContext ctx, EntityMutationContext context,
+                               List<Object> newElementsCreated, List<AtlasEdge> removedElements){
         AtlasVertex toVertex = ctx.getReferringVertex();
 
         if (CollectionUtils.isNotEmpty(newElementsCreated)) {
@@ -1791,6 +1792,9 @@ public class EntityGraphMapper {
 
         } else if (CollectionUtils.isNotEmpty(removedElements)) {
             Set<String> removedGuids = removedElements.stream().map(x ->  GraphHelper.getRelationshipGuid(x)).collect(Collectors.toSet());
+            context.addRemovedLineageRelations(removedGuids);
+
+            context.getRemovedLineageRelations().stream().forEach(x -> LOG.info("r " + x));
             boolean removeAttr = true;
             Iterator<AtlasEdge> edgeIterator;
 
@@ -1801,7 +1805,12 @@ public class EntityGraphMapper {
             }
 
             while (edgeIterator.hasNext()) {
-                if (ACTIVE.equals(getStatus(edgeIterator.next()))) {
+                AtlasEdge edg = edgeIterator.next();
+                if (ACTIVE.equals(getStatus(edg)) && !context.getRemovedLineageRelations().contains(GraphHelper.getRelationshipGuid(edg))) {
+                    LOG.info(edg.getInVertex().getProperty("name", String.class));
+                    LOG.info(edg.getInVertex().getProperty("__guid", String.class));
+                    LOG.info(edg.getProperty("_r__guid", String.class));
+
                     removeAttr = false; break;
                 }
             }
@@ -1825,7 +1834,7 @@ public class EntityGraphMapper {
 
                 while (edgeIterator.hasNext()) {
                     AtlasEdge edg = edgeIterator.next();
-                    if (ACTIVE.equals(getStatus(edg)) && !removedGuids.contains(GraphHelper.getRelationshipGuid(edg))) {
+                    if (ACTIVE.equals(getStatus(edg)) && !context.getRemovedLineageRelations().contains(GraphHelper.getRelationshipGuid(edg))) {
                         removeAttr = false; break;
                     }
                 }
