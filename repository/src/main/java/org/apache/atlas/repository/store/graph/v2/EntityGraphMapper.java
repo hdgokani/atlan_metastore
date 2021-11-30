@@ -59,7 +59,7 @@ import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.glossary.*;
 import org.apache.atlas.tasks.TaskManagement;
- import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.type.AtlasBuiltInTypes;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
@@ -1776,6 +1776,7 @@ public class EntityGraphMapper {
 
     private void addHasLineage(AttributeMutationContext ctx, EntityMutationContext context,
                                List<Object> newElementsCreated, List<AtlasEdge> removedElements){
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addHasLineage");
         AtlasVertex toVertex = ctx.getReferringVertex();
 
         if (CollectionUtils.isNotEmpty(newElementsCreated)) {
@@ -1794,7 +1795,6 @@ public class EntityGraphMapper {
             Set<String> removedGuids = removedElements.stream().map(x ->  GraphHelper.getRelationshipGuid(x)).collect(Collectors.toSet());
             context.addRemovedLineageRelations(removedGuids);
 
-            context.getRemovedLineageRelations().stream().forEach(x -> LOG.info("r " + x));
             boolean removeAttr = true;
             Iterator<AtlasEdge> edgeIterator;
 
@@ -1807,10 +1807,6 @@ public class EntityGraphMapper {
             while (edgeIterator.hasNext()) {
                 AtlasEdge edg = edgeIterator.next();
                 if (ACTIVE.equals(getStatus(edg)) && !context.getRemovedLineageRelations().contains(GraphHelper.getRelationshipGuid(edg))) {
-                    LOG.info(edg.getInVertex().getProperty("name", String.class));
-                    LOG.info(edg.getInVertex().getProperty("__guid", String.class));
-                    LOG.info(edg.getProperty("_r__guid", String.class));
-
                     removeAttr = false; break;
                 }
             }
@@ -1844,13 +1840,14 @@ public class EntityGraphMapper {
                 }
             }
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void addCategoriesToTermEntity(AttributeMutationContext ctx, List<Object> newElementsCreated, List<AtlasEdge> removedElements) {
         AtlasVertex termVertex = ctx.getReferringVertex();
 
         if (TYPE_CATEGORY.equals(getTypeName(termVertex))) {
-            String catQName = ctx.getReferringVertex().getProperty("qualifiedName", String.class);
+            String catQName = ctx.getReferringVertex().getProperty(QUALIFIED_NAME, String.class);
 
             if (CollectionUtils.isNotEmpty(newElementsCreated)) {
                 List<AtlasVertex> termVertices = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getInVertex()).collect(Collectors.toList());
@@ -1876,8 +1873,8 @@ public class EntityGraphMapper {
         // handle __terms attribute of entity
         List<AtlasVertex> meanings = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
 
-        Set<String> qNames = meanings.stream().map(x -> x.getProperty("qualifiedName", String.class)).collect(Collectors.toSet());
-        List<String> names = meanings.stream().map(x -> x.getProperty("name", String.class)).collect(Collectors.toList());
+        Set<String> qNames = meanings.stream().map(x -> x.getProperty(QUALIFIED_NAME, String.class)).collect(Collectors.toSet());
+        List<String> names = meanings.stream().map(x -> x.getProperty(NAME, String.class)).collect(Collectors.toList());
 
         ctx.getReferringVertex().removeProperty(MEANINGS_PROPERTY_KEY);
         ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
