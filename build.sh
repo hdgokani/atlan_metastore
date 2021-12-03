@@ -18,8 +18,8 @@
 
 mkdir -p ~/.m2/repository/org/keycloak
 
-wget -o https://atlan-public.s3.eu-west-1.amazonaws.com/artifact/keycloak-15.0.2.1.zip
-unzip keycloak-15.0.2.1.zip -d ~/.m2/repository/org
+wget  https://atlan-public.s3.eu-west-1.amazonaws.com/artifact/keycloak-15.0.2.1.zip
+unzip -o keycloak-15.0.2.1.zip -d ~/.m2/repository/org
 
 echo "Maven Building"
 mvn -T 100 -pl '!addons/hdfs-model,!addons/hive-bridge,!addons/hive-bridge-shim,!addons/falcon-bridge-shim,!addons/falcon-bridge,!addons/sqoop-bridge,!addons/sqoop-bridge-shim,!addons/hbase-bridge,!addons/hbase-bridge-shim' -Dmaven.test.skip -DskipTests -Drat.skip=true package -Pdist
