@@ -25,7 +25,6 @@ on:
       - beta
       - development
       - master
-      - keycloakdep
 
 jobs:
   build:
