@@ -18,7 +18,7 @@
 
 mkdir -p ~/.m2/repository/org/keycloak
 
-wget https://atlan-public.s3.eu-west-1.amazonaws.com/artifact/keycloak-15.0.2.1.zip
+wget -o https://atlan-public.s3.eu-west-1.amazonaws.com/artifact/keycloak-15.0.2.1.zip
 unzip keycloak-15.0.2.1.zip -d ~/.m2/repository/org
 
 echo "Maven Building"
