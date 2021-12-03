@@ -20,11 +20,7 @@ package org.apache.atlas.repository.store.graph.v2.glossary;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -102,6 +98,12 @@ public class TermPreProcessor implements PreProcessor {
 
         if (StringUtils.isEmpty(termName) || isNameInvalid(termName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
+        }
+
+        AtlasEntity storeObject = entityRetriever.toAtlasEntity(vertex);
+        AtlasRelatedObjectId existingAnchor = (AtlasRelatedObjectId) storeObject.getRelationshipAttribute(ANCHOR);
+        if (existingAnchor != null && !existingAnchor.getGuid().equals(anchor.getGuid())){
+            throw new AtlasBaseException(AtlasErrorCode.ACHOR_UPDATION_NOT_SUPPORTED);
         }
 
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
