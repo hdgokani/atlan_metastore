@@ -25,10 +25,16 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.glossary.GlossaryUtils.QUALIFIED_NAME;
 import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.*;
@@ -87,6 +93,8 @@ public class CategoryPreProcessor implements PreProcessor {
             }
         }
 
+        validateChildren(entity, null);
+
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(vertex));
     }
 
@@ -113,7 +121,32 @@ public class CategoryPreProcessor implements PreProcessor {
             }
         }
 
+        validateChildren(entity, storeObject);
+
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
+    }
+
+    private void validateChildren(AtlasEntity entity, AtlasEntity storeObject) throws AtlasBaseException {
+        List<AtlasObjectId> existingChildren = new ArrayList<>();
+        if (storeObject != null) {
+            existingChildren = (List<AtlasObjectId>) storeObject.getRelationshipAttribute(CATEGORY_CHILDREN);
+        }
+        Set<String> existingChildrenGuids = existingChildren.stream().map(x -> x.getGuid()).collect(Collectors.toSet());
+
+        List<AtlasObjectId> children = (List<AtlasObjectId>) entity.getRelationshipAttribute(CATEGORY_CHILDREN);
+
+        if (CollectionUtils.isNotEmpty(children)) {
+            for (AtlasObjectId child : children) {
+                if (!existingChildrenGuids.contains(child.getGuid())) {
+                    AtlasEntity newChild = entityRetriever.toAtlasEntity(child.getGuid());
+                    AtlasRelatedObjectId newAnchor = (AtlasRelatedObjectId) newChild.getRelationshipAttribute(ANCHOR);
+
+                    if (newAnchor != null && !newAnchor.getGuid().equals(anchor.getGuid())){
+                        throw new AtlasBaseException(AtlasErrorCode.CATEGORY_PARENT_FROM_OTHER_GLOSSARY);
+                    }
+                }
+            }
+        }
     }
 
     private void setAnchorAndParent(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
