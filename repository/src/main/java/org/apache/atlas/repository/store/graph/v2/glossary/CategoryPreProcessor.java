@@ -20,7 +20,12 @@ package org.apache.atlas.repository.store.graph.v2.glossary;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.*;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
@@ -31,13 +36,18 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.ANCHOR;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.CATEGORY_CHILDREN;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.CATEGORY_PARENT;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.isNameInvalid;
+import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.getUUID;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static org.apache.atlas.glossary.GlossaryUtils.QUALIFIED_NAME;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.*;
 
 public class CategoryPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(CategoryPreProcessor.class);

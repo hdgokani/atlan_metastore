@@ -85,7 +85,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -121,9 +132,6 @@ import static org.apache.atlas.repository.graph.GraphHelper.string;
 import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.ATLAS_GLOSSARY_CATEGORY_TYPENAME;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.ATLAS_GLOSSARY_TYPENAME;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -431,15 +439,15 @@ public class EntityGraphMapper {
         PreProcessor preProcessor = null;
 
         switch (typeName) {
-            case ATLAS_GLOSSARY_TYPENAME:
+            case ATLAS_GLOSSARY_ENTITY_TYPE:
                 preProcessor = new GlossaryPreProcessor(typeRegistry, entityRetriever, op);
                 break;
 
-            case ATLAS_GLOSSARY_TERM_TYPENAME:
+            case ATLAS_GLOSSARY_TERM_ENTITY_TYPE:
                 preProcessor = new TermPreProcessor(typeRegistry, entityRetriever, op);
                 break;
 
-            case ATLAS_GLOSSARY_CATEGORY_TYPENAME:
+            case ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE:
                 preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever, op);
                 break;
 
