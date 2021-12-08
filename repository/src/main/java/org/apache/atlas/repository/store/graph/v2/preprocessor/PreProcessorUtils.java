@@ -5,7 +5,6 @@ import org.apache.commons.lang.StringUtils;
 
 public class PreProcessorUtils {
 
-
     private static final char[] invalidNameChars = {'@'};
 
     //Glossary models constants
