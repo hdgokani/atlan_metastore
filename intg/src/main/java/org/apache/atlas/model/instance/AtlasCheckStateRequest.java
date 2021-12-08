@@ -46,6 +46,8 @@ public class AtlasCheckStateRequest implements Serializable {
     private Set<String> entityGuids;
     private Set<String> entityTypes;
     private boolean     fixIssues;
+    private int     limit;
+    private int     offset;
 
 
     public AtlasCheckStateRequest() {
@@ -76,6 +78,22 @@ public class AtlasCheckStateRequest implements Serializable {
     }
 
 
+    public int getLimit() {
+        return limit;
+    }
+
+    public void setLimit(int limit) {
+        this.limit = limit;
+    }
+
+    public int getOffset() {
+        return offset;
+    }
+
+    public void setOffset(int offset) {
+        this.offset = offset;
+    }
+
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
@@ -88,6 +106,8 @@ public class AtlasCheckStateRequest implements Serializable {
         AtlasBaseTypeDef.dumpObjects(entityTypes, sb);
         sb.append("]");
         sb.append(", fixIssues=").append(fixIssues);
+        sb.append(", offset=").append(offset);
+        sb.append(", limit=").append(limit);
         sb.append("}");
 
         return sb;

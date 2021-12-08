@@ -35,6 +35,7 @@ import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.IteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -104,7 +105,10 @@ public final class EntityStateChecker {
                     AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName);
 
                     int count = 0;
-                    for (Iterator<AtlasVertex> iter = query.vertices().iterator(); iter.hasNext(); count++) {
+
+                    Iterator<AtlasVertex> iter1 =  IteratorUtils.boundedIterator(query.vertices().iterator(), request.getOffset(), request.getLimit());
+
+                    for (Iterator<AtlasVertex> iter = iter1; iter.hasNext(); count++) {
                         checkEntityState(iter.next(), request.getFixIssues(), ret);
                     }
 
@@ -220,6 +224,9 @@ public final class EntityStateChecker {
         Collection<String>  propagatedTraitVertexNames = null;
         Iterable<AtlasEdge> edges                      = entityVertex.getEdges(AtlasEdgeDirection.OUT, Constants.CLASSIFICATION_LABEL);
 
+        LOG.info("traitNames =>" + traitNames);
+        LOG.info("propagatedTraitNames =>" + propagatedTraitNames);
+
         if (edges != null) {
             for (Iterator<AtlasEdge> iter = edges.iterator(); iter.hasNext(); ) {
                 AtlasEdge               edge               = iter.next();
@@ -250,7 +257,15 @@ public final class EntityStateChecker {
         Collection<String> propagatedTraitNamesToAdd    = subtract(propagatedTraitVertexNames, propagatedTraitNames);
         Collection<String> propagatedTraitNamesToRemove = subtract(propagatedTraitNames, propagatedTraitVertexNames);
 
-        if (traitNamesToAdd != null || traitNamesToRemove != null || propagatedTraitNamesToAdd != null || propagatedTraitNamesToRemove != null) {
+        LOG.info("traitNamesToAdd => " + traitNamesToAdd);
+        LOG.info("traitNamesToRemove => " + traitNamesToRemove);
+        LOG.info("propagatedTraitNamesToAdd => " + propagatedTraitNamesToAdd);
+        LOG.info("propagatedTraitNamesToRemove => " + propagatedTraitNamesToRemove);
+
+      //  if (traitNamesToAdd != null || traitNamesToRemove != null || propagatedTraitNamesToAdd != null || propagatedTraitNamesToRemove != null) {
+        if (CollectionUtils.isNotEmpty(traitNamesToAdd) || CollectionUtils.isNotEmpty(traitNamesToRemove)
+                || CollectionUtils.isNotEmpty(propagatedTraitNamesToAdd) || CollectionUtils.isNotEmpty(propagatedTraitNamesToRemove)) {
+
             List<String> issues = result.getIssues();
 
             if (issues == null) {
@@ -260,12 +275,12 @@ public final class EntityStateChecker {
             }
 
             if (fixIssues) {
-                if (traitNamesToAdd != null || traitNamesToRemove != null) {
-                    if (traitNamesToAdd != null) {
+                if (CollectionUtils.isNotEmpty(traitNamesToAdd) || CollectionUtils.isNotEmpty(traitNamesToRemove)) {
+                    if (CollectionUtils.isNotEmpty(traitNamesToAdd)) {
                         issues.add("incorrect property: __traitNames has missing classifications: " + traitNamesToAdd.toString());
                     }
 
-                    if (traitNamesToRemove != null) {
+                    if (CollectionUtils.isNotEmpty(traitNamesToRemove)) {
                         issues.add("incorrect property: __traitNames has unassigned classifications: " + traitNamesToRemove.toString());
                     }
 
@@ -279,12 +294,12 @@ public final class EntityStateChecker {
                     entityVertex.setProperty(Constants.CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(traitVertexNames));
                 }
 
-                if (propagatedTraitNamesToAdd != null || propagatedTraitNamesToRemove != null) {
-                    if (propagatedTraitNamesToAdd != null) {
+                if (CollectionUtils.isNotEmpty(propagatedTraitNamesToAdd) || CollectionUtils.isNotEmpty(propagatedTraitNamesToRemove)) {
+                    if (CollectionUtils.isNotEmpty(propagatedTraitNamesToAdd)) {
                         issues.add("incorrect property: __propagatedTraitNames has missing classifications: " + propagatedTraitNamesToAdd.toString());
                     }
 
-                    if (propagatedTraitNamesToRemove != null) {
+                    if (CollectionUtils.isNotEmpty(propagatedTraitNamesToRemove)) {
                         issues.add("incorrect property: __propagatedTraitNames has unassigned classifications: " + propagatedTraitNamesToRemove.toString());
                     }
 
@@ -292,7 +307,7 @@ public final class EntityStateChecker {
                     entityVertex.removeProperty(Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY);
 
                     for (String classificationName : propagatedTraitVertexNames) {
-                        AtlasGraphUtilsV2.addEncodedProperty(entityVertex, Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
+                        AtlasGraphUtilsV2.addEncodedListProperty(entityVertex, Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
                     }
 
                     entityVertex.setProperty(Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY,getDelimitedClassificationNames(propagatedTraitVertexNames));
