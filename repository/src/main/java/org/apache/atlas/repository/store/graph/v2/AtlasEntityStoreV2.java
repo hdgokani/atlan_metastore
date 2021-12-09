@@ -1511,8 +1511,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
         RequestContext.get().endMetricRecord(metric);
 
+        entityGraphMapper.removeChildrenParentAttr(categories);
+
         if (CollectionUtils.isNotEmpty(categories)) {
             deleteDelegate.getHandler(DeleteType.HARD).deleteEntities(categories);
+
         }
 
         if (CollectionUtils.isNotEmpty(other)) {
