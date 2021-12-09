@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.store.graph.v2.glossary;
+package org.apache.atlas.repository.store.graph.v2.preprocessor.glossary;
 
 
 import org.apache.atlas.AtlasErrorCode;
@@ -29,6 +29,7 @@ import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -38,11 +39,11 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.ANCHOR;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.CATEGORY_CHILDREN;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.CATEGORY_PARENT;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.isNameInvalid;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.getUUID;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.ANCHOR;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.CATEGORY_CHILDREN;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.CATEGORY_PARENT;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.isNameInvalid;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.getUUID;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,20 +55,18 @@ public class CategoryPreProcessor implements PreProcessor {
 
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
-    private final EntityMutations.EntityOperation operation;
 
     private AtlasEntityHeader anchor;
     private AtlasEntityHeader parentCategory;
 
-    public CategoryPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                                EntityMutations.EntityOperation operation) {
+    public CategoryPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
-        this.operation = operation;
     }
 
     @Override
-    public void processAttributes(AtlasStruct entityStruct, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
+    public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context,
+                                  EntityMutations.EntityOperation operation) throws AtlasBaseException {
         //Handle name & qualifiedName
         if (LOG.isDebugEnabled()) {
             LOG.debug("CategoryPreProcessor.processAttributes: pre processing {}, {}",
@@ -75,6 +74,8 @@ public class CategoryPreProcessor implements PreProcessor {
         }
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
+        AtlasVertex vertex = context.getVertex(entity.getGuid());
+
         setAnchorAndParent(entity, context);
 
         switch (operation) {

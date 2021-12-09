@@ -15,17 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.store.graph.v2.glossary;
+package org.apache.atlas.repository.store.graph.v2.preprocessor.glossary;
 
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
@@ -35,8 +37,8 @@ import org.slf4j.LoggerFactory;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.getUUID;
-import static org.apache.atlas.repository.store.graph.v2.glossary.GlossaryUtils.isNameInvalid;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.getUUID;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.isNameInvalid;
 
 import java.util.Objects;
 
@@ -45,26 +47,27 @@ public class GlossaryPreProcessor implements PreProcessor {
 
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
-    private final EntityMutations.EntityOperation operation;
 
-    public GlossaryPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, EntityMutations.EntityOperation operation) {
+    public GlossaryPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
-        this.operation = operation;
     }
 
     @Override
-    public void processAttributes(AtlasStruct entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
+    public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context,
+                                  EntityMutations.EntityOperation operation) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("GlossaryPreProcessor.processAttributes: pre processing {}, {}", entity.getAttribute(QUALIFIED_NAME), operation);
+            LOG.debug("GlossaryPreProcessor.processAttributes: pre processing {}, {}", entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
+
+        AtlasEntity entity = (AtlasEntity) entityStruct;
 
         switch (operation) {
             case CREATE:
                 processCreateGlossary(entity);
                 break;
             case UPDATE:
-                processUpdateGlossary(entity, vertex);
+                processUpdateGlossary(entity, context.getVertex(entity.getGuid()));
                 break;
         }
     }
