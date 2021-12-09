@@ -1515,7 +1515,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         if (CollectionUtils.isNotEmpty(categories)) {
             deleteDelegate.getHandler(DeleteType.HARD).deleteEntities(categories);
-
         }
 
         if (CollectionUtils.isNotEmpty(other)) {
