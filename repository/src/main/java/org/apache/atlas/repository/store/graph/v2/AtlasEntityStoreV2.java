@@ -1503,7 +1503,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
         for (AtlasVertex vertex : deletionCandidates) {
             String typeName = getTypeName(vertex);
-            if ("AtlasGlossaryCategory".equals(typeName)) {
+            if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.equals(typeName)) {
                 categories.add(vertex);
             } else {
                 other.add(vertex);
@@ -1512,7 +1512,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         RequestContext.get().endMetricRecord(metric);
 
         if (CollectionUtils.isNotEmpty(categories)) {
-            entityGraphMapper.removeChildrenParentAttr(categories);
+            entityGraphMapper.removeAttrForCategoryDelete(categories);
             deleteDelegate.getHandler(DeleteType.HARD).deleteEntities(categories);
         }
 

@@ -1772,13 +1772,21 @@ public class EntityGraphMapper {
         }
     }
 
-    public void removeChildrenParentAttr(Collection<AtlasVertex> categories) {
+    public void removeAttrForCategoryDelete(Collection<AtlasVertex> categories) {
         for (AtlasVertex vertex : categories) {
             Iterator<AtlasEdge> edgeIterator = vertex.getEdges(AtlasEdgeDirection.OUT, CATEGORY_PARENT_EDGE_LABEL).iterator();
             while (edgeIterator.hasNext()) {
                 AtlasEdge childEdge = edgeIterator.next();
                 childEdge.getInVertex().removeProperty(CATEGORIES_PARENT_PROPERTY_KEY);
             }
+
+            String catQualifiedName = vertex.getProperty(QUALIFIED_NAME, String.class);
+            edgeIterator = vertex.getEdges(AtlasEdgeDirection.OUT, CATEGORY_TERMS_EDGE_LABEL).iterator();
+            while (edgeIterator.hasNext()) {
+                AtlasEdge termEdge = edgeIterator.next();
+                termEdge.getInVertex().removePropertyValue(CATEGORIES_PROPERTY_KEY, catQualifiedName);
+            }
+
         }
     }
 
