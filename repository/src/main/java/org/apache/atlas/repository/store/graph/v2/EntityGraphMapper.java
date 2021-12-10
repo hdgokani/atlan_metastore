@@ -103,6 +103,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -351,7 +352,7 @@ public class EntityGraphMapper {
                     mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
 
                     setCustomAttributes(vertex, createdEntity);
-
+                    setSystemAttributesToEntity(vertex, createdEntity);
                     resp.addEntity(CREATE, constructHeader(createdEntity, vertex));
                     addClassifications(context, guid, createdEntity.getClassifications());
 
@@ -392,7 +393,7 @@ public class EntityGraphMapper {
                     if (replaceBusinessAttributes) {
                         setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
                     }
-
+                    setSystemAttributesToEntity(vertex,updatedEntity);
                     resp.addEntity(updateType, constructHeader(updatedEntity, vertex));
                     reqContext.cache(updatedEntity);
 
@@ -429,6 +430,15 @@ public class EntityGraphMapper {
 
         return resp;
     }
+
+    private void setSystemAttributesToEntity(AtlasVertex entityVertex, AtlasEntity createdEntity) {
+
+        createdEntity.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
+        createdEntity.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
+        createdEntity.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
+        createdEntity.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
+    }
+
 
     private void setEntityGuidToException(AtlasEntity entity, AtlasBaseException exception, EntityMutationContext context) {
         String guid;
