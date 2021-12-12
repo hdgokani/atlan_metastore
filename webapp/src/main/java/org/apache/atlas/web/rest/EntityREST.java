@@ -158,7 +158,7 @@ public class EntityREST {
                 if (ENTITY_READ.name().equals(action) || ENTITY_CREATE.name().equals(action) || ENTITY_UPDATE.name().equals(action) || ENTITY_DELETE.name().equals(action)) {
 
                     try {
-
+                        
                         AtlasEntityHeader entityHeader = null;
 
                         if (entities.get(i).getEntityGuid() != null) {
@@ -253,6 +253,24 @@ public class EntityREST {
 
         return response;
     }
+
+    private AtlasEntityHeader getAtlasEntityHeader(String entityGuid, String entityId, String entityType) throws AtlasBaseException {
+        AtlasEntityHeader entityHeader;
+
+        if (StringUtils.isNotEmpty(entityGuid)) {
+            AtlasEntityWithExtInfo ret = entitiesStore.getByIdWithoutAuthorization(entityGuid);
+            entityHeader = new AtlasEntityHeader(ret.getEntity());
+        } else if (StringUtils.isNotEmpty(entityId) && StringUtils.isNotEmpty(entityType)) {
+            Map<String, Object> attributes = new HashMap<>();
+            attributes.put(QUALIFIED_NAME, entityId);
+            entityHeader = new AtlasEntityHeader(entityType, attributes);
+        } else {
+            throw new AtlasBaseException(BAD_REQUEST, "requires entityGuid or typeName and qualifiedName for entity authorization");
+        }
+        return entityHeader;
+    }
+
+
     /**
      * Get entity header given its GUID.
      * @param guid GUID for the entity
