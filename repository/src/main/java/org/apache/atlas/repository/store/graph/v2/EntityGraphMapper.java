@@ -1773,6 +1773,7 @@ public class EntityGraphMapper {
     }
 
     private void addGlossaryAttr(AttributeMutationContext ctx, AtlasEdge edge) {
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addGlossaryAttr");
         AtlasVertex toVertex = ctx.getReferringVertex();
         String toVertexType = getTypeName(toVertex);
 
@@ -1781,9 +1782,11 @@ public class EntityGraphMapper {
             String gloQname = edge.getOutVertex().getProperty(QUALIFIED_NAME, String.class);
             AtlasGraphUtilsV2.setEncodedProperty(toVertex, GLOSSARY_PROPERTY_KEY, gloQname);
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void addCatParentAttr(AttributeMutationContext ctx, AtlasEdge edge) {
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addCatParentAttr");
         AtlasVertex toVertex = ctx.getReferringVertex();
         String toVertexType = getTypeName(toVertex);
 
@@ -1797,9 +1800,11 @@ public class EntityGraphMapper {
                 AtlasGraphUtilsV2.setEncodedProperty(toVertex, CATEGORIES_PARENT_PROPERTY_KEY, parentQName);
             }
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     public void removeAttrForCategoryDelete(Collection<AtlasVertex> categories) {
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeAttrForCategoryDelete");
         for (AtlasVertex vertex : categories) {
             Iterator<AtlasEdge> edgeIterator = vertex.getEdges(AtlasEdgeDirection.OUT, CATEGORY_PARENT_EDGE_LABEL).iterator();
             while (edgeIterator.hasNext()) {
@@ -1815,9 +1820,11 @@ public class EntityGraphMapper {
             }
 
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void addCatParentAttr(AttributeMutationContext ctx, List<Object> newElementsCreated, List<AtlasEdge> removedElements) {
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addCatParentAttr");
         AtlasVertex toVertex = ctx.getReferringVertex();
 
         //add __parentCategory attribute of child category entities
@@ -1831,6 +1838,7 @@ public class EntityGraphMapper {
             List<AtlasVertex> termVertices = removedElements.stream().map(x -> x.getInVertex()).collect(Collectors.toList());
             termVertices.stream().forEach(v -> v.removeProperty(CATEGORIES_PROPERTY_KEY));
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void addHasLineage(AttributeMutationContext ctx, EntityMutationContext context,
@@ -1906,6 +1914,7 @@ public class EntityGraphMapper {
     }
 
     private void addCategoriesToTermEntity(AttributeMutationContext ctx, List<Object> newElementsCreated, List<AtlasEdge> removedElements) {
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addCategoriesToTermEntity");
         AtlasVertex termVertex = ctx.getReferringVertex();
 
         if (TYPE_CATEGORY.equals(getTypeName(termVertex))) {
@@ -1929,9 +1938,11 @@ public class EntityGraphMapper {
             termVertex.removeProperty(CATEGORIES_PROPERTY_KEY);
             catQnames.stream().forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(termVertex, CATEGORIES_PROPERTY_KEY, q));
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void addMeaningsToEntity(AttributeMutationContext ctx, List<Object> newElementsCreated) {
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addMeaningsToEntity");
         // handle __terms attribute of entity
         List<AtlasVertex> meanings = newElementsCreated.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
 
@@ -1948,6 +1959,7 @@ public class EntityGraphMapper {
         if (CollectionUtils.isNotEmpty(names)) {
             AtlasGraphUtilsV2.setEncodedProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(names, ","));
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private boolean getAppendOptionForRelationship(AtlasVertex entityVertex, String relationshipAttributeName) {

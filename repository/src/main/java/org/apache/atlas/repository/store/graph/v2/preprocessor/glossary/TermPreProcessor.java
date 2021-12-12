@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.glossary;
 
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -33,6 +34,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -84,6 +86,7 @@ public class TermPreProcessor implements PreProcessor {
     }
 
     private void processCreateTerm(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateTerm");
         String termName = (String) entity.getAttribute(NAME);
         String termQName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
@@ -96,9 +99,11 @@ public class TermPreProcessor implements PreProcessor {
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void processUpdateTerm(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateTerm");
         String termName = (String) entity.getAttribute(NAME);
         String vertexName = vertex.getProperty(NAME, String.class);
 
@@ -119,6 +124,7 @@ public class TermPreProcessor implements PreProcessor {
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private String createQualifiedName() {
@@ -126,17 +132,18 @@ public class TermPreProcessor implements PreProcessor {
     }
 
     private boolean termExists(String termName) {
-
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("termExists");
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
         String glossaryQName = (String) anchor.getAttribute(QUALIFIED_NAME);
 
         List<AtlasVertex> vertexList = AtlasGraphUtilsV2.glossaryFindChildByTypeAndPropertyName(entityType, termName, glossaryQName);
 
+        RequestContext.get().endMetricRecord(metricRecorder);
         return CollectionUtils.isNotEmpty(vertexList);
     }
 
     private void setAnchor(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
-
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("setAnchor");
         if (anchor == null) {
             AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(ANCHOR);
 
@@ -155,5 +162,6 @@ public class TermPreProcessor implements PreProcessor {
 
             }
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 }
