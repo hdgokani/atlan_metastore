@@ -131,15 +131,16 @@ public class TermPreProcessor implements PreProcessor {
         return getUUID() + "@" + anchor.getAttribute(QUALIFIED_NAME);
     }
 
-    private boolean termExists(String termName) {
+    private boolean termExists(String termName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("termExists");
+        boolean ret = false;
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
         String glossaryQName = (String) anchor.getAttribute(QUALIFIED_NAME);
 
-        List<AtlasVertex> vertexList = AtlasGraphUtilsV2.glossaryFindChildByTypeAndPropertyName(entityType, termName, glossaryQName);
+        ret = AtlasGraphUtilsV2.termExists(entityType, termName, glossaryQName);
 
         RequestContext.get().endMetricRecord(metricRecorder);
-        return CollectionUtils.isNotEmpty(vertexList);
+        return ret;
     }
 
     private void setAnchor(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {

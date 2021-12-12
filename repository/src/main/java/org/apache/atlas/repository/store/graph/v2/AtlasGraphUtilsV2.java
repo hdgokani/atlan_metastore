@@ -69,10 +69,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.GLOSSARY_TERMS_EDGE_LABEL;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
+import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
@@ -564,6 +567,34 @@ public class AtlasGraphUtilsV2 {
         }
         RequestContext.get().endMetricRecord(metric);
         return vertexList;
+    }
+
+    public static boolean termExists(AtlasEntityType entityType, String name, String glossaryQName) throws AtlasBaseException {
+        MetricRecorder  metric = RequestContext.get().startMetricRecord("AtlasGraphUtilsV2.termExists");
+        String qNameKey = entityType.getAllAttributes().get("qualifiedName").getQualifiedName();
+        Map<String, Object> attrValues = new HashMap<>();
+        attrValues.put(qNameKey, glossaryQName);
+
+        AtlasGraphQuery query = getGraphInstance().query()
+                .has(ENTITY_TYPE_PROPERTY_KEY, ATLAS_GLOSSARY_ENTITY_TYPE)
+                .has(qNameKey, glossaryQName);
+
+        Iterator<AtlasVertex> results         = query.vertices().iterator();
+        AtlasVertex           glossaryVertex  = results.hasNext() ? results.next() : null;
+
+        if (glossaryVertex != null) {
+            Iterator<AtlasEdge> terms = glossaryVertex.getEdges(AtlasEdgeDirection.OUT, GLOSSARY_TERMS_EDGE_LABEL).iterator();
+            while (terms.hasNext()) {
+                AtlasEdge term = terms.next();
+                String termName = term.getInVertex().getProperty(NAME, String.class);
+                if (name.equals(termName)) {
+                    return true;
+                }
+            }
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+        return false;
     }
 
     public static Iterator<AtlasVertex> glossaryFindAllByTypeAndPropertyName(AtlasEntityType entityType, String name) {
