@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.glossary;
 
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -31,6 +32,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -89,6 +91,7 @@ public class CategoryPreProcessor implements PreProcessor {
     }
 
     private void processCreateCategory(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateCategory");
         String catName = (String) entity.getAttribute(NAME);
 
         if (StringUtils.isEmpty(catName) || isNameInvalid(catName)) {
@@ -107,9 +110,11 @@ public class CategoryPreProcessor implements PreProcessor {
         validateChildren(entity, null);
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(vertex));
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void processUpdateCategory(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateCategory");
         String catName = (String) entity.getAttribute(NAME);
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
@@ -135,9 +140,11 @@ public class CategoryPreProcessor implements PreProcessor {
         validateChildren(entity, storeObject);
 
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void validateChildren(AtlasEntity entity, AtlasEntity storeObject) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("CategoryPreProcessor.validateChildren");
         List<AtlasObjectId> existingChildren = new ArrayList<>();
         if (storeObject != null) {
             existingChildren = (List<AtlasObjectId>) storeObject.getRelationshipAttribute(CATEGORY_CHILDREN);
@@ -158,10 +165,11 @@ public class CategoryPreProcessor implements PreProcessor {
                 }
             }
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void setAnchorAndParent(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
-
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("CategoryPreProcessor.setAnchorAndParent");
         if (anchor == null) {
             AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(ANCHOR);
 
@@ -201,6 +209,7 @@ public class CategoryPreProcessor implements PreProcessor {
                 }
             }
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private String createQualifiedName(AtlasVertex vertex) {

@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.glossary;
 
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasStruct;
@@ -30,6 +31,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +75,7 @@ public class GlossaryPreProcessor implements PreProcessor {
     }
 
     private void processCreateGlossary(AtlasStruct entity) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateGlossary");
         String glossaryName = (String) entity.getAttribute(NAME);
 
         if (StringUtils.isEmpty(glossaryName) || isNameInvalid(glossaryName)) {
@@ -84,9 +87,11 @@ public class GlossaryPreProcessor implements PreProcessor {
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void processUpdateGlossary(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateGlossary");
         String glossaryName = (String) entity.getAttribute(NAME);
         String vertexName = vertex.getProperty(NAME, String.class);
 
@@ -101,6 +106,7 @@ public class GlossaryPreProcessor implements PreProcessor {
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     public static String createQualifiedName() {
@@ -108,10 +114,12 @@ public class GlossaryPreProcessor implements PreProcessor {
     }
 
     private boolean glossaryExists(String glossaryName) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GlossaryPreProcessor.glossaryExists");
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_ENTITY_TYPE);
 
         AtlasVertex vertex = AtlasGraphUtilsV2.glossaryFindByTypeAndPropertyName(entityType, glossaryName);
 
+        RequestContext.get().endMetricRecord(metricRecorder);
         return Objects.nonNull(vertex);
     }
 }
