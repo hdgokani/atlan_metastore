@@ -117,8 +117,8 @@ public class GlossaryPreProcessor implements PreProcessor {
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_ENTITY_TYPE);
 
         AtlasVertex vertex = AtlasGraphUtilsV2.glossaryFindByTypeAndPropertyName(entityType, glossaryName);
-        AtlasGraphUtilsV2.glossaryExists(entityType, glossaryName);
-        AtlasGraphUtilsV2.glossaryExists_2(entityType, glossaryName);
+        //AtlasGraphUtilsV2.glossaryExists(entityType, glossaryName);
+        //AtlasGraphUtilsV2.glossaryExists_2(entityType, glossaryName);
 
         return Objects.nonNull(vertex);
     }
