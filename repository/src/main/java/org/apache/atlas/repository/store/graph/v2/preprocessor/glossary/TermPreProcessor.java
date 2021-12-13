@@ -134,10 +134,9 @@ public class TermPreProcessor implements PreProcessor {
     private boolean termExists(String termName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("termExists");
         boolean ret = false;
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
         String glossaryQName = (String) anchor.getAttribute(QUALIFIED_NAME);
 
-        ret = AtlasGraphUtilsV2.termExists(entityType, termName, glossaryQName);
+        ret = AtlasGraphUtilsV2.termExists(termName, glossaryQName);
 
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;

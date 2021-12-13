@@ -560,31 +560,6 @@ public class AtlasGraphUtilsV2 {
         return vertexList;
     }
 
-    public static boolean termExists(AtlasEntityType entityType, String name, String glossaryQName) throws AtlasBaseException {
-        MetricRecorder  metric = RequestContext.get().startMetricRecord("AtlasGraphUtilsV2.termExists");
-
-        AtlasGraphQuery query = getGraphInstance().query()
-                .has(ENTITY_TYPE_PROPERTY_KEY, ATLAS_GLOSSARY_ENTITY_TYPE)
-                .has(QUALIFIED_NAME, glossaryQName);
-
-        Iterator<AtlasVertex> results         = query.vertices().iterator();
-        AtlasVertex           glossaryVertex  = results.hasNext() ? results.next() : null;
-
-        if (glossaryVertex != null) {
-            Iterator<AtlasEdge> terms = glossaryVertex.getEdges(AtlasEdgeDirection.OUT, GLOSSARY_TERMS_EDGE_LABEL).iterator();
-            while (terms.hasNext()) {
-                AtlasEdge term = terms.next();
-                String termName = term.getInVertex().getProperty(NAME, String.class);
-                if (name.equals(termName)) {
-                    return true;
-                }
-            }
-        }
-
-        RequestContext.get().endMetricRecord(metric);
-        return false;
-    }
-
     public static Iterator<AtlasVertex> glossaryFindAllByTypeAndPropertyName(AtlasEntityType entityType, String name) {
         MetricRecorder  metric          = RequestContext.get().startMetricRecord("glossaryFindAllByTypeAndPropertyName");
         AtlasGraph graph                = getGraphInstance();
@@ -600,21 +575,22 @@ public class AtlasGraphUtilsV2 {
         return result;
     }
 
-    public static boolean glossaryExists(AtlasEntityType entityType, String name) {
-        MetricRecorder  metric          = RequestContext.get().startMetricRecord("AtlasGraphUtilsV2.glossaryExists_1");
+    public static boolean glossaryExists(String name) {
+        MetricRecorder  metric          = RequestContext.get().startMetricRecord("AtlasGraphUtilsV2.glossaryExists");
         boolean ret = false;
         AtlasGraph graph      = getGraphInstance();
         AtlasGraphQuery query = graph.query()
-                                .has(ENTITY_TYPE_PROPERTY_KEY, entityType.getTypeName())
-                                .has(STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+                .has(ENTITY_TYPE_PROPERTY_KEY, ATLAS_GLOSSARY_ENTITY_TYPE);
 
         Iterator<AtlasVertex> result = query.vertices().iterator();
 
         while (result.hasNext()) {
             AtlasVertex glossaryVertex = result.next();
-            String existingGlossaryName = glossaryVertex.getProperty(NAME, String.class);
-            if (name.equals(existingGlossaryName)) {
-                ret = true;
+            if (getState(glossaryVertex) == Status.ACTIVE) {
+                String existingGlossaryName = glossaryVertex.getProperty(NAME, String.class);
+                if (name.equals(existingGlossaryName)) {
+                    ret = true;
+                }
             }
         }
 
@@ -622,25 +598,32 @@ public class AtlasGraphUtilsV2 {
         return ret;
     }
 
-    public static boolean glossaryExists_2(AtlasEntityType entityType, String name) {
-        MetricRecorder  metric          = RequestContext.get().startMetricRecord("AtlasGraphUtilsV2.glossaryExists_2");
-        boolean ret = false;
-        AtlasGraph graph      = getGraphInstance();
-        AtlasGraphQuery query = graph.query()
-                .has(ENTITY_TYPE_PROPERTY_KEY, entityType.getTypeName());
+    public static boolean termExists(String name, String glossaryQName) {
+        MetricRecorder  metric = RequestContext.get().startMetricRecord("AtlasGraphUtilsV2.termExists");
 
-        Iterator<AtlasVertex> result = query.vertices().iterator();
+        AtlasGraphQuery query = getGraphInstance().query()
+                .has(ENTITY_TYPE_PROPERTY_KEY, ATLAS_GLOSSARY_ENTITY_TYPE)
+                .has(QUALIFIED_NAME, glossaryQName);
 
-        while (result.hasNext()) {
-            AtlasVertex glossaryVertex = result.next();
-            String existingGlossaryName = glossaryVertex.getProperty(NAME, String.class);
-            if (name.equals(existingGlossaryName) && getState(glossaryVertex) == Status.ACTIVE) {
-                ret = true;
+        Iterator<AtlasVertex> results         = query.vertices().iterator();
+        AtlasVertex           glossaryVertex  = results.hasNext() ? results.next() : null;
+
+        if (glossaryVertex != null) {
+            Iterator<AtlasEdge> termEdges = glossaryVertex.getEdges(AtlasEdgeDirection.OUT, GLOSSARY_TERMS_EDGE_LABEL).iterator();
+
+            while (termEdges.hasNext()) {
+                AtlasVertex term = termEdges.next().getInVertex();
+                if (getState(term) == Status.ACTIVE) {
+                    String termName = term.getProperty(NAME, String.class);
+                    if (name.equals(termName)) {
+                        return true;
+                    }
+                }
             }
         }
 
         RequestContext.get().endMetricRecord(metric);
-        return ret;
+        return false;
     }
 
     public static AtlasVertex findByTypeAndPropertyName(AtlasGraph graph, String typeName, Map<String, Object> attributeValues) {
