@@ -27,6 +27,14 @@ public class IndexSearchParams extends SearchParams {
 
     private Map dsl;
     private String queryString;
+
+    /*
+    * Indexsearch includes all relations (is requested with param attributes) even if relationsStatus is DELETED
+    * Changing this behaviour to exclude related attributes whcih has relationsStatus as DELETED
+    *
+    * Pass allowDeletedRelations with value as true to get all relations back in response
+    * (this will include related attributes which has relationsStatus as DELETED along with ACTIVE ones)
+    * */
     private boolean allowDeletedRelations;
 
     @Override
