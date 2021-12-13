@@ -114,12 +114,12 @@ public class GlossaryPreProcessor implements PreProcessor {
     }
 
     private boolean glossaryExists(String glossaryName) {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GlossaryPreProcessor.glossaryExists");
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_ENTITY_TYPE);
 
         AtlasVertex vertex = AtlasGraphUtilsV2.glossaryFindByTypeAndPropertyName(entityType, glossaryName);
+        AtlasGraphUtilsV2.glossaryExists(entityType, glossaryName);
+        AtlasGraphUtilsV2.glossaryExists_2(entityType, glossaryName);
 
-        RequestContext.get().endMetricRecord(metricRecorder);
         return Objects.nonNull(vertex);
     }
 }
