@@ -623,7 +623,7 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static boolean glossaryExists_2(AtlasEntityType entityType, String name) {
-        MetricRecorder  metric          = RequestContext.get().startMetricRecord("AtlasGraphUtilsV2.glossaryExists_1");
+        MetricRecorder  metric          = RequestContext.get().startMetricRecord("AtlasGraphUtilsV2.glossaryExists_2");
         boolean ret = false;
         AtlasGraph graph      = getGraphInstance();
         AtlasGraphQuery query = graph.query()
