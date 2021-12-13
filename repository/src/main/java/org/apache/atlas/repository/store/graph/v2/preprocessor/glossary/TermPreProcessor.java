@@ -32,18 +32,14 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 
-import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.ANCHOR;
@@ -131,7 +127,7 @@ public class TermPreProcessor implements PreProcessor {
         return getUUID() + "@" + anchor.getAttribute(QUALIFIED_NAME);
     }
 
-    private boolean termExists(String termName) throws AtlasBaseException {
+    private boolean termExists(String termName) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("termExists");
         boolean ret = false;
         String glossaryQName = (String) anchor.getAttribute(QUALIFIED_NAME);
@@ -143,7 +139,7 @@ public class TermPreProcessor implements PreProcessor {
     }
 
     private void setAnchor(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("setAnchor");
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("TermPreProcessor.setAnchor");
         if (anchor == null) {
             AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(ANCHOR);
 
