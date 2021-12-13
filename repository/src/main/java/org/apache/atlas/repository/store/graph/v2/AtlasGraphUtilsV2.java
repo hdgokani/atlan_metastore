@@ -69,18 +69,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
-import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.GLOSSARY_TERMS_EDGE_LABEL;
-import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
-import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
-import static org.apache.atlas.repository.Constants.NAME;
-import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
@@ -546,9 +535,11 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static AtlasVertex glossaryFindByTypeAndPropertyName(AtlasEntityType entityType, String name) {
+        MetricRecorder  metric          = RequestContext.get().startMetricRecord("AtlasGraphUtilsV2.glossaryExists_0");
         Iterator<AtlasVertex> result = glossaryFindAllByTypeAndPropertyName(entityType, name);
         AtlasVertex           vertex = result.hasNext() ? result.next() : null;
 
+        RequestContext.get().endMetricRecord(metric);
         return vertex;
     }
 
@@ -571,13 +562,10 @@ public class AtlasGraphUtilsV2 {
 
     public static boolean termExists(AtlasEntityType entityType, String name, String glossaryQName) throws AtlasBaseException {
         MetricRecorder  metric = RequestContext.get().startMetricRecord("AtlasGraphUtilsV2.termExists");
-        String qNameKey = entityType.getAllAttributes().get("qualifiedName").getQualifiedName();
-        Map<String, Object> attrValues = new HashMap<>();
-        attrValues.put(qNameKey, glossaryQName);
 
         AtlasGraphQuery query = getGraphInstance().query()
                 .has(ENTITY_TYPE_PROPERTY_KEY, ATLAS_GLOSSARY_ENTITY_TYPE)
-                .has(qNameKey, glossaryQName);
+                .has(QUALIFIED_NAME, glossaryQName);
 
         Iterator<AtlasVertex> results         = query.vertices().iterator();
         AtlasVertex           glossaryVertex  = results.hasNext() ? results.next() : null;
@@ -610,6 +598,28 @@ public class AtlasGraphUtilsV2 {
 
         RequestContext.get().endMetricRecord(metric);
         return result;
+    }
+
+    public static boolean glossaryExists(AtlasEntityType entityType, String name) {
+        MetricRecorder  metric          = RequestContext.get().startMetricRecord("AtlasGraphUtilsV2.glossaryExists");
+        boolean ret = false;
+        AtlasGraph graph      = getGraphInstance();
+        AtlasGraphQuery query = graph.query()
+                                .has(ENTITY_TYPE_PROPERTY_KEY, entityType.getTypeName())
+                                .has(STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+
+        Iterator<AtlasVertex> result = query.vertices().iterator();
+
+        while (result.hasNext()) {
+            AtlasVertex glossaryVertex = result.next();
+            String existingGlossaryName = glossaryVertex.getProperty(NAME, String.class);
+            if (name.equals(existingGlossaryName)) {
+                ret = true;
+            }
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+        return ret;
     }
 
     public static AtlasVertex findByTypeAndPropertyName(AtlasGraph graph, String typeName, Map<String, Object> attributeValues) {
