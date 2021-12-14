@@ -52,6 +52,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
+
 public class CategoryPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(CategoryPreProcessor.class);
 

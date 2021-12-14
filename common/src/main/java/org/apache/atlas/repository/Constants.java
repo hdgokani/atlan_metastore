@@ -126,6 +126,7 @@ public final class Constants {
     public static final String QUERY_FOLDER_ENTITY_TYPE     = "QueryFolder";
     public static final String QUERY_COLLECTION_ENTITY_TYPE = "QueryCollection";
 
+
     /**
      * Lineage relations.
      */
