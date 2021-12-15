@@ -209,6 +209,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         ret.setUpdatedBy(entity.getUpdatedBy());
         ret.setCreateTime(entity.getCreateTime());
         ret.setUpdateTime(entity.getUpdateTime());
+        ret.setHandler(entity.getHandler());
 
         setAttribute(ret, NAME, name);
         setAttribute(ret, DESCRIPTION, entity.getAttribute(DESCRIPTION));
