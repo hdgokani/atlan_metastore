@@ -623,10 +623,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                     createEdgeIndex(management, propertyName, getPrimitiveClass(attribTypeName), cardinality, false);
                 } else {
                     if (isArrayOfEnum) {
-                        createVertexIndex(management, propertyName, UniqueKind.NONE, String.class, cardinality, isIndexable, false, true, indexTypeESConfig, indexTypeESFields);
+                        boolean isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
+                        createVertexIndex(management, propertyName, UniqueKind.NONE, String.class, cardinality, isIndexable, false, isStringField, indexTypeESConfig, indexTypeESFields);
 
                         if (uniqPropName != null) {
-                            createVertexIndex(management, uniqPropName, UniqueKind.PER_TYPE_UNIQUE, String.class, cardinality, isIndexable, true, true);
+                            createVertexIndex(management, uniqPropName, UniqueKind.PER_TYPE_UNIQUE, String.class, cardinality, isIndexable, true, isStringField);
                         }
                     } else {
                         Class primitiveClassType = isArrayOfPrimitiveType ? getPrimitiveClass(arrayElementType.getTypeName()): getPrimitiveClass(attribTypeName);
