@@ -622,26 +622,24 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 if (isRelationshipType(atlasType)) {
                     createEdgeIndex(management, propertyName, getPrimitiveClass(attribTypeName), cardinality, false);
                 } else {
+                    Class primitiveClassType;
+                    boolean isStringField = false;
+
                     if (isArrayOfEnum) {
-                        boolean isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
-                        createVertexIndex(management, propertyName, UniqueKind.NONE, String.class, cardinality, isIndexable, false, isStringField, indexTypeESConfig, indexTypeESFields);
-
-                        if (uniqPropName != null) {
-                            createVertexIndex(management, uniqPropName, UniqueKind.PER_TYPE_UNIQUE, String.class, cardinality, isIndexable, true, isStringField);
-                        }
+                        primitiveClassType = String.class;
                     } else {
-                        Class primitiveClassType = isArrayOfPrimitiveType ? getPrimitiveClass(arrayElementType.getTypeName()): getPrimitiveClass(attribTypeName);
-                        boolean isStringField = false;
-                        if(primitiveClassType == String.class) {
-                            isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
-                        }
-                        createVertexIndex(management, propertyName, UniqueKind.NONE, primitiveClassType, cardinality, isIndexable, false, isStringField, indexTypeESConfig, indexTypeESFields);
-
-                        if (uniqPropName != null) {
-                            createVertexIndex(management, uniqPropName, UniqueKind.PER_TYPE_UNIQUE, primitiveClassType, cardinality, isIndexable, true, isStringField);
-                        }
+                        primitiveClassType = isArrayOfPrimitiveType ? getPrimitiveClass(arrayElementType.getTypeName()) : getPrimitiveClass(attribTypeName);
                     }
 
+                    if (primitiveClassType == String.class) {
+                        isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
+                    }
+
+                    createVertexIndex(management, propertyName, UniqueKind.NONE, primitiveClassType, cardinality, isIndexable, false, isStringField, indexTypeESConfig, indexTypeESFields);
+
+                    if (uniqPropName != null) {
+                        createVertexIndex(management, uniqPropName, UniqueKind.PER_TYPE_UNIQUE, primitiveClassType, cardinality, isIndexable, true, isStringField);
+                    }
                 }
             } else if (isEnumType(attributeType)) {
                 if (isRelationshipType(atlasType)) {
