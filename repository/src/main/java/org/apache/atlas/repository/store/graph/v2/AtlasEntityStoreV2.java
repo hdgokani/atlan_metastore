@@ -1550,6 +1550,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         Collection<AtlasVertex> categories = new ArrayList<>();
         Collection<AtlasVertex> other = new ArrayList<>();
+
         MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
         for (AtlasVertex vertex : deletionCandidates) {
             String typeName = getTypeName(vertex);
@@ -1571,6 +1572,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         for (AtlasEntityHeader entity : req.getDeletedEntities()) {
+            String handler;
+            if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.contains(entity.getTypeName())) {
+                handler = "HARD";
+            } else {
+                handler = RequestContext.get().getDeleteType().name();
+            }
+            entity.setDeleteHandler(handler);
+            entity.setStatus(Status.DELETED);
             response.addEntity(DELETE, entity);
         }
 
