@@ -45,7 +45,7 @@
     "filter": {
       "graph_synonyms": {
         "type": "synonym_graph",
-        "synonyms": [ "foo, bar => baz" ]
+        "synonyms_path": "synonym.txt"
       },
       "snowball_english": {
         "type": "snowball",
@@ -55,7 +55,7 @@
     "tokenizer": {
       "atlan_tokenizer": {
         "type": "pattern",
-        "pattern": "( |_|-|'|/|@|,)"
+        "pattern": "( |_|-|'|/|@)"
       },
       "atlan_comma_tokenizer": {
         "type": "pattern",
