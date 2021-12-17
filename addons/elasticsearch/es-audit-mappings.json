@@ -7,6 +7,9 @@
       "created": {
         "type": "date"
       },
+      "timestamp": {
+        "type": "date"
+      },
       "action": {
         "type": "keyword"
       },
