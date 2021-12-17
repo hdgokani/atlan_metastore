@@ -11,6 +11,13 @@
           "number_filter"
         ]
       },
+      "atlan_text_comma_analyzer": {
+        "type": "custom",
+        "tokenizer": "atlan_comma_tokenizer",
+        "filter": [
+          "lowercase"
+        ]
+      },
       "atlan_text_stemmer": {
         "type": "custom",
         "tokenizer": "atlan_tokenizer",
@@ -38,7 +45,7 @@
     "filter": {
       "graph_synonyms": {
         "type": "synonym_graph",
-        "synonyms_path": "synonym.txt"
+        "synonyms": [ "foo, bar => baz" ]
       },
       "snowball_english": {
         "type": "snowball",
@@ -48,7 +55,11 @@
     "tokenizer": {
       "atlan_tokenizer": {
         "type": "pattern",
-        "pattern": "( |_|-|'|/|@)"
+        "pattern": "( |_|-|'|/|@|,)"
+      },
+      "atlan_comma_tokenizer": {
+        "type": "pattern",
+        "pattern": ","
       }
     },
     "char_filter":{
