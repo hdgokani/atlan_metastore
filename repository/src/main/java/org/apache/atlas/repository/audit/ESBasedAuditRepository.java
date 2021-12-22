@@ -125,7 +125,12 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResultCount) throws AtlasBaseException {
-        return null;
+        List<EntityAuditEventV2> ret;
+        String queryTemplate = "{\"query\":{\"bool\":{\"must\":[{\"term\":{\"entityId.keyword\":\"%s\"}},{\"term\":{\"action.keyword\":\"%s\"}}]}}}";
+        String queryWithEntityFilter = String.format(queryTemplate, entityId, auditAction);
+        ret = searchEvents(queryWithEntityFilter).getEntityAudits();
+
+        return ret;
     }
 
     @Override
