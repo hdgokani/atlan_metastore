@@ -47,6 +47,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.FileUtils;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
@@ -1198,6 +1199,7 @@ public class EntityREST {
     }
 
     private void scrubEntityAudits(EntityAuditSearchResult result) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("scrubEntityAudits");
         for (EntityAuditEventV2 event : result.getEntityAudits()) {
             try {
                 AtlasEntityWithExtInfo entityWithExtInfo = entitiesStore.getByIdWithoutAuthorization(event.getEntityId());
@@ -1218,15 +1220,14 @@ public class EntityREST {
                             throw abe;
                         }
                     }
+                } else if (e.getAtlasErrorCode() == AtlasErrorCode.UNAUTHORIZED_ACCESS) {
+                    event.setDetail(null);
                 } else {
-                    if (e.getAtlasErrorCode() == AtlasErrorCode.UNAUTHORIZED_ACCESS) {
-                        event.setDetail(null);
-                    } else {
-                        throw e;
-                    }
+                    throw e;
                 }
             }
         }
+        RequestContext.get().endMetricRecord(metric);
     }
 
     @GET
@@ -1673,14 +1674,20 @@ public class EntityREST {
     }
 
     private AtlasEntityHeader getEntityHeaderFromPurgedOrDeletedAudit(String guid) throws AtlasBaseException {
-        List<EntityAuditEventV2> auditEvents = cassandraBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_PURGE, null, (short)1);
+        List<EntityAuditEventV2> auditEvents = esBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_DELETE, null, (short)1);
         AtlasEntityHeader        ret         = CollectionUtils.isNotEmpty(auditEvents) ? auditEvents.get(0).getEntityHeader() : null;
 
         if (ret == null) {
-            auditEvents = cassandraBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_DELETE, null, (short)1);
+            auditEvents = esBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_PURGE, null, (short)1);
             ret         = CollectionUtils.isNotEmpty(auditEvents) ? auditEvents.get(0).getEntityHeader() : null;
+
             if (ret == null) {
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+                auditEvents = esBasedAuditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_IMPORT_DELETE, null, (short)1);
+                ret         = CollectionUtils.isNotEmpty(auditEvents) ? auditEvents.get(0).getEntityHeader() : null;
+
+                if (ret == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+                }
             }
         }
 
