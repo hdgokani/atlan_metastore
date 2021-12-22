@@ -459,6 +459,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
                 AtlasAttributeDef existingAttribute = currentStructDef.getAttribute(attributeDef.getName());
                 if (null != existingAttribute && !attributeDef.getTypeName().equals(existingAttribute.getTypeName())) {
+                    LOG.error("{}, {}, {}, {}", structDef.getName(), attributeDef.getName(), attributeDef.getTypeName(), existingAttribute.getTypeName());
                     throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Data type update for attribute is not supported");
                 }
 
