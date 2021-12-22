@@ -25,6 +25,7 @@ import org.apache.atlas.model.Clearable;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -320,6 +321,8 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
             if(bracketStartPosition != -1) {
                 ret = details.substring(bracketStartPosition);
             }
+        } else if(MapUtils.isNotEmpty(detail)) {
+            ret = AtlasType.toJson(detail);
         }
 
         return ret;
