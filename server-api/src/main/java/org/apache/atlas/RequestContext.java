@@ -405,10 +405,6 @@ public class RequestContext {
         return updatedEntities.values();
     }
 
-    public AtlasEntityHeader getUpdatedEntity(String guid) {
-        return updatedEntities.get(guid);
-    }
-
     public Collection<AtlasEntityHeader> getDeletedEntities() {
         return deletedEntities.values();
     }
