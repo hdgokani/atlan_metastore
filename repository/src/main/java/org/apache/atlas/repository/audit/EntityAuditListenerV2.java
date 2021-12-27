@@ -47,6 +47,8 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.BUSINESS_ATTRIBUTE_UPDATE;
@@ -119,6 +121,8 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         FixedBufferList<EntityAuditEventV2> updatedEvents = getAuditEventsList();
         Collection<AtlasEntity>             updatedEntites;
 
+        Map<String, AtlasEntity> entitiesMap = entities.stream().collect(Collectors.toMap(AtlasEntity::getGuid, Function.identity()));
+
         if (DIFFERENTIAL_AUDITS) {
             updatedEntites = reqContext.getDifferentialEntities();
         } else {
@@ -139,7 +143,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             }
 
             if (DIFFERENTIAL_AUDITS) {
-                createEvent(updatedEvents.next(), entity, reqContext.getUpdatedEntity(entity.getGuid()), action);
+                createEvent(updatedEvents.next(), entity, entitiesMap.get(entity.getGuid()), action);
             } else {
                 createEvent(updatedEvents.next(), entity, action);
             }
@@ -456,7 +460,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     }
 
     private EntityAuditEventV2 createEvent(EntityAuditEventV2 entityAuditEventV2, AtlasEntity entity,
-                                           AtlasEntityHeader originalEntity, EntityAuditActionV2 action, String details) {
+                                           AtlasEntity originalEntity, EntityAuditActionV2 action, String details) {
         entityAuditEventV2.setEntityId(entity.getGuid());
         entityAuditEventV2.setTimestamp(System.currentTimeMillis());
         entityAuditEventV2.setUser(RequestContext.get().getUser());
@@ -478,7 +482,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         return createEvent(event, entity, action, detail);
     }
 
-    private EntityAuditEventV2 createEvent(EntityAuditEventV2 event, AtlasEntity entity, AtlasEntityHeader originalEntity, EntityAuditActionV2 action) {
+    private EntityAuditEventV2 createEvent(EntityAuditEventV2 event, AtlasEntity entity, AtlasEntity originalEntity, EntityAuditActionV2 action) {
         String detail = getAuditEventDetail(entity, action);
 
         return createEvent(event, entity, originalEntity, action, detail);
