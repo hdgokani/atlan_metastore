@@ -27,11 +27,7 @@ import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.model.instance.AtlasRelationship;
-import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -89,11 +85,15 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     protected Map<String, List<String>> auditExcludedAttributesCache = new HashMap<>();
     private   static final String AUDIT_EXCLUDE_ATTRIBUTE_PROPERTY   = "atlas.audit.hbase.entity";
 
+    private static boolean DIFFERENTIAL_AUDITS = false;
+
     @Inject
     public EntityAuditListenerV2(Set<EntityAuditRepository> auditRepositories, AtlasTypeRegistry typeRegistry, AtlasInstanceConverter instanceConverter) {
         this.auditRepositories   = auditRepositories;
         this.typeRegistry      = typeRegistry;
         this.instanceConverter = instanceConverter;
+
+        DIFFERENTIAL_AUDITS = STORE_DIFFERENTIAL_AUDITS.getBoolean();
     }
 
     @Override
@@ -119,7 +119,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         FixedBufferList<EntityAuditEventV2> updatedEvents = getAuditEventsList();
         Collection<AtlasEntity>             updatedEntites;
 
-        if (STORE_DIFFERENTIAL_AUDITS.getBoolean()) {
+        if (DIFFERENTIAL_AUDITS) {
             updatedEntites = reqContext.getDifferentialEntities();
         } else {
             updatedEntites = entities;
@@ -138,7 +138,11 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 action = ENTITY_UPDATE;
             }
 
-            createEvent(updatedEvents.next(), entity, action);
+            if (DIFFERENTIAL_AUDITS) {
+                createEvent(updatedEvents.next(), entity, reqContext.getUpdatedEntity(entity.getGuid()), action);
+            } else {
+                createEvent(updatedEvents.next(), entity, action);
+            }
         }
 
         for (EntityAuditRepository auditRepository: auditRepositories) {
@@ -447,14 +451,23 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
     }
 
-
     private EntityAuditEventV2 createEvent(EntityAuditEventV2 entityAuditEventV2, AtlasEntity entity, EntityAuditActionV2 action, String details) {
+        return createEvent(entityAuditEventV2, entity, null, action, details);
+    }
+
+    private EntityAuditEventV2 createEvent(EntityAuditEventV2 entityAuditEventV2, AtlasEntity entity,
+                                           AtlasEntityHeader originalEntity, EntityAuditActionV2 action, String details) {
         entityAuditEventV2.setEntityId(entity.getGuid());
         entityAuditEventV2.setTimestamp(System.currentTimeMillis());
         entityAuditEventV2.setUser(RequestContext.get().getUser());
         entityAuditEventV2.setAction(action);
         entityAuditEventV2.setDetails(details);
         entityAuditEventV2.setEntity(entity);
+        if (originalEntity != null) {
+            entityAuditEventV2.setEntityQualifiedName((String) originalEntity.getAttribute(QUALIFIED_NAME));
+        } else {
+            entityAuditEventV2.setEntityQualifiedName((String) entity.getAttribute(QUALIFIED_NAME));
+        }
 
         return entityAuditEventV2;
     }
@@ -464,6 +477,13 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
         return createEvent(event, entity, action, detail);
     }
+
+    private EntityAuditEventV2 createEvent(EntityAuditEventV2 event, AtlasEntity entity, AtlasEntityHeader originalEntity, EntityAuditActionV2 action) {
+        String detail = getAuditEventDetail(entity, action);
+
+        return createEvent(event, entity, originalEntity, action, detail);
+    }
+
 
     private String getAuditEventDetail(AtlasEntity entity, EntityAuditActionV2 action) {
         Map<String, Object> prunedAttributes = pruneEntityAttributesForAudit(entity);
