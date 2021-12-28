@@ -24,9 +24,6 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
-import org.apache.atlas.authorize.AtlasEntityAccessRequest;
-import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.TimeBoundary;
@@ -2468,11 +2465,6 @@ public class EntityGraphMapper {
                     continue;
                 }
 
-                AtlasEntityHeader entityHeader =  entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
-                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, entityHeader, classification),
-                        "add classification: guid=", guid, ", classification=", classification.getTypeName());
-
-
                 if (propagateTags == null) {
                     RequestContext reqContext = RequestContext.get();
 
@@ -2650,11 +2642,6 @@ public class EntityGraphMapper {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, entityGuid);
         }
 
-        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION,
-                        entityHeader, new AtlasClassification(classificationName)),
-                "remove classification: guid=", entityGuid, ", classification=", classificationName);
-
         deleteDelegate.getHandler().deletePropagatedClassification(entityVertex, classificationName, associatedEntityGuid);
     }
 
@@ -2668,11 +2655,6 @@ public class EntityGraphMapper {
         if (entityVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, entityGuid);
         }
-
-        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION,
-                        entityHeader, new AtlasClassification(classificationName)),
-                "remove classification: guid=", entityGuid, ", classification=", classificationName);
 
         AtlasPerfTracer perf = null;
 
