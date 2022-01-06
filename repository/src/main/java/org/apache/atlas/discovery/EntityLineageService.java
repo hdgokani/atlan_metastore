@@ -34,7 +34,6 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.model.lineage.AtlasLineageRequest;
-import org.apache.atlas.model.lineage.AtlasLineageContext;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -111,7 +110,7 @@ public class EntityLineageService implements AtlasLineageService {
     public AtlasLineageInfo getAtlasLineageInfo(AtlasLineageRequest lineageRequest) throws AtlasBaseException {
         AtlasLineageInfo ret;
         String guid = lineageRequest.getGuid();
-        AtlasLineageContext lineageRequestContext = new AtlasLineageContext(lineageRequest);
+        AtlasLineageContext lineageRequestContext = new AtlasLineageContext(lineageRequest, atlasTypeRegistry);
 
         AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
 
@@ -291,13 +290,16 @@ public class EntityLineageService implements AtlasLineageService {
         if (lineageContext.isDataset()) {
             AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
 
-            if (direction == INPUT || direction == BOTH) {
-                traverseEdges(datasetVertex, true, depth, ret, lineageContext);
+            if (lineageContext.evaluate(datasetVertex)) {
+                if (direction == INPUT || direction == BOTH) {
+                    traverseEdges(datasetVertex, true, depth, ret, lineageContext);
+                }
+
+                if (direction == OUTPUT || direction == BOTH) {
+                    traverseEdges(datasetVertex, false, depth, ret, lineageContext);
+                }
             }
 
-            if (direction == OUTPUT || direction == BOTH) {
-                traverseEdges(datasetVertex, false, depth, ret, lineageContext);
-            }
         } else  {
             AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
 
@@ -428,26 +430,33 @@ public class EntityLineageService implements AtlasLineageService {
                                     final Set<LineageRelation> relations, AtlasLineageContext lineageContext) throws AtlasBaseException {
         AtlasVertex inVertex     = incomingEdge.getInVertex();
         AtlasVertex outVertex    = outgoingEdge.getInVertex();
-        AtlasVertex processVertex= outgoingEdge.getOutVertex();
-        String      inGuid       = AtlasGraphUtilsV2.getIdFromVertex(inVertex);
-        String      outGuid      = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
-        String      relationGuid = null;
-        boolean     isInputEdge  = incomingEdge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
-        if (!entities.containsKey(inGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(inVertex, lineageContext.getAttributes());
-            entities.put(inGuid, entityHeader);
-        }
+        if (lineageContext.evaluate(inVertex) && lineageContext.evaluate(outVertex)) {
+            AtlasVertex processVertex = outgoingEdge.getOutVertex();
+            String      inGuid        = AtlasGraphUtilsV2.getIdFromVertex(inVertex);
+            String      outGuid       = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
+            String      relationGuid  = null;
+            boolean     isInputEdge   = incomingEdge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
-        if (!entities.containsKey(outGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(outVertex, lineageContext.getAttributes());
-            entities.put(outGuid, entityHeader);
-        }
+            if (!entities.containsKey(inGuid)) {
+                AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(inVertex, lineageContext.getAttributes());
+                entities.put(inGuid, entityHeader);
+            }
 
-        if (isInputEdge) {
-            relations.add(new LineageRelation(inGuid, outGuid, relationGuid, GraphHelper.getGuid(processVertex)));
-        } else {
-            relations.add(new LineageRelation(outGuid, inGuid, relationGuid, GraphHelper.getGuid(processVertex)));
+            if (!entities.containsKey(outGuid)) {
+                AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(outVertex, lineageContext.getAttributes());
+                entities.put(outGuid, entityHeader);
+            }
+
+            if (isInputEdge) {
+                if (lineageContext.evaluate(outVertex)) {
+                    relations.add(new LineageRelation(inGuid, outGuid, relationGuid, GraphHelper.getGuid(processVertex)));
+                }
+            } else {
+                if (lineageContext.evaluate(inVertex)) {
+                    relations.add(new LineageRelation(outGuid, inGuid, relationGuid, GraphHelper.getGuid(processVertex)));
+                }
+            }
         }
     }
 
@@ -460,21 +469,45 @@ public class EntityLineageService implements AtlasLineageService {
         String      relationGuid = AtlasGraphUtilsV2.getEncodedProperty(edge, RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
         boolean     isInputEdge  = edge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
-        if (!entities.containsKey(inGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(inVertex, lineageContext.getAttributes());
-            entities.put(inGuid, entityHeader);
-        }
+        if ((!isProcessEntity(GraphHelper.getTypeName(outVertex)) && lineageContext.evaluate(outVertex)) ||
+                (!isProcessEntity(GraphHelper.getTypeName(inVertex)) && lineageContext.evaluate(inVertex))) {
 
-        if (!entities.containsKey(outGuid)) {
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(outVertex, lineageContext.getAttributes());
-            entities.put(outGuid, entityHeader);
-        }
+            if (!entities.containsKey(inGuid)) {
+                AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(inVertex, lineageContext.getAttributes());
+                entities.put(inGuid, entityHeader);
+            }
 
-        if (isInputEdge) {
-            relations.add(new LineageRelation(inGuid, outGuid, relationGuid));
+            if (!entities.containsKey(outGuid)) {
+                AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(outVertex, lineageContext.getAttributes());
+                entities.put(outGuid, entityHeader);
+            }
+
+            if (isInputEdge) {
+                relations.add(new LineageRelation(inGuid, outGuid, relationGuid));
+            } else {
+                relations.add(new LineageRelation(outGuid, inGuid, relationGuid));
+            }
         } else {
-            relations.add(new LineageRelation(outGuid, inGuid, relationGuid));
+            /**
+             * check if there is dangling Process added due to evaluation failure
+             * E.g.
+             * e_0 -> p1 -> e_1
+             * if e_0 evaluates to true but e_1 not, then remove e_0 -> p1 relation from lineage info
+             */
+            if ((isProcessEntity(GraphHelper.getTypeName(outVertex)) && entities.containsKey(outGuid))) {
+                entities.remove(outGuid);
+                //relations.remove(relations.size() - 1);
+            }
+
+            if ((isProcessEntity(GraphHelper.getTypeName(inVertex)) && entities.containsKey(inGuid))) {
+                entities.remove(inGuid);
+                //relations.remove(relations.size() - 1);
+            }
         }
+    }
+
+    private boolean isProcessEntity(String typeName) {
+        return atlasTypeRegistry.getEntityTypeByName(typeName).getTypeAndAllSubTypes().contains(PROCESS_SUPER_TYPE);
     }
 
     private AtlasLineageInfo getBothLineageInfoV1(AtlasLineageContext lineageContext) throws AtlasBaseException {
