@@ -452,6 +452,25 @@ public class AdminResource {
     }
 
     @GET
+    @Path("switchtopassive")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response switchtopassive() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AdminResource.switchtopassive()");
+        }
+
+        try{
+            return Response.status(200).build();
+        } finally {
+            if (serviceState.getState().toString().equals(ServiceState.ServiceStateValue.ACTIVE.toString())) {
+                electorService.quitElection();
+            } else {
+                LOG.info("==> Pod is already in passive state!");
+            }
+        }
+    }
+
+    @GET
     @Path("isactive")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response isActive() {
