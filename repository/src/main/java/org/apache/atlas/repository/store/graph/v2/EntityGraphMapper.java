@@ -355,13 +355,12 @@ public class EntityGraphMapper {
 
                     setCustomAttributes(vertex, createdEntity);
                     setSystemAttributesToEntity(vertex, createdEntity);
-                    AtlasEntityHeader createdEntityHeader = constructHeader(createdEntity, vertex, entityType.getAllAttributes());
-                    resp.addEntity(CREATE, createdEntityHeader);
+                    resp.addEntity(CREATE, constructHeader(createdEntity, vertex,  entityType.getAllAttributes()));
                     addClassifications(context, guid, createdEntity.getClassifications());
 
                     addOrUpdateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes());
 
-                    reqContext.cache(new AtlasEntity(createdEntityHeader));
+                    reqContext.cache(createdEntity);
                 } catch (AtlasBaseException baseException) {
                     setEntityGuidToException(createdEntity, baseException, context);
                     throw baseException;
@@ -396,10 +395,9 @@ public class EntityGraphMapper {
                     if (replaceBusinessAttributes) {
                         setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
                     }
-                    setSystemAttributesToEntity(vertex, updatedEntity);
-                    AtlasEntityHeader updatedEntityHeader = constructHeader(updatedEntity, vertex, entityType.getAllAttributes());
-                    resp.addEntity(updateType, updatedEntityHeader);
-                    reqContext.cache(new AtlasEntity(updatedEntityHeader));
+                    setSystemAttributesToEntity(vertex,updatedEntity);
+                    resp.addEntity(updateType, constructHeader(updatedEntity, vertex, entityType.getAllAttributes()));
+                    reqContext.cache(updatedEntity);
 
                 } catch (AtlasBaseException baseException) {
                     setEntityGuidToException(updatedEntity, baseException, context);
