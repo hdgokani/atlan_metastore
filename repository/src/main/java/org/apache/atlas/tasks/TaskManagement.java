@@ -25,12 +25,12 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.service.Service;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TaskManagement implements Service, ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TaskManagement.class);
 
-    private final ThreadLocal<TaskExecutor> taskExecutorThreadLocal = new ThreadLocal<>();
+    private       TaskExecutor              taskExecutor;
     private final Configuration             configuration;
     private final TaskRegistry              registry;
     private final Statistics                statistics;
@@ -120,6 +120,25 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         return this.registry.getAll();
     }
 
+    public List<AtlasTask> getAll(List<String> statusList) {
+        return this.registry.getAll(statusList);
+    }
+
+    public void retryTasks(List<String> taskGuids) throws AtlasBaseException {
+        List<AtlasTask> taskToRetry = new ArrayList<>();
+        for (String taskGuid : taskGuids) {
+            AtlasTask task = getByGuid(taskGuid);
+
+            if (task != null && task.getStatus().equals(AtlasTask.Status.FAILED)) {
+                taskToRetry.add(task);
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(taskToRetry)) {
+            addAll(taskToRetry);
+        }
+    }
+
     public void addAll(List<AtlasTask> tasks) {
         if (CollectionUtils.isEmpty(tasks)) {
             return;
@@ -170,16 +189,16 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
     }
 
-    private void dispatchTasks(List<AtlasTask> tasks) {
+    private synchronized void dispatchTasks(List<AtlasTask> tasks) {
         if (CollectionUtils.isEmpty(tasks)) {
             return;
         }
 
-        if (this.taskExecutorThreadLocal.get() == null) {
-            this.taskExecutorThreadLocal.set(new TaskExecutor(registry, taskTypeFactoryMap, statistics));
+        if (this.taskExecutor == null) {
+            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
         }
 
-        this.taskExecutorThreadLocal.get().addAll(tasks);
+        this.taskExecutor.addAll(tasks);
 
         this.statistics.print();
     }

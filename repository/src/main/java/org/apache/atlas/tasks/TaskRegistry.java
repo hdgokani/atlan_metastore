@@ -26,16 +26,14 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasJson;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getVertexDetails;
@@ -95,6 +93,22 @@ public class TaskRegistry {
         setEncodedProperty(taskVertex, Constants.TASK_STATUS, task.getStatus().toString());
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
         setEncodedProperty(taskVertex, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
+
+        if (task.getStartTime() != null) {
+            setEncodedProperty(taskVertex, Constants.TASK_START_TIME, task.getStartTime());
+        }
+
+        if (task.getEndTime() != null) {
+            setEncodedProperty(taskVertex, Constants.TASK_END_TIME, task.getEndTime());
+
+            if (task.getStartTime() == null) {
+                LOG.warn("Task start time was not recorded since could not calculate task's total take taken");
+            } else {
+                long timeTaken = task.getEndTime().getTime() - task.getStartTime().getTime();
+                timeTaken = TimeUnit.MILLISECONDS.toSeconds(timeTaken);
+                setEncodedProperty(taskVertex, Constants.TASK_TIME_TAKEN_IN_SECONDS, timeTaken);
+            }
+        }
     }
 
     @GraphTransaction
@@ -123,6 +137,17 @@ public class TaskRegistry {
         deleteVertex(taskVertex);
     }
 
+    public void inProgress(AtlasVertex taskVertex) {
+        setEncodedProperty(taskVertex, Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS);
+        setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
+        graph.commit();
+    }
+
+    @GraphTransaction
+    public void complete(AtlasVertex taskVertex, AtlasTask task) {
+        updateStatus(taskVertex, task);
+    }
+
     @GraphTransaction
     public AtlasTask getById(String guid) {
         AtlasGraphQuery query = graph.query()
@@ -149,6 +174,37 @@ public class TaskRegistry {
         AtlasGraphQuery query = graph.query()
                                      .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
                                      .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
+
+        Iterator<AtlasVertex> results = query.vertices().iterator();
+
+        while (results.hasNext()) {
+            ret.add(toAtlasTask(results.next()));
+        }
+
+        return ret;
+    }
+
+    /*
+    * This returns tasks which has status IN statusList
+    * If not specified, return all tasks
+    * */
+    @GraphTransaction
+    public List<AtlasTask> getAll(List<String> statusList) {
+        List<AtlasTask> ret = new ArrayList<>();
+        AtlasGraphQuery query = graph.query()
+                                     .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME);
+
+        if (CollectionUtils.isNotEmpty(statusList)) {
+            List<AtlasGraphQuery> orConditions = new LinkedList<>();
+
+            for (String status : statusList) {
+                orConditions.add(query.createChildQuery().has(Constants.TASK_STATUS, AtlasTask.Status.from(status)));
+            }
+
+            query.or(orConditions);
+        }
+
+        query.orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
 
@@ -220,6 +276,11 @@ public class TaskRegistry {
         Long endTime = v.getProperty(Constants.TASK_END_TIME, Long.class);
         if (endTime != null) {
             ret.setEndTime(new Date(endTime));
+
+            Long timeTaken = v.getProperty(Constants.TASK_TIME_TAKEN_IN_SECONDS, Long.class);
+            if (timeTaken != null) {
+                ret.setTimeTakenInSeconds(timeTaken);
+            }
         }
 
         String parametersJson = v.getProperty(Constants.TASK_PARAMETERS, String.class);
