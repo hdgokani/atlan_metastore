@@ -3144,11 +3144,10 @@ public class EntityGraphMapper {
     private void recordEntityUpdate(AtlasVertex vertex) throws AtlasBaseException {
         if (vertex != null) {
             RequestContext req = RequestContext.get();
-
             if (!req.isUpdatedEntity(graphHelper.getGuid(vertex))) {
                 updateModificationMetadata(vertex);
-
-                req.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(vertex));
+                Set attributesKeys = typeRegistry.getEntityTypeByName(GraphHelper.getTypeName(vertex)).getAllAttributes().keySet();
+                req.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(vertex, attributesKeys));
             }
         }
     }
