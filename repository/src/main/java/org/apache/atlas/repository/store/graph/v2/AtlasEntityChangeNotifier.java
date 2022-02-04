@@ -36,6 +36,7 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.atlas.repository.audit.AtlasAuditService;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
@@ -78,10 +79,10 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     private final FullTextMapperV2            fullTextMapperV2;
     private final AtlasTypeRegistry           atlasTypeRegistry;
     private final boolean                     isV2EntityNotificationEnabled;
-
+    private final EntityGraphRetriever        entityRetriever;
 
     @Inject
-    public AtlasEntityChangeNotifier(Set<EntityChangeListener> entityChangeListeners,
+    public AtlasEntityChangeNotifier(AtlasGraph graph,Set<EntityChangeListener> entityChangeListeners,
                                      Set<EntityChangeListenerV2> entityChangeListenersV2,
                                      AtlasInstanceConverter instanceConverter,
                                      FullTextMapperV2 fullTextMapperV2,
@@ -92,6 +93,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         this.fullTextMapperV2              = fullTextMapperV2;
         this.atlasTypeRegistry             = atlasTypeRegistry;
         this.isV2EntityNotificationEnabled = AtlasRepositoryConfiguration.isV2EntityNotificationEnabled();
+        this.entityRetriever               = new EntityGraphRetriever(graph, atlasTypeRegistry);
     }
 
     @Override
@@ -603,9 +605,11 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
                     entity = new AtlasEntity(entityHeader);
                 } else {
                     String entityGuid = entityHeader.getGuid();
-                    entity = fullTextMapperV2.getAndCacheEntity(entityGuid);
-                    if (operation == EntityOperation.UPDATE || entityHeader.getAttributes() != null) {
-                        entity.setAttributes(entityHeader.getAttributes());
+
+                    if (operation == EntityOperation.UPDATE) {
+                        entity = entityRetriever.toAtlasEntity(entityGuid);
+                    } else {
+                        entity = fullTextMapperV2.getAndCacheEntity(entityGuid);
                     }
                 }
 
