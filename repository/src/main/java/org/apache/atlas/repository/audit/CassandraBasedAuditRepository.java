@@ -89,6 +89,8 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
   private static final String DETAIL = "detail";
   private static final String ENTITY = "entity";
 
+  private static final int BATCH_SIZE = 100;
+
   private static final String INSERT_STATEMENT_TEMPLATE = "INSERT INTO audit (entityid,created,action,user,detail,entity) VALUES (?,?,?,?,?,?)";
   private static final String SELECT_STATEMENT_TEMPLATE = "select * from audit where entityid=? order by created desc limit 10;";
   private static final String SELECT_DATE_STATEMENT_TEMPLATE = "select * from audit where entityid=? and created<=? order by created desc limit 10;";
@@ -118,14 +120,21 @@ public class CassandraBasedAuditRepository extends AbstractStorageBasedAuditRepo
 
   @Override
   public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
-    BatchStatement batch = new BatchStatement();
-    for (EntityAuditEventV2 event : events) {
-      BoundStatement stmt = new BoundStatement(insertStatement);
-      batch.add(stmt.bind(event.getEntityId(), event.getTimestamp(),
-              event.getAction().toString(), event.getUser(), event.getDetails(),
-              (persistEntityDefinition ? event.getEntityDefinitionString() : null)));
+    try {
+      List<List<EntityAuditEventV2>> eventsChunked = Lists.partition(events, BATCH_SIZE);
+      for (List<EntityAuditEventV2> eventsSublist: eventsChunked) {
+        BatchStatement batch = new BatchStatement();
+        for (EntityAuditEventV2 event : eventsSublist) {
+          BoundStatement stmt = new BoundStatement(insertStatement);
+          batch.add(stmt.bind(event.getEntityId(), event.getTimestamp(),
+                  event.getAction().toString(), event.getUser(), event.getDetails(),
+                  (persistEntityDefinition ? event.getEntityDefinitionString() : null)));
+        }
+        cassSession.execute(batch);
+      }
+    } catch (Exception e) {
+      throw new AtlasBaseException("Unable to push entity audits to Cassandra", e);
     }
-    cassSession.execute(batch);
   }
 
   private BoundStatement getSelectStatement(String entityId, String startKey) {
