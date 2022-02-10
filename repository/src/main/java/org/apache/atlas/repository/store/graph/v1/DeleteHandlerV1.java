@@ -516,23 +516,6 @@ public abstract class DeleteHandlerV1 {
         RequestContext.get().endMetricRecord(metric);
     }
 
-    public void resetHasLineage(AtlasEdge edge) throws AtlasBaseException {
-        if (edge == null || !isRelationshipEdge(edge)) {
-            return;
-        }
-
-        AtlasVertex inVertex = edge.getInVertex();
-        AtlasVertex outVertex = edge.getOutVertex();
-
-        if (inVertex != null && GraphHelper.haslineage(inVertex)) {
-            AtlasGraphUtilsV2.setEncodedProperty(inVertex, HAS_LINEAGE, false);
-        }
-
-        if (outVertex != null && GraphHelper.haslineage(outVertex)) {
-            AtlasGraphUtilsV2.setEncodedProperty(outVertex, HAS_LINEAGE, false);
-        }
-    }
-
     public void removeTagPropagation(AtlasEdge edge) throws AtlasBaseException {
         if (edge == null || !isRelationshipEdge(edge)) {
             return;

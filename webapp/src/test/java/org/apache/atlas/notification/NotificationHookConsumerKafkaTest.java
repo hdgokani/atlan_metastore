@@ -207,7 +207,7 @@ public class NotificationHookConsumerKafkaTest {
     }
 
     Referenceable createEntity() {
-        final Referenceable entity = new Referenceable(AtlasClient.DATA_SET_SUPER_TYPE);
+        final Referenceable entity = new Referenceable(AtlasClient.CATALOG_SUPER_TYPE);
 
         entity.set(NAME, "db" + randomString());
         entity.set(DESCRIPTION, randomString());
@@ -217,7 +217,7 @@ public class NotificationHookConsumerKafkaTest {
     }
 
     AtlasEntity createV2Entity() {
-        final AtlasEntity entity = new AtlasEntity(AtlasClient.DATA_SET_SUPER_TYPE);
+        final AtlasEntity entity = new AtlasEntity(AtlasClient.CATALOG_SUPER_TYPE);
 
         entity.setAttribute(NAME, "db" + randomString());
         entity.setAttribute(DESCRIPTION, randomString());
