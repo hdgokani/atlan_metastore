@@ -24,9 +24,6 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
-import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.TimeBoundary;
@@ -110,6 +107,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasClient.CATALOG_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.AtlasConfiguration.LABEL_MAX_LENGTH;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
@@ -1948,6 +1946,56 @@ public class EntityGraphMapper {
 
                 if (removeAttr) {
                     vertex.removeProperty(HAS_LINEAGE);
+                }
+            }
+        }
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) {
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");
+        String[] edgeLabels = {PROCESS_OUTPUTS, PROCESS_INPUTS};
+
+        for (AtlasVertex vertex : vertices) {
+            if (ACTIVE.equals(getStatus(vertex))) {
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(getTypeName(vertex));
+                boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
+                boolean isCatalog = entityType.getTypeAndAllSuperTypes().contains(CATALOG_SUPER_TYPE);
+
+                if (isCatalog || isProcess) {
+                    if (vertex.getProperty(HAS_LINEAGE, Boolean.class) != null && vertex.getProperty(HAS_LINEAGE, Boolean.class)) {
+                        vertex.removeProperty(HAS_LINEAGE);
+                    }
+
+                    Iterator<AtlasEdge> edgeIterator = vertex.getEdges(AtlasEdgeDirection.BOTH, edgeLabels).iterator();
+
+                    List<AtlasVertex> otherVertices = new ArrayList<>();
+                    Set<AtlasEdge> edgesToBeDeleted = new HashSet<>();
+
+                    while (edgeIterator.hasNext()) {
+                        AtlasEdge edge = edgeIterator.next();
+                        if (ACTIVE.equals(getStatus(edge))) {
+                            otherVertices.add(isProcess ? edge.getInVertex() : edge.getOutVertex());
+                            edgesToBeDeleted.add(edge);
+                        }
+                    }
+
+                    for (AtlasVertex otherVertex : otherVertices) {
+                        edgeIterator = otherVertex.getEdges(AtlasEdgeDirection.BOTH, edgeLabels).iterator();
+
+                        boolean removeAttr = true;
+                        while (edgeIterator.hasNext()) {
+                            AtlasEdge edge = edgeIterator.next();
+                            if (!edgesToBeDeleted.contains(edge) && ACTIVE.equals(getStatus(edge))) {
+                                removeAttr = false;
+                                break;
+                            }
+                        }
+
+                        if (removeAttr) {
+                            otherVertex.removeProperty(HAS_LINEAGE);
+                        }
+                    }
                 }
             }
         }
