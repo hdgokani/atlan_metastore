@@ -1964,7 +1964,7 @@ public class EntityGraphMapper {
 
                 if (isCatalog || isProcess) {
                     if (vertex.getProperty(HAS_LINEAGE, Boolean.class) != null && vertex.getProperty(HAS_LINEAGE, Boolean.class)) {
-                        vertex.removeProperty(HAS_LINEAGE);
+                        AtlasGraphUtilsV2.setEncodedProperty(vertex, HAS_LINEAGE, false);
                     }
 
                     Iterator<AtlasEdge> edgeIterator = vertex.getEdges(AtlasEdgeDirection.BOTH, edgeLabels).iterator();
@@ -1993,7 +1993,7 @@ public class EntityGraphMapper {
                         }
 
                         if (removeAttr) {
-                            otherVertex.removeProperty(HAS_LINEAGE);
+                            AtlasGraphUtilsV2.setEncodedProperty(otherVertex, HAS_LINEAGE, false);
                         }
                     }
                 }
