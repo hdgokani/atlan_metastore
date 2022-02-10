@@ -69,9 +69,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
-import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
+import static org.apache.atlas.AtlasClient.CATALOG_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_LINEAGE_QUERY_FAILED;
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.BOTH;
@@ -127,7 +126,7 @@ public class EntityLineageService implements AtlasLineageService {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, entity.getTypeName());
         }
 
-        boolean isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
+        boolean isDataSet = entityType.getTypeAndAllSuperTypes().contains(CATALOG_SUPER_TYPE);
 
         if (!isDataSet) {
             boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
