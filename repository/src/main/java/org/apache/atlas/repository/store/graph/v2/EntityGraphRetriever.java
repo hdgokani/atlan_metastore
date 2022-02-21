@@ -765,6 +765,7 @@ public class EntityGraphRetriever {
         ret.setStatus(GraphHelper.getStatus(entityVertex));
         ret.setClassificationNames(getAllTraitNames(entityVertex));
         ret.setIsIncomplete(isIncomplete);
+        ret.setHasLineage(getEntityHasLineage(entityVertex));
         ret.setLabels(getLabels(entityVertex));
 
         ret.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
@@ -856,6 +857,7 @@ public class EntityGraphRetriever {
 
                 entity.setIsProxy(GraphHelper.isProxy(entityVertex));
                 entity.setIsIncomplete(isEntityIncomplete(entityVertex));
+                entity.setHasLineage(getEntityHasLineage(entityVertex));
 
                 entity.setProvenanceType(GraphHelper.getProvenanceType(entityVertex));
                 entity.setCustomAttributes(getCustomAttributes(entityVertex));
