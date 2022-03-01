@@ -1923,7 +1923,7 @@ public class EntityGraphMapper {
             }
 
             if (removeAttr) {
-                toVertex.removeProperty(HAS_LINEAGE);
+                AtlasGraphUtilsV2.setEncodedProperty(toVertex, HAS_LINEAGE, false);
             }
 
             String[] edgeLabels = {PROCESS_OUTPUTS, PROCESS_INPUTS};
@@ -1947,7 +1947,7 @@ public class EntityGraphMapper {
                 }
 
                 if (removeAttr) {
-                    vertex.removeProperty(HAS_LINEAGE);
+                    AtlasGraphUtilsV2.setEncodedProperty(vertex, HAS_LINEAGE, false);
                 }
             }
         }

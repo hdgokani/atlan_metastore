@@ -868,6 +868,10 @@ public final class GraphHelper {
         return element.getProperty(Constants.IS_PROXY_KEY, Boolean.class);
     }
 
+    public static Boolean haslineage(AtlasElement element) {
+        return element.getProperty(Constants.HAS_LINEAGE, Boolean.class);
+    }
+
     public static Boolean isEntityIncomplete(AtlasElement element) {
         Integer value = element.getProperty(Constants.IS_INCOMPLETE_PROPERTY_KEY, Integer.class);
         Boolean ret   = value != null && value.equals(INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;

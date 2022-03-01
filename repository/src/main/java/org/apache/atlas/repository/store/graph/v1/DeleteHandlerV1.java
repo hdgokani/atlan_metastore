@@ -72,6 +72,7 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
+import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 
 public abstract class DeleteHandlerV1 {
@@ -513,6 +514,23 @@ public abstract class DeleteHandlerV1 {
         AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
 
         RequestContext.get().endMetricRecord(metric);
+    }
+
+    public void resetHasLineage(AtlasEdge edge) throws AtlasBaseException {
+        if (edge == null || !isRelationshipEdge(edge)) {
+            return;
+        }
+
+        AtlasVertex inVertex = edge.getInVertex();
+        AtlasVertex outVertex = edge.getOutVertex();
+
+        if (inVertex != null && GraphHelper.haslineage(inVertex)) {
+            AtlasGraphUtilsV2.setEncodedProperty(inVertex, HAS_LINEAGE, false);
+        }
+
+        if (outVertex != null && GraphHelper.haslineage(outVertex)) {
+            AtlasGraphUtilsV2.setEncodedProperty(outVertex, HAS_LINEAGE, false);
+        }
     }
 
     public void removeTagPropagation(AtlasEdge edge) throws AtlasBaseException {
