@@ -72,6 +72,7 @@ import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
 import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.util.SearchTracker;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections4.IteratorUtils;
@@ -960,7 +961,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     private void scrubSearchResults(AtlasSearchResult result, boolean suppressLogs) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("scrubSearchResults");
         AtlasAuthorizationUtils.scrubSearchResults(new AtlasSearchResultScrubRequest(typeRegistry, result), suppressLogs);
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private Set<String> getAggregationFields() {
@@ -997,7 +1000,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     public AtlasSearchResult directIndexSearch(SearchParams searchParams) throws AtlasBaseException {
-        IndexSearchParams params = (IndexSearchParams) searchParams;
+
+
+         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("directIndexSearch");
+
+            IndexSearchParams params = (IndexSearchParams) searchParams;
         RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
         RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
 
@@ -1013,9 +1020,15 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         try {
+            AtlasPerfMetrics.MetricRecorder metricQuery = RequestContext.get().startMetricRecord("elasticsearchQuery");
+
             indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
 
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
+
+            RequestContext.get().endMetricRecord(metricQuery);
+
+            AtlasPerfMetrics.MetricRecorder metriciterator = RequestContext.get().startMetricRecord("indexQueryResult/Iterator/toAtlasEntityHeader");
 
             Iterator<Result> iterator = indexQueryResult.getIterator();
             boolean showSearchScore = searchParams.getShowSearchScore();
@@ -1031,6 +1044,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 }
                 ret.addEntity(header);
             }
+            RequestContext.get().endMetricRecord(metriciterator);
 
             ret.setAggregations(indexQueryResult.getAggregationMap());
             ret.setApproximateCount(indexQuery.vertexTotals());
@@ -1039,6 +1053,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         scrubSearchResults(ret, searchParams.getSuppressLogs());
+        RequestContext.get().endMetricRecord(metric);
+
         return ret;
     }
 }
