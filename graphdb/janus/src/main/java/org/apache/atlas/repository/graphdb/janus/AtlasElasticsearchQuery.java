@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.graphdb.janus;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.discovery.SearchParams;
@@ -25,6 +26,7 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.http.HttpEntity;
@@ -113,6 +115,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
     private DirectIndexQueryResult runQueryWithLowLevelClient(SearchParams searchParams) throws AtlasBaseException {
         DirectIndexQueryResult result = null;
+        AtlasPerfMetrics.MetricRecorder metricQuery = RequestContext.get().startMetricRecord("runQueryWithLowLevelClient");
 
         try {
 
@@ -127,7 +130,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
         }
-
+        RequestContext.get().endMetricRecord(metricQuery);
         return result;
     }
 
@@ -168,6 +171,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
     @Override
     public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> vertices(SearchParams searchParams) throws AtlasBaseException {
+
         return runQueryWithLowLevelClient(searchParams);
     }
 
@@ -207,8 +211,12 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         @Override
         public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getVertex() {
+            AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("ResultImpl.getVertex");
+
             long vertexId = LongEncoding.decode(hit.getId());
-            return graph.getVertex(String.valueOf(vertexId));
+            AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> ret = graph.getVertex(String.valueOf(vertexId));
+            RequestContext.get().endMetricRecord(metricRecorder);
+            return ret;
         }
 
         @Override
@@ -227,8 +235,12 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         @Override
         public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getVertex() {
+            AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("ResultImplDirect.getVertex");
+
             long vertexId = LongEncoding.decode(String.valueOf(hit.get("_id")));
-            return graph.getVertex(String.valueOf(vertexId));
+            AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> ret =  graph.getVertex(String.valueOf(vertexId));
+            RequestContext.get().endMetricRecord(metricRecorder);
+            return ret;
         }
 
         @Override

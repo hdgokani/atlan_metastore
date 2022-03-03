@@ -1020,13 +1020,13 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         try {
-            AtlasPerfMetrics.MetricRecorder metricQuery = RequestContext.get().startMetricRecord("elasticsearchQuery");
+          //  AtlasPerfMetrics.MetricRecorder metricQuery = RequestContext.get().startMetricRecord("elasticsearchQuery");
 
             indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
 
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
 
-            RequestContext.get().endMetricRecord(metricQuery);
+          //  RequestContext.get().endMetricRecord(metricQuery);
 
             AtlasPerfMetrics.MetricRecorder metriciterator = RequestContext.get().startMetricRecord("indexQueryResult/Iterator/toAtlasEntityHeader");
 

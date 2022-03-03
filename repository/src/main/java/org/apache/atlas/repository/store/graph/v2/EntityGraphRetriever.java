@@ -61,6 +61,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasJson;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -218,7 +219,11 @@ public class EntityGraphRetriever {
     }
 
     public AtlasEntityHeader toAtlasEntityHeader(AtlasVertex atlasVertex, Set<String> attributes) throws AtlasBaseException {
-        return atlasVertex != null ? mapVertexToAtlasEntityHeader(atlasVertex, attributes) : null;
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("toAtlasEntityHeader");
+
+        AtlasEntityHeader ret =  atlasVertex != null ? mapVertexToAtlasEntityHeader(atlasVertex, attributes) : null;
+        RequestContext.get().endMetricRecord(metricRecorder);
+        return ret;
     }
 
     public AtlasEntityHeader toAtlasEntityHeaderWithClassifications(String guid) throws AtlasBaseException {
@@ -900,6 +905,8 @@ public class EntityGraphRetriever {
     }
 
     public List<AtlasClassification> getAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metriciterator = RequestContext.get().startMetricRecord("getAllClassifications");
+
         List<AtlasClassification> ret   = new ArrayList<>();
         Iterable                  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
 
@@ -916,7 +923,7 @@ public class EntityGraphRetriever {
                 }
             }
         }
-
+        RequestContext.get().endMetricRecord(metriciterator);
         return ret;
     }
 
