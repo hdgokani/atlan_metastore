@@ -44,6 +44,8 @@ import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.repository.graphdb.janus.query.AtlasJanusGraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.atlas.RequestContext;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import org.apache.tinkerpop.gremlin.jsr223.DefaultImportCustomizer;
@@ -308,10 +310,14 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
     public AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> elasticsearchQuery(String indexName, SearchParams searchParams) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("elasticsearchQuery");
+
         if (restClient == null) {
             LOG.error("restClient is not initiated, failed to run query on ES");
         }
-        return new AtlasElasticsearchQuery(this, restClient, INDEX_PREFIX + indexName, searchParams);
+        AtlasElasticsearchQuery query =  new AtlasElasticsearchQuery(this, restClient, INDEX_PREFIX + indexName, searchParams);
+        RequestContext.get().endMetricRecord(metric);
+        return query;
     }
 
     @Override
@@ -341,10 +347,14 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     @Override
     public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getVertex(String vertexId) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("AtlasnJanusGraph.getVertex");
+
         Iterator<Vertex> it     = getGraph().vertices(vertexId);
         Vertex           vertex = getSingleElement(it, vertexId);
 
-        return GraphDbObjectFactory.createVertex(this, vertex);
+        AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> ret = GraphDbObjectFactory.createVertex(this, vertex);
+        RequestContext.get().endMetricRecord(metricRecorder);
+        return ret;
     }
 
     @Override
