@@ -83,6 +83,7 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isRef
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
+import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 
 /**
  * Utility class for graph operations.
@@ -1723,4 +1724,9 @@ public final class GraphHelper {
 
         return ret;
     }
+
+    public static Boolean getHaslineage(AtlasElement element) {
+        return element.getProperty(HAS_LINEAGE, Boolean.class);
+    }
+
 }
