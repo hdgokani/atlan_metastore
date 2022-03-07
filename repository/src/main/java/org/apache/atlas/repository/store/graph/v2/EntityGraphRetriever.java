@@ -800,9 +800,9 @@ public class EntityGraphRetriever {
             }
 
             if (CollectionUtils.isNotEmpty(attributes)) {
+                AtlasPerfMetrics.MetricRecorder metricQuery = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader/lookupForAttributes");
                 for (String attrName : attributes) {
                     AtlasAttribute attribute = entityType.getAttribute(attrName);
-
                     if (attribute == null) {
                         attrName = toNonQualifiedName(attrName);
 
@@ -823,6 +823,7 @@ public class EntityGraphRetriever {
                         ret.setAttribute(attrName, attrValue);
                     }
                 }
+            RequestContext.get().endMetricRecord(metricQuery);
             }
         }
 
@@ -1030,6 +1031,7 @@ public class EntityGraphRetriever {
     }
 
     private Object mapVertexToAttribute(AtlasVertex entityVertex, AtlasAttribute attribute, AtlasEntityExtInfo entityExtInfo, final boolean isMinExtInfo, boolean includeReferences, boolean ignoreInactive) throws AtlasBaseException {
+
         Object    ret                = null;
         AtlasType attrType           = attribute.getAttributeType();
         String    edgeLabel          = attribute.getRelationshipEdgeLabel();
@@ -1403,7 +1405,11 @@ public class EntityGraphRetriever {
     }
 
     private Object getVertexAttribute(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
-        return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false) : null;
+        AtlasPerfMetrics.MetricRecorder metricsgetVertexAttribute = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader/getVertexAttribute");
+
+        Object ret =  vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false) : null;
+        RequestContext.get().endMetricRecord(metricsgetVertexAttribute);
+        return ret;
     }
 
     private Object getVertexAttributeIgnoreInactive(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
