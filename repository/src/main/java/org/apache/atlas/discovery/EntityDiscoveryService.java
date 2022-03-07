@@ -1032,7 +1032,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             Iterator<Result> iterator = indexQueryResult.getIterator();
             boolean showSearchScore = searchParams.getShowSearchScore();
-            boolean showBM = searchParams.getShowBusinessMetadata();
 
             while (iterator.hasNext()) {
                 Result result = iterator.next();
@@ -1040,9 +1039,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
                 AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
                 header.setClassifications(entityRetriever.getAllClassifications(vertex));
-                if(showBM) {
-                    header.setBusinessAttributes(entityRetriever.getBusinessMetadata(vertex));
-                }
                 if (showSearchScore) {
                     ret.addEntityScore(header.getGuid(), result.getScore());
                 }
