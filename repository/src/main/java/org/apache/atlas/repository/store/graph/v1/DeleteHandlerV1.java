@@ -182,7 +182,6 @@ public abstract class DeleteHandlerV1 {
 
                 continue;
             }
-            resetHasLineage(edge);
             deleteEdge(edge, isInternal || forceDelete);
         }
     }
@@ -1247,45 +1246,49 @@ public abstract class DeleteHandlerV1 {
         RequestContext.get().queueTask(task);
     }
 
-    public void resetHasLineage(AtlasEdge edgeToBeDeleted) throws AtlasBaseException {
-        if (edgeToBeDeleted == null || !isRelationshipEdge(edgeToBeDeleted)) {
-            return;
-        }
 
+    public void resetHasLineage(Collection<AtlasEdge> edgesToBeDeleted) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("resetHasLineage");
-        String[] edgeLabels = {PROCESS_OUTPUTS, PROCESS_INPUTS};
 
-        List<AtlasVertex> vertices = new ArrayList<AtlasVertex>();
+        for (AtlasEdge edgeToBeDeleted : edgesToBeDeleted) {
+            if (!isRelationshipEdge(edgeToBeDeleted)) {
+                continue;
+            }
 
-        vertices.add(edgeToBeDeleted.getInVertex());
-        vertices.add(edgeToBeDeleted.getOutVertex());
+            String[] edgeLabels = {PROCESS_OUTPUTS, PROCESS_INPUTS};
 
-        for (AtlasVertex vertex : vertices) {
-            if (ACTIVE.equals(getStatus(vertex))) {
+            List<AtlasVertex> vertices = new ArrayList<AtlasVertex>();
 
-                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(getTypeName(vertex));
-                boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
-                boolean isCatalog = entityType.getTypeAndAllSuperTypes().contains(CATALOG_SUPER_TYPE);
+            vertices.add(edgeToBeDeleted.getInVertex());
+            vertices.add(edgeToBeDeleted.getOutVertex());
 
-                if (isCatalog || isProcess) {
+            for (AtlasVertex vertex : vertices) {
+                if (ACTIVE.equals(getStatus(vertex))) {
 
-                    if (GraphHelper.getHaslineage(vertex)) {
+                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(getTypeName(vertex));
+                    boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
+                    boolean isCatalog = entityType.getTypeAndAllSuperTypes().contains(CATALOG_SUPER_TYPE);
 
-                        Iterator<AtlasEdge> edgeIterator = vertex.getEdges(AtlasEdgeDirection.BOTH, edgeLabels).iterator();
+                    if (isCatalog || isProcess) {
 
-                        boolean removeAttr = true;
-                        while (edgeIterator.hasNext()) {
-                            AtlasEdge edge = edgeIterator.next();
-                            if (!edgeToBeDeleted.equals(edge) && ACTIVE.equals(getStatus(edge))) {
-                                removeAttr = false;
-                                break;
+                        if (GraphHelper.getHaslineage(vertex)) {
+
+                            Iterator<AtlasEdge> edgeIterator = vertex.getEdges(AtlasEdgeDirection.BOTH, edgeLabels).iterator();
+
+                            boolean removeAttr = true;
+                            while (edgeIterator.hasNext()) {
+                                AtlasEdge edge = edgeIterator.next();
+                                if (!edgeToBeDeleted.equals(edge) && ACTIVE.equals(getStatus(edge))) {
+                                    removeAttr = false;
+                                    break;
+                                }
                             }
-                        }
 
-                        if (removeAttr) {
-                            AtlasGraphUtilsV2.setEncodedProperty(vertex, HAS_LINEAGE, false);
-                        }
+                            if (removeAttr) {
+                                AtlasGraphUtilsV2.setEncodedProperty(vertex, HAS_LINEAGE, false);
+                            }
 
+                        }
                     }
                 }
             }
