@@ -72,6 +72,9 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private Date                            updateTime          = null;
     private String                          deleteHandler       = null;
 
+    private Map<String, Map<String, Object>> businessAttributes;
+
+
     public AtlasEntityHeader() {
         this(null, null);
     }
@@ -119,6 +122,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
             setUpdateTime(other.getUpdateTime());
             setUpdatedBy(other.getUpdatedBy());
             setDeleteHandler(other.getDeleteHandler());
+            setBusinessAttributes(other.getBusinessAttributes());
         }
     }
 
@@ -144,6 +148,9 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
 
         if (CollectionUtils.isNotEmpty(entity.getLabels())) {
             setLabels(entity.getLabels());
+        }
+        if (entity.getBusinessAttributes() != null && entity.getBusinessAttributes().size() > 0) {
+            setBusinessAttributes(entity.getBusinessAttributes());
         }
     }
 
@@ -258,6 +265,14 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
 
     public void setDeleteHandler(String deleteHandler) {
         this.deleteHandler = deleteHandler;
+    }
+
+    public Map<String, Map<String, Object>> getBusinessAttributes() {
+        return businessAttributes;
+    }
+
+    public void setBusinessAttributes(Map<String, Map<String, Object>> businessAttributes) {
+        this.businessAttributes = businessAttributes;
     }
 
     @Override

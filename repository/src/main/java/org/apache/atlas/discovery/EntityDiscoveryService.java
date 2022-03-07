@@ -1039,6 +1039,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
                 AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
                 header.setClassifications(entityRetriever.getAllClassifications(vertex));
+                header.setBusinessAttributes(entityRetriever.getBusinessMetadata(vertex));
                 if (showSearchScore) {
                     ret.addEntityScore(header.getGuid(), result.getScore());
                 }
