@@ -57,7 +57,6 @@ public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
         authorizeRemoveRelation(edge);
 
         removeTagPropagation(edge);
-
         graphHelper.removeEdge(edge);
     }
 }
