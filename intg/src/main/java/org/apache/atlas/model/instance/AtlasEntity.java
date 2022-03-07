@@ -64,7 +64,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     public static final String KEY_HOME_ID         = "homeId";
     public static final String KEY_IS_PROXY        = "isProxy";
     public static final String KEY_IS_INCOMPLETE   = "isIncomplete";
-    public static final String KEY_HAS_LINEAGE     = "__hasLineage";
+    public static final String KEY_HAS_LINEAGE     = "hasLineage";
     public static final String KEY_PROVENANCE_TYPE = "provenanceType";
     public static final String KEY_STATUS          = "status";
     public static final String KEY_CREATED_BY      = "createdBy";
