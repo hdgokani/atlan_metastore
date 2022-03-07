@@ -9,6 +9,8 @@ public abstract class SearchParams {
     boolean showSearchScore;
     boolean suppressLogs;
 
+    boolean showBusinessMetadata;
+
     public abstract String getQuery();
 
     public Set<String> getAttributes() {
@@ -42,4 +44,14 @@ public abstract class SearchParams {
     public void setSuppressLogs(boolean suppressLogs) {
         this.suppressLogs = suppressLogs;
     }
+
+
+    public boolean getShowBusinessMetadata() {
+        return showBusinessMetadata;
+    }
+
+    public void setShowBusinessMetadata(boolean showBusinessMetadata) {
+        this.showBusinessMetadata = showBusinessMetadata;
+    }
+
 }
