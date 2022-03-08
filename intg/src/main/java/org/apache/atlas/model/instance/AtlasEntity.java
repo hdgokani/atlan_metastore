@@ -82,7 +82,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private String  homeId         = null;
     private Boolean isProxy        = Boolean.FALSE;
     private Boolean isIncomplete   = Boolean.FALSE;
-    private Boolean hasLineage     = null;
     private Integer provenanceType = 0;
     private Status  status         = Status.ACTIVE;
     private String  createdBy      = null;
@@ -179,10 +178,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
                 setIsIncomplete(Boolean.FALSE);
             }
 
-            if (hasLineage != null) {
-                setHasLineage((Boolean) hasLineage);
-            }
-
             if (provenanceType instanceof Number) {
                 setProvenanceType(((Number) version).intValue());
             }
@@ -221,7 +216,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setHomeId(other.getHomeId());
             setIsProxy(other.isProxy());
             setIsIncomplete(other.getIsIncomplete());
-            setHasLineage(other.getHasLineage());
             setProvenanceType(other.getProvenanceType());
             setStatus(other.getStatus());
             setCreatedBy(other.getCreatedBy());
@@ -269,14 +263,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     public void setIsIncomplete(Boolean isIncomplete) {
         this.isIncomplete = isIncomplete;
-    }
-
-    public Boolean getHasLineage() {
-        return hasLineage;
-    }
-
-    public void setHasLineage(Boolean hasLineage) {
-        this.hasLineage = hasLineage;
     }
 
     public Integer getProvenanceType() {
@@ -472,7 +458,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         setHomeId(null);
         setIsProxy(Boolean.FALSE);
         setIsIncomplete(Boolean.FALSE);
-        setHasLineage(null);
         setProvenanceType(0);
         setStatus(null);
         setCreatedBy(null);
@@ -503,7 +488,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         sb.append(", homeId='").append(homeId).append('\'');
         sb.append(", isProxy='").append(isProxy).append('\'');
         sb.append(", isIncomplete=").append(isIncomplete);
-        sb.append(", hasLineage=").append(hasLineage);
         sb.append(", provenanceType=").append(provenanceType);
         sb.append(", status=").append(status);
         sb.append(", createdBy='").append(createdBy).append('\'');
@@ -548,7 +532,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
                 Objects.equals(homeId, that.homeId) &&
                 Objects.equals(isProxy, that.isProxy) &&
                 Objects.equals(isIncomplete, that.isIncomplete) &&
-                Objects.equals(hasLineage, that.hasLineage) &&
                 Objects.equals(provenanceType, that.provenanceType) &&
                 status == that.status &&
                 Objects.equals(createdBy, that.createdBy) &&
@@ -565,7 +548,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, homeId, isProxy, isIncomplete, hasLineage, provenanceType, status, createdBy, updatedBy,
+        return Objects.hash(super.hashCode(), guid, homeId, isProxy, isIncomplete, provenanceType, status, createdBy, updatedBy,
                 createTime, updateTime, version, relationshipAttributes, classifications, customAttributes, businessAttributes, labels);
     }
 
