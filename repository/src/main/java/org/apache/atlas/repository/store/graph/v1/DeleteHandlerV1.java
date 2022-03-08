@@ -1253,13 +1253,14 @@ public abstract class DeleteHandlerV1 {
 
     public void resetHasLineage(Collection<AtlasEdge> edgesToBeDeleted) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("resetHasLineage");
+        String[] edgeLabels = {PROCESS_OUTPUTS, PROCESS_INPUTS};
 
         for (AtlasEdge edgeToBeDeleted : edgesToBeDeleted) {
-            if (!isRelationshipEdge(edgeToBeDeleted)) {
+            String edgeLabel = edgeToBeDeleted.getLabel();
+
+            if (!PROCESS_LABEL_LIST.contains(edgeLabel)) {
                 continue;
             }
-
-            String[] edgeLabels = {PROCESS_OUTPUTS, PROCESS_INPUTS};
 
             List<AtlasVertex> vertices = new ArrayList<AtlasVertex>();
 
