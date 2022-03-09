@@ -1250,7 +1250,7 @@ public abstract class DeleteHandlerV1 {
         RequestContext.get().queueTask(task);
     }
 
-    public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices, boolean isDeleteVertex) {
+    public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");
 
         for (AtlasVertex vertex : vertices) {
@@ -1260,10 +1260,8 @@ public abstract class DeleteHandlerV1 {
                 boolean isCatalog = entityType.getTypeAndAllSuperTypes().contains(CATALOG_SUPER_TYPE);
 
                 if (isCatalog || isProcess) {
-                    if (isDeleteVertex) {
-                        if (vertex.getProperty(HAS_LINEAGE, Boolean.class) != null && vertex.getProperty(HAS_LINEAGE, Boolean.class)) {
-                            AtlasGraphUtilsV2.setEncodedProperty(vertex, HAS_LINEAGE, false);
-                        }
+                    if (vertex.getProperty(HAS_LINEAGE, Boolean.class) != null && vertex.getProperty(HAS_LINEAGE, Boolean.class)) {
+                        AtlasGraphUtilsV2.setEncodedProperty(vertex, HAS_LINEAGE, false);
                     }
 
                     Iterator<AtlasEdge> edgeIterator = vertex.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
@@ -1306,7 +1304,7 @@ public abstract class DeleteHandlerV1 {
         }
     }
 
-    public void resetHasLineage(Collection<AtlasEdge> edgesToBeDeleted) throws AtlasBaseException {
+    public void resetHasLineageOnEdgeDelete(Collection<AtlasEdge> edgesToBeDeleted) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("resetHasLineage");
 
         for (AtlasEdge edgeToBeDeleted : edgesToBeDeleted) {
