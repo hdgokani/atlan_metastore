@@ -141,6 +141,9 @@ public final class Constants {
         PROCESS_LABEL_LIST.add(PROCESS_OUTPUTS);
         PROCESS_LABEL_LIST.add(PROCESS_INPUTS);
     }
+
+    public static String[] PROCESS_EDGE_LABELS = {PROCESS_OUTPUTS, PROCESS_INPUTS};
+
     /**
      * The homeId field is used when saving into Atlas a copy of an object that is being imported from another
      * repository. The homeId will be set to a String that identifies the other repository. The specific format
