@@ -1617,7 +1617,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         if (CollectionUtils.isNotEmpty(others)) {
-            entityGraphMapper.removeHasLineageOnDelete(others);
+            deleteDelegate.getHandler().removeHasLineageOnDelete(others, true);
             deleteDelegate.getHandler().deleteEntities(others);
         }
 
