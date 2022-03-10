@@ -1729,8 +1729,4 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static Boolean getHaslineage(AtlasElement element) {
-        return element.getProperty(HAS_LINEAGE, Boolean.class);
-    }
-
 }
