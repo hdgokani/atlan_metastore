@@ -22,6 +22,8 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
 
+import java.util.ArrayList;
+
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 
 /**
@@ -132,6 +134,15 @@ public final class Constants {
      */
     public static final String PROCESS_OUTPUTS = "__Process.outputs";
     public static final String PROCESS_INPUTS = "__Process.inputs";
+
+    public static final ArrayList PROCESS_LABEL_LIST = new ArrayList();
+
+    static {
+        PROCESS_LABEL_LIST.add(PROCESS_OUTPUTS);
+        PROCESS_LABEL_LIST.add(PROCESS_INPUTS);
+    }
+
+    public static String[] PROCESS_EDGE_LABELS = {PROCESS_OUTPUTS, PROCESS_INPUTS};
 
     /**
      * The homeId field is used when saving into Atlas a copy of an object that is being imported from another
@@ -317,6 +328,7 @@ public final class Constants {
     public static final String BASIC_SEARCH_EXECUTION_TIME_METRIC = "search.basic.execution.time";
     public static final String CLASSIFICATION_PROPAGATION_TIME_METRIC = "classification.propagation.time";
     public static final String CLASSIFICATION_PROPAGATION_JOB_COUNT_METRIC = "classification.propagation.job.count";
+
 
     private Constants() {
     }

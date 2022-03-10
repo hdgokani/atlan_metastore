@@ -51,7 +51,6 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -313,6 +312,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             deletedRelationships.add(entityRetriever.mapEdgeToAtlasRelationship(edge));
         }
 
+        deleteDelegate.getHandler().resetHasLineageOnEdgeDelete(edgesToDelete);
         deleteDelegate.getHandler().deleteRelationships(edgesToDelete, false);
 
         sendNotifications(deletedRelationships, OperationType.RELATIONSHIP_DELETE);
@@ -349,7 +349,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         if (getState(edge) == DELETED) {
             throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid);
         }
-
+        deleteDelegate.getHandler().resetHasLineageOnEdgeDelete(Collections.singleton(edge));
         deleteDelegate.getHandler().deleteRelationships(Collections.singleton(edge), forceDelete);
 
         sendNotifications(entityRetriever.mapEdgeToAtlasRelationship(edge), OperationType.RELATIONSHIP_DELETE);
