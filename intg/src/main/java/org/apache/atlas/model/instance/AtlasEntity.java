@@ -64,7 +64,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     public static final String KEY_HOME_ID         = "homeId";
     public static final String KEY_IS_PROXY        = "isProxy";
     public static final String KEY_IS_INCOMPLETE   = "isIncomplete";
-    public static final String KEY_HAS_LINEAGE     = "hasLineage";
     public static final String KEY_PROVENANCE_TYPE = "provenanceType";
     public static final String KEY_STATUS          = "status";
     public static final String KEY_CREATED_BY      = "createdBy";
@@ -148,7 +147,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             Object homeId            = map.get(KEY_HOME_ID);
             Object isProxy           = map.get(KEY_IS_PROXY);
             Object isIncomplete      = map.get(KEY_IS_INCOMPLETE);
-            Object hasLineage        = map.get(KEY_HAS_LINEAGE);
             Object provenanceType    = map.get(KEY_PROVENANCE_TYPE);
             Object status            = map.get(KEY_STATUS);
             Object createdBy         = map.get(KEY_CREATED_BY);
