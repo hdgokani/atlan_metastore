@@ -524,6 +524,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("deleteById");
 
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
         AtlasVertex             vertex             = AtlasGraphUtilsV2.findByGuid(graph, guid);
@@ -546,7 +547,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-
+        RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
     }
 
@@ -556,6 +557,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (CollectionUtils.isEmpty(guids)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
         }
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("deleteByIds");
 
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
 
@@ -587,7 +589,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
-
+        RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
     }
 
@@ -1597,6 +1599,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     private EntityMutationResponse deleteVertices(Collection<AtlasVertex> deletionCandidates) throws AtlasBaseException {
+        MetricRecorder metricdeleteVertices = RequestContext.get().startMetricRecord("deleteVertices");
+
         EntityMutationResponse response = new EntityMutationResponse();
         RequestContext         req      = RequestContext.get();
 
@@ -1641,6 +1645,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             response.addEntity(UPDATE, entity);
         }
 
+        RequestContext.get().endMetricRecord(metricdeleteVertices);
         return response;
     }
 
