@@ -1952,55 +1952,6 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) {
-        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");
-        String[] edgeLabels = {PROCESS_OUTPUTS, PROCESS_INPUTS};
-
-        for (AtlasVertex vertex : vertices) {
-            if (ACTIVE.equals(getStatus(vertex))) {
-                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(getTypeName(vertex));
-                boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
-                boolean isCatalog = entityType.getTypeAndAllSuperTypes().contains(CATALOG_SUPER_TYPE);
-
-                if (isCatalog || isProcess) {
-                    if (vertex.getProperty(HAS_LINEAGE, Boolean.class) != null && vertex.getProperty(HAS_LINEAGE, Boolean.class)) {
-                        AtlasGraphUtilsV2.setEncodedProperty(vertex, HAS_LINEAGE, false);
-                    }
-
-                    Iterator<AtlasEdge> edgeIterator = vertex.getEdges(AtlasEdgeDirection.BOTH, edgeLabels).iterator();
-
-                    List<AtlasVertex> otherVertices = new ArrayList<>();
-                    Set<AtlasEdge> edgesToBeDeleted = new HashSet<>();
-
-                    while (edgeIterator.hasNext()) {
-                        AtlasEdge edge = edgeIterator.next();
-                        if (ACTIVE.equals(getStatus(edge))) {
-                            otherVertices.add(isProcess ? edge.getInVertex() : edge.getOutVertex());
-                            edgesToBeDeleted.add(edge);
-                        }
-                    }
-
-                    for (AtlasVertex otherVertex : otherVertices) {
-                        edgeIterator = otherVertex.getEdges(AtlasEdgeDirection.BOTH, edgeLabels).iterator();
-
-                        boolean removeAttr = true;
-                        while (edgeIterator.hasNext()) {
-                            AtlasEdge edge = edgeIterator.next();
-                            if (!edgesToBeDeleted.contains(edge) && ACTIVE.equals(getStatus(edge))) {
-                                removeAttr = false;
-                                break;
-                            }
-                        }
-
-                        if (removeAttr) {
-                            AtlasGraphUtilsV2.setEncodedProperty(otherVertex, HAS_LINEAGE, false);
-                        }
-                    }
-                }
-            }
-        }
-        RequestContext.get().endMetricRecord(metricRecorder);
-    }
 
     private void addCategoriesToTermEntity(AttributeMutationContext ctx, List<Object> newElementsCreated, List<AtlasEdge> removedElements) {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addCategoriesToTermEntity");
