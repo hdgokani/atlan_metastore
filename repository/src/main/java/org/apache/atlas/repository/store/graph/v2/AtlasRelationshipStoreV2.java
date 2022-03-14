@@ -31,7 +31,6 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
-import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
@@ -438,8 +437,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD,
                                                                                         relationship.getTypeName(), end1Entity, end2Entity));
 
-            RequestContext.get().setEntityWithRelationship(end1Entity.getGuid(), new AtlasRelationshipHeader(relationship.getTypeName(),null,new AtlasObjectId(end1Entity.getGuid() ,end1Entity.getTypeName())
-                    , new AtlasObjectId(end2Entity.getGuid(), end2Entity.getTypeName()), null ));
 
             if (existingRelationshipCheck) {
                 ret = graphHelper.getOrCreateEdge(end1Vertex, end2Vertex, relationshipLabel);
@@ -498,9 +495,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasEntityHeader     end2Entity   = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_UPDATE, relationship.getTypeName(), end1Entity, end2Entity));
-
-        RequestContext.get().setEntityWithRelationship(end1Entity.getGuid(), new AtlasRelationshipHeader(relationship.getTypeName(),null,new AtlasObjectId(end1Entity.getGuid() ,end1Entity.getTypeName())
-                , new AtlasObjectId(end2Entity.getGuid(), end2Entity.getTypeName()), null ));
 
         updateTagPropagations(relationshipEdge, relationship);
 
