@@ -1396,8 +1396,31 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         if(!entityHeaderWithClassifications.getClassifications().isEmpty()) {
                             entityHeader.setClassifications(entityHeaderWithClassifications.getClassifications());
                         }
-                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeader),
-                                "update entity: type=", entity.getTypeName());
+
+                        AtlasEntityAccessRequest accessRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(entity));
+                        try {
+                            AtlasAuthorizationUtils.verifyAccess(accessRequest, "update entity: type=", entity.getTypeName());
+
+                        } catch (AtlasBaseException ae) {
+                            if (ae.getAtlasErrorCode() == AtlasErrorCode.UNAUTHORIZED_ACCESS) {
+                                AtlasVertex storedVertex = context.getVertex(entity.getGuid());
+                                AtlasEntity diffEntity = entityComparator.getDiffResult(entity, storedVertex, false).getDiffEntity();
+
+                                if (MapUtils.isEmpty(diffEntity.getAttributes()) &&
+                                        MapUtils.isEmpty(diffEntity.getCustomAttributes()) &&
+                                        MapUtils.isEmpty(diffEntity.getBusinessAttributes()) &&
+                                        CollectionUtils.isEmpty(diffEntity.getClassifications()) &&
+                                        CollectionUtils.isEmpty(diffEntity.getLabels()) &&
+                                        MapUtils.isNotEmpty(diffEntity.getRelationshipAttributes()) &&
+                                        diffEntity.getRelationshipAttributes().size() == 1 &&
+                                        diffEntity.getRelationshipAttributes().containsKey("meanings")) {
+                                    //only diff is relationshipAttributes.meanings, allow update
+                                    LOG.info("Allowing Update");
+                                } else {
+                                    throw ae;
+                                }
+                            }
+                        }
                     }
                 }
 
