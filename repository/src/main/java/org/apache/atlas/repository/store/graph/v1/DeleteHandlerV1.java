@@ -1336,7 +1336,7 @@ public abstract class DeleteHandlerV1 {
                         AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
                     }
                 } else {
-                    boolean assetPresent = checkIfDownstreamLineagePresent(edgeVertexMap);
+                    boolean assetPresent = checkIfDownstreamLineagePresent(edgeVertexMap, removedEdges);
                     if (!assetPresent) {
                         AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
                     }
@@ -1377,7 +1377,7 @@ public abstract class DeleteHandlerV1 {
                 }
 
                 if (assetExistForProcess) {
-                    boolean assetPresent = checkIfDownstreamLineagePresent(edgeVertexMap);
+                    boolean assetPresent = checkIfDownstreamLineagePresent(edgeVertexMap, removedEdges);
                     if (!assetPresent) {
                         if (!processVertex.equals(deletedVertex)) {
                             AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, false);
@@ -1389,7 +1389,7 @@ public abstract class DeleteHandlerV1 {
         }
     }
 
-    private boolean checkIfDownstreamLineagePresent(Map edgeVertexMap) {
+    private boolean checkIfDownstreamLineagePresent(Map edgeVertexMap,Collection<AtlasEdge> removedEdges) {
 
         Iterator<Map.Entry<AtlasEdge, AtlasVertex>> iterator = edgeVertexMap.entrySet().iterator();
         boolean otherEndEdgePresent = false;
@@ -1404,7 +1404,7 @@ public abstract class DeleteHandlerV1 {
             while(edgeIterator1.hasNext()) {
                 AtlasEdge edge1 = edgeIterator1.next();
                 LOG.info(GraphHelper.getEdgeDetails(edge1));
-                if(getStatus(edge) == ACTIVE && !edge.equals(edge1)) {
+                if(getStatus(edge) == ACTIVE && !(edge.equals(edge1) || (removedEdges.contains(edge1)))) {
 
                     otherEndEdgePresent = true;
                     edgePresent = true; break;
