@@ -1260,29 +1260,22 @@ public abstract class DeleteHandlerV1 {
                 boolean isCatalog = entityType.getTypeAndAllSuperTypes().contains(CATALOG_SUPER_TYPE);
 
                 if (isCatalog || isProcess) {
-//                    if (vertex.getProperty(HAS_LINEAGE, Boolean.class) != null && vertex.getProperty(HAS_LINEAGE, Boolean.class)) {
-//                        AtlasGraphUtilsV2.setEncodedProperty(vertex, HAS_LINEAGE, false);
-//                    }
 
                     Iterator<AtlasEdge> edgeIterator = vertex.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
 
-                  //  List<AtlasVertex> otherVertices = new ArrayList<>();
                     Set<AtlasEdge> edgesToBeDeleted = new HashSet<>();
                     Map<AtlasEdge,AtlasVertex> edgeVertexMap = new HashMap();
 
                     while (edgeIterator.hasNext()) {
                         AtlasEdge edge = edgeIterator.next();
                         if (ACTIVE.equals(getStatus(edge))) {
-                           // otherVertices.add(isProcess ? edge.getInVertex() : edge.getOutVertex());
                             edgesToBeDeleted.add(edge);
                             AtlasVertex vertex1 = isProcess ? edge.getInVertex() : edge.getOutVertex();
-                            edgeVertexMap.put(edge,vertex1 );
+                            edgeVertexMap.put(edge,vertex1);
                         }
                     }
 
-                  //  resetHasLineageAttributeOnVertex(otherVertices, edgesToBeDeleted);
                     removeHasLineageOnInputOutputDelete(edgesToBeDeleted, vertex);
-                  //  checkIfDownstreamLineagePresent(edgeVertexMap);
                 }
             }
         }
@@ -1313,17 +1306,16 @@ public abstract class DeleteHandlerV1 {
 
         for (AtlasEdge atlasEdge : removedEdges) {
 
-            AtlasVertex processVertex = atlasEdge.getOutVertex(); //     * Get processA and  TableB for a edge.
+            AtlasVertex processVertex = atlasEdge.getOutVertex();
             AtlasVertex assetVertex = atlasEdge.getInVertex();
 
-            if (getStatus(assetVertex) == ACTIVE) {  // Check  status of TableB
+            if (getStatus(assetVertex) == ACTIVE) {
                 Iterator<AtlasEdge> edgeIterator = assetVertex.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
                 LOG.info(getVertexDetails(assetVertex));
                 int processEdgeCount = 0;
                 Map edgeVertexMap = new HashMap();
-                while (edgeIterator.hasNext()) { // Then check all ACTIVE process of TableB
+                while (edgeIterator.hasNext()) {
                     AtlasEdge edge = edgeIterator.next();
-                    LOG.info(GraphHelper.getEdgeDetails(edge));
                     if (getStatus(edge) == ACTIVE && (!removedEdges.contains(edge))) {
                         processEdgeCount++;
                         AtlasVertex processVertex1 = edge.getOutVertex();
@@ -1353,35 +1345,26 @@ public abstract class DeleteHandlerV1 {
                 Map edgeVertexMap = new HashMap();
                 while (edgeIterator1.hasNext()) {
                     AtlasEdge edge = edgeIterator1.next();
-                    LOG.info(GraphHelper.getEdgeDetails(edge));
-                    if (getStatus(edge) == ACTIVE ) {
-
-                        if (PROCESS_OUTPUTS.equals(edge.getLabel())) {
-                            isOutputPresent = true;
-                        }
-                        if (PROCESS_INPUTS.equals(edge.getLabel())) {
-                            isInputPresent = true;
-                        }
+                    if (getStatus(edge) == ACTIVE) {
                         if (!removedEdges.contains(edge)) {
+                            if (PROCESS_OUTPUTS.equals(edge.getLabel())) {
+                                isOutputPresent = true;
+                            }
+                            if (PROCESS_INPUTS.equals(edge.getLabel())) {
+                                isInputPresent = true;
+                            }
                             AtlasVertex assetVertex1 = edge.getInVertex();
                             edgeVertexMap.put(edge, assetVertex1);
+                            assetExistForProcess = true;
                         }
-                        assetExistForProcess = true;
                     }
                 }
 
                 if (!(isOutputPresent && isInputPresent)) {
                     if (!processVertex.equals(deletedVertex)) {
-                        AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, false);
-                    }
-                }
-
-                if (assetExistForProcess) {
-                    boolean assetPresent = checkIfDownstreamLineagePresent(edgeVertexMap, removedEdges);
-                    if (!assetPresent) {
-                        if (!processVertex.equals(deletedVertex)) {
+                        boolean assetPresent = checkIfDownstreamLineagePresent(edgeVertexMap, removedEdges);
+                        if (!assetPresent)
                             AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, false);
-                        }
                     }
                 }
 
