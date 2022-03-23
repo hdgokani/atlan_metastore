@@ -79,6 +79,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasJson;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -3462,6 +3463,7 @@ public class EntityGraphMapper {
     }
 
     public void addHasLineage(Set<AtlasEdge> inputOutputEdges) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addHasLineage");
 
         for (AtlasEdge atlasEdge : inputOutputEdges) {
 
@@ -3477,16 +3479,21 @@ public class EntityGraphMapper {
                 AtlasVertex processVertex1 = edge.getOutVertex();
 
                 Iterator<AtlasEdge> outputEdgeIterator = processVertex1.getEdges(AtlasEdgeDirection.BOTH, PROCESS_OUTPUTS).iterator();
-
+                boolean matched = false;
                 while (outputEdgeIterator.hasNext()) {
                     AtlasEdge outputEdge = outputEdgeIterator.next();
                     if (getStatus(outputEdge) == ACTIVE) {
                         AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
                         AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
+                        matched = true;
+                        break;
                     }
                 }
+                if (matched)
+                    break;
             }
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
 }
