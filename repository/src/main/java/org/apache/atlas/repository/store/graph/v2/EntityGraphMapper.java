@@ -1740,7 +1740,6 @@ public class EntityGraphMapper {
 
             case PROCESS_INPUTS:
             case PROCESS_OUTPUTS: addEdgesToContext(GraphHelper.getGuid(ctx.referringVertex), newElementsCreated,  removedElements);
-              //  addHasLineage(ctx, context, newElementsCreated, removedElements);
                 break;
         }
 
@@ -1750,11 +1749,6 @@ public class EntityGraphMapper {
 
         return allArrayElements;
     }
-
-//    private void addEdgesToContext(List<Object> newElementsCreated, List<AtlasEdge> removedElements) {
-//        RequestContext.get().getRemovedElements().addAll(removedElements);
-//        RequestContext.get().getNewElementsCreated().addAll(newElementsCreated);
-//    }
 
     private void addEdgesToContext(String guid, List<Object> newElementsCreated, List<AtlasEdge> removedElements) {
 
@@ -3467,26 +3461,26 @@ public class EntityGraphMapper {
         AtlasGraphUtilsV2.removeItemFromListProperty(edge, EDGE_PENDING_TASKS_PROPERTY_KEY, taskGuid);
     }
 
-    public void addHasLineage(Set<AtlasEdge> inputOutputEdges){
+    public void addHasLineage(Set<AtlasEdge> inputOutputEdges) {
 
-        for (AtlasEdge atlasEdge: inputOutputEdges) {
+        for (AtlasEdge atlasEdge : inputOutputEdges) {
 
-            AtlasVertex processVertex =    atlasEdge.getOutVertex();
-            AtlasVertex assetVertex   =    atlasEdge.getInVertex();
+            AtlasVertex processVertex = atlasEdge.getOutVertex();
+            AtlasVertex assetVertex = atlasEdge.getInVertex();
 
             // * If NO get all Edges of Asset and check if any process any hasLineage true.
 
             Iterator<AtlasEdge> edges = assetVertex.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
 
             while (edges.hasNext()) {
-                AtlasEdge edge =   edges.next();
+                AtlasEdge edge = edges.next();
                 AtlasVertex processVertex1 = edge.getOutVertex();
 
-                    Iterator<AtlasEdge> edgeIterator1 =  processVertex1.getEdges(AtlasEdgeDirection.BOTH,PROCESS_OUTPUTS).iterator();
+                Iterator<AtlasEdge> outputEdgeIterator = processVertex1.getEdges(AtlasEdgeDirection.BOTH, PROCESS_OUTPUTS).iterator();
 
-                while (edgeIterator1.hasNext()) {
-                    AtlasEdge edge1 = edgeIterator1.next();
-                    if (getStatus(edge1) == ACTIVE) {
+                while (outputEdgeIterator.hasNext()) {
+                    AtlasEdge outputEdge = outputEdgeIterator.next();
+                    if (getStatus(outputEdge) == ACTIVE) {
                         AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
                         AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
                     }
