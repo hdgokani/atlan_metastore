@@ -46,6 +46,7 @@ public class AtlasAccessRequest {
     private       String         clientIPAddress = null;
     private       List<String>   forwardedAddresses;
     private       String         remoteIPAddress;
+    private       boolean        suppressLogs = false;
 
 
     protected AtlasAccessRequest(AtlasPrivilege action) {
@@ -192,12 +193,19 @@ public class AtlasAccessRequest {
         return ret;
     }
 
+    public boolean isSuppressLogs() {
+        return suppressLogs;
+    }
+    public void setSuppressLogs(boolean suppressLogs) {
+        this.suppressLogs = suppressLogs;
+    }
+
     @Override
     public String toString() {
         return "AtlasAccessRequest[" + "action=" + action + ", accessTime=" + accessTime +", user='" + user + '\'' +
                 ", userGroups=" + userGroups + ", clientIPAddress='" + clientIPAddress + '\'' +
                 ", forwardedAddresses=" + forwardedAddresses + ", remoteIPAddress='" + remoteIPAddress + '\'' +
-                ']';
+                ", suppressLogs=" + suppressLogs + ']';
 
     }
 }
