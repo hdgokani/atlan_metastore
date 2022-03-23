@@ -389,7 +389,13 @@ public class EntityLineageService implements AtlasLineageService {
                 Iterator<AtlasEdge> processEdges = datasetVertex.getEdges(IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE).iterator();
 
                 List<AtlasEdge> processEdgesList = new ArrayList<>();
-                processEdges.forEachRemaining(processEdgesList::add);
+
+                while (processEdges.hasNext()) {
+                    AtlasEdge processEdge = processEdges.next();
+                    if (lineageContext.isAllowDeletedProcess() || GraphHelper.getStatus(processEdge) == AtlasEntity.Status.ACTIVE) {
+                        processEdgesList.add(processEdge);
+                    }
+                }
                 ret.addChildrenCount(GraphHelper.getGuid(datasetVertex), isInput ? INPUT : OUTPUT, processEdgesList.size());
 
                 if (lineageContext.shouldApplyLimit() && processEdgesList.size() > lineageContext.getLimit()) {

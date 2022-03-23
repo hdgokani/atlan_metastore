@@ -799,9 +799,9 @@ public class EntityGraphRetriever {
             }
 
             if (CollectionUtils.isNotEmpty(attributes)) {
+                AtlasPerfMetrics.MetricRecorder metricQuery = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader/lookupForAttributes");
                 for (String attrName : attributes) {
                     AtlasAttribute attribute = entityType.getAttribute(attrName);
-
                     if (attribute == null) {
                         attrName = toNonQualifiedName(attrName);
 
@@ -822,6 +822,7 @@ public class EntityGraphRetriever {
                         ret.setAttribute(attrName, attrValue);
                     }
                 }
+            RequestContext.get().endMetricRecord(metricQuery);
             }
         }
 
@@ -883,6 +884,7 @@ public class EntityGraphRetriever {
     }
 
     private void mapAttributes(AtlasVertex entityVertex, AtlasStruct struct, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo, boolean includeReferences) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric3 = RequestContext.get().startMetricRecord("mapAttributes");
         AtlasType objType = typeRegistry.getType(struct.getTypeName());
 
         if (!(objType instanceof AtlasStructType)) {
@@ -896,6 +898,7 @@ public class EntityGraphRetriever {
 
             struct.setAttribute(attribute.getName(), attrValue);
         }
+        RequestContext.get().endMetricRecord(metric3);
     }
 
     private void mapBusinessAttributes(AtlasVertex entityVertex, AtlasEntity entity) throws AtlasBaseException {
@@ -1028,6 +1031,8 @@ public class EntityGraphRetriever {
     }
 
     private Object mapVertexToAttribute(AtlasVertex entityVertex, AtlasAttribute attribute, AtlasEntityExtInfo entityExtInfo, final boolean isMinExtInfo, boolean includeReferences, boolean ignoreInactive) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("mapVertexToAttribute");;
+
         Object    ret                = null;
         AtlasType attrType           = attribute.getAttributeType();
         String    edgeLabel          = attribute.getRelationshipEdgeLabel();
@@ -1043,20 +1048,27 @@ public class EntityGraphRetriever {
                 ret = mapVertexToPrimitive(entityVertex, attribute.getVertexPropertyName(), attribute.getAttributeDef());
                 break;
             case ENUM:
+                AtlasPerfMetrics.MetricRecorder  metric2 = RequestContext.get().startMetricRecord("mapVertexToAttribute.ENUM");
                 ret = AtlasGraphUtilsV2.getEncodedProperty(entityVertex, attribute.getVertexPropertyName(), Object.class);
+                RequestContext.get().endMetricRecord(metric2);
                 break;
             case STRUCT:
                 ret = mapVertexToStruct(entityVertex, edgeLabel, null, entityExtInfo, isMinExtInfo);
                 break;
             case OBJECT_ID_TYPE:
+                AtlasPerfMetrics.MetricRecorder  metric4 = RequestContext.get().startMetricRecord("mapVertexToAttribute.OBJECT_ID_TYPE");
+
                 if (includeReferences) {
                     ret = attribute.getAttributeDef().isSoftReferenced() ? mapVertexToObjectIdForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo) :
                                                                            mapVertexToObjectId(entityVertex, edgeLabel, null, entityExtInfo, isOwnedAttribute, edgeDirection, isMinExtInfo);
                 } else {
                     ret = null;
                 }
+                RequestContext.get().endMetricRecord(metric4);
                 break;
             case ARRAY: {
+                AtlasPerfMetrics.MetricRecorder metric5 = RequestContext.get().startMetricRecord("mapVertexToAttribute.ARRAY");
+
                 final boolean skipAttribute;
 
                 if (!includeReferences) {
@@ -1076,10 +1088,12 @@ public class EntityGraphRetriever {
                         ret = mapVertexToArray(entityVertex, entityExtInfo, isOwnedAttribute, attribute, isMinExtInfo, includeReferences, ignoreInactive);
                     }
                 }
+                RequestContext.get().endMetricRecord(metric5);
             }
                 break;
             case MAP: {
                 final boolean skipAttribute;
+                AtlasPerfMetrics.MetricRecorder metric6 = RequestContext.get().startMetricRecord("mapVertexToAttribute.MAP");
 
                 if (!includeReferences) {
                     AtlasType valueType = ((AtlasMapType) attrType).getValueType();
@@ -1098,13 +1112,14 @@ public class EntityGraphRetriever {
                         ret = mapVertexToMap(entityVertex, entityExtInfo, isOwnedAttribute, attribute, isMinExtInfo, includeReferences);
                     }
                 }
+                RequestContext.get().endMetricRecord(metric6);
             }
                 break;
             case CLASSIFICATION:
                 // do nothing
                 break;
         }
-
+        RequestContext.get().endMetricRecord(metric);
         return ret;
     }
 
@@ -1295,6 +1310,7 @@ public class EntityGraphRetriever {
 
     public static Object mapVertexToPrimitive(AtlasElement entityVertex, final String vertexPropertyName, AtlasAttributeDef attrDef) {
         Object ret = null;
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("mapVertexToPrimitive");;
 
         if (AtlasGraphUtilsV2.getEncodedProperty(entityVertex, vertexPropertyName, Object.class) == null) {
             return null;
@@ -1337,6 +1353,7 @@ public class EntityGraphRetriever {
             default:
                 break;
         }
+        RequestContext.get().endMetricRecord(metric);
 
         return ret;
     }
@@ -1384,6 +1401,7 @@ public class EntityGraphRetriever {
     }
 
     private AtlasStruct mapVertexToStruct(AtlasVertex entityVertex, String edgeLabel, AtlasEdge edge, AtlasEntityExtInfo entityExtInfo, final boolean isMinExtInfo) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric3 = RequestContext.get().startMetricRecord("mapVertexToStruct");
         AtlasStruct ret = null;
 
         if (edge == null) {
@@ -1396,12 +1414,16 @@ public class EntityGraphRetriever {
 
             mapAttributes(referenceVertex, ret, entityExtInfo, isMinExtInfo);
         }
-
+        RequestContext.get().endMetricRecord(metric3);
         return ret;
     }
 
     private Object getVertexAttribute(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
-        return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false) : null;
+        AtlasPerfMetrics.MetricRecorder metricsgetVertexAttribute = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader/getVertexAttribute");
+
+        Object ret =  vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false) : null;
+        RequestContext.get().endMetricRecord(metricsgetVertexAttribute);
+        return ret;
     }
 
     private Object getVertexAttributeIgnoreInactive(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {

@@ -23,7 +23,6 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
@@ -67,7 +66,6 @@ public class RequestContext {
     private final Set<String>                            onlyBAUpdateEntities = new HashSet<>();
     private final List<AtlasTask>                        queuedTasks          = new ArrayList<>();
     private final Set<String> relationAttrsForSearch = new HashSet<>();
-    private final Map<String, AtlasRelationshipHeader>   entityWithRelationship = new HashMap<>();
 
     private final Map<String,List<Object>> removedElementsMap = new HashMap<>();
     private final Map<String,List<Object>> newElementsCreatedMap = new HashMap<>();
@@ -135,7 +133,6 @@ public class RequestContext {
         this.onlyBAUpdateEntities.clear();
         this.relationAttrsForSearch.clear();
         this.queuedTasks.clear();
-        this.entityWithRelationship.clear();
         this.newElementsCreatedMap.clear();
         this.removedElementsMap.clear();
 
@@ -542,12 +539,6 @@ public class RequestContext {
         }
     }
 
-    public Map<String, AtlasRelationshipHeader> getEntityWithRelationship() {
-        return entityWithRelationship;
-    }
-    public void  setEntityWithRelationship(String guid, AtlasRelationshipHeader relheader) {
-         entityWithRelationship.put(guid, relheader);
-    }
     public List<String> getForwardedAddresses() {
         return forwardedAddresses;
     }
