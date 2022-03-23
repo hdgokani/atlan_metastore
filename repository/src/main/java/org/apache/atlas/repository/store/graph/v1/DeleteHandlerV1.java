@@ -1358,23 +1358,22 @@ public abstract class DeleteHandlerV1 {
         while (iterator.hasNext()) {
             Map.Entry<AtlasEdge, AtlasVertex> entry = iterator.next();
             AtlasEdge edge  = entry.getKey();
-            AtlasVertex vertex = entry.getValue();
+            AtlasVertex otherEndVertex = entry.getValue();
 
-            Iterator<AtlasEdge> edgeIterator1 = vertex.getEdges(AtlasEdgeDirection.BOTH,PROCESS_EDGE_LABELS).iterator();
+            Iterator<AtlasEdge> edgeIterator = otherEndVertex.getEdges(AtlasEdgeDirection.BOTH,PROCESS_EDGE_LABELS).iterator();
 
             boolean edgePresent = false;
-            while(edgeIterator1.hasNext()) {
-                AtlasEdge edge1 = edgeIterator1.next();
-                LOG.info(GraphHelper.getEdgeDetails(edge1));
-                if(getStatus(edge) == ACTIVE && !(edge.equals(edge1) || (removedEdges.contains(edge1)))) {
-
+            while(edgeIterator.hasNext()) {
+                AtlasEdge otherEndVertexEdge = edgeIterator.next();
+                if(getStatus(otherEndVertexEdge) == ACTIVE && !(edge.equals(otherEndVertexEdge)
+                        || (removedEdges.contains(otherEndVertexEdge)))) {
                     otherEndEdgePresent = true;
                     edgePresent = true; break;
                 }
             }
 
             if(!edgePresent){
-                AtlasGraphUtilsV2.setEncodedProperty(vertex, HAS_LINEAGE, false);
+                AtlasGraphUtilsV2.setEncodedProperty(otherEndVertex, HAS_LINEAGE, false);
             }
 
         }
