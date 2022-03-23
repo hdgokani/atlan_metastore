@@ -369,7 +369,6 @@ public class EntityGraphMapper {
                     Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
 
                     if(removedEdges!=null &&  removedEdges.size() > 0){
-                      //  removeHasLineageOnInputOutputDelete(removedEgdes);
                         deleteDelegate.getHandler().removeHasLineageOnInputOutputDelete(removedEdges, null);
                     }
 
@@ -420,7 +419,6 @@ public class EntityGraphMapper {
                     Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
 
                     if(removedEdges!=null &&  removedEdges.size() > 0){
-                      //  removeHasLineageOnInputOutputDelete(removedEdges);
                         deleteDelegate.getHandler().removeHasLineageOnInputOutputDelete(removedEdges, null);
                     }
 

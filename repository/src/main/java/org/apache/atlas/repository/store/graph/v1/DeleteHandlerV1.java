@@ -1278,27 +1278,9 @@ public abstract class DeleteHandlerV1 {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void resetHasLineageAttributeOnVertex(List<AtlasVertex> vertices, Set<AtlasEdge> edgesToBeDeleted) {
-        Iterator<AtlasEdge> edgeIterator;
-        for (AtlasVertex otherVertex : vertices) {
-            edgeIterator = otherVertex.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
-
-            boolean removeAttr = true;
-            while (edgeIterator.hasNext()) {
-                AtlasEdge edge = edgeIterator.next();
-                if (!edgesToBeDeleted.contains(edge) && ACTIVE.equals(getStatus(edge))) {
-                    removeAttr = false;
-                    break;
-                }
-            }
-
-            if (removeAttr) {
-                AtlasGraphUtilsV2.setEncodedProperty(otherVertex, HAS_LINEAGE, false);
-            }
-        }
-    }
 
     public void removeHasLineageOnInputOutputDelete(Collection<AtlasEdge> removedEdges, AtlasVertex deletedVertex) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnInputOutputDelete");
 
         for (AtlasEdge atlasEdge : removedEdges) {
 
@@ -1366,6 +1348,7 @@ public abstract class DeleteHandlerV1 {
 
             }
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private boolean checkIfDownstreamLineagePresent(Map edgeVertexMap,Collection<AtlasEdge> removedEdges) {
