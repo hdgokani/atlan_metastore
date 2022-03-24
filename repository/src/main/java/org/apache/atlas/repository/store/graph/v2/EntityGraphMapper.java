@@ -1717,8 +1717,8 @@ public class EntityGraphMapper {
                 break;
 
             case PROCESS_INPUTS:
-            case PROCESS_OUTPUTS: addHasLineage(ctx, context, newElementsCreated, removedElements);
-                break;
+            case PROCESS_OUTPUTS: //addHasLineage(ctx, context, newElementsCreated, removedElements);
+                //break;
         }
 
         if (LOG.isDebugEnabled()) {
