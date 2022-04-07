@@ -841,8 +841,10 @@ public class AdminResource {
     @GET
     @Path("/tasks")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public List<AtlasTask> getTaskStatus(@QueryParam("status") List<String> statusList, @QueryParam("guids") List<String> guids) throws AtlasBaseException {
-        return CollectionUtils.isNotEmpty(guids) ? taskManagement.getByGuids(guids) : taskManagement.getAll(statusList);
+    public List<AtlasTask> getTaskStatus(@QueryParam("status") List<String> statusList, @QueryParam("guids") List<String> guids,
+                                         @QueryParam("offset") @DefaultValue("0") int offset,
+                                         @QueryParam("limit") @DefaultValue("20") int limit) throws AtlasBaseException {
+        return CollectionUtils.isNotEmpty(guids) ? taskManagement.getByGuids(guids) : taskManagement.getAll(statusList, offset, limit);
     }
 
     /*

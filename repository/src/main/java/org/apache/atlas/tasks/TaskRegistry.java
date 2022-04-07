@@ -195,7 +195,7 @@ public class TaskRegistry {
     * If not specified, return all tasks
     * */
     @GraphTransaction
-    public List<AtlasTask> getAll(List<String> statusList) {
+    public List<AtlasTask> getAll(List<String> statusList, int offset, int limit) {
         List<AtlasTask> ret = new ArrayList<>();
         AtlasGraphQuery query = graph.query()
                                      .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME);
@@ -212,7 +212,7 @@ public class TaskRegistry {
 
         query.orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.DESC);
 
-        Iterator<AtlasVertex> results = query.vertices().iterator();
+        Iterator<AtlasVertex> results = query.vertices(offset, limit).iterator();
 
         while (results.hasNext()) {
             ret.add(toAtlasTask(results.next()));
