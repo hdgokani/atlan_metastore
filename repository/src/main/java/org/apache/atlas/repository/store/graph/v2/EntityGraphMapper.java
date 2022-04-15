@@ -151,6 +151,7 @@ import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MEANINGS_NAMES;
 
 
 @Component
@@ -1996,9 +1997,11 @@ public class EntityGraphMapper {
 
         Set<String> qNames = meanings.stream().map(x -> x.getProperty(QUALIFIED_NAME, String.class)).collect(Collectors.toSet());
         List<String> names = meanings.stream().map(x -> x.getProperty(NAME, String.class)).collect(Collectors.toList());
+        Set<String> nameText = meanings.stream().map(x -> x.getProperty(NAME, String.class)).collect(Collectors.toSet());
 
         ctx.getReferringVertex().removeProperty(MEANINGS_PROPERTY_KEY);
         ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
+        ctx.getReferringVertex().removeProperty(MEANINGS_NAMES);
 
         if (CollectionUtils.isNotEmpty(qNames)) {
             qNames.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), MEANINGS_PROPERTY_KEY, q));
@@ -2006,6 +2009,9 @@ public class EntityGraphMapper {
 
         if (CollectionUtils.isNotEmpty(names)) {
             AtlasGraphUtilsV2.setEncodedProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(names, ","));
+        }
+        if (CollectionUtils.isNotEmpty(nameText)) {
+            nameText.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), MEANINGS_NAMES, q));
         }
         RequestContext.get().endMetricRecord(metricRecorder);
     }

@@ -37,11 +37,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.CATEGORIES_PARENT_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.*;
 
 public abstract class GlossaryUtils {
 
@@ -132,7 +128,7 @@ public abstract class GlossaryUtils {
     }
 
     protected void addEntityAttr(AtlasVertex vertex, String propName, String propValue) {
-        if (MEANINGS_PROPERTY_KEY.equals(propName) || CATEGORIES_PROPERTY_KEY.equals(propName)) {
+        if (MEANINGS_PROPERTY_KEY.equals(propName) || CATEGORIES_PROPERTY_KEY.equals(propName) || MEANINGS_NAMES.equals(propName)) {
             AtlasGraphUtilsV2.addEncodedProperty(vertex, propName, propValue);
 
         } else if (GLOSSARY_PROPERTY_KEY.equals(propName) || CATEGORIES_PARENT_PROPERTY_KEY.equals(propName)) {
@@ -150,7 +146,7 @@ public abstract class GlossaryUtils {
     }
 
     protected void removeEntityAttr(AtlasVertex vertex, String propName, String propValue) {
-        if (MEANINGS_PROPERTY_KEY.equals(propName) || CATEGORIES_PROPERTY_KEY.equals(propName)) {
+        if (MEANINGS_PROPERTY_KEY.equals(propName) || CATEGORIES_PROPERTY_KEY.equals(propName) || MEANINGS_NAMES.equals(propName)) {
             AtlasGraphUtilsV2.removeItemFromListPropertyValue(vertex, propName, propValue);
 
         } else if (GLOSSARY_PROPERTY_KEY.equals(propName) || CATEGORIES_PARENT_PROPERTY_KEY.equals(propName)) {

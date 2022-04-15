@@ -95,6 +95,7 @@ public class TermPreProcessor implements PreProcessor {
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
+        entity.setAttribute(NAME, termName);
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
                 "create entity: type=", entity.getTypeName());
 
