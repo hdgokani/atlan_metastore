@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.tasks;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.tasks.AtlasTask;
@@ -129,6 +130,8 @@ public class TaskRegistry {
     }
 
     public void inProgress(AtlasVertex taskVertex, AtlasTask task) {
+        RequestContext.get().setCurrentTask(task);
+
         task.setStartTime(new Date());
 
         setEncodedProperty(taskVertex, Constants.TASK_START_TIME, task.getStartTime());
@@ -350,7 +353,11 @@ public class TaskRegistry {
         setEncodedProperty(ret, Constants.TASK_PARAMETERS, AtlasJson.toJson(task.getParameters()));
         setEncodedProperty(ret, Constants.TASK_ATTEMPT_COUNT, task.getAttemptCount());
         setEncodedProperty(ret, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
-        LOG.info("Creating task vertex: {}",getVertexDetails(ret));
+
+        LOG.info("Creating task vertex: {}: {}, {}: {}, {}: {} ",
+                Constants.TASK_TYPE, task.getType(),
+                Constants.TASK_PARAMETERS, AtlasJson.toJson(task.getParameters()),
+                TASK_GUID, task.getGuid());
 
         return ret;
     }
