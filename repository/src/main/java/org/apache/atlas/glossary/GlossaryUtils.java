@@ -128,7 +128,7 @@ public abstract class GlossaryUtils {
     }
 
     protected void addEntityAttr(AtlasVertex vertex, String propName, String propValue) {
-        if (MEANINGS_PROPERTY_KEY.equals(propName) || CATEGORIES_PROPERTY_KEY.equals(propName) || MEANINGS_NAMES.equals(propName)) {
+        if (MEANINGS_PROPERTY_KEY.equals(propName) || CATEGORIES_PROPERTY_KEY.equals(propName) || MEANINGS_NAMES_KEY.equals(propName)) {
             AtlasGraphUtilsV2.addEncodedProperty(vertex, propName, propValue);
 
         } else if (GLOSSARY_PROPERTY_KEY.equals(propName) || CATEGORIES_PARENT_PROPERTY_KEY.equals(propName)) {
@@ -146,7 +146,7 @@ public abstract class GlossaryUtils {
     }
 
     protected void removeEntityAttr(AtlasVertex vertex, String propName, String propValue) {
-        if (MEANINGS_PROPERTY_KEY.equals(propName) || CATEGORIES_PROPERTY_KEY.equals(propName) || MEANINGS_NAMES.equals(propName)) {
+        if (MEANINGS_PROPERTY_KEY.equals(propName) || CATEGORIES_PROPERTY_KEY.equals(propName) || MEANINGS_NAMES_KEY.equals(propName)) {
             AtlasGraphUtilsV2.removeItemFromListPropertyValue(vertex, propName, propValue);
 
         } else if (GLOSSARY_PROPERTY_KEY.equals(propName) || CATEGORIES_PARENT_PROPERTY_KEY.equals(propName)) {

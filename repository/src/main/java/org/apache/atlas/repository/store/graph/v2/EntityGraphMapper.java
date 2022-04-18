@@ -151,7 +151,7 @@ import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANINGS_NAMES;
+import static org.apache.atlas.type.Constants.MEANINGS_NAMES_KEY;
 
 
 @Component
@@ -2001,7 +2001,7 @@ public class EntityGraphMapper {
 
         ctx.getReferringVertex().removeProperty(MEANINGS_PROPERTY_KEY);
         ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
-        ctx.getReferringVertex().removeProperty(MEANINGS_NAMES);
+        ctx.getReferringVertex().removeProperty(MEANINGS_NAMES_KEY);
 
         if (CollectionUtils.isNotEmpty(qNames)) {
             qNames.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), MEANINGS_PROPERTY_KEY, q));
@@ -2011,7 +2011,7 @@ public class EntityGraphMapper {
             AtlasGraphUtilsV2.setEncodedProperty(ctx.referringVertex, MEANINGS_TEXT_PROPERTY_KEY, StringUtils.join(names, ","));
         }
         if (CollectionUtils.isNotEmpty(nameText)) {
-            nameText.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), MEANINGS_NAMES, q));
+            nameText.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), MEANINGS_NAMES_KEY, q));
         }
         RequestContext.get().endMetricRecord(metricRecorder);
     }
@@ -2816,6 +2816,7 @@ public class EntityGraphMapper {
         vertex.setProperty(CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(classificationNames));
         vertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(propagatedClassificationNames));
         vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
+
     }
 
     private boolean isPropagatedClassification(AtlasClassification classification, String guid) {
@@ -2824,7 +2825,7 @@ public class EntityGraphMapper {
         return StringUtils.isNotEmpty(classificationEntityGuid) && !StringUtils.equals(classificationEntityGuid, guid);
     }
 
-    private void addToClassificationNames(AtlasVertex entityVertex, String classificationName) {
+    private void    addToClassificationNames(AtlasVertex entityVertex, String classificationName) {
         AtlasGraphUtilsV2.addEncodedProperty(entityVertex, TRAIT_NAMES_PROPERTY_KEY, classificationName);
 
         String delimitedClassificationNames = entityVertex.getProperty(CLASSIFICATION_NAMES_KEY, String.class);
@@ -2834,7 +2835,6 @@ public class EntityGraphMapper {
         } else {
             delimitedClassificationNames = delimitedClassificationNames + classificationName + CLASSIFICATION_NAME_DELIMITER;
         }
-
         entityVertex.setProperty(CLASSIFICATION_NAMES_KEY, delimitedClassificationNames);
     }
 

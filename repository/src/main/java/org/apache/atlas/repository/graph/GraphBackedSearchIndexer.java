@@ -72,7 +72,7 @@ import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANINGS_NAMES;
+import static org.apache.atlas.type.Constants.MEANINGS_NAMES_KEY;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 
 
@@ -365,7 +365,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, CUSTOM_ATTRIBUTES_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, LABELS_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
-
             createCommonVertexIndex(management, PATCH_ID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, PATCH_DESCRIPTION_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, PATCH_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
@@ -373,7 +372,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, PATCH_STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, MEANINGS_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false, true);
             createCommonVertexIndex(management, MEANINGS_TEXT_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, ES_ATLAN_TEXT_COMMA_ANALYZER_CONFIG, new HashMap<>());
-            createCommonVertexIndex(management, MEANINGS_NAMES, UniqueKind.NONE, String.class, SET, true, false, true);
+            createCommonVertexIndex(management, MEANINGS_NAMES_KEY, UniqueKind.NONE, String.class, SET, true, false, true);
             createCommonVertexIndex(management, GLOSSARY_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, true);
             createCommonVertexIndex(management, CATEGORIES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false, true);
             createCommonVertexIndex(management, CATEGORIES_PARENT_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, true);
