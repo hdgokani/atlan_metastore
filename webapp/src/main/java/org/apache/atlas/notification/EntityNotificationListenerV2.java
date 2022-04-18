@@ -190,14 +190,13 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     }
 
     private void sendNotifications(OperationType operationType, List<EntityNotificationV2> messages) throws AtlasBaseException {
-        LOG.info("messages size {}", messages.size());
-        /*if (!messages.isEmpty()) {
+        if (!messages.isEmpty()) {
             try {
                 notificationSender.send(messages);
             } catch (NotificationException e) {
                 throw new AtlasBaseException(AtlasErrorCode.ENTITY_NOTIFICATION_FAILED, e, operationType.name());
             }
-        }*/
+        }
     }
 
     private AtlasEntityHeaderWithRelations toNotificationHeader(AtlasEntity entity) {
