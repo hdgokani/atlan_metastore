@@ -78,8 +78,8 @@ public class EmbeddedKafkaServer implements Service {
 
         if (isEmbedded) {
             try {
-                startZk();
-                startKafka();
+//                startZk();
+//                startKafka();
             } catch (Exception e) {
                 throw new AtlasException("Failed to start embedded kafka", e);
             }

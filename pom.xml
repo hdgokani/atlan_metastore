@@ -732,7 +732,7 @@
         <junit.version>4.13.1</junit.version>
         <kafka.scala.binary.version>2.12</kafka.scala.binary.version>
         <kafka.version>2.8.1</kafka.version>
-        <keycloak.version>15.0.2.1</keycloak.version>
+        <keycloak.version>15.0.2</keycloak.version>
         <log4j.version>1.2.17</log4j.version>
         <log4j2.version>2.17.1</log4j2.version>
         <lucene-solr.version>8.6.3</lucene-solr.version>
@@ -762,7 +762,7 @@
         <solr.version>8.6.3</solr.version>
         <spray.version>1.3.1</spray.version>
         <spring.security.version>5.5.1</spring.security.version>
-        <spring.version>5.3.8</spring.version>
+        <spring.version>5.3.18</spring.version>
         <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
         <storm.version>2.3.0</storm.version>
         <surefire.forkCount>2C</surefire.forkCount>
@@ -2092,6 +2092,7 @@
 
                         <!-- atlas data directory creates when tests are run from IDE -->
                         <exclude>**/atlas.data/**</exclude>
+                        <!--suppress UnresolvedMavenProperty -->
                         <exclude>**/${sys:atlas.data}/**</exclude>
                         <exclude>**/policy-store.txt</exclude>
                         <exclude>**/*rebel*.xml</exclude>
