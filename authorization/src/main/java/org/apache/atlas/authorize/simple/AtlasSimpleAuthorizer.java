@@ -32,6 +32,7 @@ import org.apache.atlas.authorize.*;
 import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.*;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
+import org.apache.atlas.model.instance.AtlasAssetAccessor;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -175,6 +176,12 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
         }
 
         return ret;
+    }
+
+    @Override
+    public List<AtlasAssetAccessor> assetAccessors(AtlasAssetAccessorRequest request) {
+        //TODO: implement method
+        return null;
     }
 
     @Override
