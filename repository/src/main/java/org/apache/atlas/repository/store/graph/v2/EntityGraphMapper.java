@@ -86,6 +86,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -2572,43 +2573,48 @@ public class EntityGraphMapper {
                 addedClassifications.get(classification).add(entityVertex);
 
 
-                if (propagateTags) {
-                    // compute propagatedEntityVertices only once
-                    if (entitiesToPropagateTo == null) {
-                        entitiesToPropagateTo = entityRetriever.getImpactedVerticesV2(entityVertex);
-                    }
-
-                    if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug("Propagating tag: [{}][{}] to {}", classificationName, entityType.getTypeName(), getTypeNames(entitiesToPropagateTo));
+                    if (propagateTags) {
+                        // compute propagatedEntityVertices only once
+                        if (entitiesToPropagateTo == null) {
+                            entitiesToPropagateTo = entityRetriever.getImpactedVerticesV2(entityVertex);
                         }
 
-                        List<AtlasVertex> entitiesPropagatedTo = deleteDelegate.getHandler().addTagPropagation(classificationVertex, entitiesToPropagateTo);
+                        if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debug("Propagating tag: [{}][{}] to {}", classificationName, entityType.getTypeName(), getTypeNames(entitiesToPropagateTo));
+                            }
 
-                        if (CollectionUtils.isNotEmpty(entitiesPropagatedTo)) {
-                            addedClassifications.get(classification).addAll(entitiesPropagatedTo);
+                            List<AtlasVertex> entitiesPropagatedTo = deleteDelegate.getHandler().addTagPropagation(classificationVertex, entitiesToPropagateTo);
+
+                            if (CollectionUtils.isNotEmpty(entitiesPropagatedTo)) {
+                                addedClassifications.get(classification).addAll(entitiesPropagatedTo);
+                            }
+                        } else {
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debug(" --> Not propagating classification: [{}][{}] - no entities found to propagate to.", getTypeName(classificationVertex), entityType.getTypeName());
+                            }
                         }
                     } else {
                         if (LOG.isDebugEnabled()) {
-                            LOG.debug(" --> Not propagating classification: [{}][{}] - no entities found to propagate to.", getTypeName(classificationVertex), entityType.getTypeName());
+                            LOG.debug(" --> Not propagating classification: [{}][{}] - propagation is disabled.", getTypeName(classificationVertex), entityType.getTypeName());
                         }
                     }
-                } else {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug(" --> Not propagating classification: [{}][{}] - propagation is disabled.", getTypeName(classificationVertex), entityType.getTypeName());
-                    }
-                }
 
                 addClassifications.add(classification);
 
 
             }
-            AtlasEntity ent = entityRetriever.toAtlasEntity(entityVertex);
+
             reqContext.cache(entityRetriever.toAtlasEntity(entityVertex));
+            if (entitiesToPropagateTo == null) {
+                entitiesToPropagateTo = entityRetriever.getImpactedVerticesV2(entityVertex);
+            }
             if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
-                for(AtlasVertex vert : entitiesToPropagateTo){
-                    reqContext.cache(entityRetriever.toAtlasEntity(vert));
+                for (AtlasVertex vert : entitiesToPropagateTo){
+                    AtlasEntity ent = entityRetriever.toAtlasEntity(vert);
+                    reqContext.cache(ent);
                 }
+
             }
 
             // notify listeners on classification addition
@@ -2618,11 +2624,6 @@ public class EntityGraphMapper {
                 notificationVertices.addAll(entitiesToPropagateTo);
             }
 
-            if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
-                for(AtlasVertex vert : entitiesToPropagateTo){
-                    reqContext.cache(entityRetriever.toAtlasEntity(vert));
-                }
-            }
 
 
             for (AtlasClassification classification : addedClassifications.keySet()) {
@@ -3392,11 +3393,12 @@ public class EntityGraphMapper {
 
     private List<AtlasEntity> updateClassificationText(AtlasClassification classification, Collection<AtlasVertex> propagatedVertices) throws AtlasBaseException {
         List<AtlasEntity> propagatedEntities = new ArrayList<>();
+        RequestContext reqContext = RequestContext.get();
 
         if(CollectionUtils.isNotEmpty(propagatedVertices)) {
             for(AtlasVertex vertex : propagatedVertices) {
-                AtlasEntity ent  = entityRetriever.toAtlasEntity(vertex);
-                LOG.debug("Entity Classifications: {}",ent.getClassifications());
+//                AtlasEntity ent  = entityRetriever.toAtlasEntity(vertex);
+//                reqContext.cache(ent);
                 AtlasEntity entity = instanceConverter.getAndCacheEntity(graphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
 
                 if (isActive(entity)) {
