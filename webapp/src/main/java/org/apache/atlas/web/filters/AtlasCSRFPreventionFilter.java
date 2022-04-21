@@ -191,9 +191,8 @@ public class AtlasCSRFPreventionFilter implements Filter {
 				|| (clientCsrfToken != null && clientCsrfToken.equals(csrfToken))) {
 			httpInteraction.proceed();
 		} else {
-			//delete
-			httpInteraction.proceed();
-			//httpInteraction.sendError(HttpServletResponse.SC_BAD_REQUEST,"Missing header or invalid Header value for CSRF Vulnerability Protection");
+
+			httpInteraction.sendError(HttpServletResponse.SC_BAD_REQUEST,"Missing header or invalid Header value for CSRF Vulnerability Protection");
 		}
 	}
 
