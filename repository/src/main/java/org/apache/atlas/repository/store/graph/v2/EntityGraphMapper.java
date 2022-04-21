@@ -2599,6 +2599,8 @@ public class EntityGraphMapper {
                 }
 
                 addClassifications.add(classification);
+
+
             }
 
             // notify listeners on classification addition
@@ -3309,6 +3311,7 @@ public class EntityGraphMapper {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages);
         }
     }
+
 
     public static void validateCustomAttributes(AtlasEntity entity) throws AtlasBaseException {
         Map<String, String> customAttributes = entity.getCustomAttributes();
