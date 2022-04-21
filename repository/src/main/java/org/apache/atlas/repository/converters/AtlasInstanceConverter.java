@@ -301,23 +301,17 @@ public class AtlasInstanceConverter {
 
     public AtlasEntity getAndCacheEntity(String guid, boolean ignoreRelationshipAttributes) throws AtlasBaseException {
         RequestContext context = RequestContext.get();
-        AtlasEntity    entity  = context.getEntity(guid);
+        AtlasEntity    entity  ;
 
-        if (entity == null) {
+
             if (ignoreRelationshipAttributes) {
                 entity = entityGraphRetrieverIgnoreRelationshipAttrs.toAtlasEntity(guid);
             } else {
                 entity = entityGraphRetriever.toAtlasEntity(guid);
             }
 
-            if (entity != null) {
-                context.cache(entity);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Cache miss -> GUID = {}", guid);
-                }
-            }
-        }
+
 
         return entity;
     }

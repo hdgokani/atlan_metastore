@@ -2500,6 +2500,7 @@ public class EntityGraphMapper {
             List<AtlasVertex>                              entitiesToPropagateTo = null;
             Map<AtlasClassification, HashSet<AtlasVertex>> addedClassifications  = new HashMap<>();
             List<AtlasClassification>                      addClassifications    = new ArrayList<>(classifications.size());
+            RequestContext reqContext = RequestContext.get();
 
             for (AtlasClassification c : classifications) {
                 AtlasClassification classification      = new AtlasClassification(c);
@@ -2514,8 +2515,6 @@ public class EntityGraphMapper {
                 }
 
                 if (propagateTags == null) {
-                    RequestContext reqContext = RequestContext.get();
-
                     if(reqContext.isImportInProgress() || reqContext.isInNotificationProcessing()) {
                         propagateTags = false;
                     } else {
@@ -2547,6 +2546,7 @@ public class EntityGraphMapper {
                     LOG.debug("Adding classification [{}] to [{}] using edge label: [{}]", classificationName, entityType.getTypeName(), getTraitLabel(classificationName));
                 }
 
+
                 addToClassificationNames(entityVertex, classificationName);
 
                 // add a new AtlasVertex for the struct or trait instance
@@ -2570,6 +2570,7 @@ public class EntityGraphMapper {
                 }
                 //Add current Vertex to be notified
                 addedClassifications.get(classification).add(entityVertex);
+
 
                 if (propagateTags) {
                     // compute propagatedEntityVertices only once
@@ -2602,6 +2603,13 @@ public class EntityGraphMapper {
 
 
             }
+            AtlasEntity ent = entityRetriever.toAtlasEntity(entityVertex);
+            reqContext.cache(entityRetriever.toAtlasEntity(entityVertex));
+            if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
+                for(AtlasVertex vert : entitiesToPropagateTo){
+                    reqContext.cache(entityRetriever.toAtlasEntity(vert));
+                }
+            }
 
             // notify listeners on classification addition
             List<AtlasVertex> notificationVertices = new ArrayList<AtlasVertex>() {{ add(entityVertex); }};
@@ -2609,6 +2617,13 @@ public class EntityGraphMapper {
             if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
                 notificationVertices.addAll(entitiesToPropagateTo);
             }
+
+            if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
+                for(AtlasVertex vert : entitiesToPropagateTo){
+                    reqContext.cache(entityRetriever.toAtlasEntity(vert));
+                }
+            }
+
 
             for (AtlasClassification classification : addedClassifications.keySet()) {
                 Set<AtlasVertex>  vertices           = addedClassifications.get(classification);
@@ -2674,11 +2689,14 @@ public class EntityGraphMapper {
     }
 
     public void deleteClassification(String entityGuid, String classificationName, String associatedEntityGuid) throws AtlasBaseException {
+
         if (StringUtils.isEmpty(associatedEntityGuid) || associatedEntityGuid.equals(entityGuid)) {
             deleteClassification(entityGuid, classificationName);
+
         } else {
             deletePropagatedClassification(entityGuid, classificationName, associatedEntityGuid);
         }
+
     }
 
     private void deletePropagatedClassification(String entityGuid, String classificationName, String associatedEntityGuid) throws AtlasBaseException {
@@ -2696,11 +2714,14 @@ public class EntityGraphMapper {
     }
 
     public void deleteClassification(String entityGuid, String classificationName) throws AtlasBaseException {
+        RequestContext requestContext = RequestContext.get();
         if (StringUtils.isEmpty(classificationName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_CLASSIFICATION_PARAMS, "delete", entityGuid);
         }
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, entityGuid);
+
+
 
         if (entityVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, entityGuid);
@@ -2772,6 +2793,9 @@ public class EntityGraphMapper {
         entityVertex.setProperty(CLASSIFICATION_NAMES_KEY, getClassificationNamesString(traitNames));
 
         updateModificationMetadata(entityVertex);
+
+        AtlasEntity ent = entityRetriever.toAtlasEntity(entityVertex);
+        requestContext.cache(ent);
 
         if (CollectionUtils.isNotEmpty(entityVertices)) {
             List<AtlasEntity> propagatedEntities = updateClassificationText(classification, entityVertices);
@@ -2862,6 +2886,7 @@ public class EntityGraphMapper {
         List<AtlasClassification> updatedClassifications = new ArrayList<>();
         List<AtlasVertex>         entitiesToPropagateTo  = new ArrayList<>();
         Set<AtlasVertex>          notificationVertices   = new HashSet<AtlasVertex>() {{ add(entityVertex); }};
+        RequestContext requestContext = RequestContext.get();
 
         Map<AtlasVertex, List<AtlasClassification>> addedPropagations   = null;
         Map<AtlasClassification, List<AtlasVertex>> removedPropagations = new HashMap<>();
@@ -3015,6 +3040,12 @@ public class EntityGraphMapper {
 
         if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
             notificationVertices.addAll(entitiesToPropagateTo);
+        }
+        requestContext.cache(entityRetriever.toAtlasEntity(entityVertex));
+        if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
+            for(AtlasVertex vert : entitiesToPropagateTo){
+                requestContext.cache(entityRetriever.toAtlasEntity(vert));
+            }
         }
 
         for (AtlasVertex vertex : notificationVertices) {
@@ -3358,11 +3389,14 @@ public class EntityGraphMapper {
         }
     }
 
+
     private List<AtlasEntity> updateClassificationText(AtlasClassification classification, Collection<AtlasVertex> propagatedVertices) throws AtlasBaseException {
         List<AtlasEntity> propagatedEntities = new ArrayList<>();
 
         if(CollectionUtils.isNotEmpty(propagatedVertices)) {
             for(AtlasVertex vertex : propagatedVertices) {
+                AtlasEntity ent  = entityRetriever.toAtlasEntity(vertex);
+                LOG.debug("Entity Classifications: {}",ent.getClassifications());
                 AtlasEntity entity = instanceConverter.getAndCacheEntity(graphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
 
                 if (isActive(entity)) {

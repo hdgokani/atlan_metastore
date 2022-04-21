@@ -109,7 +109,7 @@ public class EmbeddedServer {
         try {
             server.start();
 
-//            auditServerStatus();
+            auditServerStatus();
 
             server.join();
         } catch(Exception e) {
