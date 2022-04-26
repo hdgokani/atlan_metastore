@@ -21,7 +21,6 @@ import com.google.common.collect.Lists;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.*;
@@ -216,7 +215,7 @@ public class EntityREST {
 
                         AtlasRelationshipAccessRequest request = new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entities.get(i).getRelationShipTypeName(), end1Entity, end2Entity);
                         request.setSuppressLogs(true);
-                        
+
                         AtlasAuthorizationUtils.verifyAccess(request);
 
                         response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(), entities.get(i).getEntityIdEnd2(), true, null));
@@ -233,6 +232,57 @@ public class EntityREST {
         }
 
         return response;
+    }
+
+    /**
+     * API to get accessors info such as roles/groups/users who can perform specific action on an asset
+     */
+    @POST
+    @Path("/accessors")
+    public List<AtlasAssetAccessor> assetAccessors(List<AtlasAssetAccessor> request) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        List<AtlasAssetAccessor> ret;
+
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.assetAccessors()");
+        }
+
+        try {
+            validateEntityAccessors(request);
+            ret = entitiesStore.getAssetAccessors(request);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+        return ret;
+    }
+
+    private void validateEntityAccessors(List<AtlasAssetAccessor> request) throws AtlasBaseException {
+
+        if (CollectionUtils.isEmpty(request)) {
+            throw new AtlasBaseException(BAD_REQUEST, "Requires request map");
+        } else {
+            for (AtlasAssetAccessor element : request) {
+                if (StringUtils.isEmpty(element.getTypeName())) {
+                    throw new AtlasBaseException(BAD_REQUEST, "Requires typeName of the asset");
+                }
+
+                if (StringUtils.isEmpty(element.getQualifiedName()) && StringUtils.isEmpty(element.getGuid())) {
+                    throw new AtlasBaseException(BAD_REQUEST, "Requires either qualifiedName or GUID of the asset");
+                }
+
+                String action = element.getAction();
+                if (StringUtils.isEmpty(action)) {
+                    throw new AtlasBaseException(BAD_REQUEST, "Requires action parameter");
+                }
+
+                try {
+                    AtlasPrivilege.valueOf(action);
+                } catch (IllegalArgumentException ia) {
+                    throw new AtlasBaseException(BAD_REQUEST, "{action}: Invalid action provided");
+                }
+            }
+        }
     }
 
     private AtlasEntityHeader getAtlasEntityHeader(String entityGuid, String entityId, String entityType) throws AtlasBaseException {

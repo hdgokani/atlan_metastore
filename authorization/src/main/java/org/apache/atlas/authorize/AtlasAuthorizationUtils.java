@@ -22,7 +22,7 @@ package org.apache.atlas.authorize;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasAssetAccessor;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -205,6 +205,25 @@ public class AtlasAuthorizationUtils {
         }
 
         RequestContext.get().endMetricRecord(metric);
+
+        return ret;
+    }
+
+    public static List<AtlasAssetAccessor> getAssetAccessors(AtlasAssetAccessorRequest authRequest) {
+        List<AtlasAssetAccessor> ret = null;
+
+        try {
+            AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
+
+            authRequest.setUser(getCurrentUserName(), getCurrentUserGroups());
+            authRequest.setClientIPAddress(RequestContext.get().getClientIPAddress());
+            authRequest.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
+            authRequest.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
+
+            ret = authorizer.assetAccessors(authRequest);
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Unable to obtain AtlasAuthorizer", e);
+        }
 
         return ret;
     }

@@ -19,10 +19,13 @@
 package org.apache.atlas.authorize;
 
 
+import org.apache.atlas.model.instance.AtlasAssetAccessor;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+
+import java.util.List;
 
 public interface AtlasAuthorizer {
     /**
@@ -58,6 +61,8 @@ public interface AtlasAuthorizer {
      * @throws AtlasAuthorizationException
      */
     boolean isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException;
+
+    List<AtlasAssetAccessor> assetAccessors(AtlasAssetAccessorRequest request);
 
     /**
      * authorize relationship type
