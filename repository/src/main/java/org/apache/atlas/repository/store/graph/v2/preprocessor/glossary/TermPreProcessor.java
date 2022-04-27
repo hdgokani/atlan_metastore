@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -66,7 +66,7 @@ public class TermPreProcessor implements PreProcessor {
 
     private AtlasEntityHeader anchor;
 
-    public TermPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,AtlasGraph graph) {
+    public TermPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
         this.graph = graph;
@@ -130,32 +130,33 @@ public class TermPreProcessor implements PreProcessor {
 
         AtlasEntity storeObject = entityRetriever.toAtlasEntity(vertex);
         AtlasRelatedObjectId existingAnchor = (AtlasRelatedObjectId) storeObject.getRelationshipAttribute(ANCHOR);
-        if (existingAnchor != null && !existingAnchor.getGuid().equals(anchor.getGuid())){
+        if (existingAnchor != null && !existingAnchor.getGuid().equals(anchor.getGuid())) {
             throw new AtlasBaseException(AtlasErrorCode.ACHOR_UPDATION_NOT_SUPPORTED);
         }
 
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
-        String      termGUID   = GraphHelper.getGuid(vertex);
+        String termGUID = GraphHelper.getGuid(vertex);
         try {
-            updateMeaningsNamesInEntities(termName,vertexQnName,termGUID);
+            updateMeaningsNamesInEntities(termName, vertexQnName, termGUID);
         } catch (AtlasBaseException e) {
             throw e;
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
-    private void updateMeaningsNamesInEntities(String updateTerm,String termQname,String termGUID) throws AtlasBaseException {
+
+    private void updateMeaningsNamesInEntities(String updateTerm, String termQname, String termGUID) throws AtlasBaseException {
         AtlasIndexQuery indexQuery = null;
 
         SearchSourceBuilder sb = new SearchSourceBuilder();
 
         sb.from(0);
         sb.query(QueryBuilders.boolQuery()
-                .must(QueryBuilders.matchQuery("__meanings",termQname)));
+                .must(QueryBuilders.matchQuery("__meanings", termQname)));
 
-        indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX,sb);
+        indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, sb);
         Iterator<AtlasIndexQuery.Result> indexQueryResult = indexQuery.vertices();
 
         while (indexQueryResult.hasNext()) {
@@ -163,29 +164,31 @@ public class TermPreProcessor implements PreProcessor {
             AtlasVertex vertex = result.getVertex();
             List<AtlasTermAssignmentHeader> meanings = null;
             StringBuilder strB = new StringBuilder("");
+
             try {
                 AtlasEntityHeader ent = entityRetriever.toAtlasEntityHeader(vertex);
-                meanings  = ent.getMeanings();
-                if(!meanings.isEmpty())
-                {
-                    for(AtlasTermAssignmentHeader meaning:meanings){
+                meanings = ent.getMeanings();
+
+                if (!meanings.isEmpty()) {
+                    for (AtlasTermAssignmentHeader meaning : meanings) {
                         String guid = meaning.getTermGuid();
-                        if(termGUID==guid){
-                            strB.append(","+updateTerm);
-                        }else{
-                            strB.append(","+meaning.getDisplayText());
+
+                        if (termGUID == guid) {
+                            strB.append("," + updateTerm);
+                        } else {
+                            strB.append("," + meaning.getDisplayText());
                         }
                     }
                 }
+
                 strB.deleteCharAt(0);
             } catch (AtlasBaseException e) {
                 throw e;
             }
 
-          AtlasGraphUtilsV2.setEncodedProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, strB.toString());
+            AtlasGraphUtilsV2.setEncodedProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, strB.toString());
         }
     }
-
 
 
     private String createQualifiedName() {
@@ -218,7 +221,7 @@ public class TermPreProcessor implements PreProcessor {
                 }
 
             } else if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
-                    StringUtils.isNotEmpty( (String) objectId.getUniqueAttributes().get(QUALIFIED_NAME))) {
+                    StringUtils.isNotEmpty((String) objectId.getUniqueAttributes().get(QUALIFIED_NAME))) {
                 anchor = new AtlasEntityHeader(objectId.getTypeName(), objectId.getUniqueAttributes());
 
             }
