@@ -19,11 +19,15 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.glossary;
 
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -31,10 +35,8 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -44,25 +46,27 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 
+@Component
 public class TermPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TermPreProcessor.class);
 
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
     private final AtlasGraph graph;
+    private EntityDiscoveryService discovery;
 
     private AtlasEntityHeader anchor;
 
@@ -70,6 +74,11 @@ public class TermPreProcessor implements PreProcessor {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
         this.graph = graph;
+        try {
+            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
+        } catch (AtlasException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -139,7 +148,7 @@ public class TermPreProcessor implements PreProcessor {
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         String termGUID = GraphHelper.getGuid(vertex);
         try {
-            updateMeaningsNamesInEntities(termName, vertexQnName, termGUID);
+            updateMeaningsNamesInEntities(termName, vertexQnName, termGUID, 25);
         } catch (AtlasBaseException e) {
             throw e;
         }
@@ -147,47 +156,49 @@ public class TermPreProcessor implements PreProcessor {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void updateMeaningsNamesInEntities(String updateTerm, String termQname, String termGUID) throws AtlasBaseException {
-        AtlasIndexQuery indexQuery = null;
+    private Map<String, Object> getMap(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+        return map;
+    }
 
-        SearchSourceBuilder sb = new SearchSourceBuilder();
+    private void updateMeaningsNamesInEntities(String updateTerm, String termQname, String termGUID, int offset) throws AtlasBaseException {
+        IndexSearchParams indexSearchParams = new IndexSearchParams();
+        int from = 0;
+        while (true) {
+            Map<String, Object> dsl = getMap("from", from);
+            dsl.put("size", offset);
+            dsl.put("query", getMap("bool", getMap("must", getMap("match", getMap("__meanings", termQname)))));
+            indexSearchParams.setDsl(dsl);
+            AtlasSearchResult searchResult = discovery.directIndexSearch(indexSearchParams);
+            List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
 
-        sb.from(0);
-        sb.query(QueryBuilders.boolQuery()
-                .must(QueryBuilders.matchQuery("__meanings", termQname)));
+            if (entityHeaders==null)
+                break;
 
-        indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, sb);
-        Iterator<AtlasIndexQuery.Result> indexQueryResult = indexQuery.vertices();
-
-        while (indexQueryResult.hasNext()) {
-            AtlasIndexQuery.Result result = indexQueryResult.next();
-            AtlasVertex vertex = result.getVertex();
-            List<AtlasTermAssignmentHeader> meanings = null;
-            StringBuilder strB = new StringBuilder("");
-
-            try {
-                AtlasEntityHeader ent = entityRetriever.toAtlasEntityHeader(vertex);
-                meanings = ent.getMeanings();
-
+            for (AtlasEntityHeader entityHeader : entityHeaders) {
+                StringBuilder meaningsText = new StringBuilder("");
+                List<AtlasTermAssignmentHeader> meanings = entityHeader.getMeanings();
                 if (!meanings.isEmpty()) {
                     for (AtlasTermAssignmentHeader meaning : meanings) {
                         String guid = meaning.getTermGuid();
 
                         if (termGUID == guid) {
-                            strB.append("," + updateTerm);
+                            meaningsText.append("," + updateTerm);
                         } else {
-                            strB.append("," + meaning.getDisplayText());
+                            meaningsText.append("," + meaning.getDisplayText());
                         }
                     }
                 }
-
-                strB.deleteCharAt(0);
-            } catch (AtlasBaseException e) {
-                throw e;
+                meaningsText.deleteCharAt(0);
+                AtlasGraphUtilsV2.setEncodedProperty(AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid()), MEANINGS_TEXT_PROPERTY_KEY, meaningsText.toString());
             }
+            from += offset;
 
-            AtlasGraphUtilsV2.setEncodedProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, strB.toString());
+            if(entityHeaders.size()<offset)
+                break;
         }
+
     }
 
 
