@@ -56,6 +56,7 @@ import java.util.Map;
 
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.ELASTICSEARCH_PAGINATION_OFFSET;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 
@@ -148,7 +149,7 @@ public class TermPreProcessor implements PreProcessor {
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         String termGUID = GraphHelper.getGuid(vertex);
         try {
-            updateMeaningsNamesInEntities(termName, vertexQnName, termGUID, 25);
+            updateMeaningsNamesInEntities(termName, vertexQnName, termGUID, ELASTICSEARCH_PAGINATION_OFFSET);
         } catch (AtlasBaseException e) {
             throw e;
         }
