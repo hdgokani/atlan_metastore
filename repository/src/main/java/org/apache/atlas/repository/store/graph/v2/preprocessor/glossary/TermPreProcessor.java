@@ -38,10 +38,12 @@ import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.MapUtils;
@@ -57,7 +59,10 @@ import java.util.Map;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.ELASTICSEARCH_PAGINATION_OFFSET;
+import static org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1.DEFERRED_ACTION_ENABLED;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
+import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskUpdateTaskFactory.MEANINGS_TEXT_UPDATE;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 
 @Component
@@ -66,15 +71,17 @@ public class TermPreProcessor implements PreProcessor {
 
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
-    private final AtlasGraph graph;
+    private final TaskManagement taskManagement;
     private EntityDiscoveryService discovery;
+    private final DeleteHandlerDelegate deleteDelegate;
 
     private AtlasEntityHeader anchor;
 
-    public TermPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
+    public TermPreProcessor(DeleteHandlerDelegate deleteDelegate, AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, TaskManagement taskManagement) {
+        this.deleteDelegate = deleteDelegate;
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
-        this.graph = graph;
+        this.taskManagement = taskManagement;
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
         } catch (AtlasException e) {
@@ -149,12 +156,20 @@ public class TermPreProcessor implements PreProcessor {
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         String termGUID = GraphHelper.getGuid(vertex);
         try {
-            updateMeaningsNamesInEntities(termName, vertexQnName, termGUID, ELASTICSEARCH_PAGINATION_OFFSET);
+            if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
+                createAndQueueTask(MEANINGS_TEXT_UPDATE, termName, vertexQnName, vertex, ELASTICSEARCH_PAGINATION_OFFSET);
+            } else {
+                updateMeaningsNamesInEntities(termName, vertexQnName, termGUID, ELASTICSEARCH_PAGINATION_OFFSET);
+            }
         } catch (AtlasBaseException e) {
             throw e;
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private void createAndQueueTask(String taskType, String updateTerm, String termQname, AtlasVertex termVertex, int offset) {
+        deleteDelegate.getHandler().createAndQueueTask(taskType, updateTerm, termQname, termVertex, offset);
     }
 
     private Map<String, Object> getMap(String key, Object value) {
@@ -163,7 +178,7 @@ public class TermPreProcessor implements PreProcessor {
         return map;
     }
 
-    private void updateMeaningsNamesInEntities(String updateTerm, String termQname, String termGUID, int offset) throws AtlasBaseException {
+    public void updateMeaningsNamesInEntities(String updateTerm, String termQname, String termGUID, int offset) throws AtlasBaseException {
         IndexSearchParams indexSearchParams = new IndexSearchParams();
         int from = 0;
         while (true) {
@@ -174,7 +189,7 @@ public class TermPreProcessor implements PreProcessor {
             AtlasSearchResult searchResult = discovery.directIndexSearch(indexSearchParams);
             List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
 
-            if (entityHeaders==null)
+            if (entityHeaders == null)
                 break;
 
             for (AtlasEntityHeader entityHeader : entityHeaders) {
@@ -196,7 +211,7 @@ public class TermPreProcessor implements PreProcessor {
             }
             from += offset;
 
-            if(entityHeaders.size()<offset)
+            if (entityHeaders.size() < offset)
                 break;
         }
 

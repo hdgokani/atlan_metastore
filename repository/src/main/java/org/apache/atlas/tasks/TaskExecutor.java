@@ -31,23 +31,23 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TaskExecutor {
-    private static final Logger     LOG              = LoggerFactory.getLogger(TaskExecutor.class);
-    private static final TaskLogger TASK_LOG         = TaskLogger.getLogger();
-    private static final String     TASK_NAME_FORMAT = "atlas-task-%d-";
+    private static final Logger LOG = LoggerFactory.getLogger(TaskExecutor.class);
+    private static final TaskLogger TASK_LOG = TaskLogger.getLogger();
+    private static final String TASK_NAME_FORMAT = "atlas-task-%d-";
 
-    private final TaskRegistry              registry;
-    private final Map<String, TaskFactory>  taskTypeFactoryMap;
+    private final TaskRegistry registry;
+    private final Map<String, TaskFactory> taskTypeFactoryMap;
     private final TaskManagement.Statistics statistics;
-    private final ExecutorService           executorService;
+    private final ExecutorService executorService;
 
     public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
-        this.registry           = registry;
+        this.registry = registry;
         this.taskTypeFactoryMap = taskTypeFactoryMap;
-        this.statistics         = statistics;
-        this.executorService    = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
-                                                                    .setDaemon(true)
-                                                                    .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
-                                                                    .build());
+        this.statistics = statistics;
+        this.executorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
+                .setDaemon(true)
+                .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
+                .build());
     }
 
     public void addAll(List<AtlasTask> tasks) {
@@ -70,22 +70,22 @@ public class TaskExecutor {
     static class TaskConsumer implements Runnable {
         private static final int MAX_ATTEMPT_COUNT = 3;
 
-        private final Map<String, TaskFactory>  taskTypeFactoryMap;
-        private final TaskRegistry              registry;
+        private final Map<String, TaskFactory> taskTypeFactoryMap;
+        private final TaskRegistry registry;
         private final TaskManagement.Statistics statistics;
-        private final AtlasTask                 task;
+        private final AtlasTask task;
 
         public TaskConsumer(AtlasTask task, TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
-            this.task               = task;
-            this.registry           = registry;
+            this.task = task;
+            this.registry = registry;
             this.taskTypeFactoryMap = taskTypeFactoryMap;
-            this.statistics         = statistics;
+            this.statistics = statistics;
         }
 
         @Override
         public void run() {
             AtlasVertex taskVertex = null;
-            int         attemptCount;
+            int attemptCount;
 
             try {
                 taskVertex = registry.getVertex(task.getGuid());
@@ -139,7 +139,7 @@ public class TaskExecutor {
         }
 
         private void performTask(AtlasVertex taskVertex, AtlasTask task) throws Exception {
-            TaskFactory  factory      = taskTypeFactoryMap.get(task.getType());
+            TaskFactory factory = taskTypeFactoryMap.get(task.getType());
             if (factory == null) {
                 LOG.error("taskTypeFactoryMap does not contain task of type: {}", task.getType());
                 return;
