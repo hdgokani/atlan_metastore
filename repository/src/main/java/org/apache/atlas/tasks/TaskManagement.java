@@ -24,7 +24,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.tasks.AtlasTask;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.service.Service;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
@@ -51,11 +50,9 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final Statistics                statistics;
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
     private       boolean                   hasStarted;
-    private AtlasGraph graph;
 
     @Inject
-    public TaskManagement(Configuration configuration, TaskRegistry taskRegistry, AtlasGraph graph) {
-        this.graph = graph;
+    public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
         this.configuration      = configuration;
         this.registry           = taskRegistry;
         this.statistics         = new Statistics();
@@ -137,7 +134,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             AtlasTask task = getByGuid(taskGuid);
 
             if (task != null &&
-                    (task.getStatus().equals(AtlasTask.Status.FAILED) || task.getStatus().equals(AtlasTask.Status.IN_PROGRESS))) {
+                    (task.getStatus().equals(AtlasTask.Status.PENDING) || task.getStatus().equals(AtlasTask.Status.IN_PROGRESS))) {
                 /* Allowing IN_PROGRESS task retry for following scenario
                 -> Started a task
                 -> before task gets completed Cassandra gets completely down
@@ -149,9 +146,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
 
         if (CollectionUtils.isNotEmpty(taskToRetry)) {
-            //TODO: review once following task is ready
-            //Tasks API: Limit tasks queue & keep fetching new tasks from db storage
-            //addAll(taskToRetry);
+            addAll(taskToRetry);
         }
     }
 

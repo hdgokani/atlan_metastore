@@ -29,7 +29,6 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
-import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
@@ -50,7 +49,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.Constants.TASK_STATUS;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getVertexDetails;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
 @Component
@@ -165,12 +163,6 @@ public class TaskRegistry {
                 setEncodedProperty(taskVertex, Constants.TASK_TIME_TAKEN_IN_SECONDS, timeTaken);
             }
         }
-        //task.setStatus(AtlasTask.Status.PENDING);
-        /*try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }*/
 
         updateStatus(taskVertex, task);
     }
@@ -279,7 +271,6 @@ public class TaskRegistry {
             }
         }
 
-        LOG.info("FOUND {} in main", ret.size());
         return ret;
     }
 
@@ -288,7 +279,7 @@ public class TaskRegistry {
         List<AtlasTask> ret = new ArrayList<>();
 
         int fetched = 0;
-        int size = 5;
+        int size = queueSize;
         int from = 0;
         boolean hasNext = true;
 

@@ -848,7 +848,7 @@ public class AdminResource {
     }
 
     /*
-    * Retry failed/ in_progress (for a very special case of cassandra went down) tasks on demand
+    * Retry failed/ in_progress tasks on demand (for a very special case of cassandra went down)
     * @Param taskGuids list of task guids to retry
     * */
     @POST

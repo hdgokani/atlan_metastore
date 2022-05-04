@@ -17,16 +17,10 @@
  */
 package org.apache.atlas.tasks;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.tasks.AtlasTask;
-import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.poi.ss.formula.functions.T;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,14 +36,19 @@ public class TaskQueueWatcher implements Runnable {
     private final Map<String, TaskFactory> taskTypeFactoryMap;
     private final TaskManagement.Statistics statistics;
 
+    private static long pollInterval = AtlasConfiguration.TASKS_REQUEUE_POLL_INTERVAL.getLong();
+
     private CountDownLatch latch = null;
 
     public TaskQueueWatcher(ExecutorService executorService, TaskRegistry registry,
-                            Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
+                            Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
+                            CountDownLatch latch) {
+
         this.registry = registry;
         this.executorService = executorService;
         this.taskTypeFactoryMap = taskTypeFactoryMap;
         this.statistics = statistics;
+        this.latch = latch;
     }
 
     @Override
@@ -57,39 +56,74 @@ public class TaskQueueWatcher implements Runnable {
         if (LOG.isDebugEnabled()) {
             LOG.debug("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
         }
+        RequestContext.setWatcherThreadAlive(true);
 
-        try {
-            if (latch != null && latch.getCount() != 0) {
-                LOG.info("TaskQueueWatcher: Waiting on Latch, current count: {}", latch.getCount());
-                latch.await();
+        while (true) {
+            try {
+                if (latch != null && latch.getCount() != 0) {
+                    LOG.info("TaskQueueWatcher: Waiting on Latch, current count: {}", latch.getCount());
+                    latch.await();
+                }
+
+                if (latch != null) {
+                    LOG.info("TaskQueueWatcher: Latch wait complete!!");
+                }
+
+                TasksFetcher fetcher = new TasksFetcher(registry);
+
+                Thread tasksFetcherThread = new Thread(fetcher);
+                tasksFetcherThread.start();
+                tasksFetcherThread.join();
+
+                List<AtlasTask> tasks = fetcher.getTasks();
+                if (CollectionUtils.isNotEmpty(tasks)) {
+                    addAll(tasks);
+                } else {
+                    LOG.info("No tasks to queue, sleeping for {} ms", pollInterval);
+                }
+
+                Thread.sleep(pollInterval);
+
+            } catch (InterruptedException interruptedException) {
+                LOG.error("TaskQueueWatcher: Interrupted");
+                LOG.error("TaskQueueWatcher thread is terminated, new tasks will not be loaded into the queue until next restart");
+                RequestContext.setWatcherThreadAlive(false);
+                break;
+            } catch (Exception e){
+                LOG.error("TaskQueueWatcher: Exception occurred");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void addAll(List<AtlasTask> tasks) {
+        if (CollectionUtils.isNotEmpty(tasks)) {
+            latch = new CountDownLatch(tasks.size());
+
+            for (AtlasTask task : tasks) {
+                if (task == null) {
+                    continue;
+                }
+                TASK_LOG.log(task);
+
+                this.executorService.submit(new TaskExecutor.TaskConsumer(task, this.registry, this.taskTypeFactoryMap, this.statistics, latch));
             }
 
-            if (latch != null) {
-                LOG.info("TaskQueueWatcher: Latch wait complete!!");
+            LOG.info("TasksFetcher: Submitted {} tasks to the queue", tasks.size());
+        } else {
+            if (LOG.isDebugEnabled()){
+                LOG.debug("TasksFetcher: No task to queue");
             }
-
-            Thread tasksFetcherThread = new Thread(new TasksFetcher(registry, latch, executorService, taskTypeFactoryMap, statistics));
-            tasksFetcherThread.start();
-
-        } catch (InterruptedException e) {
-            LOG.error("Await on latch interrupted");
+            LOG.info("TasksFetcher: No task to queue");
         }
     }
 
     static class TasksFetcher implements Runnable {
-        private CountDownLatch latch;
         private TaskRegistry registry;
-        private ExecutorService executorService;
-        private final TaskManagement.Statistics statistics;
-        private final Map<String, TaskFactory> taskTypeFactoryMap;
+        private List<AtlasTask> tasks = new ArrayList<>();
 
-        public TasksFetcher(TaskRegistry registry, CountDownLatch latch, ExecutorService executorService,
-                                Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
-            this.latch = latch;
+        public TasksFetcher(TaskRegistry registry) {
             this.registry = registry;
-            this.statistics = statistics;
-            this.executorService = executorService;
-            this.taskTypeFactoryMap = taskTypeFactoryMap;
         }
 
         @Override
@@ -97,31 +131,13 @@ public class TaskQueueWatcher implements Runnable {
             if (LOG.isDebugEnabled()){
                 LOG.debug("TasksFetcher: Fetching tasks for queuing");
             }
+            LOG.info("TasksFetcher: Fetching tasks for queuing");
 
-            LOG.info("TasksFetcher: fetching tasks for queuing");
-            addAll(registry.getTasksForReQueue());
+            this.tasks = registry.getTasksForReQueue();
         }
 
-        private void addAll(List<AtlasTask> tasks) {
-            if (CollectionUtils.isNotEmpty(tasks)) {
-                latch = new CountDownLatch(tasks.size());
-
-                for (AtlasTask task : tasks) {
-                    if (task == null) {
-                        continue;
-                    }
-                    TASK_LOG.log(task);
-
-                    this.executorService.submit(new TaskExecutor.TaskConsumer(task, this.registry, this.taskTypeFactoryMap, this.statistics, latch));
-                }
-
-                LOG.info("TasksFetcher: Submitted {} tasks to the queue", tasks.size());
-            } else {
-                if (LOG.isDebugEnabled()){
-                    LOG.debug("TasksFetcher: No task to queue");
-                }
-                LOG.info("TasksFetcher: No task to queue");
-            }
+        public List<AtlasTask> getTasks() {
+            return tasks;
         }
     }
 }

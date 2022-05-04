@@ -19,21 +19,20 @@ package org.apache.atlas.tasks;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.tasks.AtlasTask;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfTracer;
-import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+
 
 public class TaskExecutor {
     private static final Logger     PERF_LOG         = AtlasPerfTracer.getPerfLogger("atlas.task");
@@ -43,43 +42,29 @@ public class TaskExecutor {
 
     private static final boolean perfEnabled = AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG);
 
-    private final ScheduledExecutorService  watcherExecutor;
-    private final ExecutorService           taskExecutorService;
-    private final TaskQueueWatcher          watcher;
+    private final TaskQueueWatcher watcher;
+
+    static CountDownLatch latch;
 
     public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
-        this.taskExecutorService    = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
+        ExecutorService taskExecutorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                                                                     .setDaemon(true)
                                                                     .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
                                                                     .build());
-        this.watcherExecutor    = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder()
-                                                                    .setDaemon(true)
-                                                                    .setNameFormat("TaskQueueWatcher")
-                                                                    .build());
-        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics);
+
+        latch = new CountDownLatch(0);
+        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, latch);
     }
 
     public void addAll() {
-        long delay = AtlasConfiguration.TASKS_REQUEUE_POLL_INTERVAL.getLong();
-        watcherExecutor.scheduleWithFixedDelay(watcher, 0, delay, TimeUnit.MILLISECONDS);
-    }
-
-    /*
-    * This method called from TaskConsumer
-    * If latch count is 0 run TaskQueueWatcher once to reload nex set of tasks if any
-    * If no tasks found, this TaskQueueWatcher thread will get killed
-    * Still TaskQueueWatcher scheduled with scheduleWithFixedDelay will be alive
-    * */
-    public void reloadQueueIfEmpty(CountDownLatch latch) {
-        LOG.info("Re fill queue as all tasks are processed");
-        if (latch != null && latch.getCount() == 0) {
+        if (!RequestContext.isWatcherThreadAlive()) {
             new Thread(watcher).start();
         }
     }
 
     //only called from Unit tests
     public void addAll(List<AtlasTask> tasks) {
-
+        //do nothing as tasks will be queued by watcher thread
     }
 
     @VisibleForTesting
@@ -159,12 +144,6 @@ public class TaskExecutor {
 
                 statistics.error();
             } finally {
-                try {
-                    Thread.sleep(2500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                LOG.info("END task {}: {}", task.getGuid(), task.getType());
                 if (task != null) {
                     this.registry.commit();
 
@@ -172,7 +151,6 @@ public class TaskExecutor {
                 }
 
                 latch.countDown();
-                //TODO: if queue is empty, reload
                 RequestContext.get().clearCache();
                 AtlasPerfTracer.log(perf);
             }
@@ -187,7 +165,6 @@ public class TaskExecutor {
 
             AbstractTask runnableTask = factory.create(task);
 
-            LOG.info("Starting task {}: {}", task.getGuid(), task.getType());
             registry.inProgress(taskVertex, task);
 
             runnableTask.run();
@@ -197,73 +174,6 @@ public class TaskExecutor {
             statistics.successPrint();
         }
     }
-
-    /*static class TaskQueueWatcher implements Runnable {
-        private static final Logger LOG = LoggerFactory.getLogger(TaskQueueWatcher.class);
-        private static final TaskExecutor.TaskLogger TASK_LOG         = TaskExecutor.TaskLogger.getLogger();
-
-        private final TaskRegistry registry;
-        private final ExecutorService executorService;
-        private final Map<String, TaskFactory> taskTypeFactoryMap;
-        private final TaskManagement.Statistics statistics;
-
-        private CountDownLatch latch = null;
-
-        public TaskQueueWatcher(ExecutorService executorService, TaskRegistry registry,
-                                Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
-            this.registry = registry;
-            this.executorService = executorService;
-            this.taskTypeFactoryMap = taskTypeFactoryMap;
-            this.statistics = statistics;
-        }
-
-        @Override
-        public void run() {
-            LOG.info("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
-            try {
-                while (true) {
-
-                    if (latch != null && latch.getCount() != 0) {
-                        LOG.info("TaskQueueWatcher: Waiting for Latch to complete {}", latch.getCount());
-                        latch.await();
-                    }
-
-                    if (latch != null) {
-                        LOG.info("TaskQueueWatcher: Latch wait complete {}", latch.getCount());
-                    }
-
-                    //fetch
-                    //List<AtlasTask> tasks = registry.getTasksForReQueue();
-                    new Thread(() -> {
-                        LOG.info("in different thread{}", registry.getTasksForReQueue().size());
-                    }).start();
-
-                    //LOG.info("TaskQueueWatcher: Fetched next {} tasks", tasks.size());
-
-                    //addAll(tasks);
-                    //LOG.info("TaskQueueWatcher: Submitted next {} tasks", tasks.size());
-
-                    Thread.sleep(15000);
-                }
-            } catch (InterruptedException e) {
-                LOG.error("Await on latch interrupted");
-            }
-        }
-
-        private void addAll(List<AtlasTask> tasks) {
-            latch = new CountDownLatch(tasks.size());
-
-            for (AtlasTask task : tasks) {
-                if (task == null) {
-                    continue;
-                }
-
-                TASK_LOG.log(task);
-
-                this.executorService.submit(new TaskExecutor.TaskConsumer(task, this.registry, this.taskTypeFactoryMap, this.statistics, latch));
-            }
-        }
-    }*/
 
     static class TaskLogger {
         private static final Logger LOG = LoggerFactory.getLogger("TASKS");
