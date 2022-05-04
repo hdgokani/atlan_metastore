@@ -566,6 +566,7 @@ public abstract class DeleteHandlerV1 {
                 removeTagPropagation(classificationVertex, removePropagationsMap.get(classificationVertex));
             }
         }
+
         RequestContext.get().endMetricRecord(metric);
         return removePropagationsMap;
     }

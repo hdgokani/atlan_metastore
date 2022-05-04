@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.tasks;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -28,6 +29,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
@@ -56,10 +58,14 @@ public class TaskRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(TaskRegistry.class);
 
     private AtlasGraph graph;
+    private int queueSize;
+    private boolean useGraphQuery;
 
     @Inject
     public TaskRegistry(AtlasGraph graph) {
         this.graph = graph;
+        queueSize = AtlasConfiguration.TASKS_QUEUE_SIZE.getInt();
+        useGraphQuery = AtlasConfiguration.TASKS_REQUEUE_GRAPH_QUERY.getBoolean();
     }
 
     @GraphTransaction
@@ -159,6 +165,12 @@ public class TaskRegistry {
                 setEncodedProperty(taskVertex, Constants.TASK_TIME_TAKEN_IN_SECONDS, timeTaken);
             }
         }
+        //task.setStatus(AtlasTask.Status.PENDING);
+        /*try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }*/
 
         updateStatus(taskVertex, task);
     }
@@ -231,6 +243,19 @@ public class TaskRegistry {
     }
 
     public List<AtlasTask> getTasksForReQueue() {
+        List<AtlasTask> ret = null;
+
+        if (useGraphQuery) {
+            ret = getTasksForReQueueGraphQuery();
+        } else {
+            ret = getTasksForReQueueIndexSearch();
+        }
+
+        return ret;
+    }
+
+    public List<AtlasTask> getTasksForReQueueGraphQuery() {
+
         List<AtlasTask> ret = new ArrayList<>();
         AtlasGraphQuery query = graph.query()
                 .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME);
@@ -242,12 +267,19 @@ public class TaskRegistry {
 
         query.orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
 
-        Iterator<AtlasVertex> results = query.vertices().iterator();
+        Iterator<AtlasVertex> results = query.vertices(queueSize).iterator();
 
         while (results.hasNext()) {
-            ret.add(toAtlasTask(results.next()));
+            AtlasVertex vertex = results.next();
+
+            if (vertex != null) {
+                ret.add(toAtlasTask(vertex));
+            } else {
+                LOG.error("Null vertex while re-queuing tasks");
+            }
         }
 
+        LOG.info("FOUND {} in main", ret.size());
         return ret;
     }
 
@@ -255,7 +287,8 @@ public class TaskRegistry {
         DirectIndexQueryResult indexQueryResult = null;
         List<AtlasTask> ret = new ArrayList<>();
 
-        int size = 1000;
+        int fetched = 0;
+        int size = 5;
         int from = 0;
         boolean hasNext = true;
 
@@ -269,35 +302,49 @@ public class TaskRegistry {
         dsl.put("sort", Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc"))));
         dsl.put("size", size);
 
-        while (hasNext) {
-            int fetched = 0;
-
-            dsl.put("from", from);
-            indexSearchParams.setDsl(dsl);
-
-            AtlasIndexQuery indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, indexSearchParams);
+        while (hasNext && fetched < queueSize) {
 
             try {
-                indexQueryResult = indexQuery.vertices(indexSearchParams);
-            } catch (AtlasBaseException e) {
-                LOG.error("Failed to fetch pending/in-progress task vertices to re-que");
-                e.printStackTrace();
-            }
-
-            if (indexQueryResult != null) {
-                Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
-
-                while (iterator.hasNext()) {
-                    ret.add(toAtlasTask(iterator.next().getVertex()));
-                    fetched++;
+                dsl.put("from", from);
+                if (from + fetched > queueSize) {
+                    dsl.put("size", queueSize - from);
                 }
-            }
+                indexSearchParams.setDsl(dsl);
 
-            if (fetched != size) {
+                AtlasIndexQuery indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, indexSearchParams);
+
+                try {
+                    indexQueryResult = indexQuery.vertices(indexSearchParams);
+                } catch (AtlasBaseException e) {
+                    hasNext = false;
+                    LOG.error("Failed to fetch pending/in-progress task vertices to re-que");
+                    e.printStackTrace();
+                }
+
+                if (indexQueryResult != null) {
+                    Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
+
+                    while (iterator.hasNext()) {
+                        AtlasVertex vertex = iterator.next().getVertex();
+
+                        if (vertex != null) {
+                            ret.add(toAtlasTask(vertex));
+                        } else {
+                            LOG.error("Null vertex while re-queuing tasks at index {}", fetched);
+                        }
+
+                        fetched++;
+                    }
+                }
+
+                if (fetched == 0 || fetched % size != 0) {
+                    hasNext = false;
+                }
+
+                from += size;
+            } catch (Exception e){
                 hasNext = false;
             }
-
-            from += size;
         }
 
         return ret;
@@ -323,7 +370,7 @@ public class TaskRegistry {
         graph.removeVertex(taskVertex);
     }
 
-    private AtlasTask toAtlasTask(AtlasVertex v) {
+    public static AtlasTask toAtlasTask(AtlasVertex v) {
         AtlasTask ret = new AtlasTask();
 
         String guid = v.getProperty(Constants.TASK_GUID, String.class);

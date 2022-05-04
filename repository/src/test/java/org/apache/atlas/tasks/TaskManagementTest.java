@@ -75,7 +75,7 @@ public class TaskManagementTest extends BaseTaskFixture {
     public void severalTaskAdds() throws AtlasException, InterruptedException {
         int MAX_THREADS = 5;
 
-        TaskManagement taskManagement = new TaskManagement(null, taskRegistry);
+        TaskManagement taskManagement = new TaskManagement(null, taskRegistry, graph);
         taskManagement.start();
 
         Thread[] threads = new Thread[MAX_THREADS];
