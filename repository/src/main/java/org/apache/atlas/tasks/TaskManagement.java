@@ -50,6 +50,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final Statistics                statistics;
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
     private       boolean                   hasStarted;
+    private static boolean                  hasStopped = false;
 
     @Inject
     public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
@@ -69,6 +70,10 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         createTaskTypeFactoryMap(taskTypeFactoryMap, taskFactory);
     }
 
+    public static boolean isStopped() {
+        return hasStopped;
+    }
+
     @Override
     public void start() throws AtlasException {
         if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
@@ -86,6 +91,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     @Override
     public void stop() throws AtlasException {
+        hasStopped = true;
         LOG.info("TaskManagement: Stopped!");
     }
 

@@ -60,6 +60,10 @@ public class TaskQueueWatcher implements Runnable {
 
         while (true) {
             try {
+                if (TaskManagement.isStopped()) {
+                    break;
+                }
+
                 if (latch != null && latch.getCount() != 0) {
                     LOG.info("TaskQueueWatcher: Waiting on Latch, current count: {}", latch.getCount());
                     latch.await();
