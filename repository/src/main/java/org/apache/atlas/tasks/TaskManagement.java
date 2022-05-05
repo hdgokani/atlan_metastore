@@ -134,7 +134,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             AtlasTask task = getByGuid(taskGuid);
 
             if (task != null &&
-                    (task.getStatus().equals(AtlasTask.Status.PENDING) || task.getStatus().equals(AtlasTask.Status.IN_PROGRESS))) {
+                    (task.getStatus().equals(AtlasTask.Status.FAILED) || task.getStatus().equals(AtlasTask.Status.IN_PROGRESS))) {
                 /* Allowing IN_PROGRESS task retry for following scenario
                 -> Started a task
                 -> before task gets completed Cassandra gets completely down
