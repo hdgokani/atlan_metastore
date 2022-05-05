@@ -155,7 +155,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             return;
         }
 
-        dispatchTasks(tasks);
+        dispatchTasks();
     }
 
     public AtlasTask getByGuid(String guid) throws AtlasBaseException {
@@ -200,16 +200,13 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
     }
 
-    private synchronized void dispatchTasks(List<AtlasTask> tasks) {
-        if (CollectionUtils.isEmpty(tasks)) {
-            return;
-        }
+    private synchronized void dispatchTasks() {
 
         if (this.taskExecutor == null) {
             this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
         }
 
-        this.taskExecutor.addAll(tasks);
+        this.taskExecutor.addAll();
 
         this.statistics.print();
     }
@@ -232,18 +229,13 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         if (AtlasConfiguration.TASKS_USE_ENABLED.getBoolean() == false) {
             return;
         }
-        boolean useGraphQuery = AtlasConfiguration.TASKS_REQUEUE_GRAPH_QUERY.getBoolean();
 
-        List<AtlasTask> pendingTasks;
-        if (useGraphQuery) {
-            pendingTasks = this.registry.getTasksForReQueue();
-        } else {
-            pendingTasks = this.registry.getTasksForReQueueIndexSearch();
+        try {
+            dispatchTasks();
+        } catch (Exception e) {
+            LOG.error("TaskManagement: Error while re queue tasks");
+            e.printStackTrace();
         }
-
-        LOG.info("TaskManagement: Found: {}: Tasks pending. Re submitting...", pendingTasks.size());
-
-        addAll(pendingTasks);
     }
 
     @VisibleForTesting
