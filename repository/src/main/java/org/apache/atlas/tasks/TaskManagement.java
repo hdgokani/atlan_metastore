@@ -93,7 +93,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     @Override
     public void instanceIsActive() throws AtlasException {
         LOG.info("==> TaskManagement.instanceIsActive()");
-
+        isRunning = true;
         startInternal();
 
         LOG.info("<== TaskManagement.instanceIsActive()");
