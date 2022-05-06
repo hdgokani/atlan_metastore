@@ -20,6 +20,7 @@ package org.apache.atlas.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -102,6 +103,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     @Override
     public void instanceIsPassive() throws AtlasException {
         isRunning = false;
+        RequestContext.setWatcherThreadAlive(false);
         LOG.info("TaskManagement.instanceIsPassive(): no action needed");
     }
 

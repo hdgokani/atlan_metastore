@@ -220,6 +220,7 @@ public class RequestContext {
     }
 
     public static void setWatcherThreadAlive(boolean watcherThreadAlive) {
+        LOG.info("watcherThreadAlive: setting state {}", watcherThreadAlive);
         RequestContext.watcherThreadAlive = watcherThreadAlive;
     }
 
