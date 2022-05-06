@@ -72,8 +72,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     @Override
     public void start() throws AtlasException {
-        isRunning = true;
         if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
+            isRunning = true;
             startInternal();
         } else {
             LOG.info("TaskManagement.start(): deferring until instance activation");
