@@ -49,8 +49,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final TaskRegistry              registry;
     private final Statistics                statistics;
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
-    private       boolean                   hasStarted;
-    private static boolean                  hasStopped = false;
+    private static      boolean             isRunning;
 
     @Inject
     public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
@@ -70,10 +69,6 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         createTaskTypeFactoryMap(taskTypeFactoryMap, taskFactory);
     }
 
-    public static boolean isStopped() {
-        return hasStopped;
-    }
-
     @Override
     public void start() throws AtlasException {
         if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
@@ -82,16 +77,16 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             LOG.info("TaskManagement.start(): deferring until instance activation");
         }
 
-        this.hasStarted = true;
+        isRunning = true;
     }
 
-    public boolean hasStarted() {
-        return this.hasStarted;
+    public static boolean isRunning() {
+        return isRunning;
     }
 
     @Override
     public void stop() throws AtlasException {
-        hasStopped = true;
+        isRunning = false;
         LOG.info("TaskManagement: Stopped!");
     }
 
@@ -106,6 +101,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     @Override
     public void instanceIsPassive() throws AtlasException {
+        isRunning = false;
         LOG.info("TaskManagement.instanceIsPassive(): no action needed");
     }
 
@@ -212,7 +208,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
         }
 
-        this.taskExecutor.addAll();
+        this.taskExecutor.startWatcherThread();
 
         this.statistics.print();
     }
