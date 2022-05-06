@@ -61,6 +61,7 @@ public class TaskQueueWatcher implements Runnable {
         while (true) {
             try {
                 if (!TaskManagement.isRunning()) {
+                    LOG.error("TaskQueueWatcher: TaskManagement is not running");
                     break;
                 }
 
@@ -89,16 +90,19 @@ public class TaskQueueWatcher implements Runnable {
                 Thread.sleep(pollInterval);
 
             } catch (InterruptedException interruptedException) {
+                LOG.info("watcherThreadAlive: setting state false");
                 RequestContext.setWatcherThreadAlive(false);
                 LOG.error("TaskQueueWatcher: Interrupted");
                 LOG.error("TaskQueueWatcher thread is terminated, new tasks will not be loaded into the queue until next restart");
                 break;
             } catch (Exception e){
+                LOG.info("watcherThreadAlive: setting state false");
                 RequestContext.setWatcherThreadAlive(false);
                 LOG.error("TaskQueueWatcher: Exception occurred");
                 e.printStackTrace();
             }
         }
+        LOG.info("watcherThreadAlive: setting state false");
         RequestContext.setWatcherThreadAlive(false);
     }
 
