@@ -18,17 +18,17 @@
 package org.apache.atlas.authorize;
 
 
-import org.apache.atlas.model.instance.AtlasAssetAccessor;
+import org.apache.atlas.model.instance.AtlasAccessor;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
 import java.util.List;
 import java.util.Set;
 
 public class AtlasAssetAccessorRequest extends AtlasAccessRequest {
-    private List<AtlasAssetAccessor> request;
+    private List<AtlasAccessor> request;
     private AtlasTypeRegistry typeRegistry;
 
-    public AtlasAssetAccessorRequest(List<AtlasAssetAccessor> request, AtlasTypeRegistry typeRegistry) {
+    public AtlasAssetAccessorRequest(List<AtlasAccessor> request, AtlasTypeRegistry typeRegistry) {
         super(null);
         this.request = request;
         this.typeRegistry = typeRegistry;
@@ -42,11 +42,11 @@ public class AtlasAssetAccessorRequest extends AtlasAccessRequest {
         return super.getClassificationTypeAndAllSuperTypes(classificationName, typeRegistry);
     }
 
-    public List<AtlasAssetAccessor> getRequest() {
+    public List<AtlasAccessor> getRequest() {
         return request;
     }
 
-    public void setRequest(List<AtlasAssetAccessor> request) {
+    public void setRequest(List<AtlasAccessor> request) {
         this.request = request;
     }
 

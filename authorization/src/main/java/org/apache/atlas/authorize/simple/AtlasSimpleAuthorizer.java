@@ -32,11 +32,10 @@ import org.apache.atlas.authorize.*;
 import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.*;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
-import org.apache.atlas.model.instance.AtlasAssetAccessor;
+import org.apache.atlas.model.instance.AtlasAccessor;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -179,7 +178,19 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
-    public List<AtlasAssetAccessor> assetAccessors(AtlasAssetAccessorRequest request) {
+    public AtlasAccessor getAccessors(AtlasEntityAccessRequest request) {
+        //TODO: implement method
+        return null;
+    }
+
+    @Override
+    public AtlasAccessor getAccessors(AtlasRelationshipAccessRequest request) {
+        //TODO: implement method
+        return null;
+    }
+
+    @Override
+    public AtlasAccessor getAccessors(AtlasTypeAccessRequest request) {
         //TODO: implement method
         return null;
     }
