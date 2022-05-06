@@ -58,7 +58,10 @@ public class TaskExecutor {
 
     public void startWatcherThread() {
         if (!RequestContext.isWatcherThreadAlive()) {
+            LOG.info("Not alive, Starting");
             new Thread(watcher).start();
+        } else {
+            LOG.info("Alive, not starting");
         }
     }
 
