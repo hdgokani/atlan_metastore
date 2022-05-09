@@ -18,14 +18,16 @@
 package org.apache.atlas.tasks;
 
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TaskQueueWatcher implements Runnable {
@@ -61,14 +63,13 @@ public class TaskQueueWatcher implements Runnable {
 
     @Override
     public void run() {
-        //shouldRun.set(true);
+        shouldRun.set(true);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
         }
-        LOG.info("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
 
-        while (true) {
+        while (shouldRun.get()) {
             try {
                 if (!TaskManagement.isRunning()) {
                     LOG.error("TaskQueueWatcher: TaskManagement is not running");
