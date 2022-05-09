@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TaskQueueWatcher implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(TaskQueueWatcher.class);
@@ -40,7 +41,7 @@ public class TaskQueueWatcher implements Runnable {
 
     private CountDownLatch latch = null;
 
-    private volatile boolean alive = true;
+    private final AtomicBoolean shouldRun = new AtomicBoolean(false);
 
     public TaskQueueWatcher(ExecutorService executorService, TaskRegistry registry,
                             Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
@@ -51,20 +52,23 @@ public class TaskQueueWatcher implements Runnable {
         this.taskTypeFactoryMap = taskTypeFactoryMap;
         this.statistics = statistics;
         this.latch = latch;
-        alive = true;
     }
 
-    public void stop() {
-        alive = false;
+    public void shutdown() {
+        shouldRun.set(false);
+        LOG.info("TaskQueueWatcher: Shutdown");
     }
 
     @Override
     public void run() {
+        shouldRun.set(true);
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
         }
+        LOG.debug("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
 
-        while (alive) {
+        while (shouldRun.get()) {
             try {
                 if (!TaskManagement.isRunning()) {
                     LOG.error("TaskQueueWatcher: TaskManagement is not running");
@@ -103,7 +107,7 @@ public class TaskQueueWatcher implements Runnable {
                 e.printStackTrace();
             }
         }
-        alive = false;
+        LOG.info("TaskQueueWatcher: run() End");
     }
 
     private void addAll(List<AtlasTask> tasks) {

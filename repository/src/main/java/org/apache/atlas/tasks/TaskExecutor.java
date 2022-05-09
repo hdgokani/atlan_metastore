@@ -64,7 +64,7 @@ public class TaskExecutor {
 
     public void stopQueueWatcher() {
         if (watcher != null) {
-            watcher.stop();
+            watcher.shutdown();
         }
     }
 
