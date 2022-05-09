@@ -20,7 +20,6 @@ package org.apache.atlas.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -38,7 +37,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
@@ -199,7 +197,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
     }
 
-    private synchronized void queuePendingTasks() {
+    private synchronized void startWatcherThread() {
 
         if (this.taskExecutor == null) {
             this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
@@ -224,7 +222,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
 
         try {
-            queuePendingTasks();
+            startWatcherThread();
         } catch (Exception e) {
             LOG.error("TaskManagement: Error while re queue tasks");
             e.printStackTrace();
