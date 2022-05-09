@@ -40,6 +40,8 @@ public class TaskQueueWatcher implements Runnable {
 
     private CountDownLatch latch = null;
 
+    private volatile boolean alive = true;
+
     public TaskQueueWatcher(ExecutorService executorService, TaskRegistry registry,
                             Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
                             CountDownLatch latch) {
@@ -51,14 +53,17 @@ public class TaskQueueWatcher implements Runnable {
         this.latch = latch;
     }
 
+    public void stop() {
+        alive = false;
+    }
+
     @Override
     public void run() {
         if (LOG.isDebugEnabled()) {
             LOG.debug("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
         }
-        RequestContext.setWatcherThreadAlive(true);
 
-        while (true) {
+        while (alive) {
             try {
                 if (!TaskManagement.isRunning()) {
                     LOG.error("TaskQueueWatcher: TaskManagement is not running");
@@ -90,20 +95,13 @@ public class TaskQueueWatcher implements Runnable {
                 Thread.sleep(pollInterval);
 
             } catch (InterruptedException interruptedException) {
-                LOG.info("watcherThreadAlive: setting state false");
-                RequestContext.setWatcherThreadAlive(false);
-                LOG.error("TaskQueueWatcher: Interrupted");
-                LOG.error("TaskQueueWatcher thread is terminated, new tasks will not be loaded into the queue until next restart");
+                LOG.error("TaskQueueWatcher: Interrupted: thread is terminated, new tasks will not be loaded into the queue until next restart");
                 break;
             } catch (Exception e){
-                LOG.info("watcherThreadAlive: setting state false");
-                RequestContext.setWatcherThreadAlive(false);
                 LOG.error("TaskQueueWatcher: Exception occurred");
                 e.printStackTrace();
             }
         }
-        LOG.info("watcherThreadAlive: setting state false");
-        RequestContext.setWatcherThreadAlive(false);
     }
 
     private void addAll(List<AtlasTask> tasks) {

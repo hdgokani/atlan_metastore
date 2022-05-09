@@ -87,6 +87,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     @Override
     public void stop() throws AtlasException {
         isRunning = false;
+        taskExecutor.stopQueueWatcher();
         LOG.info("TaskManagement: Stopped!");
     }
 
@@ -102,7 +103,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     @Override
     public void instanceIsPassive() throws AtlasException {
         isRunning = false;
-        RequestContext.setWatcherThreadAlive(false);
+        taskExecutor.stopQueueWatcher();
         LOG.info("TaskManagement.instanceIsPassive(): no action needed");
     }
 
@@ -149,16 +150,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
 
         if (CollectionUtils.isNotEmpty(taskToRetry)) {
-            addAll(taskToRetry);
+            //addAll(taskToRetry);
         }
-    }
-
-    public void addAll(List<AtlasTask> tasks) {
-        if (CollectionUtils.isEmpty(tasks)) {
-            return;
-        }
-
-        dispatchTasks();
     }
 
     public AtlasTask getByGuid(String guid) throws AtlasBaseException {
@@ -203,7 +196,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
     }
 
-    private synchronized void dispatchTasks() {
+    private synchronized void queuePendingTasks() {
 
         if (this.taskExecutor == null) {
             this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
@@ -225,16 +218,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             return;
         }
 
-        queuePendingTasks();
-    }
-
-    private void queuePendingTasks() {
-        if (AtlasConfiguration.TASKS_USE_ENABLED.getBoolean() == false) {
-            return;
-        }
-
         try {
-            dispatchTasks();
+            queuePendingTasks();
         } catch (Exception e) {
             LOG.error("TaskManagement: Error while re queue tasks");
             e.printStackTrace();
