@@ -51,6 +51,7 @@ public class TaskQueueWatcher implements Runnable {
         this.taskTypeFactoryMap = taskTypeFactoryMap;
         this.statistics = statistics;
         this.latch = latch;
+        alive = true;
     }
 
     public void stop() {
@@ -102,6 +103,7 @@ public class TaskQueueWatcher implements Runnable {
                 e.printStackTrace();
             }
         }
+        alive = false;
     }
 
     private void addAll(List<AtlasTask> tasks) {
