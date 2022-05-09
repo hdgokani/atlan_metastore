@@ -20,7 +20,6 @@ package org.apache.atlas.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -38,7 +37,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
@@ -56,7 +54,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private Thread watcherThread = null;
 
     @Inject
-    public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
+    public TaskManagement(Configuration configuration, TaskRegistry taskRegistry    ) {
         this.configuration      = configuration;
         this.registry           = taskRegistry;
         this.statistics         = new Statistics();
@@ -75,11 +73,16 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     @Override
     public void start() throws AtlasException {
-        if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
-            isRunning = true;
-            startInternal();
-        } else {
-            LOG.info("TaskManagement.start(): deferring until instance activation");
+        try {
+            if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
+                isRunning = true;
+                startInternal();
+            } else {
+                LOG.info("TaskManagement.start(): deferring until instance activation");
+            }
+        } catch (Exception e) {
+            isRunning = false;
+            throw e;
         }
     }
 
@@ -90,15 +93,21 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     @Override
     public void stop() throws AtlasException {
         isRunning = false;
-        stopQueueWatcher();
+        watcherThread = null;
         LOG.info("TaskManagement: Stopped!");
     }
 
     @Override
     public void instanceIsActive() throws AtlasException {
         LOG.info("==> TaskManagement.instanceIsActive()");
-        isRunning = true;
-        startInternal();
+
+        try {
+            isRunning = true;
+            startInternal();
+        } catch (Exception e) {
+            isRunning = false;
+            throw e;
+        }
 
         LOG.info("<== TaskManagement.instanceIsActive()");
     }
@@ -106,7 +115,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     @Override
     public void instanceIsPassive() throws AtlasException {
         isRunning = false;
-        stopQueueWatcher();
+        watcherThread = null;
         LOG.info("TaskManagement.instanceIsPassive(): no action needed");
     }
 
@@ -199,7 +208,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
     }
 
-    private synchronized void queuePendingTasks() {
+    private synchronized void startWatcherThread() {
 
         if (this.taskExecutor == null) {
             this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
@@ -224,7 +233,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
 
         try {
-            queuePendingTasks();
+            startWatcherThread();
         } catch (Exception e) {
             LOG.error("TaskManagement: Error while re queue tasks");
             e.printStackTrace();
