@@ -42,40 +42,40 @@ public class TaskExecutor {
 
     private static final boolean perfEnabled = AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG);
 
-    private final TaskQueueWatcher watcher;
+    private final ExecutorService taskExecutorService;
+    private final TaskRegistry registry;
+    private final Map<String, TaskFactory> taskTypeFactoryMap;
+    private final TaskManagement.Statistics statistics;
+
+    private TaskQueueWatcher watcher;
     private Thread watcherThread;
 
     static CountDownLatch latch;
 
     public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics) {
-        ExecutorService taskExecutorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
+        this.taskExecutorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                                                                     .setDaemon(true)
                                                                     .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
                                                                     .build());
 
-        latch = new CountDownLatch(0);
-        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, latch);
+        this.registry = registry;
+        this.statistics = statistics;
+        this.taskTypeFactoryMap = taskTypeFactoryMap;
     }
 
-    public void startWatcherThread() {
+    public Thread startWatcherThread() {
+        latch = new CountDownLatch(0);
+
+        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, latch);
         watcherThread = new Thread(watcher);
         watcherThread.start();
+        return watcherThread;
     }
 
     public void stopQueueWatcher() {
         if (watcher != null) {
             watcher.shutdown();
         }
-    }
-
-    //only called from Unit tests
-    public void addAll(List<AtlasTask> tasks) {
-        //do nothing as tasks will be queued by watcher thread
-    }
-
-    @VisibleForTesting
-    void waitUntilDone() throws InterruptedException {
-        Thread.sleep(5000);
     }
 
     static class TaskConsumer implements Runnable {
