@@ -61,14 +61,14 @@ public class TaskQueueWatcher implements Runnable {
 
     @Override
     public void run() {
-        shouldRun.set(true);
+        //shouldRun.set(true);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
         }
-        LOG.debug("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
+        LOG.info("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
 
-        while (shouldRun.get()) {
+        while (true) {
             try {
                 if (!TaskManagement.isRunning()) {
                     LOG.error("TaskQueueWatcher: TaskManagement is not running");

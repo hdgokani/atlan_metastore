@@ -54,7 +54,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private Thread watcherThread = null;
 
     @Inject
-    public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
+    public TaskManagement(Configuration configuration, TaskRegistry taskRegistry    ) {
         this.configuration      = configuration;
         this.registry           = taskRegistry;
         this.statistics         = new Statistics();
@@ -73,11 +73,16 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     @Override
     public void start() throws AtlasException {
-        if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
-            isRunning = true;
-            startInternal();
-        } else {
-            LOG.info("TaskManagement.start(): deferring until instance activation");
+        try {
+            if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
+                isRunning = true;
+                startInternal();
+            } else {
+                LOG.info("TaskManagement.start(): deferring until instance activation");
+            }
+        } catch (Exception e) {
+            isRunning = false;
+            throw e;
         }
     }
 
@@ -88,15 +93,21 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     @Override
     public void stop() throws AtlasException {
         isRunning = false;
-        stopQueueWatcher();
+        watcherThread = null;
         LOG.info("TaskManagement: Stopped!");
     }
 
     @Override
     public void instanceIsActive() throws AtlasException {
         LOG.info("==> TaskManagement.instanceIsActive()");
-        isRunning = true;
-        startInternal();
+
+        try {
+            isRunning = true;
+            startInternal();
+        } catch (Exception e) {
+            isRunning = false;
+            throw e;
+        }
 
         LOG.info("<== TaskManagement.instanceIsActive()");
     }
@@ -104,7 +115,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     @Override
     public void instanceIsPassive() throws AtlasException {
         isRunning = false;
-        stopQueueWatcher();
+        watcherThread = null;
         LOG.info("TaskManagement.instanceIsPassive(): no action needed");
     }
 
