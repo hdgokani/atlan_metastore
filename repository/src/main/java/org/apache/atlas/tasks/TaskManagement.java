@@ -54,7 +54,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private Thread watcherThread = null;
 
     @Inject
-    public TaskManagement(Configuration configuration, TaskRegistry taskRegistry    ) {
+    public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
         this.configuration      = configuration;
         this.registry           = taskRegistry;
         this.statistics         = new Statistics();
@@ -93,7 +93,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     @Override
     public void stop() throws AtlasException {
         isRunning = false;
-        watcherThread = null;
+        stopQueueWatcher();
         LOG.info("TaskManagement: Stopped!");
     }
 
@@ -115,7 +115,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     @Override
     public void instanceIsPassive() throws AtlasException {
         isRunning = false;
-        watcherThread = null;
+        stopQueueWatcher();
         LOG.info("TaskManagement.instanceIsPassive(): no action needed");
     }
 
