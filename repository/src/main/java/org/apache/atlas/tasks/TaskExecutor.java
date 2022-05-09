@@ -43,6 +43,7 @@ public class TaskExecutor {
     private static final boolean perfEnabled = AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG);
 
     private final TaskQueueWatcher watcher;
+    private Thread watcherThread;
 
     static CountDownLatch latch;
 
@@ -57,11 +58,13 @@ public class TaskExecutor {
     }
 
     public void startWatcherThread() {
-        if (!RequestContext.isWatcherThreadAlive()) {
-            LOG.info("Not alive, Starting");
-            new Thread(watcher).start();
-        } else {
-            LOG.info("Alive, not starting");
+        watcherThread = new Thread(watcher);
+        watcherThread.start();
+    }
+
+    public void stopQueueWatcher() {
+        if (watcher != null) {
+            watcher.stop();
         }
     }
 
