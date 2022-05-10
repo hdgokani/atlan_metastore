@@ -49,7 +49,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final TaskRegistry              registry;
     private final Statistics                statistics;
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
-    private static      boolean             isRunning;
+    //private static      boolean             isRunning;
 
     private Thread watcherThread = null;
 
@@ -75,24 +75,28 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     public void start() throws AtlasException {
         try {
             if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
-                isRunning = true;
+                //isRunning = true;
                 startInternal();
             } else {
                 LOG.info("TaskManagement.start(): deferring until instance activation");
             }
         } catch (Exception e) {
-            isRunning = false;
+            //isRunning = false;
             throw e;
         }
     }
 
-    public static boolean isRunning() {
+    /*public static boolean isRunning() {
         return isRunning;
+    }*/
+
+    public boolean isWatcherActive() {
+        return watcherThread != null;
     }
 
     @Override
     public void stop() throws AtlasException {
-        isRunning = false;
+        //isRunning = false;
         stopQueueWatcher();
         LOG.info("TaskManagement: Stopped!");
     }
@@ -102,10 +106,10 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         LOG.info("==> TaskManagement.instanceIsActive()");
 
         try {
-            isRunning = true;
+            //isRunning = true;
             startInternal();
         } catch (Exception e) {
-            isRunning = false;
+            //isRunning = false;
             throw e;
         }
 
@@ -114,7 +118,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     @Override
     public void instanceIsPassive() throws AtlasException {
-        isRunning = false;
+        //isRunning = false;
         stopQueueWatcher();
         LOG.info("TaskManagement.instanceIsPassive(): no action needed");
     }
