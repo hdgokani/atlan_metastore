@@ -18,11 +18,9 @@
 
 package org.apache.atlas.authorize;
 
-import org.apache.atlas.model.instance.AtlasAssetAccessor;
+import org.apache.atlas.model.instance.AtlasAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 
 public class AtlasNoneAuthorizer implements AtlasAuthorizer {
@@ -49,7 +47,17 @@ public class AtlasNoneAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
-    public List<AtlasAssetAccessor> assetAccessors(AtlasAssetAccessorRequest request) {
+    public AtlasAccessor getAccessors(AtlasEntityAccessRequest request) {
+        return null;
+    }
+
+    @Override
+    public AtlasAccessor getAccessors(AtlasRelationshipAccessRequest request) {
+        return null;
+    }
+
+    @Override
+    public AtlasAccessor getAccessors(AtlasTypeAccessRequest request) {
         return null;
     }
 

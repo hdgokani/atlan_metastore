@@ -345,7 +345,7 @@ public interface AtlasEntityStore {
     BulkImportResponse bulkCreateOrUpdateBusinessAttributes(InputStream inputStream, String fileName) throws AtlasBaseException;
 
 
-    List<AtlasAssetAccessor> getAssetAccessors(List<AtlasAssetAccessor> request) throws AtlasBaseException;
+    List<AtlasAccessor> getAssetAccessors(List<AtlasAccessor> request) throws AtlasBaseException;
 
     void repairIndex() throws AtlasBaseException;
 
