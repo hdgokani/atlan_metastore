@@ -1235,7 +1235,6 @@ public abstract class DeleteHandlerV1 {
             }
         }
         return ret;
-        
     }
 
     private void setBlockedClassificationIds(AtlasEdge edge, List<String> classificationIds) {
