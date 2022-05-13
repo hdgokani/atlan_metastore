@@ -234,7 +234,7 @@ public class EntityREST {
     }
 
     /**
-     * API to get accessors info such as roles/groups/users who can perform specific action on an asset
+     * API to get accessors info such as roles/groups/users who can perform specific action
      */
     @POST
     @Path("/accessors")
@@ -1767,8 +1767,8 @@ public class EntityREST {
     }
 
     private void validateEntityForAccessors(String guid, String qualifiedName, String typeName) throws AtlasBaseException {
-        if (StringUtils.isEmpty(typeName)) {
-            throw new AtlasBaseException(BAD_REQUEST, "Requires typeName of the asset");
+        if (StringUtils.isEmpty(typeName) && StringUtils.isNotEmpty(qualifiedName)) {
+            throw new AtlasBaseException(BAD_REQUEST, "Requires typeName of the asset with qualifiedName");
         }
 
         if (StringUtils.isEmpty(guid) && StringUtils.isEmpty(qualifiedName)) {
