@@ -152,6 +152,7 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
         LOG.warn("Server instance with server id {} is elected as leader", serverId);
         serviceState.becomingActive();
         try {
+            Thread.sleep(300000);
             for (ActiveStateChangeHandler handler : activeStateChangeHandlers) {
                 handler.instanceIsActive();
             }
@@ -209,6 +210,11 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
     @Override
     public void notLeader() {
         LOG.warn("Server instance with server id {} is removed as leader", serverId);
+        try {
+            Thread.sleep(300000);
+        } catch (Exception e) {
+            LOG.error("Error while sleeping", e);
+        }
         serviceState.becomingPassive();
         for (int idx = activeStateChangeHandlers.size() - 1; idx >= 0; idx--) {
             try {
