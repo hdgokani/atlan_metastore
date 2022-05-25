@@ -360,7 +360,7 @@ public class TaskRegistry {
         graph.removeVertex(taskVertex);
     }
 
-    public AtlasTask toAtlasTask(AtlasVertex v) {
+    public static AtlasTask toAtlasTask(AtlasVertex v) {
         AtlasTask ret = new AtlasTask();
 
         String guid = v.getProperty(Constants.TASK_GUID, String.class);
