@@ -1997,9 +1997,12 @@ public class EntityGraphMapper {
     private void addMeaningsToEntity(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addMeaningsToEntity");
         // handle __terms attribute of entity
-        List<AtlasVertex> meanings = createdElements.stream().map(x -> ((AtlasEdge) x).getOutVertex()).collect(Collectors.toList());
-        List<String> currentMeaningsQNames = ctx.getReferringVertex().getMultiValuedProperty(MEANINGS_PROPERTY_KEY,String.class);
+        List<AtlasVertex> meanings = createdElements.stream()
+                .map(x -> ((AtlasEdge) x).getOutVertex())
+                .filter(x -> !ENTITY_DELETED_STATUS.equals(x.getProperty(STATE_PROPERTY_KEY, String.class)))
+                .collect(Collectors.toList());
 
+        List<String> currentMeaningsQNames = ctx.getReferringVertex().getMultiValuedProperty(MEANINGS_PROPERTY_KEY,String.class);
         Set<String> qNames = meanings.stream().map(x -> x.getProperty(QUALIFIED_NAME, String.class)).collect(Collectors.toSet());
         List<String> names = meanings.stream().map(x -> x.getProperty(NAME, String.class)).collect(Collectors.toList());
 
@@ -2849,9 +2852,13 @@ public class EntityGraphMapper {
     }
 
     private boolean classificationHasPendingTask(AtlasTask task, String classificationVertexId, String entityGuid) {
-        if (CLASSIFICATION_PROPAGATION_ADD.equals(task.getType()) || CLASSIFICATION_PROPAGATION_DELETE.equals(task.getType())) {
-            return task.getParameters().get(ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID).equals(classificationVertexId)
-                    && task.getParameters().get(ClassificationTask.PARAM_ENTITY_GUID).equals(entityGuid);
+        try {
+            if (CLASSIFICATION_PROPAGATION_ADD.equals(task.getType()) || CLASSIFICATION_PROPAGATION_DELETE.equals(task.getType())) {
+                return task.getParameters().get(ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID).equals(classificationVertexId)
+                        && task.getParameters().get(ClassificationTask.PARAM_ENTITY_GUID).equals(entityGuid);
+            }
+        } catch (NullPointerException npe) {
+            LOG.warn("Task classificationVertexId or entityGuid is null");
         }
         return false;
     }
