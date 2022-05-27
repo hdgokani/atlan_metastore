@@ -23,6 +23,8 @@ import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.model.tasks.TaskSearchParams;
+import org.apache.atlas.model.tasks.TaskSearchResult;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
@@ -32,6 +34,7 @@ import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -56,12 +59,14 @@ public class TaskRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(TaskRegistry.class);
 
     private AtlasGraph graph;
+    private TaskService taskService;
     private int queueSize;
     private boolean useGraphQuery;
 
     @Inject
-    public TaskRegistry(AtlasGraph graph) {
+    public TaskRegistry(AtlasGraph graph, TaskService taskService) {
         this.graph = graph;
+        this.taskService = taskService;
         queueSize = AtlasConfiguration.TASKS_QUEUE_SIZE.getInt();
         useGraphQuery = AtlasConfiguration.TASKS_REQUEUE_GRAPH_QUERY.getBoolean();
     }
@@ -130,6 +135,31 @@ public class TaskRegistry {
         } finally {
             graph.commit();
         }
+    }
+
+    public List<AtlasTask> getByIdsES(List<String> guids) throws AtlasBaseException {
+        List<AtlasTask> ret = new ArrayList<>();
+
+        List<List<String>> chunkedGuids = ListUtils.partition(guids, 50);
+
+        for (List<String> chunkedGuidList : chunkedGuids) {
+            List<Map> should = new ArrayList<>();
+            for (String guid : chunkedGuidList) {
+                should.add(mapOf("match", mapOf(TASK_GUID, guid)));
+            }
+
+            TaskSearchParams params = new TaskSearchParams();
+            params.setDsl(mapOf("query", mapOf("bool", mapOf("should", should))));
+
+            TaskSearchResult result = taskService.getTasks(params);
+            if (result == null) {
+                return null;
+            }
+
+            ret.addAll(result.getTasks());
+        }
+
+        return ret;
     }
 
     @GraphTransaction
@@ -360,7 +390,7 @@ public class TaskRegistry {
         graph.removeVertex(taskVertex);
     }
 
-    public AtlasTask toAtlasTask(AtlasVertex v) {
+    public static AtlasTask toAtlasTask(AtlasVertex v) {
         AtlasTask ret = new AtlasTask();
 
         String guid = v.getProperty(Constants.TASK_GUID, String.class);
