@@ -49,6 +49,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.Constants.TASK_STATUS;
@@ -156,10 +157,19 @@ public class TaskRegistry {
                 return null;
             }
 
-            ret.addAll(result.getTasks());
+            LOG.info("TaskSearchResult {}", AtlasType.toJson(result));
+            // as __task_guid is text field, might result multiple results due to "-" tokenizing in ES
+            // adding filtering layer to filter exact tasks
+            ret.addAll(filterTasksByGuids(result.getTasks(), chunkedGuidList));
+
+            LOG.info("TaskSearchResult after filtering {}", AtlasType.toJson(ret));
         }
 
         return ret;
+    }
+
+    private List<AtlasTask> filterTasksByGuids(List<AtlasTask> tasks, List<String> guidList) {
+        return tasks.stream().filter(task -> guidList.contains(task.getGuid())).collect(Collectors.toList());
     }
 
     @GraphTransaction
