@@ -201,7 +201,7 @@ public class TaskRegistry {
                 setEncodedProperty(taskVertex, Constants.TASK_TIME_TAKEN_IN_SECONDS, timeTaken);
             }
         }
-        task.setStatus(AtlasTask.Status.PENDING);
+
         updateStatus(taskVertex, task);
     }
 
