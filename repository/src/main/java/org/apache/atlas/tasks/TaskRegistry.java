@@ -161,6 +161,8 @@ public class TaskRegistry {
             // as __task_guid is text field, might result multiple results due to "-" tokenizing in ES
             // adding filtering layer to filter exact tasks
             ret.addAll(filterTasksByGuids(result.getTasks(), chunkedGuidList));
+
+            LOG.info("TaskSearchResult after filtering {}", AtlasType.toJson(ret));
         }
 
         return ret;
