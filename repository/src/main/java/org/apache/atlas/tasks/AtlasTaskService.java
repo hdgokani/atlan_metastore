@@ -39,14 +39,8 @@ public class AtlasTaskService implements TaskService {
         DirectIndexQueryResult indexQueryResult;
 
         try {
-            try {
-                indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
-
-                indexQueryResult = indexQuery.vertices(searchParams);
-            } catch (AtlasBaseException e) {
-                LOG.error("Failed to fetch tasks: {}", e.getMessage());
-                throw e;
-            }
+            indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
+            indexQueryResult = indexQuery.vertices(searchParams);
 
             if (indexQueryResult != null) {
                 Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
@@ -59,13 +53,15 @@ public class AtlasTaskService implements TaskService {
                     } else {
                         LOG.warn("Null vertex while fetching tasks");
                     }
+
                 }
 
                 ret.setTasks(tasks);
                 ret.setApproximateCount(indexQuery.vertexTotals());
                 ret.setAggregations(indexQueryResult.getAggregationMap());
             }
-        } catch (Exception e) {
+        } catch (AtlasBaseException e) {
+            LOG.error("Failed to fetch tasks: {}", e.getMessage());
             throw e;
         }
 
