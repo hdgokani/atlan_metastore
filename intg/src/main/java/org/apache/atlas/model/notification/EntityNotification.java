@@ -20,6 +20,7 @@ package org.apache.atlas.model.notification;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 
@@ -100,15 +101,16 @@ public class EntityNotification implements Serializable {
         private static final long serialVersionUID = 1L;
 
         public enum OperationType {
-            ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE,
-            CLASSIFICATION_ADD, CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE,
-            RELATIONSHIP_CREATE, RELATIONSHIP_UPDATE, RELATIONSHIP_DELETE
+            ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE, CLASSIFICATION_ADD,
+            CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE, RELATIONSHIP_CREATE,
+            RELATIONSHIP_UPDATE, RELATIONSHIP_DELETE, BUSINESS_ATTRIBUTE_UPDATE
         }
 
-        private AtlasEntityHeader entity;
+        private AtlasEntityHeader       entity;
         private AtlasRelationshipHeader relationship;
-        private OperationType     operationType;
+        private OperationType           operationType;
         private long              eventTime;
+        private Object       mutatedDetails;
 
         public EntityNotificationV2() {
             super(ENTITY_NOTIFICATION_V2);
@@ -118,16 +120,15 @@ public class EntityNotification implements Serializable {
             setEventTime(System.currentTimeMillis());
         }
 
-        public EntityNotificationV2(AtlasEntityHeader entity, OperationType operationType) {
-            this(entity, operationType, System.currentTimeMillis());
-        }
 
-        public EntityNotificationV2(AtlasEntityHeader entity, OperationType operationType, long eventTime) {
+
+        public EntityNotificationV2(AtlasEntityHeader entity, Object mutatedDetails, OperationType operationType, long eventTime) {
             super(ENTITY_NOTIFICATION_V2);
 
             setEntity(entity);
             setOperationType(operationType);
             setEventTime(eventTime);
+            setMutatedDetails(mutatedDetails);
         }
 
         public EntityNotificationV2(AtlasRelationshipHeader relationship, OperationType operationType, long eventTime) {
@@ -144,6 +145,10 @@ public class EntityNotification implements Serializable {
 
         public void setEntity(AtlasEntityHeader entity) {
             this.entity = entity;
+        }
+
+        public void setMutatedDetails(Object mutatedDetails){
+            this.mutatedDetails = mutatedDetails;
         }
 
         public AtlasRelationshipHeader getRelationship() {
