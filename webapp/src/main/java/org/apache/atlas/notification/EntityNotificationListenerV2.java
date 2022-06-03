@@ -189,7 +189,6 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
             if (isInternalType(relationship.getTypeName())) {
                 continue;
             }
-
             messages.add(new EntityNotificationV2(toNotificationHeader(relationship), operationType, RequestContext.get().getRequestTime()));
         }
 
