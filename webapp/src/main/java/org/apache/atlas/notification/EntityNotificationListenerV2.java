@@ -201,8 +201,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityBMNotification");
         List<EntityNotificationV2> messages = new ArrayList<>();
 
-
-            messages.add(new EntityNotificationV2(toNotificationHeader(entity, false),updatedBusinessAttributes, operationType, RequestContext.get().getRequestTime()));
+        messages.add(new EntityNotificationV2(toNotificationHeader(entity, false),updatedBusinessAttributes, operationType, RequestContext.get().getRequestTime()));
 
         sendNotifications(operationType, messages);
         RequestContext.get().endMetricRecord(metric);
