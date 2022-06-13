@@ -397,6 +397,7 @@ public class TypesREST {
                                                                AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
+            typesDef.getEnumDefs().forEach(AtlasEnumDef::setRandomNameForEntityAndAttributeDefs);
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
             return typeDefStore.createTypesDef(typesDef);
         } finally {

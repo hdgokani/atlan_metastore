@@ -23,7 +23,9 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -52,25 +54,36 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
           LOG.debug("==> AtlasEnumDefStoreV2.preCreate({})", enumDef);
         }
 
+        AtlasType type = typeRegistry.getType(enumDef.getName());
+
         validateType(enumDef);
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, enumDef), "create enum-def ", enumDef.getName());
 
-        AtlasVertex vertex = typeDefStore.findTypeVertexByName(enumDef.getName());
+        AtlasVertex ret = typeDefStore.findTypeVertexByName(enumDef.getName());
 
-        if (vertex != null) {
+        if (ret != null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_ALREADY_EXISTS, enumDef.getName());
         }
 
-        vertex = typeDefStore.createTypeVertex(enumDef);
-
-        toVertex(enumDef, vertex);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.preCreate({}): {}", enumDef, vertex);
+        //validate uniqueness of display name for Enum
+        if (type.getTypeCategory() == org.apache.atlas.model.TypeCategory.ENUM) {
+            ret = typeDefStore.findTypeVertexByDisplayName(
+                    enumDef.getDisplayName(), TypeCategory.ENUM);
+            if (ret != null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS, enumDef.getDisplayName());
+            }
         }
 
-        return vertex;
+        ret = typeDefStore.createTypeVertex(enumDef);
+
+        toVertex(enumDef, ret);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AtlasEnumDefStoreV2.preCreate({}): {}", enumDef, ret);
+        }
+
+        return ret;
     }
 
     @Override
