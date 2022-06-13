@@ -88,6 +88,8 @@ public interface AtlasEntityStore {
 
     public AtlasEntityHeader getEntityHeaderByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException;
 
+    public AtlasEntityWithExtInfo getAtlasEntityWithExtInfoWithoutAuthorization(AtlasEntityType entityType, Map<String, Object> uniqAttributes, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException ;
+
     /**
      * Batch GET to retrieve entities by their ID
      * @param guid
