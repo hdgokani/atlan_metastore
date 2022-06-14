@@ -206,6 +206,8 @@ public interface AtlasGraph<V, E> {
     AtlasIndexQuery<V, E> elasticsearchQuery(String indexName, SearchSourceBuilder sourceBuilder);
 
     AtlasIndexQuery<V, E> elasticsearchQuery(String indexName, SearchParams searchParams);
+    
+    AtlasIndexQuery elasticsearchQuery(String indexName);
 
     /**
      * Gets the management object associated with this graph and opens a transaction
