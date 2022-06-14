@@ -330,8 +330,8 @@ public final class Constants {
     public static final String CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL = "__Process.inputs";
     public static final String CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL = "__Process.outputs";
     public static final String COLUMN_LINEAGE_RELATIONSHIP_LABEL = "__Process.columnProcesses";
-    public static final String CLASSIFICATION_PROPAGATION_MODE_DEFAULT  ="DEFAULT";
-    public static final String CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE  ="RESTRICT_LINEAGE";
+    public static final String CLASSIFICATION_PROPAGATION_MODE_DEFAULT = "DEFAULT";
+    public static final String CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE  = "RESTRICT_LINEAGE";
 
     public static final HashMap<String, ArrayList<String>> CLASSIFICATION_PROPAGATION_EXCLUSION_MAP = new HashMap<String, ArrayList<String>>(){{
         put(CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE, new ArrayList<>(
@@ -341,6 +341,9 @@ public final class Constants {
         )));
         put(CLASSIFICATION_PROPAGATION_MODE_DEFAULT, null);
     }};
+
+    public static final String REQUEST_HEADER_USER_AGENT = "User-Agent";
+    public static final String REQUEST_HEADER_HOST = "Host";
 
     private Constants() {
     }
