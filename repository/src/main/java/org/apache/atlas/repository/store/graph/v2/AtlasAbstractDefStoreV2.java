@@ -25,6 +25,7 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasNamedTypeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.query.AtlasDSL;
@@ -117,16 +118,20 @@ import java.util.regex.Pattern;
                 throw new AtlasBaseException(AtlasErrorCode.TYPEDEF_DISPLAY_NAME_IS_REQUIRED);
             }
             Set<String> names = new HashSet<>();
-            for (AtlasStructDef.AtlasAttributeDef attr : ((AtlasStructDef) typeDef).getAttributeDefs()) {
-                if (StringUtils.isEmpty(attr.getDisplayName())){
-                    throw new AtlasBaseException(AtlasErrorCode.TYPEDEF_ATTR_DISPLAY_NAME_IS_REQUIRED, typeDef.getName());
-                }
-                if (names.contains(attr.getDisplayName())){
-                    throw new AtlasBaseException(AtlasErrorCode.TYPE_ATTR_WITH_DISPLAY_NAME_ALREADY_EXISTS, attr.getDisplayName(), typeDef.getName());
-                }else{
-                    names.add(attr.getDisplayName());
+
+            if(!typeDef.getClass().equals(AtlasEnumDef.class)){
+                for (AtlasStructDef.AtlasAttributeDef attr : ((AtlasStructDef) typeDef).getAttributeDefs()) {
+                    if (StringUtils.isEmpty(attr.getDisplayName())){
+                        throw new AtlasBaseException(AtlasErrorCode.TYPEDEF_ATTR_DISPLAY_NAME_IS_REQUIRED, typeDef.getName());
+                    }
+                    if (names.contains(attr.getDisplayName())){
+                        throw new AtlasBaseException(AtlasErrorCode.TYPE_ATTR_WITH_DISPLAY_NAME_ALREADY_EXISTS, attr.getDisplayName(), typeDef.getName());
+                    }else{
+                        names.add(attr.getDisplayName());
+                    }
                 }
             }
+
         }
 
         try {
