@@ -1,5 +1,6 @@
-package org.apache.atlas.discovery.log;
+package org.apache.atlas.discovery.searchlog;
 
+import org.apache.atlas.model.discovery.searchlog.SearchRequestLogData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

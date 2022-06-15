@@ -15,9 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.discovery.log;
+package org.apache.atlas.discovery.searchlog;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.model.discovery.searchlog.SearchRequestLogData;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;

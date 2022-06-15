@@ -15,9 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.discovery.log;
+package org.apache.atlas.discovery.searchlog;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.atlas.model.discovery.searchlog.SearchRequestLogData;
 import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
