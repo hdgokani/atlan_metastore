@@ -314,6 +314,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         return new AtlasElasticsearchQuery(this, restClient, INDEX_PREFIX + indexName, searchParams);
     }
 
+    @Override
     public AtlasElasticsearchQuery elasticsearchQuery(String indexName) {
         if (restClient == null) {
             LOG.error("restClient is not initiated, failed to run query on ES");

@@ -429,7 +429,7 @@ public class DiscoveryREST {
 
 
     /**
-     * Index based search for query direct on Elasticsearch
+     * Index based search for query direct on ES searchlogs index
      *
      * @param parameters Index Search parameters @SearchLogSearchParams.java
      * @return search log search result
@@ -442,10 +442,6 @@ public class DiscoveryREST {
     public SearchLogSearchResult searchLogs(SearchLogSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         SearchLogSearchResult result;
-
-        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchLogs(" + parameters + ")");
-        }
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
