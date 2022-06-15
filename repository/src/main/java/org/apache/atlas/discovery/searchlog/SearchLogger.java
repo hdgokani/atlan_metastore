@@ -16,7 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.discovery.log;
+package org.apache.atlas.discovery.searchlog;
+
+import org.apache.atlas.model.discovery.searchlog.SearchRequestLogData;
 
 public interface SearchLogger {
 

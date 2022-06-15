@@ -26,10 +26,12 @@ import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.discovery.EntityDiscoveryService;
-import org.apache.atlas.discovery.log.SearchLoggingManagement;
+import org.apache.atlas.discovery.searchlog.SearchLoggingManagement;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
+import org.apache.atlas.model.discovery.searchlog.SearchLogSearchResult;
+import org.apache.atlas.model.discovery.searchlog.SearchLogSearchParams;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasEntityType;
@@ -44,7 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import org.apache.atlas.discovery.log.SearchRequestLogData.SearchRequestLogDataBuilder;
+import org.apache.atlas.model.discovery.searchlog.SearchRequestLogData.SearchRequestLogDataBuilder;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -391,7 +393,11 @@ public class DiscoveryREST {
             }
 
             if (StringUtils.isEmpty(parameters.getQuery())) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Please provide query");
+                AtlasBaseException abe = new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Please provide query");
+                if (enableSearchLogging) {
+                    logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
+                }
+                throw abe;
             }
 
             AtlasSearchResult result = discoveryService.directIndexSearch(parameters);
@@ -419,6 +425,38 @@ public class DiscoveryREST {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+
+    /**
+     * Index based search for query direct on ES searchlogs index
+     *
+     * @param parameters Index Search parameters @SearchLogSearchParams.java
+     * @return search log search result
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful search
+     */
+    @Path("searchlog")
+    @POST
+    @Timed
+    public SearchLogSearchResult searchLogs(SearchLogSearchParams parameters) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        SearchLogSearchResult result;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchLogs(" + parameters + ")");
+            }
+
+            result = discoveryService.searchLogs(parameters);
+
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+
+        return result;
     }
 
     private void logSearchLog(IndexSearchParams parameters, AtlasSearchResult result,

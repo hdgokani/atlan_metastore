@@ -16,17 +16,28 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.model.tasks;
+package org.apache.atlas.model.discovery.searchlog;
 
-import org.apache.atlas.model.discovery.SearchParams;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.type.AtlasType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
-public class TaskSearchParams extends SearchParams {
-    private static final Logger LOG = LoggerFactory.getLogger(TaskSearchParams.class);
+
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown=true)
+public class SearchLogSearchParams {
+
+    private static Map<String, Object> defaultSort = new HashMap<>();
+    static {
+        Map<String, Object> order = new HashMap<>();
+        order.put("order", "desc");
+
+        defaultSort.put("created", order);
+    }
 
     private Map dsl;
 
@@ -38,31 +49,13 @@ public class TaskSearchParams extends SearchParams {
         return this.dsl;
     }
 
-    @Override
-    public String getQuery() {
-        if (dsl != null) {
-            if (!dsl.containsKey("sort")) {
-                dsl.put("sort", Collections.singleton(mapOf("__task_timestamp", mapOf("order", "desc"))));
+    public String getQueryString() {
+        if (this.dsl != null) {
+            if (!this.dsl.containsKey("sort")) {
+                dsl.put("sort", Collections.singleton(defaultSort));
             }
-
-            try {
-                Map query = (Map) dsl.get("query");
-                if (query.containsKey("match_all")) {
-                    dsl.put("query", mapOf("exists", mapOf("field", "__task_v_type")));
-                }
-            } catch (Exception e) {
-                LOG.warn("Failed to verify match_all clause in query");
-            }
-
             return AtlasType.toJson(dsl);
         }
         return "";
-    }
-
-    private Map mapOf(String key, Object value) {
-        Map ret = new HashMap();
-        ret.put(key, value);
-
-        return ret;
     }
 }
