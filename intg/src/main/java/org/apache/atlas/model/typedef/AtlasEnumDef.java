@@ -33,7 +33,6 @@ import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.hadoop.util.StringUtils;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -48,55 +47,52 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class AtlasEnumDef extends AtlasBaseTypeDef implements AtlasNamedTypeDef,Serializable {
+public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private List<AtlasEnumElementDef> elementDefs;
     private String                    defaultValue;
 
-    private String displayName;
-
     public AtlasEnumDef() {
         this(null, null, null, null, null, null);
     }
 
-    public AtlasEnumDef(String displayName) {
-        this(displayName, null, null, null, null, null);
+    public AtlasEnumDef(String name) {
+        this(name, null, null, null, null, null);
     }
 
-    public AtlasEnumDef(String displayName, String description) {
-        this(displayName, description, null, null, null, null);
+    public AtlasEnumDef(String name, String description) {
+        this(name, description, null, null, null, null);
     }
 
-    public AtlasEnumDef(String displayName, String description, String typeVersion) {
-        this(displayName, description, typeVersion, null, null, null);
+    public AtlasEnumDef(String name, String description, String typeVersion) {
+        this(name, description, typeVersion, null, null, null);
     }
 
-    public AtlasEnumDef(String displayName, String description, List<AtlasEnumElementDef> elementDefs) {
-        this(displayName, description, null, elementDefs, null, null);
+    public AtlasEnumDef(String name, String description, List<AtlasEnumElementDef> elementDefs) {
+        this(name, description, null, elementDefs, null, null);
     }
 
-    public AtlasEnumDef(String displayName, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs) {
-        this(displayName, description, typeVersion, elementDefs, null, null);
+    public AtlasEnumDef(String name, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs) {
+        this(name, description, typeVersion, elementDefs, null, null);
     }
 
-    public AtlasEnumDef(String displayName, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs,
+    public AtlasEnumDef(String name, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs,
                         String defaultValue) {
-        this(displayName, description, typeVersion, elementDefs, defaultValue, null);
+        this(name, description, typeVersion, elementDefs, defaultValue, null);
     }
 
-    public AtlasEnumDef(String displayName, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs,
+    public AtlasEnumDef(String name, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs,
                         String defaultValue, Map<String, String> options) {
-        this(generateRandomName(), displayName, description, typeVersion, elementDefs, defaultValue, null, options);
+        this(name, description, typeVersion, elementDefs, defaultValue, null, options);
     }
 
-    public AtlasEnumDef(String name, String displayName, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs,
+    public AtlasEnumDef(String name, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs,
                         String defaultValue, String serviceType, Map<String, String> options) {
         super(TypeCategory.ENUM, name, description, typeVersion, serviceType, options);
 
         setElementDefs(elementDefs);
         setDefaultValue(defaultValue);
-        setDisplayName(displayName);
     }
 
     public AtlasEnumDef(AtlasEnumDef other) {
@@ -172,14 +168,6 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements AtlasNamedTypeDef,
         tmpList.add(new AtlasEnumElementDef(elementDef));
 
         this.elementDefs = tmpList;
-    }
-
-    public void setRandomNameForEntityAndAttributeDefs() {
-        setName(generateRandomName());
-    }
-
-    public static String generateRandomName() {
-        return RandomStringUtils.randomAlphabetic(1) + RandomStringUtils.randomAlphanumeric(21);
     }
 
     public void removeElement(String elemValue) {
@@ -260,16 +248,6 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements AtlasNamedTypeDef,
     @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
-    }
-
-    @Override
-    public void setDisplayName(String displayName) {
-    this.displayName = displayName;
-    }
-
-    @Override
-    public String getDisplayName() {
-        return displayName;
     }
 
 
