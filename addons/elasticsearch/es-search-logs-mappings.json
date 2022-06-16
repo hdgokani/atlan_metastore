@@ -43,7 +43,7 @@
       "entityQFNamesDenied": {
         "type": "keyword"
       },
-      "utm_tags": {
+      "utmTags": {
         "type": "keyword"
       },
 
