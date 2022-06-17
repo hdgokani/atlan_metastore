@@ -204,12 +204,15 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
 
     @Override
     public <V> List<V> getMultiValuedProperty(String propertyName, Class<V> elementType) {
-        List<V> value = new ArrayList<>();
+        List<V> value = null;
         Iterator<? extends Property<Object>> it = getWrappedElement().properties(propertyName);
 
         while (it.hasNext()) {
-            Property currentProperty      = it.next();
-            Object   currentPropertyValue = currentProperty.value();
+            if (value == null) {
+                value = new ArrayList<>();
+            }
+            Property currentProperty = it.next();
+            Object currentPropertyValue = currentProperty.value();
             value.add((V) currentPropertyValue);
         }
         return value;

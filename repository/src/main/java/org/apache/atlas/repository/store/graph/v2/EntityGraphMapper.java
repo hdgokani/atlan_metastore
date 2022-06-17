@@ -2022,10 +2022,13 @@ public class EntityGraphMapper {
                 . map(x -> x.getProperty(NAME,String.class))
                 .collect(Collectors.toList());
 
-        List<String> newMeaningsNames = meanings.stream()
-                .filter(x -> !currentMeaningsQNames.contains(x.getProperty(QUALIFIED_NAME,String.class)))
-                .map(x -> x.getProperty(NAME, String.class))
-                .collect(Collectors.toList());
+        List<String> newMeaningsNames = null;
+        if(CollectionUtils.isNotEmpty(currentMeaningsQNames)) {
+            newMeaningsNames = meanings.stream()
+                    .filter(x -> !currentMeaningsQNames.contains(x.getProperty(QUALIFIED_NAME, String.class)))
+                    .map(x -> x.getProperty(NAME, String.class))
+                    .collect(Collectors.toList());
+        }
 
         ctx.getReferringVertex().removeProperty(MEANINGS_PROPERTY_KEY);
         ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);

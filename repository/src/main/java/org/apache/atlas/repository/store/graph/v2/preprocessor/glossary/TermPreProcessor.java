@@ -202,7 +202,7 @@ public class TermPreProcessor implements PreProcessor {
                 AtlasGraphUtilsV2.setEncodedProperty(entityVertex, MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
                 List<String> meaningsNames = entityVertex.getMultiValuedProperty(MEANING_NAMES_PROPERTY_KEY, String.class);
 
-                if(meaningsNames.contains(currentTermName)){
+                if(meaningsNames!=null && meaningsNames.contains(currentTermName)){
                     AtlasGraphUtilsV2.removeItemFromListPropertyValue(entityVertex, MEANING_NAMES_PROPERTY_KEY, currentTermName);
                     AtlasGraphUtilsV2.addListProperty(entityVertex, MEANING_NAMES_PROPERTY_KEY, updatedTermName, true);
                 }
