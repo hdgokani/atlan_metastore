@@ -259,7 +259,7 @@ public class EntityREST {
             AtlasEntityType atlasEntityType = ensureEntityType(entityType);
 
             try {
-                AtlasEntityWithExtInfo ret  = entitiesStore.getAtlasEntityWithExtInfoWithoutAuthorization(atlasEntityType,attributes,false,true);
+                AtlasEntityWithExtInfo ret  = entitiesStore.getAtlasEntityWithExtInfoWithoutAuthorization(atlasEntityType,attributes,true,true);
                 entityHeader = new AtlasEntityHeader(ret.getEntity());
 
             } catch (AtlasBaseException abe) {
