@@ -190,7 +190,6 @@ public class ClassificationAssociator {
             Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
 
             bucket(PROCESS_DELETE, operationListMap, listOps.subtract(entityClassifications, incomingClassifications));
-            bucket(PROCESS_UPDATE, operationListMap, listOps.intersect(incomingClassifications, entityClassifications));
             bucket(PROCESS_ADD, operationListMap, listOps.subtract(incomingClassifications, entityClassifications));
 
             return operationListMap;
@@ -346,7 +345,7 @@ public class ClassificationAssociator {
 
         private V findFrom(List<V> reference, V check) {
             return (V) CollectionUtils.find(reference, ox ->
-                    ((V) ox).getTypeName().equals(check.getTypeName()));
+                    ((V) ox).equals(check));
         }
 
         public List<V> filter(String guid, List<V> list) {
