@@ -319,8 +319,8 @@ public class ClassificationAssociator {
 
             List<V> result = new ArrayList<>();
             for (V c : rhs) {
-                V foundSameTypeName = findObjectFrom(lhs, c);
-                V foundSame = findFrom(lhs, c);
+                V foundSame = findObjectFrom(lhs, c);
+                V foundSameTypeName = findFrom(lhs, c);
                 if ((foundSameTypeName != null) && (foundSame == null)) {
                     result.add(foundSameTypeName);
                 }
