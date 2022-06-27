@@ -754,9 +754,15 @@ public class EntityGraphMapper {
                         }
                     } else {
                         if (!Objects.equals(existingValue, bmAttrValue)) {
-                            mapAttribute(bmAttribute, bmAttrValue, entityVertex, UPDATE, new EntityMutationContext());
 
-                            addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, bmAttrValue);
+                            if( bmAttrValue != null) {
+                                mapAttribute(bmAttribute, bmAttrValue, entityVertex, UPDATE, new EntityMutationContext());
+
+                                addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, bmAttrValue);
+                            } else {
+                                entityVertex.removeProperty(bmAttribute.getVertexPropertyName());
+                                addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, null);
+                            }
                         }
                     }
                 }
@@ -1817,7 +1823,7 @@ public class EntityGraphMapper {
         boolean ret = false;
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(AtlasGraphUtilsV2.getTypeName(ctx.getReferringVertex()));
-        if (entityType.hasRelationshipAttribute(attribute.getName())) {
+        if (entityType !=null && entityType.hasRelationshipAttribute(attribute.getName())) {
             AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByName(ctx.getAttribute().getRelationshipName());
             ret = !(relationshipDef.getEndDef1().getCardinality() == SET && relationshipDef.getEndDef2().getCardinality() == SET);
         }

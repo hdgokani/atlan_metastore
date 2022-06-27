@@ -353,6 +353,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return ret;
     }
 
+    @Override
+    @GraphTransaction
     public AtlasEntityHeader getAtlasEntityHeaderWithoutAuthorization(String guid, String qualifiedName, String typeName) throws AtlasBaseException {
         return extractEntityHeader( guid,  qualifiedName,  typeName);
     }

@@ -254,7 +254,7 @@ public class EntityREST {
             AtlasEntityWithExtInfo ret = entitiesStore.getByIdWithoutAuthorization(entityGuid);
             entityHeader = new AtlasEntityHeader(ret.getEntity());
         } else if (StringUtils.isNotEmpty(entityId) && StringUtils.isNotEmpty(entityType)) {
-                entityHeader = entitiesStore.getAtlasEntityHeaderWithoutAuthorization(entityGuid,entityId,entityType);
+            entityHeader = entitiesStore.getAtlasEntityHeaderWithoutAuthorization(entityGuid,entityId,entityType);
         } else {
             throw new AtlasBaseException(BAD_REQUEST, "requires entityGuid or typeName and qualifiedName for entity authorization");
         }

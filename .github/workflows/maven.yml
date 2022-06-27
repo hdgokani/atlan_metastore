@@ -22,7 +22,6 @@ on:
   push:
     branches:
       - alpha
-      - beta
       - development
       - master
 
