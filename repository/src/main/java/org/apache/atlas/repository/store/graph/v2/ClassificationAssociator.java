@@ -325,7 +325,6 @@ public class ClassificationAssociator {
                     result.add(foundSameTypeName);
                 }
             }
-
             return result;
         }
 
