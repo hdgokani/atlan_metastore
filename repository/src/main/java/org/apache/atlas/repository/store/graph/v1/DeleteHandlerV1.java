@@ -538,7 +538,8 @@ public abstract class DeleteHandlerV1 {
             return null;
         }
 
-        List<AtlasVertex>                   currentClassificationVertices = getPropagatableClassifications(edge);
+        List<AtlasVertex> currentClassificationVertices = getPropagatableClassifications(edge);
+
         Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
         Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices, getRelationshipGuid(edge));
         Map<AtlasVertex, List<AtlasVertex>> removePropagationsMap         = new HashMap<>();
@@ -1234,6 +1235,7 @@ public abstract class DeleteHandlerV1 {
                 break;
             }
         }
+
         return ret;
     }
 
@@ -1258,13 +1260,17 @@ public abstract class DeleteHandlerV1 {
         RequestContext.get().queueTask(task);
     }
 
+
     public void createAndQueueTask(String taskType, Set<String> deletedEdgeIds) {
         String currentUser = RequestContext.getCurrentUser();
+
         if (CollectionUtils.isEmpty(deletedEdgeIds)) {
             return;
         }
+
         Map<String, Object> taskParams  = ClassificationTask.toParameters(deletedEdgeIds);
         AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams);
+
         RequestContext.get().queueTask(task);
     }
 

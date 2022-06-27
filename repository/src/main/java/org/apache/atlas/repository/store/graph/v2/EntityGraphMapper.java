@@ -458,6 +458,7 @@ public class EntityGraphMapper {
                     if (DEFERRED_ACTION_ENABLED) {
                         deleteDelegate.getHandler().createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, reqContext.getDeletedEdgesIds());
                     }
+
                 } catch (AtlasBaseException baseException) {
                     setEntityGuidToException(updatedEntity, baseException, context);
                     throw baseException;

@@ -23,7 +23,9 @@ import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TaskSearchParams extends SearchParams {
     private static final Logger LOG = LoggerFactory.getLogger(TaskSearchParams.class);

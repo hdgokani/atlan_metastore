@@ -324,9 +324,6 @@ public final class Constants {
 
     public static final int ELASTICSEARCH_PAGINATION_SIZE = 50;
 
-    public static final String REQUEST_HEADER_USER_AGENT = "User-Agent";
-    public static final String REQUEST_HEADER_HOST = "Host";
-
     private Constants() {
     }
 

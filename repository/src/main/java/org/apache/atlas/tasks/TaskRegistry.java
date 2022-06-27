@@ -156,7 +156,7 @@ public class TaskRegistry {
             if (result == null) {
                 return null;
             }
-            
+
             // as __task_guid is text field, might result multiple results due to "-" tokenizing in ES
             // adding filtering layer to filter exact tasks
             ret.addAll(filterTasksByGuids(result.getTasks(), chunkedGuidList));
@@ -327,15 +327,17 @@ public class TaskRegistry {
         Map<String, Object> dsl = mapOf("query", mapOf("bool", mapOf("should", statusClauseList)));
         dsl.put("sort", Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc"))));
         dsl.put("size", size);
-
+        int totalFetched = 0;
         while (true) {
             int fetched = 0;
-
             try {
-                dsl.put("from", from);
-                if (from + size > queueSize) {
-                    dsl.put("size", queueSize - from);
+                if (totalFetched + size > queueSize) {
+                    size = queueSize - totalFetched;
                 }
+
+                dsl.put("from", from);
+                dsl.put("size", size);
+
                 indexSearchParams.setDsl(dsl);
 
                 AtlasIndexQuery indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, indexSearchParams);
@@ -364,11 +366,11 @@ public class TaskRegistry {
                     }
                 }
 
-                if (fetched == 0 || fetched < size) {
+                totalFetched += fetched;
+                from += size;
+                if (fetched < size || totalFetched >= queueSize) {
                     break;
                 }
-
-                from += size;
             } catch (Exception e){
                 break;
             }

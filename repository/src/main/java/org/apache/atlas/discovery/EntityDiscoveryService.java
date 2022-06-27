@@ -27,7 +27,6 @@ import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
-import org.apache.atlas.discovery.searchlog.ESSearchLogger;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasAggregationEntry;
 import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
@@ -39,8 +38,6 @@ import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.QuickSearchParameters;
-import org.apache.atlas.model.discovery.searchlog.SearchLogSearchResult;
-import org.apache.atlas.model.discovery.searchlog.SearchLogSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -94,11 +91,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.script.ScriptException;
 
 import static org.apache.atlas.AtlasErrorCode.*;
@@ -1049,31 +1044,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         scrubSearchResults(ret, searchParams.getSuppressLogs());
         return ret;
-    }
-
-    @Override
-    public SearchLogSearchResult searchLogs(SearchLogSearchParams searchParams) throws AtlasBaseException {
-        SearchLogSearchResult ret = new SearchLogSearchResult();
-        ret.setSearchParameters(searchParams);
-        AtlasIndexQuery indexQuery = null;
-
-        try {
-            indexQuery = graph.elasticsearchQuery(ESSearchLogger.INDEX_NAME);
-            Map<String, Object> result = indexQuery.directIndexQuery(searchParams.getQueryString());
-
-            ret.setApproximateCount( ((Integer) result.get("total")).longValue());
-
-            List<LinkedHashMap> hits = (List<LinkedHashMap>) result.get("data");
-
-            List<Map<String, Object>> logs = hits.stream().map(x -> (HashMap<String, Object>) x.get("_source")).collect(Collectors.toList());
-
-            ret.setLogs(logs);
-            ret.setAggregations((Map<String, Object>) result.get("aggregations"));
-
-            return ret;
-        } catch (AtlasBaseException be) {
-            throw be;
-        }
     }
 
     private Map<String, Object> getMap(String key, Object value) {

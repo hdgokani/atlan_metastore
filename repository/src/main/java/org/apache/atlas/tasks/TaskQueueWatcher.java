@@ -100,10 +100,9 @@ public class TaskQueueWatcher implements Runnable {
                 break;
             } catch (Exception e){
                 LOG.error("TaskQueueWatcher: Exception occurred");
-                e.printStackTrace();
+                throw e;
             }
         }
-        LOG.info("TaskQueueWatcher: run() End");
     }
 
     private void addAll(List<AtlasTask> tasks) {

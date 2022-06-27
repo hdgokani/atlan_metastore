@@ -50,7 +50,7 @@ public abstract class ClassificationTask extends AbstractTask {
     public static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
     public static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
     public static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
-
+  
     protected final AtlasGraph             graph;
     protected final EntityGraphMapper      entityGraphMapper;
     protected final DeleteHandlerDelegate  deleteDelegate;
@@ -95,7 +95,7 @@ public abstract class ClassificationTask extends AbstractTask {
             setStatus(COMPLETE);
         } catch (AtlasBaseException e) {
             LOG.error("Task: {}: Error performing task!", getTaskGuid(), e);
-            
+
             setStatus(FAILED);
 
             throw e;
