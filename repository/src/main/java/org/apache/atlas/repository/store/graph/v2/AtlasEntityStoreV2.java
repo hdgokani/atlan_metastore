@@ -353,6 +353,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return ret;
     }
 
+    public AtlasEntityHeader getAtlasEntityHeaderWithoutAuthorization(String guid, String qualifiedName, String typeName) throws AtlasBaseException {
+        return extractEntityHeader( guid,  qualifiedName,  typeName);
+    }
+
+
     @Override
     @GraphTransaction
     public AtlasEntityWithExtInfo getAtlasEntityWithExtInfoWithoutAuthorization(AtlasEntityType entityType, Map<String, Object> uniqAttributes, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException {
