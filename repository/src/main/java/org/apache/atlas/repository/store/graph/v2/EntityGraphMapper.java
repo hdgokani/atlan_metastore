@@ -3559,10 +3559,6 @@ public class EntityGraphMapper {
         deleteDelegate.getHandler().createAndQueueTask(taskType, entityVertex, classificationVertexId, null);
     }
 
-    private void removeTaskFromQueue(String taskGuid) {
-        deleteDelegate.getHandler().removeTaskFromQueue(taskGuid);
-    }
-
     public void removePendingTaskFromEntity(String entityGuid, String taskGuid) throws EntityNotFoundException {
         if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(taskGuid)) {
             return;
