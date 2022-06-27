@@ -2811,14 +2811,16 @@ public class EntityGraphMapper {
 
                     if (pendingTaskExists) {
                         List<AtlasTask> entityClassificationPendingTasks = entityPendingTasks.stream()
+                                .filter(t -> t.getParameters().containsKey("entityGuid")
+                                        && t.getParameters().containsKey("classificationVertexId"))
                                 .filter(t -> t.getParameters().get("entityGuid").equals(entityGuid)
-                                        && t.getParameters().get("classificationVertexId").equals(classificationVertexId))
+                                        && t.getParameters().get("classificationVertexId").equals(classificationVertexId)
+                                        && t.getType().equals(CLASSIFICATION_PROPAGATION_ADD))
                                 .collect(Collectors.toList());
                         for (AtlasTask entityClassificationPendingTask: entityClassificationPendingTasks) {
                             String taskGuid = entityClassificationPendingTask.getGuid();
-                            taskManagement.deleteByGuid(taskGuid);
+                            taskManagement.softDelete(taskGuid);
                             AtlasGraphUtilsV2.deleteProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, taskGuid);
-                            propagateDelete = false;
                         }
                     }
                 }

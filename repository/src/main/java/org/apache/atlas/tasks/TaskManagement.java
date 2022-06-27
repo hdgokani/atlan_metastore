@@ -205,6 +205,14 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
     }
 
+    public void softDelete(String guid) throws AtlasBaseException{
+        try {
+            this.registry.softDelete(guid);
+        } catch (Exception exception) {
+            throw new AtlasBaseException(exception);
+        }
+    }
+
     private synchronized void startWatcherThread() {
 
         if (this.taskExecutor == null) {

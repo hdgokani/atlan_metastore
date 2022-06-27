@@ -205,6 +205,32 @@ public class TaskRegistry {
     }
 
     @GraphTransaction
+    public void softDelete(String guid) throws AtlasBaseException{
+        try {
+            AtlasGraphQuery query = graph.query()
+                    .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                    .has(TASK_GUID, guid);
+
+            Iterator<AtlasVertex> results = query.vertices().iterator();
+
+            if (results.hasNext()) {
+                AtlasVertex taskVertex = results.next();
+
+                setEncodedProperty(taskVertex, Constants.TASK_STATUS, AtlasTask.Status.DELETED);
+                setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
+            }
+        }
+        catch (Exception exception) {
+            LOG.error("Error: on soft delete: {}", guid);
+
+            throw new AtlasBaseException(exception);
+        }
+        finally {
+            graph.commit();
+        }
+    }
+
+    @GraphTransaction
     public AtlasTask getById(String guid) {
         AtlasGraphQuery query = graph.query()
                                      .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
