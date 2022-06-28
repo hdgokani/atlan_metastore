@@ -2819,8 +2819,9 @@ public class EntityGraphMapper {
                                 .collect(Collectors.toList());
                         for (AtlasTask entityClassificationPendingTask: entityClassificationPendingTasks) {
                             String taskGuid = entityClassificationPendingTask.getGuid();
-                            taskManagement.softDelete(taskGuid);
+                            taskManagement.deleteByGuid(taskGuid, TaskManagement.DeleteType.SOFT);
                             AtlasGraphUtilsV2.deleteProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, taskGuid);
+//                            propagateDelete = false;  TODO: Uncomment when all unnecessary ADD tasks are resolved
                         }
                     }
                 }
