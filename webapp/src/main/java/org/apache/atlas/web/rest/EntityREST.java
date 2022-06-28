@@ -254,7 +254,19 @@ public class EntityREST {
             AtlasEntityWithExtInfo ret = entitiesStore.getByIdWithoutAuthorization(entityGuid);
             entityHeader = new AtlasEntityHeader(ret.getEntity());
         } else if (StringUtils.isNotEmpty(entityId) && StringUtils.isNotEmpty(entityType)) {
-            entityHeader = entitiesStore.getAtlasEntityHeaderWithoutAuthorization(entityGuid,entityId,entityType);
+            Map<String, Object> attributes = new HashMap<>();
+            attributes.put(QUALIFIED_NAME, entityId);
+            AtlasEntityType atlasEntityType = ensureEntityType(entityType);
+
+            try {
+                AtlasEntityWithExtInfo ret  = entitiesStore.getAtlasEntityWithExtInfoWithoutAuthorization(atlasEntityType,attributes,true,true);
+                entityHeader = new AtlasEntityHeader(ret.getEntity());
+
+            } catch (AtlasBaseException abe) {
+                if( abe.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND){
+                    entityHeader = new AtlasEntityHeader(entityType,attributes);
+                }
+            }
         } else {
             throw new AtlasBaseException(BAD_REQUEST, "requires entityGuid or typeName and qualifiedName for entity authorization");
         }
