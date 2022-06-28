@@ -225,9 +225,6 @@ public class TaskRegistry {
 
             throw new AtlasBaseException(exception);
         }
-        finally {
-            graph.commit();
-        }
     }
 
     @GraphTransaction
