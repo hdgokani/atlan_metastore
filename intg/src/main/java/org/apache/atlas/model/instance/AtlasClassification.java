@@ -60,7 +60,6 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
     private Boolean            propagate                         = null;
     private List<TimeBoundary> validityPeriods                   = null;
     private Boolean            removePropagationsOnEntityDelete  = null;
-    private Boolean            propagateThroughLineage           = null;
 
     public AtlasClassification() {
         this(null, null);
@@ -92,7 +91,6 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
             setValidityPeriods(other.getValidityPeriods());
             setDisplayName(other.getDisplayName());
             setRemovePropagationsOnEntityDelete(other.getRemovePropagationsOnEntityDelete());
-            setPropagateThroughLineage(other.getPropagateThroughLineage());
         }
     }
 
@@ -176,7 +174,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), entityGuid, entityStatus, propagate, removePropagationsOnEntityDelete, propagateThroughLineage);
+        return Objects.hash(super.hashCode(), entityGuid, entityStatus, propagate, removePropagationsOnEntityDelete);
     }
 
     @Override
@@ -189,17 +187,8 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         sb.append(", removePropagationsOnEntityDelete=").append(removePropagationsOnEntityDelete);
         sb.append(", displayName=").append(displayName);
         sb.append(", validityPeriods=").append(validityPeriods);
-        sb.append(", propagateThroughLineage=").append(propagateThroughLineage);
         sb.append('}');
         return sb.toString();
-    }
-
-    public Boolean getPropagateThroughLineage() {
-        return propagateThroughLineage;
-    }
-
-    public void setPropagateThroughLineage(Boolean propagateThroughLineage) {
-        this.propagateThroughLineage = propagateThroughLineage;
     }
 
     /**
