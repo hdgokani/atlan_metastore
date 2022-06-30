@@ -170,6 +170,8 @@ public class EntityREST {
                         }
                         AtlasEntityAccessRequest entityAccessRequest = requestBuilder.build();
 
+                        AtlasEntityAccessRequest entityAccessRequest = requestBuilder.build();
+
                         AtlasAuthorizationUtils.verifyAccess(entityAccessRequest, entities.get(i).getAction() + "guid=" + entities.get(i).getEntityGuid());
                         response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), true, null , entities.get(i).getBusinessMetadata()));
                     } catch (AtlasBaseException e) {
