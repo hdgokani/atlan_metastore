@@ -754,9 +754,15 @@ public class EntityGraphMapper {
                         }
                     } else {
                         if (!Objects.equals(existingValue, bmAttrValue)) {
-                            mapAttribute(bmAttribute, bmAttrValue, entityVertex, UPDATE, new EntityMutationContext());
 
-                            addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, bmAttrValue);
+                            if( bmAttrValue != null) {
+                                mapAttribute(bmAttribute, bmAttrValue, entityVertex, UPDATE, new EntityMutationContext());
+
+                                addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, bmAttrValue);
+                            } else {
+                                entityVertex.removeProperty(bmAttribute.getVertexPropertyName());
+                                addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, null);
+                            }
                         }
                     }
                 }
@@ -1817,7 +1823,7 @@ public class EntityGraphMapper {
         boolean ret = false;
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(AtlasGraphUtilsV2.getTypeName(ctx.getReferringVertex()));
-        if (entityType.hasRelationshipAttribute(attribute.getName())) {
+        if (entityType !=null && entityType.hasRelationshipAttribute(attribute.getName())) {
             AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByName(ctx.getAttribute().getRelationshipName());
             ret = !(relationshipDef.getEndDef1().getCardinality() == SET && relationshipDef.getEndDef2().getCardinality() == SET);
         }
@@ -2817,6 +2823,7 @@ public class EntityGraphMapper {
 
         if (isPropagationEnabled(classificationVertex)) {
             if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
+                boolean propagateDelete = true;
                 String classificationVertexId = classificationVertex.getIdForDisplay();
 
                 List<String> entityTaskGuids = (List<String>) entityVertex.getPropertyValues(PENDING_TASKS_PROPERTY_KEY, String.class);
@@ -2828,12 +2835,25 @@ public class EntityGraphMapper {
                             .anyMatch(x -> classificationHasPendingTask(x, classificationVertexId, entityGuid));
 
                     if (pendingTaskExists) {
-                        LOG.error("Another tag propagation is in queue for classification: {} and entity: {}. Please try again", classificationVertexId, entityGuid);
-                        throw new AtlasBaseException(AtlasErrorCode.DELETE_TAG_PROPAGATION_NOT_ALLOWED, classificationVertexId, entityGuid);
+                        List<AtlasTask> entityClassificationPendingTasks = entityPendingTasks.stream()
+                                .filter(t -> t.getParameters().containsKey("entityGuid")
+                                        && t.getParameters().containsKey("classificationVertexId"))
+                                .filter(t -> t.getParameters().get("entityGuid").equals(entityGuid)
+                                        && t.getParameters().get("classificationVertexId").equals(classificationVertexId)
+                                        && t.getType().equals(CLASSIFICATION_PROPAGATION_ADD))
+                                .collect(Collectors.toList());
+                        for (AtlasTask entityClassificationPendingTask: entityClassificationPendingTasks) {
+                            String taskGuid = entityClassificationPendingTask.getGuid();
+                            taskManagement.deleteByGuid(taskGuid, TaskManagement.DeleteType.SOFT);
+                            AtlasGraphUtilsV2.deleteProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, taskGuid);
+//                            propagateDelete = false;  TODO: Uncomment when all unnecessary ADD tasks are resolved
+                        }
                     }
                 }
 
-                createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertex.getIdForDisplay());
+                if (propagateDelete) {
+                    createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertex.getIdForDisplay());
+                }
 
                 entityVertices = new ArrayList<>();
             } else {
@@ -2885,7 +2905,7 @@ public class EntityGraphMapper {
 
     private boolean classificationHasPendingTask(AtlasTask task, String classificationVertexId, String entityGuid) {
         try {
-            if (CLASSIFICATION_PROPAGATION_ADD.equals(task.getType()) || CLASSIFICATION_PROPAGATION_DELETE.equals(task.getType())) {
+            if (CLASSIFICATION_PROPAGATION_ADD.equals(task.getType())) {
                 return task.getParameters().get(ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID).equals(classificationVertexId)
                         && task.getParameters().get(ClassificationTask.PARAM_ENTITY_GUID).equals(entityGuid);
             }
