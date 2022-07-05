@@ -128,6 +128,13 @@ public final class Constants {
     public static final String QUERY_FOLDER_ENTITY_TYPE     = "QueryFolder";
     public static final String QUERY_COLLECTION_ENTITY_TYPE = "QueryCollection";
 
+    /*
+     * Purpose / Persona
+     */
+    public static final String PURPOSE_ENTITY_TYPE                 = "Purpose";
+    public static final String PERSONA_ENTITY_TYPE                 = "Persona";
+    public static final String PERSONA_METADATA_POLICY_ENTITY_TYPE = "PersonaMetadataPolicy";
+
 
     /**
      * Lineage relations.

@@ -86,7 +86,11 @@ public enum AtlasConfiguration {
     TASKS_QUEUE_SIZE("atlas.tasks.queue.size", 1000),
     SESSION_TIMEOUT_SECS("atlas.session.timeout.secs", -1),
     UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true),
-    ENABLE_SEARCH_LOGGING("atlas.enable.search.logging", true);
+    ENABLE_SEARCH_LOGGING("atlas.enable.search.logging", true),
+
+    RANGER_USERNAME("ranger.username", true),
+    RANGER_PASSWORD("ranger.password", true);
+
 
 
     private static final Configuration APPLICATION_PROPERTIES;

@@ -319,7 +319,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         if (restClient == null) {
             LOG.error("restClient is not initiated, failed to run query on ES");
         }
-        return new AtlasElasticsearchQuery(indexName, restClient);
+        return new AtlasElasticsearchQuery(this, indexName, restClient);
     }
 
     @Override
