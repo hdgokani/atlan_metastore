@@ -446,6 +446,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     public List<AtlasVertex> addTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> propagatedEntityVertices) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("propagateClassification");
         List<AtlasVertex> ret = null;
 
         if (CollectionUtils.isNotEmpty(propagatedEntityVertices) && classificationVertex != null) {
@@ -511,6 +512,7 @@ public abstract class DeleteHandlerV1 {
                 context.recordAddedPropagation(entityGuid, classification);
             }
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
 
         return ret;
     }
