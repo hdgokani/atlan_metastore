@@ -2742,8 +2742,10 @@ public class EntityGraphMapper {
                 return null;
             }
 
+            AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("lockObjectsAfterTraverse");
             List<String> impactedVerticesGuidsToLock = impactedVertices.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
             GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedVerticesGuidsToLock);
+            RequestContext.get().endMetricRecord(metricRecorder);
 
             AtlasClassification classification       = entityRetriever.toAtlasClassification(classificationVertex);
             List<AtlasVertex>   entitiesPropagatedTo = deleteDelegate.getHandler().addTagPropagation(classificationVertex, impactedVertices);
@@ -3540,6 +3542,7 @@ public class EntityGraphMapper {
     }
 
     private List<AtlasEntity> updateClassificationText(AtlasClassification classification, Collection<AtlasVertex> propagatedVertices) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateClassificationText");
         List<AtlasEntity> propagatedEntities = new ArrayList<>();
 
         if(CollectionUtils.isNotEmpty(propagatedVertices)) {
@@ -3557,6 +3560,7 @@ public class EntityGraphMapper {
                 }
             }
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
 
         return propagatedEntities;
     }
