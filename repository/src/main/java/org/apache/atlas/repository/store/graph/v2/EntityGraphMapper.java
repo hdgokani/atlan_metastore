@@ -2729,7 +2729,7 @@ public class EntityGraphMapper {
                 return null;
             }
 
-            List<AtlasEntity> propagatedEntities = updateClassificationText(classification, entitiesPropagatedTo);
+            List<AtlasEntity> propagatedEntities = verticesToAtlasEntities(entitiesPropagatedTo);
 
             entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification));
 
@@ -2739,6 +2739,18 @@ public class EntityGraphMapper {
 
             throw new AtlasBaseException(e);
         }
+    }
+
+    public List<AtlasEntity> verticesToAtlasEntities(List<AtlasVertex> vertices) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("verticesToAtlasEntities");
+        List<AtlasEntity> entities = new ArrayList<>();
+
+        for (AtlasVertex vertex : vertices) {
+            AtlasEntity entity = instanceConverter.getAndCacheEntity(graphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
+            entities.add(entity);
+        }
+        RequestContext.get().endMetricRecord(metricRecorder);
+        return entities;
     }
 
     public void deleteClassification(String entityGuid, String classificationName, String associatedEntityGuid) throws AtlasBaseException {
