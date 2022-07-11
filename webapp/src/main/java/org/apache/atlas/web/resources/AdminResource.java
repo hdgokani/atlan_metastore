@@ -68,6 +68,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ActiveInstanceElectorService;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
+import org.apache.atlas.web.service.ConnectionStateListenerService;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
@@ -154,6 +155,9 @@ public class AdminResource {
 
     @Inject
     private ActiveInstanceElectorService electorService;
+
+    @Inject
+    private ConnectionStateListenerService connectionStateListenerService;
 
     @Context
     private HttpServletRequest httpServletRequest;
