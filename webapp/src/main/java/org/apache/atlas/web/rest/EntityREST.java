@@ -1158,7 +1158,7 @@ public class EntityREST {
 
             String dslString = parameters.getQueryString();
 
-            EntityAuditSearchResult ret = esBasedAuditRepository.searchEvents(dslString);
+            EntityAuditSearchResult ret = esBasedAuditRepository.searchEvents(dslString, parameters.getAttributes());
 
             scrubEntityAudits(ret, parameters.getSuppressLogs());
 
