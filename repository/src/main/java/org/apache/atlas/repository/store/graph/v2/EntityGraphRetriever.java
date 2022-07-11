@@ -110,10 +110,7 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.NONE;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.TWO_TO_ONE;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_VALIDITY_PERIODS_KEY;
-import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
@@ -376,6 +373,7 @@ public class EntityGraphRetriever {
             ret.setEntityStatus(getClassificationEntityStatus(classificationVertex));
             ret.setPropagate(isPropagationEnabled(classificationVertex));
             ret.setRemovePropagationsOnEntityDelete(getRemovePropagations(classificationVertex));
+            ret.setRestrictPropagationThroughLineage(getRestrictPropagationThroughLineage(classificationVertex));
 
             String strValidityPeriods = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
 
@@ -510,11 +508,11 @@ public class EntityGraphRetriever {
         }
     }
 
-    public Map<AtlasVertex, List<AtlasVertex>> getClassificationPropagatedEntitiesMapping(List<AtlasVertex> classificationVertices) {
+    public Map<AtlasVertex, List<AtlasVertex>> getClassificationPropagatedEntitiesMapping(List<AtlasVertex> classificationVertices) throws AtlasBaseException{
         return getClassificationPropagatedEntitiesMapping(classificationVertices, null);
     }
 
-    public Map<AtlasVertex, List<AtlasVertex>> getClassificationPropagatedEntitiesMapping(List<AtlasVertex> classificationVertices, String relationshipGuidToExclude) {
+    public Map<AtlasVertex, List<AtlasVertex>> getClassificationPropagatedEntitiesMapping(List<AtlasVertex> classificationVertices, String relationshipGuidToExclude) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getClassificationPropagatedEntitiesMapping");
         Map<AtlasVertex, List<AtlasVertex>> ret = new HashMap<>();
 
@@ -523,7 +521,16 @@ public class EntityGraphRetriever {
                 String            classificationId      = classificationVertex.getIdForDisplay();
                 String            sourceEntityId        = getClassificationEntityGuid(classificationVertex);
                 AtlasVertex       sourceEntityVertex    = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityId);
-                List<AtlasVertex> entitiesPropagatingTo = getImpactedVerticesV2(sourceEntityVertex, relationshipGuidToExclude, classificationId);
+                String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
+
+                Boolean restrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
+
+                if (restrictPropagationThroughLineage) {
+                    propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
+                }
+
+                List<AtlasVertex> entitiesPropagatingTo = getImpactedVerticesV2(sourceEntityVertex, relationshipGuidToExclude,
+                        classificationId, CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode));
 
                 ret.put(classificationVertex, entitiesPropagatingTo);
             }
@@ -540,7 +547,7 @@ public class EntityGraphRetriever {
     public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude) {
         List<AtlasVertex> ret = new ArrayList<>();
 
-        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, null, ret);
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, null, ret, null);
 
         return ret;
     }
@@ -552,7 +559,14 @@ public class EntityGraphRetriever {
     public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId) {
         List<AtlasVertex> ret = new ArrayList<>(Arrays.asList(entityVertex));
 
-        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret);
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, null);
+
+        return ret;
+    }
+    public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
+        List<AtlasVertex> ret = new ArrayList<>(Arrays.asList(entityVertex));
+
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
 
         return ret;
     }
@@ -560,13 +574,21 @@ public class EntityGraphRetriever {
     public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId) {
         List<AtlasVertex> ret = new ArrayList<>();
 
-        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret);
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, null);
+
+        return ret;
+    }
+
+    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
 
         return ret;
     }
 
     private void traverseImpactedVertices(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
-                                          final String classificationId, final List<AtlasVertex> result) {
+                                          final String classificationId, final List<AtlasVertex> result, List<String> edgeLabelsToExclude) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseImpactedVertices");
         Set<String>              visitedVertices = new HashSet<>();
         Queue<AtlasVertex>       queue           = new ArrayDeque<>();
@@ -594,6 +616,13 @@ public class EntityGraphRetriever {
 
             if (tagPropagationEdges == null) {
                 continue;
+            }
+
+            if (edgeLabelsToExclude != null && !edgeLabelsToExclude.isEmpty()) {
+                tagPropagationEdges = Arrays.stream(tagPropagationEdges)
+                        .filter(x -> !edgeLabelsToExclude.contains(x))
+                        .collect(Collectors.toList())
+                        .toArray(new String[0]);
             }
 
             Iterator<AtlasEdge> propagationEdges = entityVertex.getEdges(AtlasEdgeDirection.BOTH, tagPropagationEdges).iterator();
@@ -842,6 +871,7 @@ public class EntityGraphRetriever {
     }
 
     private AtlasEntity mapSystemAttributes(AtlasVertex entityVertex, AtlasEntity entity) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapSystemAttributes");
         if (LOG.isDebugEnabled()) {
             LOG.debug("Mapping system attributes for type {}", entity.getTypeName());
         }
@@ -872,6 +902,7 @@ public class EntityGraphRetriever {
         } catch (Throwable t) {
             LOG.warn("Got exception while mapping system attributes for type {} : ", entity.getTypeName(), t);
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
 
         return entity;
     }
@@ -885,6 +916,8 @@ public class EntityGraphRetriever {
     }
 
     private void mapAttributes(AtlasVertex entityVertex, AtlasStruct struct, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo, boolean includeReferences) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapAttributes");
+
         AtlasType objType = typeRegistry.getType(struct.getTypeName());
 
         if (!(objType instanceof AtlasStructType)) {
@@ -898,6 +931,7 @@ public class EntityGraphRetriever {
 
             struct.setAttribute(attribute.getName(), attrValue);
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void mapBusinessAttributes(AtlasVertex entityVertex, AtlasEntity entity) throws AtlasBaseException {
@@ -905,6 +939,8 @@ public class EntityGraphRetriever {
     }
 
     public List<AtlasClassification> getAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getAllClassifications");
+
         List<AtlasClassification> ret   = new ArrayList<>();
         Iterable                  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
 
@@ -921,6 +957,7 @@ public class EntityGraphRetriever {
                 }
             }
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
 
         return ret;
     }
@@ -1001,6 +1038,7 @@ public class EntityGraphRetriever {
     }
 
     private void mapClassifications(AtlasVertex entityVertex, AtlasEntity entity) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapClassifications");
         List<AtlasEdge> edges = getAllClassificationEdges(entityVertex);
 
         if (CollectionUtils.isNotEmpty(edges)) {
@@ -1017,6 +1055,7 @@ public class EntityGraphRetriever {
 
             entity.setClassifications(allClassifications);
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private Object mapVertexToAttribute(AtlasVertex entityVertex, AtlasAttribute attribute, AtlasEntityExtInfo entityExtInfo, final boolean isMinExtInfo) throws AtlasBaseException {
@@ -1410,6 +1449,7 @@ public class EntityGraphRetriever {
     }
 
     private void mapRelationshipAttributes(AtlasVertex entityVertex, AtlasEntity entity, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapRelationshipAttributes");
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
         if (entityType == null) {
@@ -1419,6 +1459,7 @@ public class EntityGraphRetriever {
         for (String attributeName : entityType.getRelationshipAttributes().keySet()) {
             mapVertexToRelationshipAttribute(entityVertex, entityType, attributeName, entity, entityExtInfo, isMinExtInfo);
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private Object mapVertexToRelationshipAttribute(AtlasVertex entityVertex, AtlasEntityType entityType, String attributeName, AtlasEntity entity, AtlasEntityExtInfo entityExtInfo, boolean isMinExtInfo) throws AtlasBaseException {

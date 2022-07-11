@@ -28,6 +28,7 @@ import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.tasks.AbstractTask;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -50,6 +51,7 @@ public abstract class ClassificationTask extends AbstractTask {
     public static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
     public static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
     public static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
+    public static final String PARAM_CURRENT_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE = "restrictPropagationThroughLineage";
   
     protected final AtlasGraph             graph;
     protected final EntityGraphMapper      entityGraphMapper;
@@ -72,6 +74,7 @@ public abstract class ClassificationTask extends AbstractTask {
     @Override
     public AtlasTask.Status perform() throws AtlasBaseException {
         Map<String, Object> params = getTaskDef().getParameters();
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord(getTaskGuid());
 
         if (MapUtils.isEmpty(params)) {
             LOG.warn("Task: {}: Unable to process task: Parameters is not readable!", getTaskGuid());
@@ -102,8 +105,17 @@ public abstract class ClassificationTask extends AbstractTask {
         } finally {
             graph.commit();
         }
-
+        RequestContext.get().endMetricRecord(metricRecorder);
         return getStatus();
+    }
+
+    public static Map<String, Object> toParameters(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean restrictPropagationThroughLineage) {
+        return new HashMap<String, Object>() {{
+            put(PARAM_ENTITY_GUID, entityGuid);
+            put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
+            put(PARAM_RELATIONSHIP_GUID, relationshipGuid);
+            put(PARAM_CURRENT_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE, restrictPropagationThroughLineage);
+        }};
     }
 
     public static Map<String, Object> toParameters(String entityGuid, String classificationVertexId, String relationshipGuid) {

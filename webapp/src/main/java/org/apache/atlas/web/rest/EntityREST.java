@@ -168,7 +168,6 @@ public class EntityREST {
                         if (entities.get(i).getBusinessMetadata() != null) {
                             requestBuilder.setBusinessMetadata(entities.get(i).getBusinessMetadata());
                         }
-
                         AtlasEntityAccessRequest entityAccessRequest = requestBuilder.build();
 
                         AtlasAuthorizationUtils.verifyAccess(entityAccessRequest, entities.get(i).getAction() + "guid=" + entities.get(i).getEntityGuid());
@@ -1159,7 +1158,7 @@ public class EntityREST {
 
             String dslString = parameters.getQueryString();
 
-            EntityAuditSearchResult ret = esBasedAuditRepository.searchEvents(dslString);
+            EntityAuditSearchResult ret = esBasedAuditRepository.searchEvents(dslString, parameters.getAttributes());
 
             scrubEntityAudits(ret, parameters.getSuppressLogs());
 
