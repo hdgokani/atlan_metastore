@@ -23,6 +23,8 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.persona.AtlasPersonaService;
+import org.apache.atlas.purpose.AtlasPurposeService;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
@@ -41,7 +43,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
-import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.*;
 
 /**
  * REST for a Purpose operations
@@ -56,31 +58,74 @@ public class PurposeREST {
     private static final Logger LOG      = LoggerFactory.getLogger(PurposeREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.PurposeREST");
 
-    private final AtlasEntityStore entitiesStore;
+    private final AtlasPurposeService atlasPurposeService;
 
     @Inject
-    public PurposeREST(AtlasEntityStore entitiesStore) {
-        this.entitiesStore = entitiesStore;
+    public PurposeREST(AtlasPurposeService atlasPurposeService) {
+        this.atlasPurposeService = atlasPurposeService;
     }
 
+
+    /**
+     * Create or Update Purpose
+     *
+     * @param entityWithExtInfo Purpose entity
+     * @return EntityMutationResponse
+     * @throws AtlasBaseException
+     */
     @POST
-    public EntityMutationResponse create(AtlasEntity.AtlasEntityWithExtInfo entity) throws AtlasBaseException {
+    public EntityMutationResponse createOrUpdatePurpose(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
+        EntityMutationResponse response;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "PurposeREST.createOrUpdate()");
             }
 
-            if(!entity.getEntity().getTypeName().equals(PURPOSE_ENTITY_TYPE)) {
+            if(!entityWithExtInfo.getEntity().getTypeName().equals(PURPOSE_ENTITY_TYPE)) {
                 throw new AtlasBaseException(BAD_REQUEST, "Please provide entity of type {}", PURPOSE_ENTITY_TYPE);
             }
 
-            //TODO: Validate tags names
+            //TODO: Validate tags names?
 
-            return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), false, false);
+            response = atlasPurposeService.createOrUpdatePurpose(entityWithExtInfo);
         } finally {
             AtlasPerfTracer.log(perf);
         }
+
+        return response;
+    }
+
+    /**
+     * Create or Update Purpose policy
+     *
+     * @param entityWithExtInfo Purpose policy entity
+     * @return EntityMutationResponse
+     * @throws AtlasBaseException
+     */
+    @POST
+    @Path("policy")
+    public EntityMutationResponse createOrUpdatePurposePolicy(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        EntityMutationResponse response;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "PurposeREST.createPersonaPolicy()");
+            }
+
+            String typeName = entityWithExtInfo.getEntity().getTypeName();
+            if(!PURPOSE_METADATA_POLICY_ENTITY_TYPE.equals(typeName)) {
+                throw new AtlasBaseException(BAD_REQUEST, "Not a valid type for Purpose Policy");
+            }
+
+            response = atlasPurposeService.createOrUpdatePersonaPolicy(entityWithExtInfo);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+
+        return response;
     }
 }

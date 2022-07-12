@@ -23,7 +23,7 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.repository.store.AtlasPersonaService;
+import org.apache.atlas.persona.AtlasPersonaService;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
-import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.*;
 
 /**
  * REST for a Persona operations
@@ -62,8 +62,17 @@ public class PersonaREST {
         this.atlasPersonaService = atlasPersonaService;
     }
 
+    /**
+     * Create or Update Persona
+     * This supports mutating users, groups, policies, channel link, resources, BM attrs deny list
+     * enable/disable policy
+     *
+     * @param entityWithExtInfo Persona entity
+     * @return EntityMutationResponse
+     * @throws AtlasBaseException
+     */
     @POST
-    public EntityMutationResponse createPersona(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+    public EntityMutationResponse createOrUpdatePersona(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -75,9 +84,41 @@ public class PersonaREST {
                 throw new AtlasBaseException(BAD_REQUEST, "Please provide entity of type {}", PERSONA_ENTITY_TYPE);
             }
 
-            return atlasPersonaService.createRole(entityWithExtInfo);
+            return atlasPersonaService.createOrUpdatePersona(entityWithExtInfo);
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    /**
+     * Create or Update Persona policy
+     *
+     * @param entityWithExtInfo Persona policy entity
+     * @return EntityMutationResponse
+     * @throws AtlasBaseException
+     */
+    @POST
+    @Path("policy")
+    public EntityMutationResponse createOrUpdatePersonaPolicy(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        EntityMutationResponse response = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "PersonaREST.createPersonaPolicy()");
+            }
+
+            String typeName = entityWithExtInfo.getEntity().getTypeName();
+            if(!PERSONA_METADATA_POLICY_ENTITY_TYPE.equals(typeName) && !PERSONA_GLOSSARY_POLICY_ENTITY_TYPE.equals(typeName) ) {
+                throw new AtlasBaseException(BAD_REQUEST, "Not a valid type for Perosna Policy");
+            }
+
+            response = atlasPersonaService.createOrUpdatePersonaPolicy(entityWithExtInfo);
+
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+
+        return response;
     }
 }

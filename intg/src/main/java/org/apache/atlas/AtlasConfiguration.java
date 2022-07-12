@@ -89,7 +89,8 @@ public enum AtlasConfiguration {
     ENABLE_SEARCH_LOGGING("atlas.enable.search.logging", true),
 
     RANGER_USERNAME("ranger.username", true),
-    RANGER_PASSWORD("ranger.password", true);
+    RANGER_PASSWORD("ranger.password", true),
+    RANGER_ATLAS_SERVICE_TYPE("ranger.atlas.service.type", "atlas");
 
 
 

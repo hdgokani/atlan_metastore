@@ -134,6 +134,8 @@ public final class Constants {
     public static final String PURPOSE_ENTITY_TYPE                 = "Purpose";
     public static final String PERSONA_ENTITY_TYPE                 = "Persona";
     public static final String PERSONA_METADATA_POLICY_ENTITY_TYPE = "PersonaMetadataPolicy";
+    public static final String PERSONA_GLOSSARY_POLICY_ENTITY_TYPE = "PersonaGlossaryPolicy";
+    public static final String PURPOSE_METADATA_POLICY_ENTITY_TYPE = "PurposeMetadataPolicy";
 
 
     /**
