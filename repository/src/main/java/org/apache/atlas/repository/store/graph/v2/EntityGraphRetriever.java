@@ -673,9 +673,11 @@ public class EntityGraphRetriever {
                 String      adjacentVertexIdForDisplay = adjacentVertex.getIdForDisplay();
 
                 if (!visitedVertices.contains(adjacentVertexIdForDisplay) && !resultsMap.containsKey(adjacentVertexIdForDisplay)) {
+                    AtlasPerfMetrics.MetricRecorder countRecorder = RequestContext.get().startMetricRecord("countPropagatedVertices");
                     resultsMap.put(adjacentVertexIdForDisplay, adjacentVertex);
 
                     queue.add(adjacentVertex);
+                    RequestContext.get().endMetricRecord(countRecorder);
                 }
             }
         }
