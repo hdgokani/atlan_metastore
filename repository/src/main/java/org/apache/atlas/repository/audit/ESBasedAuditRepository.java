@@ -28,6 +28,7 @@ import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasType;
@@ -59,6 +60,8 @@ import java.util.*;
 
 import static java.nio.charset.Charset.defaultCharset;
 import static org.springframework.util.StreamUtils.copyToString;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class provides cassandra support as the backend for audit storage support.
