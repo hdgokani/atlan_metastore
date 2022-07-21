@@ -1019,9 +1019,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         try {
-            String indexName = getIndexName(params);
-            LOG.info("indexName {}", indexName);
-            indexQuery = graph.elasticsearchQuery(indexName);
+            indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
 
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
 
@@ -1053,29 +1051,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         scrubSearchResults(ret, searchParams.getSuppressLogs());
         return ret;
-    }
-
-    private String getIndexName(IndexSearchParams params) throws AtlasBaseException {
-        Map<String, String> aliasMappings = new HashMap<>();
-        //aliasMappings.put("Sales", "alias_sales");
-        //aliasMappings.put("Marketing", "alias_marketing");
-
-        if (StringUtils.isEmpty(params.getPersona()) && StringUtils.isEmpty(params.getPurpose())) {
-            return INDEX_PREFIX + VERTEX_INDEX;
-        }
-        if (StringUtils.isNotEmpty(params.getPersona())) {
-            if (aliasMappings.containsKey(params.getPersona())) {
-                return aliasMappings.get(params.getPersona());
-            } else {
-                throw new AtlasBaseException("ES alias not found for persona " + params.getPersona());
-            }
-        } else {
-            if (aliasMappings.containsKey(params.getPurpose())) {
-                return aliasMappings.get(params.getPurpose());
-            } else {
-                throw new AtlasBaseException("ES alias not found for purpose " + params.getPurpose());
-            }
-        }
     }
 
     @Override
