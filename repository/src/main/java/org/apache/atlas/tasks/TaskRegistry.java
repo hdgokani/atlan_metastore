@@ -303,8 +303,10 @@ public class TaskRegistry {
             ret = getTasksForReQueueIndexSearch();
         }
 
-        LOG.info(String.format("Fetched tasks: %s",
-                String.join(",", ret.stream().map(AtlasTask::getGuid).collect(Collectors.toList()))));
+        if (ret.size() > 0) {
+            LOG.info(String.format("Fetched tasks: %s",
+                    String.join(",", ret.stream().map(AtlasTask::getGuid).collect(Collectors.toList()))));
+        }
 
         return ret;
     }
