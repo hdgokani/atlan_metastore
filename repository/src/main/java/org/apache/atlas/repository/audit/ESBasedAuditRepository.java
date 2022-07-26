@@ -17,8 +17,6 @@
  */
 package org.apache.atlas.repository.audit;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
@@ -28,7 +26,6 @@ import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasType;
@@ -48,20 +45,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.*;
-
-import static org.springframework.util.StreamUtils.copyToString;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * This class provides cassandra support as the backend for audit storage support.
@@ -72,6 +63,7 @@ import javax.inject.Singleton;
 public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository {
     private static final Logger LOG = LoggerFactory.getLogger(ESBasedAuditRepository.class);
     public static final String INDEX_BACKEND_CONF = "atlas.graph.index.search.hostname";
+    private static final String TOTAL_FIELD_LIMIT = "atlas.index.audit.elasticsearch.total_field_limit";
     public static final String INDEX_NAME = "entity_audits";
     private static final String ENTITYID = "entityId";
     private static final String TYPE_NAME = "typeName";
@@ -92,11 +84,14 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     private RestClient lowLevelClient;
     private final EntityGraphRetriever entityGraphRetriever;
+    private final Configuration configuration;
 
     @Inject
-    public ESBasedAuditRepository(EntityGraphRetriever entityGraphRetriever) {
+    public ESBasedAuditRepository(EntityGraphRetriever entityGraphRetriever, Configuration configuration) {
         this.entityGraphRetriever = entityGraphRetriever;
+        this.configuration = configuration;
     }
+
 
     @Override
     public void putEventsV1(List<EntityAuditEvent> events) throws AtlasException {
@@ -282,6 +277,10 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 createAuditIndex();
             }
             updateMappingsIfChanged();
+            if (isFieldLimitDifferent()) {
+                LOG.info("Updating ES total field limit");
+                updateFieldLimit();
+            }
         } catch (IOException e) {
             LOG.error("error", e);
             throw new AtlasException(e);
@@ -350,6 +349,44 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         String atlasHome = StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir;
         File elasticsearchSettingsFile = Paths.get(atlasHome, "elasticsearch", "es-audit-mappings.json").toFile();
         return new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
+    }
+
+    private boolean isFieldLimitDifferent() {
+        JsonNode fieldLimit;
+        try {
+            fieldLimit = getIndexFieldLimit();
+        } catch (IOException e) {
+            LOG.error("Problem while retrieving the index field limit!", e);
+            return false;
+        }
+        Integer fieldLimitFromConfigurationFile = configuration.getInt(TOTAL_FIELD_LIMIT);
+        return fieldLimit == null || fieldLimitFromConfigurationFile.equals(fieldLimit.intValue());
+    }
+
+    private JsonNode getIndexFieldLimit() throws IOException {
+        Request request = new Request("GET", INDEX_NAME + "/_settings");
+        Response response = lowLevelClient.performRequest(request);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String fieldName = INDEX_NAME + ".settings.index.mapping.total_fields.limit";
+        return objectMapper.readTree(copyToString(response.getEntity().getContent(), Charset.defaultCharset())).get(fieldName);
+    }
+
+    private void updateFieldLimit() {
+        Request request = new Request("PUT", INDEX_NAME + "/_settings");
+        String requestBody = String.format("{\"index.mapping.total_fields.limit\": %d}", configuration.getInt(TOTAL_FIELD_LIMIT));
+        HttpEntity entity = new NStringEntity(requestBody, ContentType.APPLICATION_JSON);
+        request.setEntity(entity);
+        Response response;
+        try {
+            response = lowLevelClient.performRequest(request);
+            if (response.getStatusLine().getStatusCode() != 200) {
+                LOG.error("Error while updating the Elasticsearch total field limits! Error: " + copyToString(response.getEntity().getContent(), defaultCharset()));
+            } else {
+                LOG.info("ES total field limit has been updated");
+            }
+        } catch (IOException e) {
+            LOG.error("Error while updating the field limit", e);
+        }
     }
 
     @Override
