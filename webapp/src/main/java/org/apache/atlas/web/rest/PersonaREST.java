@@ -26,6 +26,7 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.persona.AtlasPersonaService;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
+import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,8 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+
+import java.io.IOException;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.repository.Constants.*;
@@ -72,7 +75,7 @@ public class PersonaREST {
      * @throws AtlasBaseException
      */
     @POST
-    public EntityMutationResponse createOrUpdatePersona(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+    public EntityMutationResponse createOrUpdatePersona(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException, JSONException, IOException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -99,7 +102,7 @@ public class PersonaREST {
      */
     @POST
     @Path("policy")
-    public EntityMutationResponse createOrUpdatePersonaPolicy(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+    public EntityMutationResponse createOrUpdatePersonaPolicy(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException, JSONException, IOException {
         AtlasPerfTracer perf = null;
         EntityMutationResponse response = null;
 
@@ -110,7 +113,7 @@ public class PersonaREST {
 
             String typeName = entityWithExtInfo.getEntity().getTypeName();
             if(!PERSONA_METADATA_POLICY_ENTITY_TYPE.equals(typeName) && !PERSONA_GLOSSARY_POLICY_ENTITY_TYPE.equals(typeName) ) {
-                throw new AtlasBaseException(BAD_REQUEST, "Not a valid type for Perosna Policy");
+                throw new AtlasBaseException(BAD_REQUEST, "Not a valid type for Persona Policy");
             }
 
             response = atlasPersonaService.createOrUpdatePersonaPolicy(entityWithExtInfo);
