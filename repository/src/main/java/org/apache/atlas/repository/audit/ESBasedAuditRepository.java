@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.repository.audit;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
@@ -51,8 +53,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.*;
+
+import static java.nio.charset.Charset.defaultCharset;
+import static org.springframework.util.StreamUtils.copyToString;
 
 /**
  * This class provides cassandra support as the backend for audit storage support.
@@ -321,7 +327,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 LOG.info("ESBasedAuditRepo - Elasticsearch mappings have been updated!");
             } else {
                 LOG.error("Error while updating the Elasticsearch indexes!");
-                throw new AtlasException(copyToString(response.getEntity().getContent(), Charset.defaultCharset()));
+                throw new AtlasException(copyToString(response.getEntity().getContent(), defaultCharset()));
             }
         }
     }
@@ -329,7 +335,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private JsonNode getActiveIndexInfoAsJson(ObjectMapper mapper) throws IOException {
         Request request = new Request("GET", INDEX_NAME);
         Response response = lowLevelClient.performRequest(request);
-        String responseString = copyToString(response.getEntity().getContent(), Charset.defaultCharset());
+        String responseString = copyToString(response.getEntity().getContent(), defaultCharset());
         return mapper.readTree(responseString);
     }
 
@@ -368,7 +374,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         Response response = lowLevelClient.performRequest(request);
         ObjectMapper objectMapper = new ObjectMapper();
         String fieldName = INDEX_NAME + ".settings.index.mapping.total_fields.limit";
-        return objectMapper.readTree(copyToString(response.getEntity().getContent(), Charset.defaultCharset())).get(fieldName);
+        return objectMapper.readTree(copyToString(response.getEntity().getContent(), defaultCharset())).get(fieldName);
     }
 
     private void updateFieldLimit() {
