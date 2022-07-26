@@ -448,6 +448,8 @@ public abstract class DeleteHandlerV1 {
     public List<AtlasVertex> addTagPropagation(AtlasVertex classificationVertex, List<AtlasVertex> propagatedEntityVertices) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addTagPropagation");
         List<AtlasVertex> ret = new ArrayList<>();
+        long alreadyAttachedVerticesCounter = 0;
+        boolean logFlag = true;
 
         if (CollectionUtils.isNotEmpty(propagatedEntityVertices) && classificationVertex != null) {
             String                  classificationName     = getTypeName(classificationVertex);
@@ -460,14 +462,14 @@ public abstract class DeleteHandlerV1 {
                         LOG.debug(" --> Classification edge already exists from [{}] --> [{}][{}] using edge label: [{}]",
                                 getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex), classificationName);
                     }
-
+                    alreadyAttachedVerticesCounter += 1;
                     continue;
                 } else if (getPropagatedClassificationEdge(propagatedEntityVertex, classificationVertex) != null) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug(" --> Propagated classification edge already exists from [{}] --> [{}][{}] using edge label: [{}]",
                                 getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex), CLASSIFICATION_LABEL);
                     }
-
+                    alreadyAttachedVerticesCounter += 1;
                     continue;
                 }
 
@@ -487,6 +489,12 @@ public abstract class DeleteHandlerV1 {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug(" --> Adding propagated classification: [{}] to {} ({}) using edge label: [{}]", classificationName, getTypeName(propagatedEntityVertex),
                             GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
+                }
+
+                if (logFlag && alreadyAttachedVerticesCounter > 0) {
+                    LOG.info(String.format("Continuing classification propagation. Percentage of propagated vertices: %s",
+                            ((double) alreadyAttachedVerticesCounter/propagatedEntityVertices.size())*100));
+                    logFlag = false;
                 }
 
                 ret.add(propagatedEntityVertex);
