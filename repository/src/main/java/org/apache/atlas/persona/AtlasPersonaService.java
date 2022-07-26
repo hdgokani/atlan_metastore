@@ -270,6 +270,9 @@ public class AtlasPersonaService {
             throw new AtlasBaseException("Failed to update Atlas Entity");
         }
 
+        personaWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(personaGuid);
+        context.setPersonaExtInfo(personaWithExtInfo);
+
         switch (personaPolicy.getTypeName()) {
             case PERSONA_METADATA_POLICY_ENTITY_TYPE:
             case PERSONA_GLOSSARY_POLICY_ENTITY_TYPE: createOrUpdatePersonaPolicy(context); break;
@@ -308,7 +311,7 @@ public class AtlasPersonaService {
         List<RangerPolicy> ret = new ArrayList<>();
 
         //verify that this is unique policy for current Persona
-        verifyUniquePersonaPolicy(context, null);
+        verifyUniquePersonaPolicy(context, context.getPersonaPolicy().getGuid());
 
         for (RangerPolicy provisionalPolicy : provisionalRangerPolicies) {
             //check if there is existing Ranger policy of current provisional Ranger policy
@@ -400,12 +403,12 @@ public class AtlasPersonaService {
 
             if (context.isUpdateIsAllow()) {
                 policyItemsToUpdate = context.isAllowPolicy() ?
-                        new ArrayList(policy.getDenyPolicyItems()) :
-                        new ArrayList(policy.getPolicyItems());
+                        policy.getDenyPolicyItems() :
+                        policy.getPolicyItems();
             } else {
                 policyItemsToUpdate = context.isAllowPolicy() ?
-                        new ArrayList(policy.getPolicyItems()) :
-                        new ArrayList(policy.getDenyPolicyItems());
+                        policy.getPolicyItems() :
+                        policy.getDenyPolicyItems();
             }
             tempPolicyItems = new ArrayList<>(policyItemsToUpdate);
 

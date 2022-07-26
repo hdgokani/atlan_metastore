@@ -182,7 +182,7 @@ public class AtlasPersonaUtil {
     }
 
     public static List<AtlasEntity> getGlossaryPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        List<AtlasEntity> ret = null;
+        List<AtlasEntity> ret = new ArrayList<>();
         AtlasEntity persona = entityWithExtInfo.getEntity();
 
         List<AtlasObjectId> policies = (List<AtlasObjectId>) persona.getRelationshipAttribute("glossaryPolicies");
