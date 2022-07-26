@@ -33,6 +33,7 @@ import javax.inject.Inject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +62,7 @@ public class ESAliasStore implements IndexAliasStore {
     public boolean createAlias(PersonaContext personaContext) throws JSONException, IOException, AtlasBaseException {
         String aliasName = getAliasName(personaContext.getPersona());
 
-        Map<String, Object> filter = getFilter(personaContext.getPersonaExtInfo());
+        Map<String, Object> filter = getFilter(personaContext);
 
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
         requestBuilder.addAction(ADD, new AliasAction(INDEX_PREFIX + VERTEX_INDEX, aliasName, filter));
@@ -74,7 +75,7 @@ public class ESAliasStore implements IndexAliasStore {
     public boolean updateAlias(PersonaContext personaContext) throws JSONException, IOException, AtlasBaseException {
         String aliasName = getAliasName(personaContext.getPersona());
 
-        Map<String, Object> filter = getFilter(personaContext.getPersonaExtInfo());
+        Map<String, Object> filter = getFilter(personaContext);
 
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
         requestBuilder.addAction(ADD, new AliasAction(INDEX_PREFIX + VERTEX_INDEX, aliasName, filter));
@@ -92,7 +93,9 @@ public class ESAliasStore implements IndexAliasStore {
         return true;
     }
 
-    private Map<String, Object> getFilter(AtlasEntity.AtlasEntityWithExtInfo personaEntityWithExtInfo) {
+    private Map<String, Object> getFilter(PersonaContext context) {
+        AtlasEntity.AtlasEntityWithExtInfo personaEntityWithExtInfo = context.getPersonaExtInfo();
+
         Map<String, Object> ret = null;
         List<Map> allowClauseList = new ArrayList<>();
         List<Map> denyClauseList = new ArrayList<>();
