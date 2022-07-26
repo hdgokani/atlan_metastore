@@ -156,7 +156,7 @@ public class AtlasPersonaService {
 
         RangerRole rangerRole = atlasRangerService.updateRangerRole(context);
 
-        aliasStore.createAlias(context);
+        aliasStore.updateAlias(context);
 
         ret = entityStore.createOrUpdate(new AtlasEntityStream(context.getPersona()), false);
 
@@ -184,7 +184,7 @@ public class AtlasPersonaService {
         cleanRoleToDisablePersona(context, rangerPolicies, personaPolicies);
     }
 
-    private EntityMutationResponse createPersona(PersonaContext context, AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+    private EntityMutationResponse createPersona(PersonaContext context, AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException, JSONException, IOException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("createPersona");
         LOG.info("Creating Persona");
         EntityMutationResponse ret;
@@ -206,6 +206,8 @@ public class AtlasPersonaService {
         context.getPersona().getAttributes().put("rangerRoleId", rangerRole.getId());
 
         ret = entityStore.createOrUpdate(new AtlasEntityStream(context.getPersona()), false);
+
+        aliasStore.createAlias(context);
 
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
@@ -279,7 +281,7 @@ public class AtlasPersonaService {
 
         }
 
-        aliasStore.createAlias(context);
+        aliasStore.updateAlias(context);
 
         //TODO: enable graph commit to persist persona policy entity
         graph.commit();
