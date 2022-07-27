@@ -58,7 +58,7 @@ Build Process
 
    $ export MAVEN_OPTS="-Xms2g -Xmx2g"
    $ mvn clean install
-   $ mvn clean package -Pdist
+   $ mvn clean package -Pdist 
 
 3. After above build commands successfully complete, you should see the following files
 
