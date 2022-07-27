@@ -205,9 +205,11 @@ public class AtlasPersonaService {
         RangerRole rangerRole = atlasRangerService.createRangerRole(context);
         context.getPersona().getAttributes().put("rangerRoleId", rangerRole.getId());
 
-        ret = entityStore.createOrUpdate(new AtlasEntityStream(context.getPersona()), false);
+        ret = entityStore.createOrUpdateForImportNoCommit(new AtlasEntityStream(context.getPersona()));
 
         aliasStore.createAlias(context);
+
+        graph.commit();
 
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
@@ -218,12 +220,14 @@ public class AtlasPersonaService {
     * */
     public EntityMutationResponse createOrUpdatePersonaPolicy(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException, JSONException, IOException {
         EntityMutationResponse response = null;
+        PersonaContext context = new PersonaContext();
+
+        //validateConnection(context, entityWithExtInfo.getEntity());
 
         AtlasEntity personaPolicy = entityWithExtInfo.getEntity();
         validatePersonaPolicyRequest(personaPolicy);
 
         AtlasEntity.AtlasEntityWithExtInfo existingPersonaPolicy = null;
-        PersonaContext context = new PersonaContext();
 
         if (AtlasTypeUtil.isAssignedGuid(personaPolicy.getGuid())) {
             existingPersonaPolicy = entityRetriever.toAtlasEntityWithExtInfo(personaPolicy.getGuid());
@@ -286,6 +290,18 @@ public class AtlasPersonaService {
         //TODO: enable graph commit to persist persona policy entity
         graph.commit();
         return response;
+    }
+
+    private void validateConnection(PersonaContext context, AtlasEntity entity) throws AtlasBaseException {
+        if (PERSONA_METADATA_POLICY_ENTITY_TYPE.equals(entity.getTypeName())) {
+            String connectionId = getConnectionId(entity);
+
+            AtlasEntity connection = entityRetriever.toAtlasEntity(connectionId);
+
+            if (connection != null) {
+                context.setConnection(connection);
+            }
+        }
     }
 
     private List<RangerPolicy> createOrUpdatePersonaPolicy(PersonaContext context) throws AtlasBaseException {

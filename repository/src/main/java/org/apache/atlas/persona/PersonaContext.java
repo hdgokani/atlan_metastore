@@ -34,6 +34,7 @@ public class PersonaContext {
     private AtlasEntityWithExtInfo personaExtInfo;
     private AtlasEntity personaPolicy;
     private AtlasEntity existingPersonaPolicy;
+    private AtlasEntity connection;
     private boolean isCreateNewPersona;
     private boolean isCreateNewPersonaPolicy;
     private boolean isUpdatePersonaPolicy;
@@ -220,5 +221,13 @@ public class PersonaContext {
                 case PERSONA_GLOSSARY_POLICY_ENTITY_TYPE: isGlossaryPolicy = true; break;
             }
         }
+    }
+
+    public AtlasEntity getConnection() {
+        return connection;
+    }
+
+    public void setConnection(AtlasEntity connection) {
+        this.connection = connection;
     }
 }
