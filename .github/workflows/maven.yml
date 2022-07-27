@@ -25,6 +25,7 @@ on:
       - beta
       - development
       - master
+      - classificationexp
 
 jobs:
   build:
