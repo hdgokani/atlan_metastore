@@ -449,7 +449,6 @@ public abstract class DeleteHandlerV1 {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addTagPropagation");
         List<AtlasVertex> ret = new ArrayList<>();
         long alreadyAttachedVerticesCounter = 0;
-        boolean logFlag = true;
 
         if (CollectionUtils.isNotEmpty(propagatedEntityVertices) && classificationVertex != null) {
             String                  classificationName     = getTypeName(classificationVertex);
@@ -491,10 +490,9 @@ public abstract class DeleteHandlerV1 {
                             GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
                 }
 
-                if (logFlag && alreadyAttachedVerticesCounter > 0) {
-                    LOG.info(String.format("Continuing classification propagation. Percentage of propagated vertices: %s",
-                            ((double) alreadyAttachedVerticesCounter/propagatedEntityVertices.size())*100));
-                    logFlag = false;
+                double progress = ((double) alreadyAttachedVerticesCounter/propagatedEntityVertices.size())*100;
+                if (alreadyAttachedVerticesCounter > 0 && ((int) progress) % 10 == 0) {
+                    LOG.info(String.format("Continuing classification propagation. Percentage of propagated vertices: %s", progress));
                 }
 
                 ret.add(propagatedEntityVertex);
