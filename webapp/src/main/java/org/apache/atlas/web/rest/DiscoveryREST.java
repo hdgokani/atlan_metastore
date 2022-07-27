@@ -551,8 +551,6 @@ public class DiscoveryREST {
 
 
         loggerManagement.log(builder.build());
-
-        LOG.info("Logged search log for indexsearch request");
     }
 
     /**

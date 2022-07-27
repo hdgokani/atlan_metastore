@@ -45,6 +45,7 @@ public final class Constants {
     public static final String HISTORICAL_GUID_PROPERTY_KEY     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "historicalGuids");
     public static final String FREETEXT_REQUEST_HANDLER         = "/freetext";
     public static final String TERMS_REQUEST_HANDLER            = "/terms";
+    public static final String ES_API_ALIASES                   = "/_aliases";
 
     /**
      * Entity type name property key.
@@ -129,6 +130,15 @@ public final class Constants {
     public static final String QUERY_ENTITY_TYPE            = "Query";
     public static final String QUERY_FOLDER_ENTITY_TYPE     = "QueryFolder";
     public static final String QUERY_COLLECTION_ENTITY_TYPE = "QueryCollection";
+
+    /*
+     * Purpose / Persona
+     */
+    public static final String PURPOSE_ENTITY_TYPE                 = "Purpose";
+    public static final String PERSONA_ENTITY_TYPE                 = "Persona";
+    public static final String PERSONA_METADATA_POLICY_ENTITY_TYPE = "PersonaMetadataPolicy";
+    public static final String PERSONA_GLOSSARY_POLICY_ENTITY_TYPE = "PersonaGlossaryPolicy";
+    public static final String PURPOSE_METADATA_POLICY_ENTITY_TYPE = "PurposeMetadataPolicy";
 
 
     /**

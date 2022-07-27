@@ -45,6 +45,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
+import org.apache.atlas.persona.AtlasPersonaUtil;
 import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.query.executors.DSLQueryExecutor;
 import org.apache.atlas.query.executors.ScriptEngineBasedExecutor;
@@ -106,7 +107,9 @@ import static org.apache.atlas.SortOrder.ASCENDING;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.ASSET_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.INDEX_PREFIX;
 import static org.apache.atlas.repository.Constants.OWNER_ATTRIBUTE;
+import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.BASIC_SEARCH_STATE_FILTER;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TO_RANGE_LIST;
 
@@ -1017,7 +1020,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         try {
-            indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
+
+            String indexName = getIndexName(params);
+            LOG.info("indexName {}", indexName);
+
+            indexQuery = graph.elasticsearchQuery(indexName);
 
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
 
@@ -1049,6 +1056,28 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         scrubSearchResults(ret, searchParams.getSuppressLogs());
         return ret;
+    }
+
+    private String getIndexName(IndexSearchParams params) throws AtlasBaseException {
+        if (StringUtils.isEmpty(params.getPersona()) && StringUtils.isEmpty(params.getPurpose())) {
+            return INDEX_PREFIX + VERTEX_INDEX;
+        }
+
+        String qualifiedName = "";
+        if (StringUtils.isNotEmpty(params.getPersona())) {
+            qualifiedName = params.getPersona();
+        } else {
+            qualifiedName = params.getPurpose();
+        }
+
+        String[] parts = qualifiedName.split("/");
+        String aliasName = parts[parts.length - 1];
+
+        if (StringUtils.isNotEmpty(aliasName)) {
+            return aliasName;
+        } else {
+            throw new AtlasBaseException("ES alias not found for purpose/persona " + params.getPurpose());
+        }
     }
 
     @Override

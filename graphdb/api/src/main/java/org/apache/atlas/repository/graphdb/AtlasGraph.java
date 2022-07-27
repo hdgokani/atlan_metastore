@@ -18,10 +18,12 @@
 package org.apache.atlas.repository.graphdb;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.ESAliasRequestBuilder;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.type.AtlasType;
+import org.codehaus.jettison.json.JSONException;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import javax.script.ScriptEngine;
@@ -206,7 +208,11 @@ public interface AtlasGraph<V, E> {
     AtlasIndexQuery<V, E> elasticsearchQuery(String indexName, SearchSourceBuilder sourceBuilder);
 
     AtlasIndexQuery<V, E> elasticsearchQuery(String indexName, SearchParams searchParams);
-    
+
+    void createOrUpdateESAlias(ESAliasRequestBuilder aliasRequestBuilder) throws IOException, JSONException, AtlasBaseException;
+
+    void deleteESAlias(String indexName, String aliasName) throws JSONException, IOException, AtlasBaseException;
+
     AtlasIndexQuery elasticsearchQuery(String indexName);
 
     /**

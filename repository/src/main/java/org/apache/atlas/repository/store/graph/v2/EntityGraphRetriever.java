@@ -523,7 +523,9 @@ public class EntityGraphRetriever {
                 AtlasVertex       sourceEntityVertex    = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityId);
                 String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
 
-                if(toAtlasClassification(classificationVertex).getRestrictPropagationThroughLineage()){
+                Boolean restrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
+
+                if (restrictPropagationThroughLineage != null && restrictPropagationThroughLineage) {
                     propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
                 }
 
@@ -539,7 +541,14 @@ public class EntityGraphRetriever {
     }
 
     public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex) {
-        return getImpactedVerticesV2(entityVertex, null);
+        return getImpactedVerticesV2(entityVertex, (List<String>) null);
+    }
+
+    public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex,  List<String> edgeLabelsToExclude){
+        List<AtlasVertex> ret = new ArrayList<>();
+        traverseImpactedVertices(entityVertex, null, null, ret, edgeLabelsToExclude);
+
+        return ret;
     }
 
     public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude) {
@@ -615,13 +624,13 @@ public class EntityGraphRetriever {
             if (tagPropagationEdges == null) {
                 continue;
             }
-            if(edgeLabelsToExclude != null) {
-                if (!edgeLabelsToExclude.isEmpty()) {
-                    tagPropagationEdges = Arrays.stream(tagPropagationEdges).filter(x -> !edgeLabelsToExclude.contains(x)).collect(Collectors.toList()).toArray(new String[0]);
-                }
+
+            if (edgeLabelsToExclude != null && !edgeLabelsToExclude.isEmpty()) {
+                tagPropagationEdges = Arrays.stream(tagPropagationEdges)
+                        .filter(x -> !edgeLabelsToExclude.contains(x))
+                        .collect(Collectors.toList())
+                        .toArray(new String[0]);
             }
-
-
 
             Iterator<AtlasEdge> propagationEdges = entityVertex.getEdges(AtlasEdgeDirection.BOTH, tagPropagationEdges).iterator();
 
