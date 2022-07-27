@@ -28,7 +28,6 @@ import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.tasks.AbstractTask;
 import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -74,7 +73,6 @@ public abstract class ClassificationTask extends AbstractTask {
     @Override
     public AtlasTask.Status perform() throws AtlasBaseException {
         Map<String, Object> params = getTaskDef().getParameters();
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord(getTaskGuid());
 
         if (MapUtils.isEmpty(params)) {
             LOG.warn("Task: {}: Unable to process task: Parameters is not readable!", getTaskGuid());
@@ -103,7 +101,6 @@ public abstract class ClassificationTask extends AbstractTask {
 
             throw e;
         } finally {
-            RequestContext.get().endMetricRecord(metricRecorder);
             graph.commit();
         }
 

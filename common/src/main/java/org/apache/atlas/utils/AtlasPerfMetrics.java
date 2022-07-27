@@ -99,7 +99,7 @@ public class AtlasPerfMetrics {
 
     public static class Metric {
         private final String name;
-        private       long  invocations    = 0;
+        private       short  invocations    = 0;
         private       long   totalTimeMSecs = 0;
 
         public Metric(String name) {
@@ -110,7 +110,7 @@ public class AtlasPerfMetrics {
             return name;
         }
 
-        public long getInvocations() {
+        public short getInvocations() {
             return invocations;
         }
 
