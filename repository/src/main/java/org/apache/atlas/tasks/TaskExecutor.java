@@ -133,11 +133,12 @@ public class TaskExecutor {
                     return;
                 }
 
-                TASK_LOG.info(String.format("Started performing task with guid: %s", task.getGuid()));
+                LOG.info(String.format("Started performing task with guid: %s", task.getGuid()));
 
                 performTask(taskVertex, task);
 
-                TASK_LOG.info(String.format("Finished task with guid: %s", task.getGuid()));
+                LOG.info(String.format("Finished task with guid: %s", task.getGuid()));
+
 
             } catch (InterruptedException exception) {
                 registry.updateStatus(taskVertex, task);
