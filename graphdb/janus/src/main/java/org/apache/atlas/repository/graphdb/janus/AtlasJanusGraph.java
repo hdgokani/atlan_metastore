@@ -331,26 +331,29 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
     @Override
-    public void createOrUpdateESAlias(ESAliasRequestBuilder builder) throws IOException, JSONException, AtlasBaseException {
-        //TODO:
+    public void createOrUpdateESAlias(ESAliasRequestBuilder builder) throws AtlasBaseException {
         String aliasRequest = builder.build();
 
-        LOG.info("creating alias {}", aliasRequest);
         HttpEntity entity = new NStringEntity(aliasRequest, ContentType.APPLICATION_JSON);
-
         Request request = new Request("POST", ES_API_ALIASES);
         request.setEntity(entity);
 
-        Response response = restClient.performRequest(request);
+        Response response = null;
+        try {
+            response = restClient.performRequest(request);
+        } catch (IOException e) {
+            LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_ALIAS_FAILED, "creating/updating", e.getMessage());
+        }
 
         int statusCode = response.getStatusLine().getStatusCode();;
         if (statusCode != 200) {
-            throw new AtlasBaseException("Unable to create/update ES alias: {}" + aliasRequest);
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_ALIAS_FAILED, "creating/updating", "Status code " + statusCode);
         }
     }
 
     @Override
-    public void deleteESAlias(String indexName, String aliasName) throws JSONException, IOException, AtlasBaseException {
+    public void deleteESAlias(String indexName, String aliasName) throws AtlasBaseException {
         ESAliasRequestBuilder builder = new ESAliasRequestBuilder();
         builder.addAction(REMOVE, new ESAliasRequestBuilder.AliasAction(indexName, aliasName));
 
@@ -360,11 +363,17 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         Request request = new Request("POST", ES_API_ALIASES);
         request.setEntity(entity);
 
-        Response response = restClient.performRequest(request);
+        Response response = null;
+        try {
+            response = restClient.performRequest(request);
+        } catch (IOException e) {
+            LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_ALIAS_FAILED, "deleting", e.getMessage());
+        }
 
         int statusCode = response.getStatusLine().getStatusCode();;
         if (statusCode != 200) {
-            throw new AtlasBaseException("Unable to delete ES alias: {}" + aliasRequest);
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_ALIAS_FAILED, "deleting", "Status code " + statusCode);
         }
     }
 

@@ -209,9 +209,9 @@ public interface AtlasGraph<V, E> {
 
     AtlasIndexQuery<V, E> elasticsearchQuery(String indexName, SearchParams searchParams);
 
-    void createOrUpdateESAlias(ESAliasRequestBuilder aliasRequestBuilder) throws IOException, JSONException, AtlasBaseException;
+    void createOrUpdateESAlias(ESAliasRequestBuilder aliasRequestBuilder) throws AtlasBaseException;
 
-    void deleteESAlias(String indexName, String aliasName) throws JSONException, IOException, AtlasBaseException;
+    void deleteESAlias(String indexName, String aliasName) throws AtlasBaseException;
 
     AtlasIndexQuery elasticsearchQuery(String indexName);
 

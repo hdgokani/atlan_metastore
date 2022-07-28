@@ -18,6 +18,7 @@
 package org.apache.atlas;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasType;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.AtlasErrorCode.JSON_ERROR;
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.ADD;
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.REMOVE;
 
@@ -52,37 +54,46 @@ public class ESAliasRequestBuilder {
 
 
 
-    public ESAliasRequestBuilder addAction(ESAliasAction ESAliasAction, AliasAction action) throws JSONException {
+    public ESAliasRequestBuilder addAction(ESAliasAction ESAliasAction, AliasAction action) throws AtlasBaseException {
         JSONObject object = new JSONObject();
         String type = "";
 
-        switch (ESAliasAction) {
-            case ADD:
-                type = ADD.getType();
-                object.put("index", action.getIndex());
-                object.put("alias", action.getAlias());
-                if (action.getFilter() != null) {
-                    object.put("filter", new JSONObject(AtlasType.toJson(action.getFilter())));
-                }
-                break;
-            case REMOVE:
-                type = REMOVE.getType();
-                object.put("index", action.getIndex());
-                object.put("alias", action.getAlias());
-                break;
+        try {
+            switch (ESAliasAction) {
+                case ADD:
+                    type = ADD.getType();
+                    object.put("index", action.getIndex());
+                    object.put("alias", action.getAlias());
+                    if (action.getFilter() != null) {
+                        object.put("filter", new JSONObject(AtlasType.toJson(action.getFilter())));
+                    }
+                    break;
+                case REMOVE:
+                    type = REMOVE.getType();
+                    object.put("index", action.getIndex());
+                    object.put("alias", action.getAlias());
+                    break;
+            }
+
+            JSONObject j_1 = new JSONObject();
+            j_1.put(type, object);
+
+            jActionObject.add(j_1);
+
+        } catch (JSONException e) {
+            throw new AtlasBaseException(JSON_ERROR, e.getMessage());
         }
-
-        JSONObject j_1 = new JSONObject();
-        j_1.put(type, object);
-
-        jActionObject.add(j_1);
         return this;
     }
 
-    public String build() throws JSONException {
+    public String build() throws AtlasBaseException {
         JSONObject jsonObject = new JSONObject();
 
-        jsonObject.put("actions", jActionObject);
+        try {
+            jsonObject.put("actions", jActionObject);
+        } catch (JSONException e) {
+            throw new AtlasBaseException(JSON_ERROR, e.getMessage());
+        }
 
         return jsonObject.toString();
     }

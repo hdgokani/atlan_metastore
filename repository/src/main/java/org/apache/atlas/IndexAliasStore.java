@@ -19,6 +19,7 @@ package org.apache.atlas;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.persona.PersonaContext;
+import org.apache.atlas.purpose.PurposeContext;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
@@ -31,9 +32,13 @@ import java.io.IOException;
 @Component
 public interface IndexAliasStore {
 
-    public boolean createAlias(PersonaContext personaContext) throws JSONException, IOException, AtlasException, AtlasBaseException;
+    public boolean createAlias(PersonaContext personaContext) throws AtlasBaseException;
 
-    public boolean updateAlias(PersonaContext personaContext) throws JSONException, IOException, AtlasException, AtlasBaseException;
+    public boolean createAlias(PurposeContext purposeContext) throws AtlasBaseException;
 
-    public boolean deleteAlias(PersonaContext personaContext) throws JSONException, IOException, AtlasException, AtlasBaseException;
+    public boolean updateAlias(PersonaContext personaContext) throws AtlasBaseException;
+
+    public boolean updateAlias(PurposeContext purposeContext) throws AtlasBaseException;
+
+    public boolean deleteAlias(String aliasName) throws AtlasBaseException;
 }
