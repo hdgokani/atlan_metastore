@@ -676,7 +676,7 @@ public class EntityGraphRetriever {
                     AtlasPerfMetrics.MetricRecorder countRecorder = RequestContext.get().startMetricRecord("countPropagatedVertices");
                     resultsMap.put(adjacentVertexIdForDisplay, adjacentVertex);
 
-
+                    queue.add(adjacentVertex);
                     RequestContext.get().endMetricRecord(countRecorder);
                 }
             }
