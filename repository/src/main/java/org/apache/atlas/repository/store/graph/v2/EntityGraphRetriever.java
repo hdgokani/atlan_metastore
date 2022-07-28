@@ -693,16 +693,14 @@ public class EntityGraphRetriever {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    public List<String> classificationPropagation(final AtlasVertex entityVertexStart, final AtlasVertex classificationVertex,
-                                          final DeleteHandlerDelegate deleteDelegate, final AtlasInstanceConverter instanceConverter,
-                                          final IAtlasEntityChangeNotifier entityChangeNotifier,
-                                           final String relationshipGuidToExclude,
+    public List<AtlasVertex> classificationPropagation(final AtlasVertex entityVertexStart, final AtlasVertex classificationVertex,
+                                          final DeleteHandlerDelegate deleteDelegate, final String relationshipGuidToExclude,
                                           final String classificationId, List<String> edgeLabelsToExclude) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseImpactedVertices");
         Set<String>             visitedVertices    = new HashSet<>();
         Queue<AtlasVertex>      queue              = new ArrayDeque<>();
         List<AtlasVertex>       vertices           = new ArrayList<>();
-        List<String>            propagatedVertices = new ArrayList<>();
+        List<AtlasVertex>       propagatedVertices = new ArrayList<>();
         RequestContext requestContext = RequestContext.get();
 
         if (entityVertexStart != null) {
@@ -780,14 +778,8 @@ public class EntityGraphRetriever {
 
                     queue.add(adjacentVertex);
                     vertices.add(adjacentVertex);
-                    propagatedVertices.add(graphHelper.getGuid(adjacentVertex));
                     if (vertices.size() >= 400) {
-                        try {
-                            processPropagation(deleteDelegate, instanceConverter, entityChangeNotifier, vertices, classificationVertex);
-                        }
-                        catch (AtlasBaseException e) {
-                            throw new RuntimeException(e);
-                        }
+                        propagatedVertices.addAll(processPropagation(deleteDelegate, vertices, classificationVertex));
                         vertices.clear();
                     }
                     RequestContext.get().endMetricRecord(countRecorder);
@@ -795,43 +787,27 @@ public class EntityGraphRetriever {
             }
         }
 
-        try {
-            if (vertices.size() > 0) {
-                processPropagation(deleteDelegate, instanceConverter, entityChangeNotifier, vertices, classificationVertex);
-            }
-        }
-        catch (AtlasBaseException e) {
-            throw new RuntimeException(e);
+        if (vertices.size() > 0) {
+            propagatedVertices.addAll(processPropagation(deleteDelegate, vertices, classificationVertex));
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
         return propagatedVertices;
     }
 
-    private void processPropagation(DeleteHandlerDelegate deleteDelegate, AtlasInstanceConverter instanceConverter, IAtlasEntityChangeNotifier entityChangeNotifier,List<AtlasVertex> vertices, AtlasVertex classificationVertex) throws AtlasBaseException {
-        List<String> impactedVerticesGuidsToLock = vertices.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
-        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedVerticesGuidsToLock);
+    private List<AtlasVertex> processPropagation(DeleteHandlerDelegate deleteDelegate, List<AtlasVertex> vertices, AtlasVertex classificationVertex) {
+        try {
+            List<String> impactedVerticesGuidsToLock = vertices.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
+            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedVerticesGuidsToLock);
 
-        AtlasClassification classification = toAtlasClassification(classificationVertex);
-        List<AtlasVertex> entitiesPropagatedTo = deleteDelegate.getHandler().addTagPropagation(classificationVertex, vertices);
+            List<AtlasVertex> entitiesPropagatedTo = deleteDelegate.getHandler().addTagPropagation(classificationVertex, vertices);
 
-        graph.commit();
-
-        List<AtlasEntity> propagatedEntities = verticesToAtlasEntities(entitiesPropagatedTo, instanceConverter);
-
-        entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification));
-    }
-
-    private List<AtlasEntity> verticesToAtlasEntities(List<AtlasVertex> vertices, AtlasInstanceConverter instanceConverter) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("verticesToAtlasEntities");
-        List<AtlasEntity> entities = new ArrayList<>();
-
-        for (AtlasVertex vertex : vertices) {
-            AtlasEntity entity = instanceConverter.getAndCacheEntity(graphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
-            entities.add(entity);
+            return entitiesPropagatedTo;
+        } catch (AtlasBaseException e) {
+            throw new RuntimeException(e);
+        } finally {
+            graph.commit();
         }
-        RequestContext.get().endMetricRecord(metricRecorder);
-        return entities;
     }
 
     private boolean isOutVertex(AtlasVertex vertex, AtlasEdge edge) {
