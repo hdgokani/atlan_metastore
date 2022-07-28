@@ -2740,48 +2740,13 @@ public class EntityGraphMapper {
 
             List<String> edgeLabelsToExclude = CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode);
 
-            List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV2(entityVertex, relationshipGuid, classificationVertexId, edgeLabelsToExclude);
-
-            if (CollectionUtils.isEmpty(impactedVertices)) {
-                LOG.debug("propagateClassification(entityGuid={}, classificationVertexId={}): found no entities to propagate the classification", entityGuid, classificationVertexId);
-
-                return null;
-            }
-
-            AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("lockObjectsAfterTraverse");
-            List<String> impactedVerticesGuidsToLock = impactedVertices.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
-            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedVerticesGuidsToLock);
-            RequestContext.get().endMetricRecord(metricRecorder);
-
-            AtlasClassification classification       = entityRetriever.toAtlasClassification(classificationVertex);
-            List<AtlasVertex>   entitiesPropagatedTo = deleteDelegate.getHandler().addTagPropagation(classificationVertex, impactedVertices);
-
-            if (CollectionUtils.isEmpty(entitiesPropagatedTo)) {
-                return null;
-            }
-
-            List<AtlasEntity> propagatedEntities = verticesToAtlasEntities(entitiesPropagatedTo);
-
-            entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification));
-
-            return propagatedEntities.stream().map(x -> x.getGuid()).collect(Collectors.toList());
+            List<String> propagatedEntities = entityRetriever.classificationPropagation(entityVertex, classificationVertex, deleteDelegate, instanceConverter, entityChangeNotifier, relationshipGuid, classificationVertexId, edgeLabelsToExclude);
+            return propagatedEntities;
         } catch (Exception e) {
             LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): error while propagating classification", entityGuid, classificationVertexId, e);
 
             throw new AtlasBaseException(e);
         }
-    }
-
-    public List<AtlasEntity> verticesToAtlasEntities(List<AtlasVertex> vertices) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("verticesToAtlasEntities");
-        List<AtlasEntity> entities = new ArrayList<>();
-
-        for (AtlasVertex vertex : vertices) {
-            AtlasEntity entity = instanceConverter.getAndCacheEntity(graphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
-            entities.add(entity);
-        }
-        RequestContext.get().endMetricRecord(metricRecorder);
-        return entities;
     }
 
     public void deleteClassification(String entityGuid, String classificationName, String associatedEntityGuid) throws AtlasBaseException {
@@ -2843,7 +2808,6 @@ public class EntityGraphMapper {
 
         if (isPropagationEnabled(classificationVertex)) {
             if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
-                boolean propagateDelete = true;
                 String classificationVertexId = classificationVertex.getIdForDisplay();
 
                 List<String> entityTaskGuids = (List<String>) entityVertex.getPropertyValues(PENDING_TASKS_PROPERTY_KEY, String.class);
@@ -2866,14 +2830,11 @@ public class EntityGraphMapper {
                             String taskGuid = entityClassificationPendingTask.getGuid();
                             taskManagement.deleteByGuid(taskGuid, TaskManagement.DeleteType.SOFT);
                             AtlasGraphUtilsV2.deleteProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, taskGuid);
-//                            propagateDelete = false;  TODO: Uncomment when all unnecessary ADD tasks are resolved
                         }
                     }
                 }
 
-                if (propagateDelete) {
-                    createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertex.getIdForDisplay());
-                }
+                createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertex.getIdForDisplay());
 
                 entityVertices = new ArrayList<>();
             } else {

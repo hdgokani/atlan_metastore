@@ -84,6 +84,8 @@ public abstract class DeleteHandlerV1 {
     static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
     protected final GraphHelper          graphHelper;
+
+    protected final AtlasGraph graph;
     private   final AtlasTypeRegistry    typeRegistry;
     private   final EntityGraphRetriever entityRetriever;
     private   final boolean              shouldUpdateInverseReferences;
@@ -94,6 +96,7 @@ public abstract class DeleteHandlerV1 {
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
         this.typeRegistry                  = typeRegistry;
         this.graphHelper                   = new GraphHelper(graph);
+        this.graph                         = graph;
         this.entityRetriever               = new EntityGraphRetriever(graph, typeRegistry);
         this.shouldUpdateInverseReferences = shouldUpdateInverseReference;
         this.softDelete                    = softDelete;
