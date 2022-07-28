@@ -796,7 +796,9 @@ public class EntityGraphRetriever {
         }
 
         try {
-            processPropagation(deleteDelegate, instanceConverter, entityChangeNotifier, vertices, classificationVertex);
+            if (vertices.size() > 0) {
+                processPropagation(deleteDelegate, instanceConverter, entityChangeNotifier, vertices, classificationVertex);
+            }
         }
         catch (AtlasBaseException e) {
             throw new RuntimeException(e);
