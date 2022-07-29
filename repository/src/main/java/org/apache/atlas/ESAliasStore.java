@@ -23,7 +23,9 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.persona.AtlasPersonaUtil;
 import org.apache.atlas.persona.PersonaContext;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +42,10 @@ import java.util.Map;
 
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.ADD;
 import static org.apache.atlas.persona.AtlasPersonaUtil.getAssets;
+import static org.apache.atlas.persona.AtlasPersonaUtil.getConnectionId;
 import static org.apache.atlas.persona.AtlasPersonaUtil.getGlossaryQualifiedNames;
 import static org.apache.atlas.persona.AtlasPersonaUtil.getIsAllow;
+import static org.apache.atlas.persona.AtlasPersonaUtil.getQualifiedName;
 import static org.apache.atlas.persona.AtlasPersonaUtil.mapOf;
 import static org.apache.atlas.repository.Constants.INDEX_PREFIX;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
@@ -52,20 +56,21 @@ public class ESAliasStore implements IndexAliasStore {
     private static final Logger LOG = LoggerFactory.getLogger(ESAliasStore.class);
 
     private final AtlasGraph graph;
+    private final EntityGraphRetriever entityRetriever;
 
     @Inject
-    public ESAliasStore(AtlasGraph graph) {
+    public ESAliasStore(AtlasGraph graph,
+                        EntityGraphRetriever entityRetriever) {
         this.graph = graph;
+        this.entityRetriever = entityRetriever;
     }
 
     @Override
     public boolean createAlias(PersonaContext personaContext) throws JSONException, IOException, AtlasBaseException {
         String aliasName = getAliasName(personaContext.getPersona());
 
-        Map<String, Object> filter = getFilter(personaContext);
-
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
-        requestBuilder.addAction(ADD, new AliasAction(INDEX_PREFIX + VERTEX_INDEX, aliasName, filter));
+        requestBuilder.addAction(ADD, new AliasAction(INDEX_PREFIX + VERTEX_INDEX, aliasName));
 
         graph.createOrUpdateESAlias(requestBuilder);
         return true;
@@ -93,7 +98,7 @@ public class ESAliasStore implements IndexAliasStore {
         return true;
     }
 
-    private Map<String, Object> getFilter(PersonaContext context) {
+    private Map<String, Object> getFilter(PersonaContext context) throws AtlasBaseException {
         AtlasEntity.AtlasEntityWithExtInfo personaEntityWithExtInfo = context.getPersonaExtInfo();
 
         Map<String, Object> ret = null;
@@ -103,19 +108,24 @@ public class ESAliasStore implements IndexAliasStore {
         List<AtlasEntity> policies = AtlasPersonaUtil.getMetadataPolicies(personaEntityWithExtInfo);
 
         if (CollectionUtils.isNotEmpty(policies)) {
-            for (AtlasEntity entity: policies) {
-                List<String> assets = getAssets(entity);
 
-                if (getIsAllow(entity)) {
-                    for (String asset : assets) {
-                        allowClauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, asset)));
-                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
+            for (AtlasEntity entity: policies) {
+                boolean addConnectionFilter = true;
+                String connectionQName = getQualifiedName(getConnectionEntity(entity));
+
+                List<String> assets = getAssets(entity);
+                boolean allow = getIsAllow(entity);
+
+                for (String asset : assets) {
+                    if (StringUtils.equals(connectionQName, asset)) {
+                        addConnectionFilter = false;
                     }
-                } else {
-                    for (String asset : assets) {
-                        denyClauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, asset)));
-                        denyClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
-                    }
+
+                    addMetadataFilterClauses(asset, allow ? allowClauseList : denyClauseList);
+                }
+
+                if (addConnectionFilter) {
+                    addMetadataFilterConnectionClause(connectionQName, allow ? allowClauseList : denyClauseList);
                 }
             }
         }
@@ -123,20 +133,10 @@ public class ESAliasStore implements IndexAliasStore {
         policies = AtlasPersonaUtil.getGlossaryPolicies(personaEntityWithExtInfo);
         if (CollectionUtils.isNotEmpty(policies)) {
             for (AtlasEntity entity: policies) {
-                List<String> glossaryQnames = getGlossaryQualifiedNames(entity);
+                List<String> glossaryQNames = getGlossaryQualifiedNames(entity);
 
-                if (getIsAllow(entity)) {
-                    for (String glossaryQName : glossaryQnames) {
-                        allowClauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, glossaryQName)));
-                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, glossaryQName + "/*")));
-                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + glossaryQName)));
-                    }
-                } else {
-                    for (String glossaryQName : glossaryQnames) {
-                        denyClauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, glossaryQName)));
-                        denyClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, glossaryQName + "/*")));
-                        denyClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + glossaryQName)));
-                    }
+                for (String glossaryQName : glossaryQNames) {
+                    addGlossaryFilterClauses(glossaryQName, getIsAllow(entity) ? allowClauseList : denyClauseList);
                 }
             }
         }
@@ -161,5 +161,29 @@ public class ESAliasStore implements IndexAliasStore {
         String[] parts = qualifiedName.split("/");
 
         return parts[parts.length - 1];
+    }
+
+    private void addMetadataFilterClauses(String asset, List<Map> clauseList) {
+        addFilterClauses(asset, clauseList);
+    }
+
+    private void addMetadataFilterConnectionClause(String connection, List<Map> clauseList) {
+        clauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, connection)));
+    }
+
+    private void addGlossaryFilterClauses(String asset, List<Map> clauseList) {
+        addFilterClauses(asset, clauseList);
+    }
+
+    private void addFilterClauses(String asset, List<Map> clauseList) {
+        clauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, asset)));
+        clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
+        clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + asset)));
+    }
+
+    private AtlasEntity getConnectionEntity(AtlasEntity personaPolicy) throws AtlasBaseException {
+        String connectionId = getConnectionId(personaPolicy);
+
+        return entityRetriever.toAtlasEntity(connectionId);
     }
 }

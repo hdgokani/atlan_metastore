@@ -61,7 +61,9 @@ public class ESAliasRequestBuilder {
                 type = ADD.getType();
                 object.put("index", action.getIndex());
                 object.put("alias", action.getAlias());
-                object.put("filter", new JSONObject(AtlasType.toJson(action.getFilter())));
+                if (action.getFilter() != null) {
+                    object.put("filter", new JSONObject(AtlasType.toJson(action.getFilter())));
+                }
                 break;
             case REMOVE:
                 type = REMOVE.getType();
