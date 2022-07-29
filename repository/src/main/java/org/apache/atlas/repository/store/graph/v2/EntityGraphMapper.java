@@ -2740,15 +2740,25 @@ public class EntityGraphMapper {
 
             List<String> edgeLabelsToExclude = CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode);
 
-            List<AtlasVertex> entitiesPropagatedTo = entityRetriever.classificationPropagation(entityVertex, classificationVertex, deleteDelegate, relationshipGuid, classificationVertexId, edgeLabelsToExclude);
+            List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV2(entityVertex, relationshipGuid, classificationVertexId, edgeLabelsToExclude);
+
+            if (CollectionUtils.isEmpty(impactedVertices)) {
+                LOG.debug("propagateClassification(entityGuid={}, classificationVertexId={}): found no entities to propagate the classification", entityGuid, classificationVertexId);
+
+                return null;
+            }
+
+            List<String> impactedVerticesGuidsToLock = impactedVertices.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
+            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedVerticesGuidsToLock);
+
+            AtlasClassification classification       = entityRetriever.toAtlasClassification(classificationVertex);
+            List<AtlasVertex>   entitiesPropagatedTo = deleteDelegate.getHandler().addTagPropagationInBatch(classificationVertex, impactedVertices);
 
             if (CollectionUtils.isEmpty(entitiesPropagatedTo)) {
                 return null;
             }
 
-            AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
-
-            List<AtlasEntity> propagatedEntities = verticesToAtlasEntities(entitiesPropagatedTo);
+            List<AtlasEntity> propagatedEntities = updateClassificationText(classification, entitiesPropagatedTo);
 
             entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification));
 
