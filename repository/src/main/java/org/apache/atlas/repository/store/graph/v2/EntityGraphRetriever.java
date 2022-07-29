@@ -805,8 +805,6 @@ public class EntityGraphRetriever {
             return entitiesPropagatedTo;
         } catch (AtlasBaseException e) {
             throw new RuntimeException(e);
-        } finally {
-            graph.commit();
         }
     }
 
