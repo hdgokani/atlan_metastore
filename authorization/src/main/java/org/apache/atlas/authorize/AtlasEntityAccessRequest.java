@@ -130,7 +130,7 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
 
     @Override
     public String toString() {
-        return "AtlasEntityAccessRequest[auditEnabled=" + auditEnabled + ", entity=" + entity + ", classification=" + classification + ", label=" + label + ", businessMetadata=" + businessMetadata + ", attributeName=" + attributeName +
+        return "AtlasEntityAccessRequest[auditEnabled=" + auditEnabled + ", entity=" + entity + ",entityId=" + this.getEntityId() + ", classification=" + classification + ", label=" + label + ", businessMetadata=" + businessMetadata + ", attributeName=" + attributeName +
                 ", action=" + getAction() + ", accessTime=" + getAccessTime() + ", user=" + getUser() +
                 ", userGroups=" + getUserGroups() + ", clientIPAddress=" + getClientIPAddress() +
                 ", forwardedAddresses=" + getForwardedAddresses() + ", remoteIPAddress=" + getRemoteIPAddress() + "]";
