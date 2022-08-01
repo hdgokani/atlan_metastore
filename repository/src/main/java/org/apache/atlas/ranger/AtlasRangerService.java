@@ -23,6 +23,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.persona.PersonaContext;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.ranger.client.RangerClientHelper;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ranger.plugin.model.RangerPolicy;
 import org.apache.ranger.plugin.model.RangerRole;
@@ -113,6 +114,8 @@ public class AtlasRangerService {
     public RangerPolicy createRangerPolicy(RangerPolicy rangerPolicy) throws AtlasBaseException {
         RangerPolicy ret = null;
         try {
+
+            LOG.info("creating on Ranger \n{}\n", AtlasType.toJson(rangerPolicy));
             ret = RangerClientHelper.createPolicy(rangerPolicy);
 
             LOG.info("Created: Ranger Policy {}", ret.getId());
@@ -131,6 +134,7 @@ public class AtlasRangerService {
     public RangerPolicy updateRangerPolicy(RangerPolicy rangerPolicy) throws AtlasBaseException {
         RangerPolicy ret = null;
         try {
+            LOG.info("updating on Ranger \n{}\n", AtlasType.toJson(rangerPolicy));
             ret = RangerClientHelper.updatePolicy(rangerPolicy);
 
             LOG.info("Updated: Ranger Policy {}", ret.getId());

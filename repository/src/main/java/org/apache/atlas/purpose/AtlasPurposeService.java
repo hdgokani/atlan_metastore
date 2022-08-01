@@ -311,9 +311,7 @@ public class AtlasPurposeService {
             rangerPolicy.setPolicyItems(provisionalPolicy.getPolicyItems());
             rangerPolicy.setDenyPolicyItems(provisionalPolicy.getDenyPolicyItems());
 
-            List<String> labels = rangerPolicy.getPolicyLabels();
-            labels.addAll(getLabelsForPurposePolicy(context.getPurpose().getGuid(), context.getPurposePolicy().getGuid()));
-            rangerPolicy.setPolicyLabels(labels);
+            rangerPolicy.getPolicyLabels().addAll(getLabelsForPurposePolicy(context.getPurpose().getGuid(), context.getPurposePolicy().getGuid()));
 
             ret = atlasRangerService.updateRangerPolicy(rangerPolicy);
 
@@ -433,7 +431,7 @@ public class AtlasPurposeService {
         rangerPolicy.setPolicyLabels(Collections.singletonList(getPurposeLabel(purpose.getGuid())));
 
         rangerPolicy.setPolicyType(0);
-
+        rangerPolicy.setServiceType("tag");
         rangerPolicy.setService("default_atlan"); //TODO: read from property config
 
         return rangerPolicy;

@@ -79,10 +79,10 @@ public class RangerClient {
     public static final  String POLICY_DELETE_BY_ID = "service/plugins/policies/%s";
     public static final  String CREATE_ROLE = "service/roles/roles";
     public static final  String UPDATE_ROLE = "service/roles/roles/%s";
-    //public static final  String CREATE_POLICY = "service/public/v2/api/policy";
-    public static final  String CREATE_POLICY = "service/plugins/policies";
-    //public static final  String UPDATE_POLICY = "service/public/v2/api/policy/%s";
-    public static final  String UPDATE_POLICY = "service/plugins/policies/%s";
+    public static final  String CREATE_POLICY = "service/public/v2/api/policy";
+    //public static final  String CREATE_POLICY = "service/plugins/policies";
+    public static final  String UPDATE_POLICY = "service/public/v2/api/policy/%s";
+    //public static final  String UPDATE_POLICY = "service/plugins/policies/%s";
     public static final  String SEARCH_BY_RESOURCES = "service/plugins/policies";
     public static final  String SEARCH_BY_LABELS = "service/plugins/policies";
 
