@@ -107,6 +107,26 @@ public class PersonaPurposeCommonUtil {
         }
     }
 
+    public static void validateUniquenessByTags(EntityDiscoveryService entityDiscoveryService, List<String> tags, String typeName) throws AtlasBaseException {
+        IndexSearchParams indexSearchParams = new IndexSearchParams();
+        Map<String, Object> dsl = mapOf("size", 1);
+
+        List mustClauseList = new ArrayList();
+        mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
+        tags.forEach(x -> mustClauseList.add(mapOf("term", mapOf("tags", x))));
+
+
+        dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
+
+        indexSearchParams.setDsl(dsl);
+
+        AtlasSearchResult atlasSearchResult = entityDiscoveryService.directIndexSearch(indexSearchParams);
+
+        if (CollectionUtils.isNotEmpty(atlasSearchResult.getEntities())){
+            throw new AtlasBaseException(String.format("Entity already exists, typeName:tags, %s:%s", typeName, tags));
+        }
+    }
+
     public static RangerPolicy fetchRangerPolicyByResources(AtlasRangerService atlasRangerService,
                                                             String serviceType,
                                                             String policyType,

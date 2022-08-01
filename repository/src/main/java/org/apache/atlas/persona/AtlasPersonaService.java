@@ -124,6 +124,37 @@ public class AtlasPersonaService {
         return ret;
     }
 
+    private EntityMutationResponse createPersona(PersonaContext context, AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("createPersona");
+        LOG.info("Creating Persona");
+        EntityMutationResponse ret;
+        context.setCreateNewPersona(true);
+
+        //TODO:validateConnectionIdForPersona ????
+
+        validateUniquenessByName(entityDiscoveryService, getName(entityWithExtInfo.getEntity()), PERSONA_ENTITY_TYPE);
+
+        //unique qualifiedName for Persona
+        String tenantId = getTenantId(context.getPersona());
+        if (StringUtils.isEmpty(tenantId)) {
+            tenantId = "tenant";
+        }
+        entityWithExtInfo.getEntity().setAttribute(QUALIFIED_NAME, String.format("%s/%s", tenantId, getUUID()));
+        entityWithExtInfo.getEntity().setAttribute("enabled", true);
+
+        RangerRole rangerRole = atlasRangerService.createRangerRole(context);
+        context.getPersona().getAttributes().put("rangerRoleId", rangerRole.getId());
+
+        ret = entityStore.createOrUpdateForImportNoCommit(new AtlasEntityStream(context.getPersona()));
+
+        aliasStore.createAlias(context);
+
+        graph.commit();
+
+        RequestContext.get().endMetricRecord(metricRecorder);
+        return ret;
+    }
+
     private EntityMutationResponse updatePersona(PersonaContext context, AtlasEntity existingPersonaEntity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updatePersona");
         LOG.info("Updating Persona");
@@ -181,37 +212,6 @@ public class AtlasPersonaService {
                 getPersonaLabel(persona.getGuid()));
 
         cleanRoleToDisablePersona(context, rangerPolicies, personaPolicies);
-    }
-
-    private EntityMutationResponse createPersona(PersonaContext context, AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("createPersona");
-        LOG.info("Creating Persona");
-        EntityMutationResponse ret;
-        context.setCreateNewPersona(true);
-
-        //TODO:validateConnectionIdForPersona ????
-
-        validateUniquenessByName(entityDiscoveryService, getName(entityWithExtInfo.getEntity()), PERSONA_ENTITY_TYPE);
-
-        //unique qualifiedName for Persona
-        String tenantId = getTenantId(context.getPersona());
-        if (StringUtils.isEmpty(tenantId)) {
-            tenantId = "tenant";
-        }
-        entityWithExtInfo.getEntity().setAttribute(QUALIFIED_NAME, String.format("%s/%s", tenantId, getUUID()));
-        entityWithExtInfo.getEntity().setAttribute("enabled", true);
-
-        RangerRole rangerRole = atlasRangerService.createRangerRole(context);
-        context.getPersona().getAttributes().put("rangerRoleId", rangerRole.getId());
-
-        ret = entityStore.createOrUpdateForImportNoCommit(new AtlasEntityStream(context.getPersona()));
-
-        aliasStore.createAlias(context);
-
-        graph.commit();
-
-        RequestContext.get().endMetricRecord(metricRecorder);
-        return ret;
     }
 
     /*

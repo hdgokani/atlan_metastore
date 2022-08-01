@@ -49,6 +49,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
 
+import static javax.ws.rs.HttpMethod.DELETE;
+import static javax.ws.rs.HttpMethod.GET;
+import static javax.ws.rs.HttpMethod.POST;
+import static javax.ws.rs.HttpMethod.PUT;
 import static org.apache.atlas.persona.AtlasPersonaUtil.RESOURCE_PREFIX;
 
 @Component
@@ -75,8 +79,10 @@ public class RangerClient {
     public static final  String POLICY_DELETE_BY_ID = "service/plugins/policies/%s";
     public static final  String CREATE_ROLE = "service/roles/roles";
     public static final  String UPDATE_ROLE = "service/roles/roles/%s";
-    public static final  String CREATE_POLICY = "service/public/v2/api/policy";
-    public static final  String UPDATE_POLICY = "service/public/v2/api/policy/%s";
+    //public static final  String CREATE_POLICY = "service/public/v2/api/policy";
+    public static final  String CREATE_POLICY = "service/plugins/policies";
+    //public static final  String UPDATE_POLICY = "service/public/v2/api/policy/%s";
+    public static final  String UPDATE_POLICY = "service/plugins/policies/%s";
     public static final  String SEARCH_BY_RESOURCES = "service/plugins/policies";
     public static final  String SEARCH_BY_LABELS = "service/plugins/policies";
 
@@ -171,7 +177,7 @@ public class RangerClient {
 
     public RangerPolicy getPolicyById(String policyId) throws AtlasServiceException {
 
-        AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(POLICY_GET_BY_ID, policyId), HttpMethod.GET, Response.Status.OK);
+        AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(POLICY_GET_BY_ID, policyId), GET, Response.Status.OK);
 
         return RangerClientCaller.callAPI(api, RangerPolicy.class, null);
     }
@@ -179,35 +185,35 @@ public class RangerClient {
 
     public String getPolicyByServicePolicyName(String serviceName, String policyName) throws AtlasServiceException {
 
-        AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(POLICY_GET_BY_NAME, serviceName, policyName), HttpMethod.GET, Response.Status.OK);
+        AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(POLICY_GET_BY_NAME, serviceName, policyName), GET, Response.Status.OK);
 
         return RangerClientCaller.callAPI(api, String.class, null);
     }
 
     public RangerRole createRole(RangerRole rangerRole) throws AtlasServiceException {
 
-        AtlasBaseClient.API api = new AtlasBaseClient.API(CREATE_ROLE, HttpMethod.POST, Response.Status.OK);
+        AtlasBaseClient.API api = new AtlasBaseClient.API(CREATE_ROLE, POST, Response.Status.OK);
 
         return RangerClientCaller.callAPI(api, RangerRole.class, rangerRole);
     }
 
     public RangerRole updateRole(RangerRole rangerRole) throws AtlasServiceException {
 
-        AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(UPDATE_ROLE, rangerRole.getId()), HttpMethod.PUT, Response.Status.OK);
+        AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(UPDATE_ROLE, rangerRole.getId()), PUT, Response.Status.OK);
 
         return RangerClientCaller.callAPI(api, RangerRole.class, rangerRole);
     }
 
     public RangerPolicy createPolicy(RangerPolicy rangerPolicy) throws AtlasServiceException {
 
-        AtlasBaseClient.API api = new AtlasBaseClient.API(CREATE_POLICY, HttpMethod.POST, Response.Status.OK);
+        AtlasBaseClient.API api = new AtlasBaseClient.API(CREATE_POLICY, POST, Response.Status.OK);
 
         return RangerClientCaller.callAPI(api, RangerPolicy.class, rangerPolicy);
     }
 
     public RangerPolicy updatePolicy(RangerPolicy rangerPolicy) throws AtlasServiceException {
 
-        AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(UPDATE_POLICY, rangerPolicy.getId()), HttpMethod.PUT, Response.Status.OK);
+        AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(UPDATE_POLICY, rangerPolicy.getId()), PUT, Response.Status.OK);
 
         return RangerClientCaller.callAPI(api, RangerPolicy.class, rangerPolicy);
     }
@@ -216,7 +222,7 @@ public class RangerClient {
         MultivaluedMap<String, String> queryParams = resourcesToQueryParams(resources);
         queryParams = toQueryParams(attributes, queryParams);
 
-        AtlasBaseClient.API api = new AtlasBaseClient.API(SEARCH_BY_RESOURCES, HttpMethod.GET, Response.Status.OK);
+        AtlasBaseClient.API api = new AtlasBaseClient.API(SEARCH_BY_RESOURCES, GET, Response.Status.OK);
 
         return RangerClientCaller.callAPI(api, RangerPolicyList.class, queryParams);
     }
@@ -224,13 +230,13 @@ public class RangerClient {
     public RangerPolicyList getPoliciesByLabels(Map<String, String> attributes) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = toQueryParams(attributes, null);
 
-        AtlasBaseClient.API api = new AtlasBaseClient.API(SEARCH_BY_LABELS, HttpMethod.GET, Response.Status.OK);
+        AtlasBaseClient.API api = new AtlasBaseClient.API(SEARCH_BY_LABELS, GET, Response.Status.OK);
 
         return RangerClientCaller.callAPI(api, RangerPolicyList.class, queryParams);
     }
 
     public void deletePolicyById(Long policyId) throws AtlasServiceException {
-        AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(POLICY_DELETE_BY_ID, policyId), HttpMethod.DELETE, Response.Status.NO_CONTENT);
+        AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(POLICY_DELETE_BY_ID, policyId), DELETE, Response.Status.NO_CONTENT);
 
         RangerClientCaller.callAPI(api, (Class<?>)null, null);
     }
