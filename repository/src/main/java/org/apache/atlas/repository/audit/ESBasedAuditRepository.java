@@ -101,6 +101,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         this.configuration = configuration;
     }
 
+
     @Override
     public void putEventsV1(List<EntityAuditEvent> events) throws AtlasException {
 
