@@ -202,5 +202,4 @@ public class AtlasRangerService {
             throw new AtlasBaseException("Failed to delete Ranger policy: " + e.getMessage());
         }
     }
-
 }

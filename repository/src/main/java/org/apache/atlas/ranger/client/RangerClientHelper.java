@@ -18,7 +18,9 @@
 package org.apache.atlas.ranger.client;
 
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.ranger.RangerPolicyList;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.ranger.plugin.model.RangerPolicy;
 import org.apache.ranger.plugin.model.RangerRole;
 import org.slf4j.Logger;
@@ -57,11 +59,23 @@ public class RangerClientHelper {
 
     public static RangerPolicyList searchPoliciesByResources(Map<String, String> resources,
                                                              Map<String, String> attributes) throws AtlasServiceException {
-        return client.searchPoliciesByResources(resources, attributes);
+        RangerPolicyList ret = null;
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("searchPoliciesByResources");
+
+        ret = client.searchPoliciesByResources(resources, attributes);
+
+        RequestContext.get().endMetricRecord(recorder);
+        return ret;
     }
 
     public static RangerPolicyList getPoliciesByLabels(Map<String, String> attributes) throws AtlasServiceException {
-        return client.getPoliciesByLabels(attributes);
+        RangerPolicyList ret = null;
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getPoliciesByLabels");
+
+        ret = client.getPoliciesByLabels(attributes);
+
+        RequestContext.get().endMetricRecord(recorder);
+        return ret;
     }
 
     public static void deletePolicy(long policyId) throws AtlasServiceException {

@@ -23,7 +23,6 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.persona.AtlasPersonaService;
 import org.apache.atlas.purpose.AtlasPurposeService;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
@@ -112,7 +111,7 @@ public class PurposeREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "PurposeREST.createPersonaPolicy()");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "PurposeREST.createOrUpdatePurposePolicy()");
             }
 
             String typeName = entityWithExtInfo.getEntity().getTypeName();
@@ -120,7 +119,7 @@ public class PurposeREST {
                 throw new AtlasBaseException(BAD_REQUEST, "Not a valid type for Purpose Policy");
             }
 
-            response = atlasPurposeService.createOrUpdatePersonaPolicy(entityWithExtInfo);
+            response = atlasPurposeService.createOrUpdatePurposePolicy(entityWithExtInfo);
 
         } finally {
             AtlasPerfTracer.log(perf);

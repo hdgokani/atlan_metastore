@@ -226,6 +226,8 @@ public enum AtlasErrorCode {
     TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS(409, "ATLAS-409-00-012", "Given type {0} already exists"),
     TYPE_ATTR_WITH_DISPLAY_NAME_ALREADY_EXISTS(409, "ATLAS-409-00-013", "Given attributeDef {0} for type {1} already exists"),
     RELATIONSHIP_CREATE_INVALID_PARAMS(409, "ATLAS-409-00-014", "Relationship create between same vertex not allowed, vertex guid: {0}"),
+    PERSONA_ALREADY_EXISTS(409, "ATLAS-409-00-015", "Persona with name {0} already exists"),
+    PURPOSE_ALREADY_EXISTS(409, "ATLAS-409-00-016", "Purpose with name {0} already exists"),
 
     CATEGORY_PARENT_FROM_OTHER_GLOSSARY(409, "ATLAS-400-00-0015", "Parent category from another Anchor(glossary) not supported"),
     CLASSIFICATION_TYPE_HAS_REFERENCES(409, "ATLAS-409-00-0016", "Given classification {0} [{1}] has references"),
@@ -257,6 +259,11 @@ public enum AtlasErrorCode {
     INDEX_SEARCH_FAILED(400, "ATLAS-400-00-102", "Error occurred while running direct index query on ES: {0}"),
     DEPRECATED_API(400, "ATLAS-400-00-103", "Deprecated API. Use {0} instead"),
     DISABLED_API(400, "ATLAS-400-00-104", "API temporarily disabled. Reason: {0}"),
+
+    INDEX_ALIAS_FAILED(400, "ATLAS-400-00-105", "Error occurred while {0} ES alias: {1}"),
+    JSON_ERROR(400, "ATLAS-400-00-106", "Error occurred putting object into JSONObject: {0}"),
+
+
     HAS_LINEAGE_GET_EDGE_FAILED(500, "ATLAS-500-00-019", "Error occurred while getting edge between vertices for hasLineage migration: {0}"),
     RUNTIME_EXCEPTION(500, "ATLAS-500-00-020", "Runtime exception {0}");
 
