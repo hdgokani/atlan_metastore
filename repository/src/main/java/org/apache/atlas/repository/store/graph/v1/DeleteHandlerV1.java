@@ -61,6 +61,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
+import static org.apache.atlas.AtlasConfiguration.TASKS_GRAPH_COMMIT_CHUNK_SIZE;
 import static org.apache.atlas.model.TypeCategory.*;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
@@ -91,6 +92,8 @@ public abstract class DeleteHandlerV1 {
     private   final boolean              shouldUpdateInverseReferences;
     private   final boolean              softDelete;
     private   final TaskManagement       taskManagement;
+
+    private static long CHUNK_SIZE = TASKS_GRAPH_COMMIT_CHUNK_SIZE.getLong();
 
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
@@ -452,8 +455,6 @@ public abstract class DeleteHandlerV1 {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addTagPropagation");
         List<AtlasVertex> ret = new ArrayList<>();
         long counter = 0;
-        long alreadyClassifiedCounter = 0;
-        long sizeOfPropagatedEntityVertices = propagatedEntityVertices.size();
 
         if (CollectionUtils.isNotEmpty(propagatedEntityVertices) && classificationVertex != null) {
             String                  classificationName     = getTypeName(classificationVertex);
@@ -467,14 +468,12 @@ public abstract class DeleteHandlerV1 {
                         LOG.debug(" --> Classification edge already exists from [{}] --> [{}][{}] using edge label: [{}]",
                                 getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex), classificationName);
                     }
-                    alreadyClassifiedCounter += 1;
                     continue;
                 } else if (getPropagatedClassificationEdge(propagatedEntityVertex, classificationVertex) != null) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug(" --> Propagated classification edge already exists from [{}] --> [{}][{}] using edge label: [{}]",
                                 getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex), CLASSIFICATION_LABEL);
                     }
-                    alreadyClassifiedCounter += 1;
                     continue;
                 }
 
@@ -502,13 +501,6 @@ public abstract class DeleteHandlerV1 {
                             GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
                 }
 
-
-                double progress = ((double) (counter+alreadyClassifiedCounter)/sizeOfPropagatedEntityVertices)*100;
-                if (((int) progress) % 10 == 0) {
-                    LOG.info(String.format("Classification propagation. Percentage of propagated vertices: %s%%, " +
-                            "counter: %s , alreadyClassified: %s , size: %s", progress, counter, alreadyClassifiedCounter, sizeOfPropagatedEntityVertices));
-                }
-
                 ret.add(propagatedEntityVertex);
 
                 graphHelper.addClassificationEdge(propagatedEntityVertex, classificationVertex, true);
@@ -521,88 +513,7 @@ public abstract class DeleteHandlerV1 {
 
                 context.recordAddedPropagation(entityGuid, classification);
                 counter += 1;
-                RequestContext.get().endMetricRecord(countMetricRecorder);
-            }
-        }
-        RequestContext.get().endMetricRecord(metricRecorder);
-        if (ret.isEmpty()) return null;
-        return ret;
-    }
-
-    public List<AtlasVertex> addTagPropagationInBatch(AtlasVertex classificationVertex, List<AtlasVertex> propagatedEntityVertices) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addTagPropagation");
-        List<AtlasVertex> ret = new ArrayList<>();
-        long counter = 0;
-        long alreadyClassifiedCounter = 0;
-        long sizeOfPropagatedEntityVertices = propagatedEntityVertices.size();
-
-        if (CollectionUtils.isNotEmpty(propagatedEntityVertices) && classificationVertex != null) {
-            String                  classificationName     = getTypeName(classificationVertex);
-            AtlasClassificationType classificationType     = typeRegistry.getClassificationTypeByName(classificationName);
-            AtlasVertex             associatedEntityVertex = getAssociatedEntityVertex(classificationVertex);
-
-            for (AtlasVertex propagatedEntityVertex : propagatedEntityVertices) {
-                AtlasPerfMetrics.MetricRecorder countMetricRecorder = RequestContext.get().startMetricRecord("countPropagations");
-                if (getClassificationEdge(propagatedEntityVertex, classificationVertex) != null) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug(" --> Classification edge already exists from [{}] --> [{}][{}] using edge label: [{}]",
-                                getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex), classificationName);
-                    }
-                    alreadyClassifiedCounter += 1;
-                    continue;
-                } else if (getPropagatedClassificationEdge(propagatedEntityVertex, classificationVertex) != null) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug(" --> Propagated classification edge already exists from [{}] --> [{}][{}] using edge label: [{}]",
-                                getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex), CLASSIFICATION_LABEL);
-                    }
-                    alreadyClassifiedCounter += 1;
-                    continue;
-                }
-
-                String          entityTypeName = getTypeName(propagatedEntityVertex);
-                AtlasEntityType entityType     = typeRegistry.getEntityTypeByName(entityTypeName);
-                String          entityGuid     = getGuid(propagatedEntityVertex);
-
-                if (!classificationType.canApplyToEntityType(entityType)) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug(" --> Not creating propagated classification edge from [{}] --> [{}][{}], classification is not applicable for entity type",
-                                getTypeName(propagatedEntityVertex), getTypeName(classificationVertex), getTypeName(associatedEntityVertex));
-                    }
-
-                    continue;
-                }
-
-                AtlasEdge existingEdge = getPropagatedClassificationEdge(propagatedEntityVertex, classificationVertex);
-
-                if (existingEdge != null) {
-                    continue;
-                }
-
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug(" --> Adding propagated classification: [{}] to {} ({}) using edge label: [{}]", classificationName, getTypeName(propagatedEntityVertex),
-                            GraphHelper.getGuid(propagatedEntityVertex), CLASSIFICATION_LABEL);
-                }
-
-
-                double progress = ((double) (counter+alreadyClassifiedCounter)/sizeOfPropagatedEntityVertices)*100;
-                if (((int) progress) % 10 == 0) {
-                    LOG.info(String.format("Classification propagation. Percentage of propagated vertices: %s%%, " +
-                            "counter: %s , alreadyClassified: %s , size: %s", progress, counter, alreadyClassifiedCounter, sizeOfPropagatedEntityVertices));
-                }
-
-                ret.add(propagatedEntityVertex);
-
-                graphHelper.addClassificationEdge(propagatedEntityVertex, classificationVertex, true);
-
-                addToPropagatedClassificationNames(propagatedEntityVertex, classificationName);
-
-                // record add propagation details to send notifications at the end
-                RequestContext      context        = RequestContext.get();
-                AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
-
-                context.recordAddedPropagation(entityGuid, classification);
-                counter += 1;
-                if (counter >= 400) {
+                if (counter >= CHUNK_SIZE) {
                     graph.commit();
                 }
                 RequestContext.get().endMetricRecord(countMetricRecorder);
