@@ -295,6 +295,21 @@ public class AtlasInstanceConverter {
         return ret;
     }
 
+    public AtlasEntity getEntity(String guid, boolean ignoreRelationshipAttributes) throws AtlasBaseException {
+        RequestContext context = RequestContext.get();
+        AtlasEntity    entity  = context.getEntity(guid);
+
+        if (entity == null) {
+            if (ignoreRelationshipAttributes) {
+                entity = entityGraphRetrieverIgnoreRelationshipAttrs.toAtlasEntity(guid);
+            } else {
+                entity = entityGraphRetriever.toAtlasEntity(guid);
+            }
+        }
+
+        return entity;
+    }
+
     public AtlasEntity getAndCacheEntity(String guid) throws AtlasBaseException {
         return getAndCacheEntity(guid, false);
     }

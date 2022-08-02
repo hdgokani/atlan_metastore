@@ -170,6 +170,7 @@ public class EntityGraphMapper {
     private static final Pattern LABEL_REGEX                       = Pattern.compile("^[a-zA-Z0-9_-]*$");
     private static final int     CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH   = AtlasConfiguration.CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH.getInt();
     private static final int     CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH = AtlasConfiguration.CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH.getInt();
+    private static final int     MAX_NUMBER_OF_RETRIES = AtlasConfiguration.MAX_NUMBER_OF_RETRIES.getInt();
 
     private static final String TYPE_GLOSSARY= "AtlasGlossary";
     private static final String TYPE_CATEGORY= "AtlasGlossaryCategory";
@@ -2760,6 +2761,8 @@ public class EntityGraphMapper {
                 return null;
             }
 
+            LOG.info(String.format("%s entities are propagated.", entitiesPropagatedTo.size()));
+
             List<AtlasEntity> propagatedEntities = updateClassificationText(classification, entitiesPropagatedTo);
 
             entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification));
@@ -3561,7 +3564,19 @@ public class EntityGraphMapper {
 
         if(CollectionUtils.isNotEmpty(propagatedVertices)) {
             for(AtlasVertex vertex : propagatedVertices) {
-                AtlasEntity entity = instanceConverter.getAndCacheEntity(graphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
+                AtlasEntity entity = null;
+                for (int i = 1; i <= MAX_NUMBER_OF_RETRIES; i++) {
+                    try {
+                        entity = instanceConverter.getEntity(graphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
+                        break; //do not retry on success
+                    } catch (AtlasBaseException ex) {
+                        if (i == MAX_NUMBER_OF_RETRIES) {
+                            LOG.error(String.format("Maximum retries reached for fetching vertex with id %s from graph. Retried %s times. Skipping...", vertex.getId(), i));
+                            continue;
+                        }
+                        LOG.warn(String.format("Vertex with id %s could not be fetched from graph. Retrying for %s time", vertex.getId(), i));
+                    }
+                }
 
                 if (isActive(entity)) {
                     String classificationTextForEntity = fullTextMapperV2.getClassificationTextForEntity(entity);
