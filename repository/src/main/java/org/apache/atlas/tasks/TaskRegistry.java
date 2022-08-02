@@ -387,8 +387,11 @@ public class TaskRegistry {
 
                         if (vertex != null) {
                             AtlasTask atlasTask = toAtlasTask(vertex);
-                            LOG.info(String.format("Fetched task from index search: %s", atlasTask.toString()));
-                            ret.add(atlasTask);
+                            if (atlasTask.getStatus().equals(AtlasTask.Status.PENDING) ||
+                                    atlasTask.getStatus().equals(AtlasTask.Status.IN_PROGRESS) ){
+                                LOG.info(String.format("Fetched task from index search: %s", atlasTask.toString()));
+                                ret.add(atlasTask);
+                            }
                         } else {
                             LOG.warn("Null vertex while re-queuing tasks at index {}", fetched);
                         }
