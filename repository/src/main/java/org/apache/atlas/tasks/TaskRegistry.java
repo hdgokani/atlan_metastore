@@ -225,6 +225,7 @@ public class TaskRegistry {
         }
 
         updateStatus(taskVertex, task);
+        LOG.info(String.format("TaskRegistry complete %s", task.toString()));
     }
 
     @GraphTransaction
@@ -385,7 +386,9 @@ public class TaskRegistry {
                         AtlasVertex vertex = iterator.next().getVertex();
 
                         if (vertex != null) {
-                            ret.add(toAtlasTask(vertex));
+                            AtlasTask atlasTask = toAtlasTask(vertex);
+                            LOG.info(String.format("Fetched task from index search: %s", atlasTask.toString()));
+                            ret.add(atlasTask);
                         } else {
                             LOG.warn("Null vertex while re-queuing tasks at index {}", fetched);
                         }
