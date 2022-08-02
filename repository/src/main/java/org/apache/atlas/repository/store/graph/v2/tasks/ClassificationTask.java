@@ -142,6 +142,7 @@ public abstract class ClassificationTask extends AbstractTask {
 
     protected void setStatus(AtlasTask.Status status) {
         super.setStatus(status);
+        LOG.info(String.format("ClassificationTask status is set %s for the task: %s ", status, super.getTaskGuid()));
 
         try {
             if (CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE.equals(getTaskType())) {
