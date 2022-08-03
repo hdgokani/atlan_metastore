@@ -196,13 +196,14 @@ public class EntityGraphMapper {
     private final AtlasInstanceConverter    instanceConverter;
     private final EntityGraphRetriever      entityRetriever;
     private final IFullTextMapper           fullTextMapperV2;
+    private final AtlasGraph    chunkGraphInstance;
     private final TaskManagement taskManagement;
 
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
                              AtlasRelationshipStore relationshipStore, IAtlasEntityChangeNotifier entityChangeNotifier,
                              AtlasInstanceConverter instanceConverter, IFullTextMapper fullTextMapperV2,
-                             TaskManagement taskManagement) {
+                             TaskManagement taskManagement, AtlasGraph chunkGraphInstance) {
         this.restoreHandlerV1 = restoreHandlerV1;
         this.graphHelper          = new GraphHelper(graph);
         this.deleteDelegate       = deleteDelegate;
@@ -214,6 +215,7 @@ public class EntityGraphMapper {
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
+        this.chunkGraphInstance = chunkGraphInstance;
     }
 
     @VisibleForTesting
@@ -2780,7 +2782,7 @@ public class EntityGraphMapper {
                     chunkedVerticesToPropagate.clear();
 
                     //Commit the Graph In Chunk
-                    graph.commit();
+                    chunkGraphInstance.commit();
                 }
             }
 
