@@ -35,6 +35,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.elasticsearch.client.ElasticsearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -370,10 +371,10 @@ public class TaskRegistry {
                 indexSearchParams.setDsl(dsl);
 
                 AtlasIndexQuery indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, indexSearchParams);
-
                 try {
                     indexQueryResult = indexQuery.vertices(indexSearchParams);
-                    LOG.info(String.format("Index search result: %s", indexQueryResult.toString()));
+                    String res = indexQuery.directElasticsearchQuery( indexSearchParams);
+                    LOG.info("Index search response while fetching tasks: " + res);
                 } catch (AtlasBaseException e) {
                     LOG.error("Failed to fetch pending/in-progress task vertices to re-que");
                     e.printStackTrace();

@@ -69,6 +69,8 @@ public interface AtlasIndexQuery<V, E> {
      */
     Long vertexTotals();
 
+    String directElasticsearchQuery(SearchParams searchParams);
+
     /**
      * Query result from an index query.
      *
