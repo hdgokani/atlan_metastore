@@ -48,7 +48,10 @@ public class AtlasPurposeUtil extends PersonaPurposeCommonUtil {
         List<AtlasObjectId> policies = (List<AtlasObjectId>) purpose.getRelationshipAttribute("metadataPolicies");
 
         if (policies != null) {
-            ret = policies.stream().map(x -> entityWithExtInfo.getReferredEntity(x.getGuid())).collect(Collectors.toList());
+            ret = policies.stream()
+                    .map(x -> entityWithExtInfo.getReferredEntity(x.getGuid()))
+                    .filter(x -> x.getStatus() == AtlasEntity.Status.ACTIVE)
+                    .collect(Collectors.toList());
         }
 
         return ret;

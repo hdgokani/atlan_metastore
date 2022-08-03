@@ -38,9 +38,10 @@ public class PersonaPurposeCommonUtil {
     public static final String POLICY_TYPE_ACCESS = "0";
     public static final String POLICY_TYPE_DATAMASK = "1";
 
-    public static final String ACCESS_ADD_REL = "add-relationship";
-    public static final String ACCESS_UPDATE_REL = "update-relationship";
-    public static final String ACCESS_REMOVE_REL = "remove-relationship";
+    public static final String ACCESS_ENTITY_READ = "entity-read";
+    public static final String ACCESS_ADD_REL     = "add-relationship";
+    public static final String ACCESS_UPDATE_REL  = "update-relationship";
+    public static final String ACCESS_REMOVE_REL  = "remove-relationship";
 
     public static final String LINK_ASSET_ACTION = "link-assets";
 
@@ -54,6 +55,14 @@ public class PersonaPurposeCommonUtil {
 
     public static String getQualifiedName(AtlasEntity entity) {
         return (String) entity.getAttribute(QUALIFIED_NAME);
+    }
+
+    public static String getESAliasName(AtlasEntity entity) {
+        String qualifiedName = getQualifiedName(entity);
+
+        String[] parts = qualifiedName.split("/");
+
+        return parts[parts.length - 1];
     }
 
     public static boolean getIsAllow(AtlasEntity entity) {

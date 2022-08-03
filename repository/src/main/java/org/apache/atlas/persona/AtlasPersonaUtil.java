@@ -23,8 +23,6 @@ import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 
 public class AtlasPersonaUtil extends PersonaPurposeCommonUtil {
 
-    public static final String RESOURCE_PREFIX = "resource:";
-
     public static final String RESOURCE_KEY_ENTITY = "entity";
     public static final String RESOURCE_ENTITY_TYPE = "entity-type";
     public static final String RESOURCE_ENTITY_CLASS = "entity-classification";
@@ -43,7 +41,7 @@ public class AtlasPersonaUtil extends PersonaPurposeCommonUtil {
     public static final String RESOURCE_END_TWO_ENTITY_CLASS = "end-two-entity-classification";
 
 
-    public static final List<String> ENTITY_ACTIONS = Arrays.asList("entity-read", "entity-create", "entity-update", "entity-delete");
+    public static final List<String> ENTITY_ACTIONS = Arrays.asList(ACCESS_ENTITY_READ, "entity-create", "entity-update", "entity-delete");
     public static final List<String> CLASSIFICATION_ACTIONS = Arrays.asList("entity-add-classification", "entity-update-classification", "entity-remove-classification");
     public static final List<String> TERM_ACTIONS = Arrays.asList("add-terms", "remove-terms");
     public static final List<String> LABEL_ACTIONS = Arrays.asList("entity-add-label", "entity-update-label", "entity-remove-label");
