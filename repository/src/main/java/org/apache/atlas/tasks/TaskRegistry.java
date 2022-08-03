@@ -211,7 +211,6 @@ public class TaskRegistry {
         graph.commit();
     }
 
-    @GraphTransaction
     public void complete(AtlasVertex taskVertex, AtlasTask task) {
         if (task.getEndTime() != null) {
             setEncodedProperty(taskVertex, Constants.TASK_END_TIME, task.getEndTime());
@@ -226,6 +225,9 @@ public class TaskRegistry {
         }
 
         updateStatus(taskVertex, task);
+
+        commit();
+
         LOG.info(String.format("TaskRegistry complete %s", task.toString()));
     }
 
