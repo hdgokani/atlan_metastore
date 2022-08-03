@@ -2774,12 +2774,13 @@ public class EntityGraphMapper {
 
                     List<AtlasEntity> propagatedEntitiesChunked = updateClassificationText(classification, entitiesPropagatedTo);
                     propagatedEntitiesGuid.addAll(propagatedEntitiesChunked.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
-                    //Commit the Graph In Chunk
-                    graph.commit();
 
                     entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification));
                     vertexTraverseCounter += CHUNK_SIZE;
                     chunkedVerticesToPropagate.clear();
+
+                    //Commit the Graph In Chunk
+                    graph.commit();
                 }
             }
 
