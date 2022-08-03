@@ -38,6 +38,7 @@ public class PersonaContext {
     private boolean isCreateNewPersona;
     private boolean isCreateNewPersonaPolicy;
     private boolean isUpdatePersonaPolicy;
+    private boolean isDeletePersonaPolicy;
 
     private boolean hasTermActions;
     private boolean hasLinkAssetsActions;
@@ -108,6 +109,14 @@ public class PersonaContext {
 
     public void setUpdatePersonaPolicy(boolean updatePersonaPolicy) {
         isUpdatePersonaPolicy = updatePersonaPolicy;
+    }
+
+    public boolean isDeletePersonaPolicy() {
+        return isDeletePersonaPolicy;
+    }
+
+    public void setDeletePersonaPolicy(boolean deletePersonaPolicy) {
+        isDeletePersonaPolicy = deletePersonaPolicy;
     }
 
     public boolean hasTermActions() {

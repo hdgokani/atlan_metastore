@@ -49,6 +49,10 @@ public class RangerClientHelper {
         return client.updateRole(rangerRole);
     }
 
+    public static void deleteRole(long roleId) throws AtlasServiceException {
+        client.deleteRole(roleId);
+    }
+
     public static RangerPolicy createPolicy(RangerPolicy rangerPolicy) throws AtlasServiceException {
         return client.createPolicy(rangerPolicy);
     }

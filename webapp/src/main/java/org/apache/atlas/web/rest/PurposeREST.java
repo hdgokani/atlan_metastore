@@ -29,6 +29,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -36,8 +37,10 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
@@ -97,6 +100,29 @@ public class PurposeREST {
     }
 
     /**
+     * Delete a Purpose
+     *
+     * @param guid of Purpose entity
+     * @return EntityMutationResponse
+     * @throws AtlasBaseException
+     */
+    @DELETE
+    @Path("/{guid}")
+    public void deletePurpose(@PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "PurposeREST.deletePurpose()");
+            }
+
+            atlasPurposeService.deletePurpose(guid);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
      * Create or Update Purpose policy
      *
      * @param entityWithExtInfo Purpose policy entity
@@ -126,5 +152,28 @@ public class PurposeREST {
         }
 
         return response;
+    }
+
+    /**
+     * Delete a Purpose Policy
+     *
+     * @param guid of Purpose Policy entity
+     * @return EntityMutationResponse
+     * @throws AtlasBaseException
+     */
+    @DELETE
+    @Path("policy/{guid}")
+    public void deletePurposePolicy(@PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "PurposeREST.deletePurposePolicy()");
+            }
+
+            atlasPurposeService.deletePurposePolicy(guid);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 }

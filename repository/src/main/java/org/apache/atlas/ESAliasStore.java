@@ -22,6 +22,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.persona.AtlasPersonaUtil;
 import org.apache.atlas.persona.PersonaContext;
+import org.apache.atlas.purpose.AtlasPurposeUtil;
 import org.apache.atlas.purpose.PurposeContext;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -40,6 +41,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.ADD;
+import static org.apache.atlas.PersonaPurposeCommonUtil.ACCESS_ENTITY_READ;
+import static org.apache.atlas.PersonaPurposeCommonUtil.getActions;
+import static org.apache.atlas.PersonaPurposeCommonUtil.getESAliasName;
 import static org.apache.atlas.persona.AtlasPersonaUtil.getAssets;
 import static org.apache.atlas.persona.AtlasPersonaUtil.getConnectionId;
 import static org.apache.atlas.persona.AtlasPersonaUtil.getGlossaryQualifiedNames;
@@ -135,6 +139,10 @@ public class ESAliasStore implements IndexAliasStore {
         if (CollectionUtils.isNotEmpty(policies)) {
 
             for (AtlasEntity entity: policies) {
+                if (!getActions(entity).contains(ACCESS_ENTITY_READ) || isDeletedPolicy(context, entity)) {
+                    continue;
+                }
+
                 boolean addConnectionFilter = true;
                 String connectionQName = getQualifiedName(getConnectionEntity(entity));
 
@@ -158,6 +166,10 @@ public class ESAliasStore implements IndexAliasStore {
         policies = AtlasPersonaUtil.getGlossaryPolicies(personaEntityWithExtInfo);
         if (CollectionUtils.isNotEmpty(policies)) {
             for (AtlasEntity entity: policies) {
+                if (!getActions(entity).contains(ACCESS_ENTITY_READ) || isDeletedPolicy(context, entity)) {
+                    continue;
+                }
+
                 List<String> glossaryQNames = getGlossaryQualifiedNames(entity);
 
                 for (String glossaryQName : glossaryQNames) {
@@ -187,15 +199,21 @@ public class ESAliasStore implements IndexAliasStore {
         List<Map> allowClauseList = new ArrayList<>();
         List<Map> denyClauseList = new ArrayList<>();
 
-        List<AtlasEntity> policies = AtlasPersonaUtil.getMetadataPolicies(purposeEntityWithExtInfo);
+        List<AtlasEntity> policies = AtlasPurposeUtil.getMetadataPolicies(purposeEntityWithExtInfo);
         List<String> tags = getTags(context.getPurpose());
 
         if (CollectionUtils.isNotEmpty(policies)) {
 
             for (AtlasEntity entity: policies) {
-                boolean allow = getIsAllow(entity);
+                if (isDeletedPolicy(context, entity)) {
+                    continue;
+                }
 
-                addPurposeMetadataFilterClauses(tags, allow ? allowClauseList : denyClauseList);
+                if (getActions(entity).contains(ACCESS_ENTITY_READ)) {
+                    boolean allow = getIsAllow(entity);
+
+                    addPurposeMetadataFilterClauses(tags, allow ? allowClauseList : denyClauseList);
+                }
             }
         }
 
@@ -213,12 +231,16 @@ public class ESAliasStore implements IndexAliasStore {
         return ret;
     }
 
-    private String getAliasName(AtlasEntity persona) {
-        String qualifiedName = AtlasPersonaUtil.getQualifiedName(persona);
+    private boolean isDeletedPolicy(PersonaContext context, AtlasEntity policy) {
+        return context.isDeletePersonaPolicy() && policy.getGuid().equals(context.getPersonaPolicy().getGuid());
+    }
 
-        String[] parts = qualifiedName.split("/");
+    private boolean isDeletedPolicy(PurposeContext context, AtlasEntity policy) {
+        return context.isDeletePurposePolicy() && policy.getGuid().equals(context.getPurposePolicy().getGuid());
+    }
 
-        return parts[parts.length - 1];
+    private String getAliasName(AtlasEntity entity) {
+        return getESAliasName(entity);
     }
 
     private void addPersonaMetadataFilterClauses(String asset, List<Map> clauseList) {

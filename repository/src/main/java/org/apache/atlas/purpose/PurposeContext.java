@@ -36,6 +36,7 @@ public class PurposeContext {
     private boolean isCreateNewPurpose;
     private boolean isCreateNewPurposePolicy;
     private boolean isUpdatePurposePolicy;
+    private boolean isDeletePurposePolicy;
 
 
     private boolean isAllowPolicy;
@@ -76,6 +77,7 @@ public class PurposeContext {
 
     public void setPurposePolicy(AtlasEntity purposePolicy) {
         this.purposePolicy = purposePolicy;
+        setPolicyType();
     }
 
     public boolean isCreateNewPurpose() {
@@ -100,6 +102,14 @@ public class PurposeContext {
 
     public void setUpdatePurposePolicy(boolean updatePurposePolicy) {
         isUpdatePurposePolicy = updatePurposePolicy;
+    }
+
+    public boolean isDeletePurposePolicy() {
+        return isDeletePurposePolicy;
+    }
+
+    public void setDeletePurposePolicy(boolean deletePurposePolicy) {
+        isDeletePurposePolicy = deletePurposePolicy;
     }
 
     public AtlasEntity getExistingPurposePolicy() {
@@ -148,7 +158,7 @@ public class PurposeContext {
         isMetadataPolicy = metadataPolicy;
     }
 
-    public void setPolicyType(){
+    public void setPolicyType() {
         if (getPurposePolicy() != null) {
             String type = getPurposePolicy().getTypeName();
 

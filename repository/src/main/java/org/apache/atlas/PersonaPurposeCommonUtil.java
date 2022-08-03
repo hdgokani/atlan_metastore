@@ -5,11 +5,13 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.ranger.AtlasRangerService;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.ranger.plugin.model.RangerPolicy;
 import org.apache.ranger.plugin.model.RangerPolicyResourceSignature;
 import org.apache.ranger.plugin.model.RangerRole;
@@ -38,9 +40,10 @@ public class PersonaPurposeCommonUtil {
     public static final String POLICY_TYPE_ACCESS = "0";
     public static final String POLICY_TYPE_DATAMASK = "1";
 
-    public static final String ACCESS_ADD_REL = "add-relationship";
-    public static final String ACCESS_UPDATE_REL = "update-relationship";
-    public static final String ACCESS_REMOVE_REL = "remove-relationship";
+    public static final String ACCESS_ENTITY_READ = "entity-read";
+    public static final String ACCESS_ADD_REL     = "add-relationship";
+    public static final String ACCESS_UPDATE_REL  = "update-relationship";
+    public static final String ACCESS_REMOVE_REL  = "remove-relationship";
 
     public static final String LINK_ASSET_ACTION = "link-assets";
 
@@ -54,6 +57,14 @@ public class PersonaPurposeCommonUtil {
 
     public static String getQualifiedName(AtlasEntity entity) {
         return (String) entity.getAttribute(QUALIFIED_NAME);
+    }
+
+    public static String getESAliasName(AtlasEntity entity) {
+        String qualifiedName = getQualifiedName(entity);
+
+        String[] parts = qualifiedName.split("/");
+
+        return parts[parts.length - 1];
     }
 
     public static boolean getIsAllow(AtlasEntity entity) {
@@ -104,26 +115,6 @@ public class PersonaPurposeCommonUtil {
 
         if (CollectionUtils.isNotEmpty(atlasSearchResult.getEntities())){
             throw new AtlasBaseException(String.format("Entity already exists, typeName:name, %s:%s", typeName, name));
-        }
-    }
-
-    public static void validateUniquenessByTags(EntityDiscoveryService entityDiscoveryService, List<String> tags, String typeName) throws AtlasBaseException {
-        IndexSearchParams indexSearchParams = new IndexSearchParams();
-        Map<String, Object> dsl = mapOf("size", 1);
-
-        List mustClauseList = new ArrayList();
-        mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
-        tags.forEach(x -> mustClauseList.add(mapOf("term", mapOf("tags", x))));
-
-
-        dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
-
-        indexSearchParams.setDsl(dsl);
-
-        AtlasSearchResult atlasSearchResult = entityDiscoveryService.directIndexSearch(indexSearchParams);
-
-        if (CollectionUtils.isNotEmpty(atlasSearchResult.getEntities())){
-            throw new AtlasBaseException(String.format("Entity already exists, typeName:tags, %s:%s", typeName, tags));
         }
     }
 
@@ -193,10 +184,13 @@ public class PersonaPurposeCommonUtil {
         int from = 0;
 
         params.put("policyLabelsPartial", label);
-        params.put("policyType", policyType); //POLICY_TYPE_ACCESS
         params.put("page", "0");
         params.put("pageSize", String.valueOf(size));
         params.put("serviceType", serviceType);
+
+        if (StringUtils.isNotEmpty(policyType)) {
+            params.put("policyType", policyType);
+        }
 
         int fetched;
         do {

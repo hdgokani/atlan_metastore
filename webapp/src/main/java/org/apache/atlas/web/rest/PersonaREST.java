@@ -34,8 +34,10 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
@@ -94,6 +96,29 @@ public class PersonaREST {
     }
 
     /**
+     * Delete a Persona
+     *
+     * @param guid of Persona entity
+     * @return EntityMutationResponse
+     * @throws AtlasBaseException
+     */
+    @DELETE
+    @Path("/{guid}")
+    public void deletePersona(@PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "PersonaREST.deletePersona()");
+            }
+
+            atlasPersonaService.deletePersona(guid);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
      * Create or Update Persona policy
      *
      * @param entityWithExtInfo Persona policy entity
@@ -123,5 +148,28 @@ public class PersonaREST {
         }
 
         return response;
+    }
+
+    /**
+     * Delete a Persona Policy
+     *
+     * @param guid of Persona Policy entity
+     * @return EntityMutationResponse
+     * @throws AtlasBaseException
+     */
+    @DELETE
+    @Path("policy/{guid}")
+    public void deletePersonaPolicy(@PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "PersonaREST.deletePersonaPolicy()");
+            }
+
+            atlasPersonaService.deletePersonaPolicy(guid);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 }
