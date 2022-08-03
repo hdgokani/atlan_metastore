@@ -202,7 +202,7 @@ public class AtlasPurposeService {
         //delete all tag based policies
         List<RangerPolicy> rangerPolicies = fetchRangerPoliciesByLabel(atlasRangerService,
                 "tag",
-                POLICY_TYPE_ACCESS,
+                null,
                 getPurposeLabel(purposeGuid));
 
         if (CollectionUtils.isNotEmpty(rangerPolicies)) {

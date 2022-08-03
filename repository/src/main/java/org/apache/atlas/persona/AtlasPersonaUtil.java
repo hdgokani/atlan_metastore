@@ -49,17 +49,21 @@ public class AtlasPersonaUtil extends PersonaPurposeCommonUtil {
 
     public static final List<String> GLOSSARY_TYPES = Arrays.asList(ATLAS_GLOSSARY_ENTITY_TYPE, ATLAS_GLOSSARY_TERM_ENTITY_TYPE, ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE);
 
+    public static final String LABEL_TYPE_PERSONA          = "type:persona";
+    public static final String LABEL_PREFIX_PERSONA        = "persona:";
+    public static final String LABEL_PREFIX_PERSONA_POLICY = "persona:policy:";
+
 
     public static String getPersonaLabel(String personaGuid) {
-        return "persona:" + personaGuid;
+        return LABEL_PREFIX_PERSONA + personaGuid;
     }
 
     public static String getPersonaPolicyLabel(String personaPolicyGuid) {
-        return "persona:policy:" + personaPolicyGuid;
+        return LABEL_PREFIX_PERSONA_POLICY + personaPolicyGuid;
     }
 
     public static List<String> getLabelsForPersonaPolicy(String personaGuid, String personaPolicyGuid) {
-        return Arrays.asList(getPersonaLabel(personaGuid), getPersonaPolicyLabel(personaPolicyGuid), "type:persona");
+        return Arrays.asList(getPersonaLabel(personaGuid), getPersonaPolicyLabel(personaPolicyGuid), LABEL_TYPE_PERSONA);
     }
 
     public static String getRoleName(AtlasEntity personaEntity) {
@@ -126,7 +130,10 @@ public class AtlasPersonaUtil extends PersonaPurposeCommonUtil {
         List<AtlasObjectId> policies = (List<AtlasObjectId>) persona.getRelationshipAttribute("metadataPolicies");
 
         if (policies != null) {
-            ret = policies.stream().map(x -> entityWithExtInfo.getReferredEntity(x.getGuid())).collect(Collectors.toList());
+            ret = policies.stream()
+                    .map(x -> entityWithExtInfo.getReferredEntity(x.getGuid()))
+                    .filter(x -> x.getStatus() == AtlasEntity.Status.ACTIVE)
+                    .collect(Collectors.toList());
         }
 
         return ret;
@@ -139,7 +146,10 @@ public class AtlasPersonaUtil extends PersonaPurposeCommonUtil {
         List<AtlasObjectId> policies = (List<AtlasObjectId>) persona.getRelationshipAttribute("glossaryPolicies");
 
         if (policies != null) {
-            ret = policies.stream().map(x -> entityWithExtInfo.getReferredEntity(x.getGuid())).collect(Collectors.toList());
+            ret = policies.stream()
+                    .map(x -> entityWithExtInfo.getReferredEntity(x.getGuid()))
+                    .filter(x -> x.getStatus() == AtlasEntity.Status.ACTIVE)
+                    .collect(Collectors.toList());
         }
 
         return ret;

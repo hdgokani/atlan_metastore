@@ -79,6 +79,7 @@ public class RangerClient {
     public static final  String POLICY_DELETE_BY_ID = "service/plugins/policies/%s";
     public static final  String CREATE_ROLE = "service/roles/roles";
     public static final  String UPDATE_ROLE = "service/roles/roles/%s";
+    public static final  String DELETE_ROLE = "service/roles/roles/%s";
     public static final  String CREATE_POLICY = "service/public/v2/api/policy";
     //public static final  String CREATE_POLICY = "service/plugins/policies";
     public static final  String UPDATE_POLICY = "service/public/v2/api/policy/%s";
@@ -202,6 +203,13 @@ public class RangerClient {
         AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(UPDATE_ROLE, rangerRole.getId()), PUT, Response.Status.OK);
 
         return RangerClientCaller.callAPI(api, RangerRole.class, rangerRole);
+    }
+
+    public void deleteRole(long roleId) throws AtlasServiceException {
+
+        AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(DELETE_ROLE, roleId), DELETE, Response.Status.NO_CONTENT);
+
+        RangerClientCaller.callAPI(api, (Class<?>)null, null);
     }
 
     public RangerPolicy createPolicy(RangerPolicy rangerPolicy) throws AtlasServiceException {

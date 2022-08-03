@@ -139,7 +139,7 @@ public class ESAliasStore implements IndexAliasStore {
         if (CollectionUtils.isNotEmpty(policies)) {
 
             for (AtlasEntity entity: policies) {
-                if (!getActions(entity).contains(ACCESS_ENTITY_READ)) {
+                if (!getActions(entity).contains(ACCESS_ENTITY_READ) || isDeletedPolicy(context, entity)) {
                     continue;
                 }
 
@@ -166,7 +166,7 @@ public class ESAliasStore implements IndexAliasStore {
         policies = AtlasPersonaUtil.getGlossaryPolicies(personaEntityWithExtInfo);
         if (CollectionUtils.isNotEmpty(policies)) {
             for (AtlasEntity entity: policies) {
-                if (!getActions(entity).contains(ACCESS_ENTITY_READ)) {
+                if (!getActions(entity).contains(ACCESS_ENTITY_READ) || isDeletedPolicy(context, entity)) {
                     continue;
                 }
 
@@ -190,10 +190,6 @@ public class ESAliasStore implements IndexAliasStore {
         ret = mapOf("bool", bool);
 
         return ret;
-    }
-
-    private boolean isDeletedPolicy(PurposeContext context, AtlasEntity policy) {
-        return context.isDeletePurposePolicy() && policy.getGuid().equals(context.getPurposePolicy().getGuid());
     }
 
     private Map<String, Object> getFilter(PurposeContext context) throws AtlasBaseException {
@@ -233,6 +229,14 @@ public class ESAliasStore implements IndexAliasStore {
         ret = mapOf("bool", bool);
 
         return ret;
+    }
+
+    private boolean isDeletedPolicy(PersonaContext context, AtlasEntity policy) {
+        return context.isDeletePersonaPolicy() && policy.getGuid().equals(context.getPersonaPolicy().getGuid());
+    }
+
+    private boolean isDeletedPolicy(PurposeContext context, AtlasEntity policy) {
+        return context.isDeletePurposePolicy() && policy.getGuid().equals(context.getPurposePolicy().getGuid());
     }
 
     private String getAliasName(AtlasEntity entity) {

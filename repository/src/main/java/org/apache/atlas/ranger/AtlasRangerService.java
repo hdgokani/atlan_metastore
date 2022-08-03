@@ -111,6 +111,21 @@ public class AtlasRangerService {
         return ret;
     }
 
+    public void deleteRangerRole(long roleId) throws AtlasBaseException {
+        try {
+            RangerClientHelper.deleteRole(roleId);
+
+            LOG.info("Deleted: Ranger Role {}", roleId);
+
+        } catch (AtlasServiceException e) {
+            e.printStackTrace();
+            throw new AtlasBaseException("Failed to delete Ranger role due to Ranger issue: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new AtlasBaseException("Failed to delete Ranger role: " + e.getMessage());
+        }
+    }
+
     public RangerPolicy createRangerPolicy(RangerPolicy rangerPolicy) throws AtlasBaseException {
         RangerPolicy ret = null;
         try {
