@@ -106,7 +106,6 @@ public class TaskRegistry {
         return ret;
     }
 
-    @GraphTransaction
     public void updateStatus(AtlasVertex taskVertex, AtlasTask task) {
         if (taskVertex == null) {
             return;
@@ -116,6 +115,8 @@ public class TaskRegistry {
         setEncodedProperty(taskVertex, Constants.TASK_STATUS, task.getStatus().toString());
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
         setEncodedProperty(taskVertex, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
+
+        commit();
     }
 
     @GraphTransaction
@@ -226,7 +227,7 @@ public class TaskRegistry {
 
         updateStatus(taskVertex, task);
 
-        commit();
+        graph.commit();
 
         LOG.info(String.format("TaskRegistry complete %s", task.toString()));
     }
