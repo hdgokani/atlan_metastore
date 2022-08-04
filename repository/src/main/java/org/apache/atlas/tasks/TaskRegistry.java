@@ -211,7 +211,6 @@ public class TaskRegistry {
         graph.commit();
     }
 
-
     public void complete(AtlasVertex taskVertex, AtlasTask task) {
         if (task.getEndTime() != null) {
             setEncodedProperty(taskVertex, Constants.TASK_END_TIME, task.getEndTime());
@@ -225,10 +224,7 @@ public class TaskRegistry {
             }
         }
 
-        setEncodedProperty(taskVertex, Constants.TASK_ATTEMPT_COUNT, task.getAttemptCount());
-        setEncodedProperty(taskVertex, Constants.TASK_STATUS, task.getStatus().toString());
-        setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
-        setEncodedProperty(taskVertex, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
+        updateStatus(taskVertex, task);
 
         graph.commit();
 
