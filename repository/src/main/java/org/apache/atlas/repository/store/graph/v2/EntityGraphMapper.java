@@ -2769,7 +2769,7 @@ public class EntityGraphMapper {
                     GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedVerticesGuidsToLock);
                     AtlasClassification classification       = entityRetriever.toAtlasClassification(classificationVertex);
                     List<AtlasVertex>   entitiesPropagatedTo = deleteDelegate.getHandler().addTagPropagation(classificationVertex, chunkedVerticesToPropagate);
-                    if (!CollectionUtils.isEmpty(entitiesPropagatedTo)) {
+                    if (CollectionUtils.isEmpty(entitiesPropagatedTo)) {
                         continue;
                     }
                     LOG.info(String.format("%s entities are propagated.", entitiesPropagatedTo.size()));
