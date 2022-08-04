@@ -379,8 +379,10 @@ public class TaskRegistry {
                 AtlasIndexQuery indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, indexSearchParams);
                 try {
                     indexQueryResult = indexQuery.vertices(indexSearchParams);
-                    String res = indexQuery.directElasticsearchQuery( indexSearchParams);
-                    LOG.info("Index search response while fetching tasks: " + res);
+                    String res = indexQuery.directElasticsearchQuery(indexSearchParams);
+                    if (res.contains("PENDING") || res.contains("IN_PROGRESS")) {
+                        LOG.info("Index search response while fetching tasks: " + res);
+                    }
                 } catch (AtlasBaseException e) {
                     LOG.error("Failed to fetch pending/in-progress task vertices to re-que");
                     e.printStackTrace();
@@ -395,8 +397,11 @@ public class TaskRegistry {
 
                         if (vertex != null) {
                             AtlasTask atlasTask = toAtlasTask(vertex);
-                            LOG.info(String.format("Fetched task from index search: %s", atlasTask.toString()));
-                            ret.add(atlasTask);
+                            if (atlasTask.getStatus().equals(AtlasTask.Status.PENDING) ||
+                                    atlasTask.getStatus().equals(AtlasTask.Status.IN_PROGRESS) ){
+                                LOG.info(String.format("Fetched task from index search: %s", atlasTask.toString()));
+                                ret.add(atlasTask);
+                            }
                         } else {
                             LOG.warn("Null vertex while re-queuing tasks at index {}", fetched);
                         }
