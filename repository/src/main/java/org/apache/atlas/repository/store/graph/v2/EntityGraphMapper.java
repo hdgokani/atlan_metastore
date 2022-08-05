@@ -2697,7 +2697,6 @@ public class EntityGraphMapper {
         }
     }
 
-    @GraphTransaction
     public List<String> propagateClassification(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean previousRestrictPropagationThroughLineage) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(classificationVertexId)) {
@@ -2794,10 +2793,11 @@ public class EntityGraphMapper {
 
             for(int i=1; i<=chunkLength; i++){
                 List<String > chunkedGuids = processChunkedPropagation(impactedVertices.subList(0,CHUNK_SIZE), classificationVertex);
-                count += CHUNK_SIZE;
+
                 if(chunkedGuids != null){
                     propagatedEntitiesGuid.addAll(chunkedGuids);
                 }
+                count += CHUNK_SIZE;
                 if (count >= 3000){
                     Runtime.getRuntime().gc();
                     count = 0;
@@ -2818,6 +2818,7 @@ public class EntityGraphMapper {
             throw new AtlasBaseException(e);
         }
     }
+
     @GraphTransaction
     public List<String> processChunkedPropagation(List<AtlasVertex> chunkedVerticesToPropagate, AtlasVertex classificationVertex) throws AtlasBaseException{
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("lockObjectsAfterTraverse");
@@ -2834,7 +2835,7 @@ public class EntityGraphMapper {
         List<AtlasEntity> propagatedEntitiesChunked = updateClassificationText(classification, entitiesPropagatedTo);
 
         List<String> chunkedPropagatedEntitiesGuid = propagatedEntitiesChunked.stream().map(x -> x.getGuid()).collect(Collectors.toList());
-        entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification));
+        //entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification));
 
         chunkedVerticesToPropagate.clear();
 
