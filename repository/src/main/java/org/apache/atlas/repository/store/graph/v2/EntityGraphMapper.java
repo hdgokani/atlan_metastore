@@ -2696,7 +2696,7 @@ public class EntityGraphMapper {
             RequestContext.get().endMetricRecord(metric);
         }
     }
-
+    @GraphTransaction
     public List<String> propagateClassification(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean previousRestrictPropagationThroughLineage) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(classificationVertexId)) {
@@ -2796,10 +2796,11 @@ public class EntityGraphMapper {
 
                 if(chunkedGuids != null){
                     propagatedEntitiesGuid.addAll(chunkedGuids);
+                    count += chunkedGuids.size();
                 }
-                count += CHUNK_SIZE;
+
                 if (count >= 3000){
-                    Runtime.getRuntime().gc();
+                    System.gc();
                     count = 0;
                     LOG.info("3000 entities are propagated");
                 }
@@ -2831,15 +2832,13 @@ public class EntityGraphMapper {
             chunkedVerticesToPropagate.clear();
             return null;
         }
-        List<String> chunkedPropagatedEntitiesGuid =  new ArrayList<>();
-//        List<AtlasEntity> propagatedEntitiesChunked = updateClassificationText(classification, entitiesPropagatedTo);
-//
-//        List<String> chunkedPropagatedEntitiesGuid = propagatedEntitiesChunked.stream().map(x -> x.getGuid()).collect(Collectors.toList());
-        //entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification));
+
+        List<AtlasEntity> propagatedEntitiesChunked = updateClassificationText(classification, entitiesPropagatedTo);
+
+        List<String> chunkedPropagatedEntitiesGuid = propagatedEntitiesChunked.stream().map(x -> x.getGuid()).collect(Collectors.toList());
+        entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification));
 
         chunkedVerticesToPropagate.clear();
-
-        graph.commit();
 
         return chunkedPropagatedEntitiesGuid;
     }
@@ -3660,6 +3659,7 @@ public class EntityGraphMapper {
             }
         }
         RequestContext.get().endMetricRecord(metricRecorder);
+        propagatedVertices.clear();
         return propagatedEntities;
     }
 
