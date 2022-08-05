@@ -2801,6 +2801,7 @@ public class EntityGraphMapper {
                 if (count >= 3000){
                     Runtime.getRuntime().gc();
                     count = 0;
+                    LOG.info("3000 entities are propagated");
                 }
             }
 
@@ -2829,7 +2830,6 @@ public class EntityGraphMapper {
             chunkedVerticesToPropagate.clear();
             return null;
         }
-        LOG.info(String.format("%s entities are propagated.", entitiesPropagatedTo.size()));
 
         List<AtlasEntity> propagatedEntitiesChunked = updateClassificationText(classification, entitiesPropagatedTo);
 
