@@ -47,6 +47,7 @@ import javax.inject.Inject;
 import java.util.*;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
+import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.AtlasErrorCode.PURPOSE_ALREADY_EXISTS;
 import static org.apache.atlas.PersonaPurposeCommonUtil.getESAliasName;
 import static org.apache.atlas.persona.AtlasPersonaUtil.getGroups;
@@ -153,6 +154,10 @@ public class AtlasPurposeService {
 
         AtlasEntity purpose = context.getPurpose();
 
+        if (!AtlasEntity.Status.ACTIVE.equals(existingPurposeEntity.getStatus())) {
+            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Purpose not Active");
+        }
+
         if (getIsEnabled(existingPurposeEntity) != getIsEnabled(purpose)) {
             //TODO
             if (getIsEnabled(purpose)) {
@@ -197,6 +202,7 @@ public class AtlasPurposeService {
 
         if(!purpose.getStatus().equals(AtlasEntity.Status.ACTIVE)) {
             LOG.info("Purpose with guid {} is already deleted/purged", purposeGuid);
+            return;
         }
 
         //delete all tag based policies
@@ -227,6 +233,7 @@ public class AtlasPurposeService {
 
         if(!purposePolicy.getStatus().equals(AtlasEntity.Status.ACTIVE)) {
             LOG.info("Purpose policy with guid {} is already deleted/purged", purposePolicyGuid);
+            return;
         }
 
         AtlasEntity.AtlasEntityWithExtInfo purposeExtInfo = entityRetriever.toAtlasEntityWithExtInfo(getPurposeGuid(purposePolicy));
@@ -273,6 +280,10 @@ public class AtlasPurposeService {
 
         String purposeGuid = getPurposeGuid(purposePolicy);
         AtlasEntity.AtlasEntityWithExtInfo purposeWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(purposeGuid);
+
+        if (!AtlasEntity.Status.ACTIVE.equals(purposeWithExtInfo.getEntity().getStatus())) {
+            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Purpose not Active");
+        }
 
         if (context.isCreateNewPurposePolicy()) {
             purposePolicy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getQualifiedName(purposeWithExtInfo.getEntity()), getUUID()));
@@ -352,6 +363,10 @@ public class AtlasPurposeService {
         RangerPolicy ret = null;
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updatePurposePolicy");
         RangerPolicy rangerPolicy = null;
+
+        if (context.getExistingPurposePolicy() != null && !AtlasEntity.Status.ACTIVE.equals(context.getExistingPurposePolicy().getStatus())) {
+            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Entity not Active");
+        }
 
         List<RangerPolicy> rangerPolicies = fetchRangerPoliciesByLabel(atlasRangerService,
                 "tag",

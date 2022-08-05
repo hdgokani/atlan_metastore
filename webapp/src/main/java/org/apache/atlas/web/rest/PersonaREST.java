@@ -137,7 +137,7 @@ public class PersonaREST {
             }
 
             String typeName = entityWithExtInfo.getEntity().getTypeName();
-            if(!PERSONA_METADATA_POLICY_ENTITY_TYPE.equals(typeName) && !PERSONA_GLOSSARY_POLICY_ENTITY_TYPE.equals(typeName) ) {
+            if(!PERSONA_POLICY_TYPES.contains(typeName)) {
                 throw new AtlasBaseException(BAD_REQUEST, "Not a valid type for Persona Policy");
             }
 

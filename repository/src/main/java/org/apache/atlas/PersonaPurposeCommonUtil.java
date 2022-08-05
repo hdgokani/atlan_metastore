@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasErrorCode.PERSONA_ALREADY_EXISTS;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_TYPE;
@@ -38,7 +39,7 @@ public class PersonaPurposeCommonUtil {
     public static final String RESOURCE_PREFIX = "resource:";
 
     public static final String POLICY_TYPE_ACCESS = "0";
-    public static final String POLICY_TYPE_DATAMASK = "1";
+    public static final String POLICY_TYPE_DATA_MASK = "1";
 
     public static final String ACCESS_ENTITY_READ = "entity-read";
     public static final String ACCESS_ADD_REL     = "add-relationship";
@@ -46,6 +47,15 @@ public class PersonaPurposeCommonUtil {
     public static final String ACCESS_REMOVE_REL  = "remove-relationship";
 
     public static final String LINK_ASSET_ACTION = "link-assets";
+
+    public static final String RANGER_MASK_REDACT = "MASK_REDACT";
+    public static final String RANGER_MASK_LAST_$ = "MASK_SHOW_LAST_4";
+    public static final String RANGER_MASK_FIRST_4 = "MASK_SHOW_FIRST_4";
+    public static final String RANGER_MASK_HASH = "MASK_HASH";
+    public static final String RANGER_MASK_NULL = "MASK_NULL";
+    public static final String RANGER_MASK_SHOW_YEAR = "MASK_DATE_SHOW_YEAR";
+    public static final String RANGER_MASK_NONE = "MASK_NONE";
+
 
     public static String getUUID() {
         return NanoIdUtils.randomNanoId(22);
@@ -97,6 +107,10 @@ public class PersonaPurposeCommonUtil {
 
     public static List<String> getActions(AtlasEntity personaPolicyEntity) {
         return (List<String>) personaPolicyEntity.getAttribute("actions");
+    }
+
+    public static String getDataPolicyMaskType(AtlasEntity dataPolicy) {
+        return (String) dataPolicy.getAttribute("mask");
     }
 
     public static void validateUniquenessByName(EntityDiscoveryService entityDiscoveryService, String name, String typeName) throws AtlasBaseException {
@@ -186,7 +200,10 @@ public class PersonaPurposeCommonUtil {
         params.put("policyLabelsPartial", label);
         params.put("page", "0");
         params.put("pageSize", String.valueOf(size));
-        params.put("serviceType", serviceType);
+
+        if (StringUtils.isNotEmpty(serviceType)) {
+            params.put("serviceType", serviceType);
+        }
 
         if (StringUtils.isNotEmpty(policyType)) {
             params.put("policyType", policyType);

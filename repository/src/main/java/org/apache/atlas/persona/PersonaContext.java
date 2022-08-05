@@ -19,12 +19,15 @@ package org.apache.atlas.persona;
 
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.commons.lang.StringUtils;
 import org.apache.ranger.plugin.model.RangerPolicy;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.atlas.persona.AtlasPersonaUtil.getDataPolicyMaskType;
 import static org.apache.atlas.persona.AtlasPersonaUtil.getIsAllow;
+import static org.apache.atlas.repository.Constants.PERSONA_DATA_POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PERSONA_GLOSSARY_POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PERSONA_METADATA_POLICY_ENTITY_TYPE;
 
@@ -48,13 +51,14 @@ public class PersonaContext {
     private boolean hasEntityLabelActions;
 
     private boolean isAllowPolicy;
-    private boolean updateIsAllow = false;
+    private boolean updateIsAllow;
+
+    private boolean isMetadataPolicy;
+    private boolean isGlossaryPolicy;
+    private boolean isDataPolicy;
+    private boolean isDataMaskPolicy;
 
     private List<RangerPolicy> excessExistingRangerPolicies = new ArrayList<>();
-
-    private boolean isMetadataPolicy = false;
-    private boolean isGlossaryPolicy = false;
-
 
     public PersonaContext() {}
 
@@ -209,26 +213,39 @@ public class PersonaContext {
         return isMetadataPolicy;
     }
 
-    public void setMetadataPolicy(boolean metadataPolicy) {
-        isMetadataPolicy = metadataPolicy;
-    }
-
     public boolean isGlossaryPolicy() {
         return isGlossaryPolicy;
     }
 
-    public void setGlossaryPolicy(boolean glossaryPolicy) {
-        isGlossaryPolicy = glossaryPolicy;
+    public boolean isDataPolicy() {
+        return isDataPolicy;
+    }
+
+    public boolean isDataMaskPolicy() {
+        return isDataMaskPolicy;
     }
 
     public void setPolicyType(){
-        if (getPersonaPolicy() != null) {
-            String type = getPersonaPolicy().getTypeName();
+        if (personaPolicy != null) {
+            String type = personaPolicy.getTypeName();
 
             switch (type) {
-                case PERSONA_METADATA_POLICY_ENTITY_TYPE: isMetadataPolicy = true; break;
-                case PERSONA_GLOSSARY_POLICY_ENTITY_TYPE: isGlossaryPolicy = true; break;
+                case PERSONA_METADATA_POLICY_ENTITY_TYPE:
+                    isMetadataPolicy = true;
+                    break;
+                case PERSONA_GLOSSARY_POLICY_ENTITY_TYPE:
+                    isGlossaryPolicy = true;
+                    break;
+                case PERSONA_DATA_POLICY_ENTITY_TYPE:
+                    isDataPolicy = true;
+                    setDataPolicyType();
             }
+        }
+    }
+
+    private void setDataPolicyType() {
+        if (StringUtils.isNotEmpty(getDataPolicyMaskType(personaPolicy))) {//TODO: review this condition
+            isDataMaskPolicy = true;
         }
     }
 
