@@ -41,11 +41,14 @@ public class AtlasPersonaUtil extends PersonaPurposeCommonUtil {
     public static final String RESOURCE_END_TWO_ENTITY_CLASS = "end-two-entity-classification";
 
 
-    public static final List<String> ENTITY_ACTIONS = Arrays.asList(ACCESS_ENTITY_READ, "entity-create", "entity-update", "entity-delete");
+    public static final List<String> ENTITY_ACTIONS = Arrays.asList(ACCESS_ENTITY_READ, ACCESS_ENTITY_CREATE, "entity-update", "entity-delete");
     public static final List<String> CLASSIFICATION_ACTIONS = Arrays.asList("entity-add-classification", "entity-update-classification", "entity-remove-classification");
     public static final List<String> TERM_ACTIONS = Arrays.asList("add-terms", "remove-terms");
     public static final List<String> LABEL_ACTIONS = Arrays.asList("entity-add-label", "entity-update-label", "entity-remove-label");
     public static final String BM_ACTION = "entity-update-business-metadata";
+    public static final String GLOSSARY_TERM_RELATIONSHIP = "glossary-term-relationship";
+    public static final String RELATED_TERMS = "related-terms";
+    public static final String SELECT_ACTION = "select";
 
     public static final List<String> GLOSSARY_TYPES = Arrays.asList(ATLAS_GLOSSARY_ENTITY_TYPE, ATLAS_GLOSSARY_TERM_ENTITY_TYPE, ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE);
 
@@ -118,32 +121,31 @@ public class AtlasPersonaUtil extends PersonaPurposeCommonUtil {
 
         ret.addAll(getMetadataPolicies(entityWithExtInfo));
         ret.addAll(getGlossaryPolicies(entityWithExtInfo));
-        //TODO: add data policies
+        ret.addAll(getDataPolicies(entityWithExtInfo));
 
         return ret;
     }
 
     public static List<AtlasEntity> getMetadataPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        List<AtlasEntity> ret = new ArrayList<>();
-        AtlasEntity persona = entityWithExtInfo.getEntity();
+        List<AtlasObjectId> policies = (List<AtlasObjectId>) entityWithExtInfo.getEntity().getRelationshipAttribute("metadataPolicies");
 
-        List<AtlasObjectId> policies = (List<AtlasObjectId>) persona.getRelationshipAttribute("metadataPolicies");
-
-        if (policies != null) {
-            ret = policies.stream()
-                    .map(x -> entityWithExtInfo.getReferredEntity(x.getGuid()))
-                    .filter(x -> x.getStatus() == AtlasEntity.Status.ACTIVE)
-                    .collect(Collectors.toList());
-        }
-
-        return ret;
+        return objectToEntityList(entityWithExtInfo, policies);
     }
 
     public static List<AtlasEntity> getGlossaryPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        List<AtlasEntity> ret = new ArrayList<>();
-        AtlasEntity persona = entityWithExtInfo.getEntity();
+        List<AtlasObjectId> policies = (List<AtlasObjectId>) entityWithExtInfo.getEntity().getRelationshipAttribute("glossaryPolicies");
 
-        List<AtlasObjectId> policies = (List<AtlasObjectId>) persona.getRelationshipAttribute("glossaryPolicies");
+        return objectToEntityList(entityWithExtInfo, policies);
+    }
+
+    public static List<AtlasEntity> getDataPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
+        List<AtlasObjectId> policies = (List<AtlasObjectId>) entityWithExtInfo.getEntity().getRelationshipAttribute("dataPolicies");
+
+        return objectToEntityList(entityWithExtInfo, policies);
+    }
+
+    private static List<AtlasEntity> objectToEntityList(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, List<AtlasObjectId> policies) {
+        List<AtlasEntity> ret = new ArrayList<>();
 
         if (policies != null) {
             ret = policies.stream()

@@ -25,6 +25,7 @@ import org.apache.commons.configuration.Configuration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 
@@ -138,7 +139,16 @@ public final class Constants {
     public static final String PERSONA_ENTITY_TYPE                 = "Persona";
     public static final String PERSONA_METADATA_POLICY_ENTITY_TYPE = "PersonaMetadataPolicy";
     public static final String PERSONA_GLOSSARY_POLICY_ENTITY_TYPE = "PersonaGlossaryPolicy";
+    public static final String PERSONA_DATA_POLICY_ENTITY_TYPE     = "PersonaDataPolicy";
     public static final String PURPOSE_METADATA_POLICY_ENTITY_TYPE = "PurposeMetadataPolicy";
+
+    public static final List<String> PERSONA_POLICY_TYPES = Arrays.asList(
+            PERSONA_METADATA_POLICY_ENTITY_TYPE,
+            PERSONA_GLOSSARY_POLICY_ENTITY_TYPE,
+            PERSONA_DATA_POLICY_ENTITY_TYPE);
+
+    public static final List<String> PURPOSE_POLICY_TYPES = Arrays.asList(
+            PURPOSE_METADATA_POLICY_ENTITY_TYPE);
 
 
     /**
