@@ -59,6 +59,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -232,16 +233,18 @@ public class AtlasPersonaService {
         String role = getRoleName(personaExtInfo.getEntity());
 
         List<String> allPolicyGuids = getMetadataPolicies(personaExtInfo).stream().map(x -> LABEL_PREFIX_PERSONA_POLICY + x.getGuid()).collect(Collectors.toList());
+        allPolicyGuids.addAll(getDataPolicies(personaExtInfo).stream().map(x -> LABEL_PREFIX_PERSONA_POLICY + x.getGuid()).collect(Collectors.toList()));
         allPolicyGuids.addAll(getGlossaryPolicies(personaExtInfo).stream().map(x -> LABEL_PREFIX_PERSONA_POLICY + x.getGuid()).collect(Collectors.toList()));
 
         for (RangerPolicy rangerPolicy : rangerPolicies) {
             boolean needUpdate = false;
+            boolean dataPolicy = false;
 
             if (CollectionUtils.isNotEmpty(rangerPolicy.getPolicyItems())) {
-                for (RangerPolicy.RangerPolicyItem policyItem : new ArrayList<>(rangerPolicy.getPolicyItems())) {
+                for (RangerPolicyItem policyItem : new ArrayList<>(rangerPolicy.getPolicyItems())) {
                     if (policyItem.getRoles().remove(role)) {
                         needUpdate = true;
-                        if (CollectionUtils.isEmpty(policyItem.getUsers()) && CollectionUtils.isEmpty(policyItem.getUsers())) {
+                        if (CollectionUtils.isEmpty(policyItem.getUsers()) && CollectionUtils.isEmpty(policyItem.getGroups())) {
                             rangerPolicy.getPolicyItems().remove(policyItem);
                         }
                     }
@@ -249,18 +252,32 @@ public class AtlasPersonaService {
             }
 
             if (CollectionUtils.isNotEmpty(rangerPolicy.getDenyPolicyItems())) {
-                for (RangerPolicy.RangerPolicyItem policyItem : new ArrayList<>(rangerPolicy.getDenyPolicyItems())) {
+                for (RangerPolicyItem policyItem : new ArrayList<>(rangerPolicy.getDenyPolicyItems())) {
                     if (policyItem.getRoles().remove(role)) {
                         needUpdate = true;
-                        if (CollectionUtils.isEmpty(policyItem.getUsers()) && CollectionUtils.isEmpty(policyItem.getUsers())) {
+                        if (CollectionUtils.isEmpty(policyItem.getUsers()) && CollectionUtils.isEmpty(policyItem.getGroups())) {
                             rangerPolicy.getDenyPolicyItems().remove(policyItem);
                         }
                     }
                 }
             }
 
+            if (CollectionUtils.isNotEmpty(rangerPolicy.getDataMaskPolicyItems())) {
+                for (RangerDataMaskPolicyItem policyItem : new ArrayList<>(rangerPolicy.getDataMaskPolicyItems())) {
+                    if (policyItem.getRoles().remove(role)) {
+                        needUpdate = true;
+                        dataPolicy = true;
+                        if (CollectionUtils.isEmpty(policyItem.getUsers()) && CollectionUtils.isEmpty(policyItem.getGroups())) {
+                            rangerPolicy.getDataMaskPolicyItems().remove(policyItem);
+                        }
+                    }
+                }
+            }
+
             if (needUpdate) {
-                if (CollectionUtils.isEmpty(rangerPolicy.getPolicyItems()) && CollectionUtils.isEmpty(rangerPolicy.getDenyPolicyItems())) {
+                if (dataPolicy && CollectionUtils.isEmpty(rangerPolicy.getDataMaskPolicyItems())) {
+                        atlasRangerService.deleteRangerPolicy(rangerPolicy);
+                } else if (CollectionUtils.isEmpty(rangerPolicy.getPolicyItems()) && CollectionUtils.isEmpty(rangerPolicy.getDenyPolicyItems())) {
                     atlasRangerService.deleteRangerPolicy(rangerPolicy);
                 } else {
 
@@ -409,6 +426,7 @@ public class AtlasPersonaService {
         List<RangerPolicy> provisionalRangerPolicies = personaPolicyToRangerPolicies(context, getActions(context.getPersonaPolicy()));
 
         if (CollectionUtils.isNotEmpty(provisionalRangerPolicies)) {
+            LOG.info("provisionalRangerPolicies.size() {}", provisionalRangerPolicies.size());
             LOG.info(AtlasType.toJson(provisionalRangerPolicies));
 
             if (context.isCreateNewPersonaPolicy()) {
@@ -481,9 +499,10 @@ public class AtlasPersonaService {
 
     private boolean isPolicyTypeUpdate(PersonaContext context) {
         String existingMask = getDataPolicyMaskType(context.getExistingPersonaPolicy());
+        existingMask = existingMask == null ? "" : existingMask;
         String newMask = getDataPolicyMaskType(context.getPersonaPolicy());
 
-        if (!existingMask.equals(newMask) && (StringUtils.isEmpty(existingMask) || StringUtils.isEmpty(newMask))) {
+        if ((StringUtils.isEmpty(existingMask) || StringUtils.isEmpty(newMask)) && !existingMask.equals(newMask)) {
             return true;
         }
 
@@ -604,6 +623,7 @@ public class AtlasPersonaService {
     }
 
     private void cleanRoleFromExistingPolicies(PersonaContext context, List<RangerPolicy> rangerPolicies) throws AtlasBaseException {
+        LOG.info("clean role from existing policies");
 
         for (RangerPolicy policy: rangerPolicies) {
             boolean deletePol = false;
@@ -1096,17 +1116,17 @@ public class AtlasPersonaService {
         List<RangerPolicy> rangerPolicies = new ArrayList<>();
 
         if (context.isMetadataPolicy()) {
-            rangerPolicies = metadataPolicyToRangerPolicy(context, actions);
+            rangerPolicies = metadataPolicyToRangerPolicy(context, new HashSet<>(actions));
         } else if (context.isGlossaryPolicy()) {
-            rangerPolicies = glossaryPolicyToRangerPolicy(context, actions);
+            rangerPolicies = glossaryPolicyToRangerPolicy(context, new HashSet<>(actions));
         } else if (context.isDataPolicy()) {
-            rangerPolicies = dataPolicyToRangerPolicy(context, actions);
+            rangerPolicies = dataPolicyToRangerPolicy(context, new HashSet<>(actions));
         }
 
         return rangerPolicies;
     }
 
-    private List<RangerPolicy> glossaryPolicyToRangerPolicy(PersonaContext context, List<String> actions) throws AtlasBaseException {
+    private List<RangerPolicy> glossaryPolicyToRangerPolicy(PersonaContext context, Set<String> actions) throws AtlasBaseException {
         List<RangerPolicy> rangerPolicies = new ArrayList<>();
         AtlasEntity persona = context.getPersona();
         AtlasEntity personaPolicy = context.getPersonaPolicy();
@@ -1119,243 +1139,153 @@ public class AtlasPersonaService {
         List<String> rangerPolicyItemAssets = new ArrayList<>();
         assets.forEach(x -> rangerPolicyItemAssets.add("*" + x + "*"));
 
+        String roleName = getRoleName(persona);
+
         for (String action : new HashSet<>(actions)) {
-
-            if (action.equals("entity-create")) {
-                RangerPolicy rangerPolicy = getRangerPolicy(context);
-                String name = "Glossary-term-relationship-" + UUID.randomUUID();
-                rangerPolicy.setName(name);
-
-                Map<String, RangerPolicy.RangerPolicyResource> resources = new HashMap<>();
-
-                resources.put(RESOURCE_REL_TYPE, new RangerPolicy.RangerPolicyResource("*"));
-
-                resources.put(RESOURCE_END_ONE_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
-                resources.put(RESOURCE_END_ONE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_END_ONE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-
-
-                resources.put(RESOURCE_END_TWO_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
-                resources.put(RESOURCE_END_TWO_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_END_TWO_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-
-                rangerPolicy.setResources(resources);
-
-                List<RangerPolicy.RangerPolicyItemAccess> accesses = Arrays.asList(
-                        new RangerPolicy.RangerPolicyItemAccess(ACCESS_ADD_REL),
-                        new RangerPolicy.RangerPolicyItemAccess(ACCESS_UPDATE_REL),
-                        new RangerPolicy.RangerPolicyItemAccess(ACCESS_REMOVE_REL));
-
-                RangerPolicy.RangerPolicyItem policyItem = new RangerPolicy.RangerPolicyItem(accesses, null,
-                        null, Arrays.asList(getRoleName(persona)), null, false);
-
-                if (context.isAllowPolicy()) {
-                    rangerPolicy.setPolicyItems(Arrays.asList(policyItem));
-                } else {
-                    rangerPolicy.setDenyPolicyItems(Arrays.asList(policyItem));
-                }
-
-                rangerPolicies.add(rangerPolicy);
+            if (!actions.contains(action)) {
+                continue;
             }
 
-            if (ENTITY_ACTIONS.contains(action) && !context.hasEntityActions()) {
-                RangerPolicy rangerPolicy = getRangerPolicy(context);
+            Map<String, RangerPolicyResource> resources = new HashMap<>();
+            List<RangerPolicyItemAccess> accesses = new ArrayList<>();
+            String policyName = "";
 
-                String name = "Glossary-" + UUID.randomUUID();
-                rangerPolicy.setName(name);
+            if (ENTITY_ACTIONS.contains(action)) {
+                if (actions.contains(ACCESS_ENTITY_CREATE)) {
+                    rangerPolicies.addAll(glossaryPolicyToRangerPolicy(context, new HashSet<String>() {{
+                        add(GLOSSARY_TERM_RELATIONSHIP);
+                    }}));
+                }
 
-                Map<String, RangerPolicy.RangerPolicyResource> resources = new HashMap<>();
+                policyName = "Glossary-" + UUID.randomUUID();
 
-                resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource(GLOSSARY_TYPES, false, false));
+                resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource(GLOSSARY_TYPES, false, false));
+                resources.put(RESOURCE_ENTITY_CLASS, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_KEY_ENTITY, new RangerPolicyResource(rangerPolicyItemAssets, false, false));
 
-                resources.put(RESOURCE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_KEY_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
-
-                rangerPolicy.setResources(resources);
-
-                List<RangerPolicy.RangerPolicyItemAccess> accesses = new ArrayList<>();
                 for (String entityAction : ENTITY_ACTIONS) {
                     if (actions.contains(entityAction)) {
-                        accesses.add(new RangerPolicy.RangerPolicyItemAccess(entityAction));
+                        actions.remove(entityAction);
+                        accesses.add(new RangerPolicyItemAccess(entityAction));
                     }
                 }
-
-                RangerPolicy.RangerPolicyItem policyItem = new RangerPolicy.RangerPolicyItem(accesses, null,
-                        null, Arrays.asList(getRoleName(persona)), null, false);
-
-                if (context.isAllowPolicy()) {
-                    rangerPolicy.setPolicyItems(Arrays.asList(policyItem));
-                } else {
-                    rangerPolicy.setDenyPolicyItems(Arrays.asList(policyItem));
-                }
-
-                rangerPolicies.add(rangerPolicy);
-                context.setHasEntityActions(true);
             }
 
-            if (LABEL_ACTIONS.contains(action) && !context.hasEntityLabelActions()) {
-                RangerPolicy rangerPolicy = getRangerPolicy(context);
-                String name = "Glossary-labels-" + UUID.randomUUID();
-                rangerPolicy.setName(name);
+            if (action.equals(GLOSSARY_TERM_RELATIONSHIP)) {
+                policyName = "Glossary-term-relationship-" + UUID.randomUUID();
 
-                Map<String, RangerPolicy.RangerPolicyResource> resources = new HashMap<>();
+                resources.put(RESOURCE_REL_TYPE, new RangerPolicyResource("*"));
 
-                resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource(GLOSSARY_TYPES, false, false));
+                resources.put(RESOURCE_END_ONE_ENTITY, new RangerPolicyResource(rangerPolicyItemAssets, false, false));
+                resources.put(RESOURCE_END_ONE_ENTITY_TYPE, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_ONE_ENTITY_CLASS, new RangerPolicyResource("*"));
 
-                resources.put(RESOURCE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_KEY_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
-                resources.put(RESOURCE_ENTITY_LABEL, new RangerPolicy.RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_TWO_ENTITY, new RangerPolicyResource(rangerPolicyItemAssets, false, false));
+                resources.put(RESOURCE_END_TWO_ENTITY_TYPE, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_TWO_ENTITY_CLASS, new RangerPolicyResource("*"));
 
-                rangerPolicy.setResources(resources);
+                accesses.add(new RangerPolicyItemAccess(ACCESS_ADD_REL));
+                accesses.add(new RangerPolicyItemAccess(ACCESS_UPDATE_REL));
+                accesses.add(new RangerPolicyItemAccess(ACCESS_REMOVE_REL));
+                actions.remove(GLOSSARY_TERM_RELATIONSHIP);
+            }
 
-                List<RangerPolicy.RangerPolicyItemAccess> accesses = new ArrayList<>();
-                for (String entityAction : LABEL_ACTIONS) {
-                    if (actions.contains(entityAction)) {
-                        accesses.add(new RangerPolicy.RangerPolicyItemAccess(entityAction));
+            if (LABEL_ACTIONS.contains(action)) {
+                policyName = "Glossary-labels-" + UUID.randomUUID();
+
+                resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource(GLOSSARY_TYPES, false, false));
+                resources.put(RESOURCE_ENTITY_CLASS, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_KEY_ENTITY, new RangerPolicyResource(rangerPolicyItemAssets, false, false));
+
+                resources.put(RESOURCE_ENTITY_LABEL, new RangerPolicyResource("*"));
+
+                for (String labelAction : LABEL_ACTIONS) {
+                    if (actions.contains(labelAction)) {
+                        actions.remove(labelAction);
+                        accesses.add(new RangerPolicyItemAccess(labelAction));
                     }
                 }
-
-                RangerPolicy.RangerPolicyItem policyItem = new RangerPolicy.RangerPolicyItem(accesses, null,
-                        null, Arrays.asList(getRoleName(persona)), null, false);
-
-                if (context.isAllowPolicy()) {
-                    rangerPolicy.setPolicyItems(Arrays.asList(policyItem));
-                } else {
-                    rangerPolicy.setDenyPolicyItems(Arrays.asList(policyItem));
-                }
-
-                rangerPolicies.add(rangerPolicy);
-                context.setHasEntityLabelActions(true);
             }
 
-            if (CLASSIFICATION_ACTIONS.contains(action) && !context.hasEntityClassificationActions()) {
-                RangerPolicy rangerPolicy = getRangerPolicy(context);
-                String name = "Glossary-classification-" + UUID.randomUUID();
-                rangerPolicy.setName(name);
+            if (CLASSIFICATION_ACTIONS.contains(action)) {
+                policyName = "Glossary-classification-" + UUID.randomUUID();
 
-                Map<String, RangerPolicy.RangerPolicyResource> resources = new HashMap<>();
+                resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource(GLOSSARY_TYPES, false, false));
+                resources.put(RESOURCE_ENTITY_CLASS, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_KEY_ENTITY, new RangerPolicyResource(rangerPolicyItemAssets, false, false));
 
-                resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource(GLOSSARY_TYPES, false, false));
-                resources.put(RESOURCE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_KEY_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
-                resources.put(RESOURCE_CLASS, new RangerPolicy.RangerPolicyResource("*"));
+                resources.put(RESOURCE_CLASS, new RangerPolicyResource("*"));
 
-                rangerPolicy.setResources(resources);
-
-                List<RangerPolicy.RangerPolicyItemAccess> accesses = new ArrayList<>();
-                for (String entityAction : CLASSIFICATION_ACTIONS) {
-                    if (actions.contains(entityAction)) {
-                        accesses.add(new RangerPolicy.RangerPolicyItemAccess(entityAction));
+                for (String tagAction : CLASSIFICATION_ACTIONS) {
+                    if (actions.contains(tagAction)) {
+                        actions.remove(tagAction);
+                        accesses.add(new RangerPolicyItemAccess(tagAction));
                     }
                 }
-                RangerPolicy.RangerPolicyItem policyItem = new RangerPolicy.RangerPolicyItem(accesses, null,
-                        null, Arrays.asList(getRoleName(persona)), null, false);
-
-                if (context.isAllowPolicy()) {
-                    rangerPolicy.setPolicyItems(Arrays.asList(policyItem));
-                } else {
-                    rangerPolicy.setDenyPolicyItems(Arrays.asList(policyItem));
-                }
-
-                rangerPolicies.add(rangerPolicy);
-                context.setHasEntityClassificationActions(true);
             }
 
-            if (BM_ACTION.equals(action) && !context.hasEntityBMActions()) {
-                RangerPolicy rangerPolicy = getRangerPolicy(context);
-                String name = "Glossary-entity-business-metadata-" + UUID.randomUUID();
-                rangerPolicy.setName(name);
+            if (BM_ACTION.equals(action)) {
+                policyName = "Glossary-entity-business-metadata-" + UUID.randomUUID();
 
-                Map<String, RangerPolicy.RangerPolicyResource> resources = new HashMap<>();
+                resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource(GLOSSARY_TYPES, false, false));
+                resources.put(RESOURCE_KEY_ENTITY, new RangerPolicyResource(rangerPolicyItemAssets, false, false));
+                resources.put(RESOURCE_ENTITY_CLASS, new RangerPolicyResource("*"));
 
+                resources.put(RESOURCE_BM, new RangerPolicyResource("*"));
 
-                resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource(GLOSSARY_TYPES, false, false));
-                resources.put(RESOURCE_KEY_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
-                resources.put(RESOURCE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_BM, new RangerPolicy.RangerPolicyResource("*"));
-
-                rangerPolicy.setResources(resources);
-
-                List<RangerPolicy.RangerPolicyItemAccess> accesses = Arrays.asList(new RangerPolicy.RangerPolicyItemAccess(BM_ACTION));
-
-                RangerPolicy.RangerPolicyItem policyItem = new RangerPolicy.RangerPolicyItem(accesses, null,
-                        null, Arrays.asList(getRoleName(persona)), null, false);
-
-                if (context.isAllowPolicy()) {
-                    rangerPolicy.setPolicyItems(Arrays.asList(policyItem));
-                } else {
-                    rangerPolicy.setDenyPolicyItems(Arrays.asList(policyItem));
-                }
-
-                rangerPolicies.add(rangerPolicy);
-                context.setHasEntityBMActions(true);
+                accesses.add(new RangerPolicyItemAccess(BM_ACTION));
+                actions.remove(BM_ACTION);
             }
 
-            if (LINK_ASSET_ACTION.equals(action) && !context.hasLinkAssetsActions()) {
-                RangerPolicy rangerPolicy = getRangerPolicy(context);
+            if (LINK_ASSET_ACTION.equals(action)) {
+                policyName = "Glossary-relationship-" + UUID.randomUUID();
 
-                String name = "Glossary-relationship-" + UUID.randomUUID();
-                rangerPolicy.setName(name);
+                resources.put(RESOURCE_REL_TYPE, new RangerPolicyResource("*"));
 
-                Map<String, RangerPolicy.RangerPolicyResource> resources = new HashMap<>();
-                resources.put(RESOURCE_REL_TYPE, new RangerPolicy.RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_ONE_ENTITY, new RangerPolicyResource(rangerPolicyItemAssets, false, false));
+                resources.put(RESOURCE_END_ONE_ENTITY_TYPE, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_ONE_ENTITY_CLASS, new RangerPolicyResource("*"));
 
-                resources.put(RESOURCE_END_ONE_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
-                resources.put(RESOURCE_END_ONE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_END_ONE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_TWO_ENTITY, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_TWO_ENTITY_TYPE, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_TWO_ENTITY_CLASS, new RangerPolicyResource("*"));
 
-                resources.put(RESOURCE_END_TWO_ENTITY, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_END_TWO_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_END_TWO_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
 
-                rangerPolicy.setResources(resources);
+                accesses.add(new RangerPolicyItemAccess(ACCESS_ADD_REL));
+                accesses.add(new RangerPolicyItemAccess(ACCESS_UPDATE_REL));
+                accesses.add(new RangerPolicyItemAccess(ACCESS_REMOVE_REL));
+                actions.remove(LINK_ASSET_ACTION);
 
-                List<RangerPolicy.RangerPolicyItemAccess> accesses = Arrays.asList(
-                        new RangerPolicy.RangerPolicyItemAccess(ACCESS_ADD_REL),
-                        new RangerPolicy.RangerPolicyItemAccess(ACCESS_UPDATE_REL),
-                        new RangerPolicy.RangerPolicyItemAccess(ACCESS_REMOVE_REL));
-
-                RangerPolicy.RangerPolicyItem policyItem = new RangerPolicy.RangerPolicyItem(accesses, null,
-                        null, Arrays.asList(getRoleName(persona)), null, false);
-
-                if (context.isAllowPolicy()) {
-                    rangerPolicy.setPolicyItems(Arrays.asList(policyItem));
-                } else {
-                    rangerPolicy.setDenyPolicyItems(Arrays.asList(policyItem));
-                }
-
-                rangerPolicies.addAll(glossaryPolicyToRangerPolicy(context, Arrays.asList("related-terms")));
-
-                context.setHasLinkAssetsActions(true);
-                rangerPolicies.add(rangerPolicy);
+                rangerPolicies.addAll(glossaryPolicyToRangerPolicy(context, new HashSet<String>() {{ add(RELATED_TERMS); }}));
             }
 
-            if (action.equals("related-terms")) {
+            if (action.equals(RELATED_TERMS)) {
+                policyName = "Glossary-related-terms-" + UUID.randomUUID();
+
+                resources.put(RESOURCE_REL_TYPE, new RangerPolicyResource("*"));
+
+                resources.put(RESOURCE_END_ONE_ENTITY, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_ONE_ENTITY_TYPE, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_ONE_ENTITY_CLASS, new RangerPolicyResource("*"));
+
+                resources.put(RESOURCE_END_TWO_ENTITY, new RangerPolicyResource(rangerPolicyItemAssets, false, false));
+                resources.put(RESOURCE_END_TWO_ENTITY_TYPE, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_TWO_ENTITY_CLASS, new RangerPolicyResource("*"));
+
+
+                accesses.add(new RangerPolicyItemAccess(ACCESS_ADD_REL));
+                accesses.add(new RangerPolicyItemAccess(ACCESS_UPDATE_REL));
+                accesses.add(new RangerPolicyItemAccess(ACCESS_REMOVE_REL));
+                actions.remove(RELATED_TERMS);
+            }
+
+            if (MapUtils.isNotEmpty(resources)) {
                 RangerPolicy rangerPolicy = getRangerPolicy(context);
 
-                String name = "Glossary-related-terms-" + UUID.randomUUID();
-                rangerPolicy.setName(name);
-
-                Map<String, RangerPolicy.RangerPolicyResource> resources = new HashMap<>();
-                resources.put(RESOURCE_REL_TYPE, new RangerPolicy.RangerPolicyResource("*"));
-
-                resources.put(RESOURCE_END_ONE_ENTITY, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_END_ONE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_END_ONE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-
-                resources.put(RESOURCE_END_TWO_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
-                resources.put(RESOURCE_END_TWO_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_END_TWO_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-
+                rangerPolicy.setName(policyName);
                 rangerPolicy.setResources(resources);
 
-                List<RangerPolicy.RangerPolicyItemAccess> accesses = Arrays.asList(
-                        new RangerPolicy.RangerPolicyItemAccess(ACCESS_ADD_REL),
-                        new RangerPolicy.RangerPolicyItemAccess(ACCESS_UPDATE_REL),
-                        new RangerPolicy.RangerPolicyItemAccess(ACCESS_REMOVE_REL));
-
-                RangerPolicy.RangerPolicyItem policyItem = new RangerPolicy.RangerPolicyItem(accesses, null,
-                        null, Arrays.asList(getRoleName(persona)), null, false);
+                RangerPolicy.RangerPolicyItem policyItem = getPolicyItem(accesses, roleName);
 
                 if (context.isAllowPolicy()) {
                     rangerPolicy.setPolicyItems(Arrays.asList(policyItem));
@@ -1370,7 +1300,7 @@ public class AtlasPersonaService {
         return rangerPolicies;
     }
 
-    private List<RangerPolicy> metadataPolicyToRangerPolicy(PersonaContext context, List<String> actions) throws AtlasBaseException {
+    private List<RangerPolicy> metadataPolicyToRangerPolicy(PersonaContext context, Set<String> actions) throws AtlasBaseException {
         List<RangerPolicy> rangerPolicies = new ArrayList<>();
         AtlasEntity persona = context.getPersona();
         AtlasEntity personaPolicy = context.getPersonaPolicy();
@@ -1383,107 +1313,123 @@ public class AtlasPersonaService {
         List<String> rangerPolicyItemAssets = new ArrayList<>(assets);
         assets.forEach(x -> rangerPolicyItemAssets.add(x + "/*"));
 
+        String roleName = getRoleName(persona);
+
         for (String action : new HashSet<>(actions)) {
-            RangerPolicy rangerPolicy = getRangerPolicy(context);
+            if (!actions.contains(action)) {
+                continue;
+            }
 
-            if (ENTITY_ACTIONS.contains(action) && !context.hasEntityActions()) {
+            Map<String, RangerPolicyResource> resources = new HashMap<>();
+            List<RangerPolicyItemAccess> accesses = new ArrayList<>();
+            String policyName = "";
 
-                String name = "CRUD-" + UUID.randomUUID();
-                rangerPolicy.setName(name);
+            if (ENTITY_ACTIONS.contains(action)) {
+                policyName = "CRUD-" + UUID.randomUUID();
 
-                Map<String, RangerPolicy.RangerPolicyResource> resources = new HashMap<>();
-
-                //TODO : Persona.go: 1328
                 if (getName(persona).startsWith("collection") || getName(persona).startsWith("connection")) {
-                    resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource("*"));
+                    resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource("*"));
                 } else {
-                    resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource(Arrays.asList("Process", "Catalog"), false, false));
+                    resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource(Arrays.asList("Process", "Catalog"), false, false));
                 }
 
-                resources.put(RESOURCE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_KEY_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
+                resources.put(RESOURCE_ENTITY_CLASS, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_KEY_ENTITY, new RangerPolicyResource(rangerPolicyItemAssets, false, false));
 
-                rangerPolicy.setResources(resources);
-
-                List<RangerPolicy.RangerPolicyItemAccess> accesses = new ArrayList<>();
                 for (String entityAction : ENTITY_ACTIONS) {
                     if (actions.contains(entityAction)) {
-                        accesses.add(new RangerPolicy.RangerPolicyItemAccess(entityAction));
+                        actions.remove(entityAction);
+                        accesses.add(new RangerPolicyItemAccess(entityAction));
                     }
                 }
-
-                RangerPolicy.RangerPolicyItem policyItem = new RangerPolicy.RangerPolicyItem(accesses, null,
-                        null, Arrays.asList(getRoleName(persona)), null, false);
-
-                if (context.isAllowPolicy()) {
-                    rangerPolicy.setPolicyItems(Arrays.asList(policyItem));
-                } else {
-                    rangerPolicy.setDenyPolicyItems(Arrays.asList(policyItem));
-                }
-
-                context.setHasEntityActions(true);
             }
 
-            if (CLASSIFICATION_ACTIONS.contains(action) && !context.hasEntityClassificationActions()) {
-                String name = "classification-" + UUID.randomUUID();
-                rangerPolicy.setName(name);
+            if (CLASSIFICATION_ACTIONS.contains(action)) {
+                policyName = "classification-" + UUID.randomUUID();
 
-                Map<String, RangerPolicy.RangerPolicyResource> resources = new HashMap<>();
+                if (getName(persona).startsWith("collection") || getName(persona).startsWith("connection")) {
+                    resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource("*"));
+                } else {
+                    resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource(Arrays.asList("Process", "Catalog"), false, false));
+                }
+
+                resources.put(RESOURCE_CLASS, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_ENTITY_CLASS, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_KEY_ENTITY, new RangerPolicyResource(rangerPolicyItemAssets, false, false));
+
+                for (String tagAction : CLASSIFICATION_ACTIONS) {
+                    if (actions.contains(tagAction)) {
+                        actions.remove(tagAction);
+                        accesses.add(new RangerPolicyItemAccess(tagAction));
+                    }
+                }
+            }
+
+            if (BM_ACTION.equals(action)) {
+                policyName = "entity-business-metadata-" + UUID.randomUUID();
 
                 //TODO : Persona.go: 1328
                 if (getName(persona).startsWith("collection") || getName(persona).startsWith("connection")) {
-                    resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource("*"));
+                    resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource("*"));
                 } else {
-                    resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource(Arrays.asList("Process", "Catalog"), false, false));
+                    resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource(Arrays.asList("Process", "Catalog"), false, false));
                 }
 
-                resources.put(RESOURCE_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_KEY_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
+                resources.put(RESOURCE_BM, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_ENTITY_CLASS, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_KEY_ENTITY, new RangerPolicyResource(rangerPolicyItemAssets, false, false));
 
-                rangerPolicy.setResources(resources);
+                accesses.add(new RangerPolicyItemAccess(BM_ACTION));
+                actions.remove(BM_ACTION);
+            }
 
-                List<RangerPolicy.RangerPolicyItemAccess> accesses = new ArrayList<>();
-                for (String entityAction : CLASSIFICATION_ACTIONS) {
-                    if (actions.contains(entityAction)) {
-                        accesses.add(new RangerPolicy.RangerPolicyItemAccess(entityAction));
+            if (TERM_ACTIONS.contains(action)) {
+                policyName = "terms-" + UUID.randomUUID();
+
+                resources.put(RESOURCE_REL_TYPE, new RangerPolicyResource("*"));
+
+                resources.put(RESOURCE_END_ONE_ENTITY, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_ONE_ENTITY_TYPE, new RangerPolicyResource(ATLAS_GLOSSARY_TERM_ENTITY_TYPE));
+                resources.put(RESOURCE_END_ONE_ENTITY_CLASS, new RangerPolicyResource("*"));
+
+
+                resources.put(RESOURCE_END_TWO_ENTITY, new RangerPolicyResource(rangerPolicyItemAssets, false, false));
+                resources.put(RESOURCE_END_TWO_ENTITY_TYPE, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_TWO_ENTITY_CLASS, new RangerPolicyResource("*"));
+
+                for (String termAction : TERM_ACTIONS) {
+                    if (actions.contains(termAction)) {
+                        actions.remove(termAction);
+                        accesses.add(new RangerPolicyItemAccess("add-terms".equals(termAction) ? ACCESS_ADD_REL : ACCESS_REMOVE_REL));
                     }
                 }
-                RangerPolicy.RangerPolicyItem policyItem = new RangerPolicy.RangerPolicyItem(accesses, null,
-                        null, Arrays.asList(getRoleName(persona)), null, false);
-
-                if (context.isAllowPolicy()) {
-                    rangerPolicy.setPolicyItems(Arrays.asList(policyItem));
-                } else {
-                    rangerPolicy.setDenyPolicyItems(Arrays.asList(policyItem));
-                }
-
-                context.setHasEntityClassificationActions(true);
             }
 
-            if ("entity-update-business-metadata".equals(action) && !context.hasEntityBMActions()) {
-                String name = "entity-business-metadata-" + UUID.randomUUID();
-                rangerPolicy.setName(name);
+            if (LINK_ASSET_ACTION.equals(action)) {
+                policyName = "link-assets-" + UUID.randomUUID();
 
-                Map<String, RangerPolicy.RangerPolicyResource> resources = new HashMap<>();
+                resources.put(RESOURCE_REL_TYPE, new RangerPolicyResource("*"));
 
-                //TODO : Persona.go: 1328
-                if (getName(persona).startsWith("collection") || getName(persona).startsWith("connection")) {
-                    resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource("*"));
-                } else {
-                    resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource(Arrays.asList("Process", "Catalog"), false, false));
-                }
+                resources.put(RESOURCE_END_ONE_ENTITY, new RangerPolicyResource(rangerPolicyItemAssets, false, false));
+                resources.put(RESOURCE_END_ONE_ENTITY_TYPE, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_ONE_ENTITY_CLASS, new RangerPolicyResource("*"));
 
-                resources.put(RESOURCE_BM, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_KEY_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
+                resources.put(RESOURCE_END_TWO_ENTITY, new RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_TWO_ENTITY_TYPE, new RangerPolicyResource(Arrays.asList("Catalog", "Connection", "Dataset", "Infrastructure", "Process", "ProcessExecution", "Namespace"), false, false));
+                resources.put(RESOURCE_END_TWO_ENTITY_CLASS, new RangerPolicyResource("*"));
 
+                accesses.add(new RangerPolicyItemAccess(ACCESS_ADD_REL));
+                accesses.add(new RangerPolicyItemAccess(ACCESS_REMOVE_REL));
+                actions.remove(LINK_ASSET_ACTION);
+            }
+
+            if (MapUtils.isNotEmpty(resources)) {
+                RangerPolicy rangerPolicy = getRangerPolicy(context);
+
+                rangerPolicy.setName(policyName);
                 rangerPolicy.setResources(resources);
 
-                List<RangerPolicy.RangerPolicyItemAccess> accesses = Arrays.asList(new RangerPolicy.RangerPolicyItemAccess("entity-update-business-metadata"));
-
-                RangerPolicy.RangerPolicyItem policyItem = new RangerPolicy.RangerPolicyItem(accesses, null,
-                        null, Arrays.asList(getRoleName(persona)), null, false);
+                RangerPolicy.RangerPolicyItem policyItem = getPolicyItem(accesses, roleName);
 
                 if (context.isAllowPolicy()) {
                     rangerPolicy.setPolicyItems(Arrays.asList(policyItem));
@@ -1491,80 +1437,6 @@ public class AtlasPersonaService {
                     rangerPolicy.setDenyPolicyItems(Arrays.asList(policyItem));
                 }
 
-                context.setHasEntityBMActions(true);
-            }
-
-            if (TERM_ACTIONS.contains(action) && !context.hasTermActions()) {
-                String name = "terms-" + UUID.randomUUID();
-                rangerPolicy.setName(name);
-
-                Map<String, RangerPolicy.RangerPolicyResource> resources = new HashMap<>();
-
-                resources.put(RESOURCE_REL_TYPE, new RangerPolicy.RangerPolicyResource("*"));
-
-                resources.put(RESOURCE_END_ONE_ENTITY, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_END_ONE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource(ATLAS_GLOSSARY_TERM_ENTITY_TYPE));
-                resources.put(RESOURCE_END_ONE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-
-
-                resources.put(RESOURCE_END_TWO_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
-                resources.put(RESOURCE_END_TWO_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_END_TWO_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-
-                rangerPolicy.setResources(resources);
-
-                List<RangerPolicy.RangerPolicyItemAccess> accesses = new ArrayList<>();
-                for (String entityAction : TERM_ACTIONS) {
-                    if (actions.contains(entityAction)) {
-                        accesses.add(new RangerPolicy.RangerPolicyItemAccess("add-terms".equals(entityAction) ? ACCESS_ADD_REL : ACCESS_REMOVE_REL));
-                    }
-                }
-                RangerPolicy.RangerPolicyItem policyItem = new RangerPolicy.RangerPolicyItem(accesses, null,
-                        null, Arrays.asList(getRoleName(persona)), null, false);
-
-                if (context.isAllowPolicy()) {
-                    rangerPolicy.setPolicyItems(Arrays.asList(policyItem));
-                } else {
-                    rangerPolicy.setDenyPolicyItems(Arrays.asList(policyItem));
-                }
-
-                context.setHasTermActions(true);
-            }
-
-            if ("link-assets".equals(action) && !context.hasLinkAssetsActions()) {
-                String name = "link-assets-" + UUID.randomUUID();
-                rangerPolicy.setName(name);
-
-                Map<String, RangerPolicy.RangerPolicyResource> resources = new HashMap<>();
-                resources.put(RESOURCE_REL_TYPE, new RangerPolicy.RangerPolicyResource("*"));
-
-                resources.put(RESOURCE_END_ONE_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
-                resources.put(RESOURCE_END_ONE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_END_ONE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-
-                resources.put(RESOURCE_END_TWO_ENTITY, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_END_TWO_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource(Arrays.asList("Catalog", "Connection", "Dataset", "Infrastructure", "Process", "ProcessExecution", "Namespace"), false, false));
-                resources.put(RESOURCE_END_TWO_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
-
-                rangerPolicy.setResources(resources);
-
-                List<RangerPolicy.RangerPolicyItemAccess> accesses = Arrays.asList(
-                        new RangerPolicy.RangerPolicyItemAccess(ACCESS_ADD_REL),
-                        new RangerPolicy.RangerPolicyItemAccess(ACCESS_REMOVE_REL));
-
-                RangerPolicy.RangerPolicyItem policyItem = new RangerPolicy.RangerPolicyItem(accesses, null,
-                        null, Arrays.asList(getRoleName(persona)), null, false);
-
-                if (context.isAllowPolicy()) {
-                    rangerPolicy.setPolicyItems(Arrays.asList(policyItem));
-                } else {
-                    rangerPolicy.setDenyPolicyItems(Arrays.asList(policyItem));
-                }
-
-                context.setHasLinkAssetsActions(true);
-            }
-
-            if (MapUtils.isNotEmpty(rangerPolicy.getResources())) {
                 rangerPolicies.add(rangerPolicy);
             }
         }
@@ -1572,7 +1444,12 @@ public class AtlasPersonaService {
         return rangerPolicies;
     }
 
-    private List<RangerPolicy> dataPolicyToRangerPolicy(PersonaContext context, List<String> actions) throws AtlasBaseException {
+    private RangerPolicyItem getPolicyItem(List<RangerPolicyItemAccess> accesses, String roleName) {
+        return new RangerPolicy.RangerPolicyItem(accesses, null,
+                null, Arrays.asList(roleName), null, false);
+    }
+
+    private List<RangerPolicy> dataPolicyToRangerPolicy(PersonaContext context, Set<String> actions) throws AtlasBaseException {
         List<RangerPolicy> rangerPolicies = new ArrayList<>();
         AtlasEntity persona = context.getPersona();
         AtlasEntity personaPolicy = context.getPersonaPolicy();
@@ -1589,9 +1466,7 @@ public class AtlasPersonaService {
             RangerPolicy rangerPolicy = getRangerPolicy(context);
 
             if (SELECT_ACTION.contains(action)) {
-
-                String name = "dataPolicy-" + UUID.randomUUID();
-                rangerPolicy.setName(name);
+                rangerPolicy.setName("dataPolicy-" + UUID.randomUUID());
 
                 Map<String, RangerPolicyResource> resources = new HashMap<>();
                 resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource("*"));

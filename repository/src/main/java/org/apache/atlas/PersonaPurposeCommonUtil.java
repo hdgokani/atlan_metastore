@@ -41,10 +41,11 @@ public class PersonaPurposeCommonUtil {
     public static final String POLICY_TYPE_ACCESS = "0";
     public static final String POLICY_TYPE_DATA_MASK = "1";
 
-    public static final String ACCESS_ENTITY_READ = "entity-read";
-    public static final String ACCESS_ADD_REL     = "add-relationship";
-    public static final String ACCESS_UPDATE_REL  = "update-relationship";
-    public static final String ACCESS_REMOVE_REL  = "remove-relationship";
+    public static final String ACCESS_ENTITY_CREATE = "entity-create";
+    public static final String ACCESS_ENTITY_READ   = "entity-read";
+    public static final String ACCESS_ADD_REL       = "add-relationship";
+    public static final String ACCESS_UPDATE_REL    = "update-relationship";
+    public static final String ACCESS_REMOVE_REL    = "remove-relationship";
 
     public static final String LINK_ASSET_ACTION = "link-assets";
 

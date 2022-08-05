@@ -41,11 +41,13 @@ public class AtlasPersonaUtil extends PersonaPurposeCommonUtil {
     public static final String RESOURCE_END_TWO_ENTITY_CLASS = "end-two-entity-classification";
 
 
-    public static final List<String> ENTITY_ACTIONS = Arrays.asList(ACCESS_ENTITY_READ, "entity-create", "entity-update", "entity-delete");
+    public static final List<String> ENTITY_ACTIONS = Arrays.asList(ACCESS_ENTITY_READ, ACCESS_ENTITY_CREATE, "entity-update", "entity-delete");
     public static final List<String> CLASSIFICATION_ACTIONS = Arrays.asList("entity-add-classification", "entity-update-classification", "entity-remove-classification");
     public static final List<String> TERM_ACTIONS = Arrays.asList("add-terms", "remove-terms");
     public static final List<String> LABEL_ACTIONS = Arrays.asList("entity-add-label", "entity-update-label", "entity-remove-label");
     public static final String BM_ACTION = "entity-update-business-metadata";
+    public static final String GLOSSARY_TERM_RELATIONSHIP = "glossary-term-relationship";
+    public static final String RELATED_TERMS = "related-terms";
     public static final String SELECT_ACTION = "select";
 
     public static final List<String> GLOSSARY_TYPES = Arrays.asList(ATLAS_GLOSSARY_ENTITY_TYPE, ATLAS_GLOSSARY_TERM_ENTITY_TYPE, ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE);
