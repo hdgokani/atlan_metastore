@@ -2831,10 +2831,10 @@ public class EntityGraphMapper {
             chunkedVerticesToPropagate.clear();
             return null;
         }
-
-        List<AtlasEntity> propagatedEntitiesChunked = updateClassificationText(classification, entitiesPropagatedTo);
-
-        List<String> chunkedPropagatedEntitiesGuid = propagatedEntitiesChunked.stream().map(x -> x.getGuid()).collect(Collectors.toList());
+        List<String> chunkedPropagatedEntitiesGuid =  new ArrayList<>();
+//        List<AtlasEntity> propagatedEntitiesChunked = updateClassificationText(classification, entitiesPropagatedTo);
+//
+//        List<String> chunkedPropagatedEntitiesGuid = propagatedEntitiesChunked.stream().map(x -> x.getGuid()).collect(Collectors.toList());
         //entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification));
 
         chunkedVerticesToPropagate.clear();
