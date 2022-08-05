@@ -19,15 +19,19 @@ package org.apache.atlas.model.lineage;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*;
+import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
+import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.BOTH;
 
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
@@ -35,6 +39,7 @@ import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*
 public class AtlasLineageRequest {
     private String guid;
     private int depth;
+    private int offset = -1;
     private int limit = -1;
     private boolean hideProcess;
     private boolean allowDeletedProcess;
@@ -43,14 +48,28 @@ public class AtlasLineageRequest {
 
     private Set<String> attributes;
 
-    public AtlasLineageRequest() {}
+    public AtlasLineageRequest() {
+    }
 
-    public AtlasLineageRequest(String guid, int depth, LineageDirection direction, boolean hideProcess) {
+    public AtlasLineageRequest(String guid, int depth, LineageDirection direction, boolean hideProcess, int offset, int limit) throws AtlasBaseException {
         this.guid = guid;
         this.depth = depth;
         this.direction = direction;
         this.hideProcess = hideProcess;
+        this.offset = offset;
+        this.limit = limit;
         this.attributes = new HashSet<>();
+        performValidation();
+    }
+
+    public void performValidation() throws AtlasBaseException {
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(BAD_REQUEST, "guid is not specified");
+        } else if ((offset != -1 && limit == -1) || (offset == -1 && limit != -1)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PAGINATION_STATE);
+        } else if (depth != 1 && offset != -1) {
+            throw new AtlasBaseException(AtlasErrorCode.PAGINATION_CAN_ONLY_BE_USED_WITH_DEPTH_ONE);
+        }
     }
 
     public String getGuid() {
@@ -115,5 +134,13 @@ public class AtlasLineageRequest {
 
     public void setAllowDeletedProcess(boolean allowDeletedProcess) {
         this.allowDeletedProcess = allowDeletedProcess;
+    }
+
+    public int getOffset() {
+        return offset;
+    }
+
+    public void setOffset(int offset) {
+        this.offset = offset;
     }
 }

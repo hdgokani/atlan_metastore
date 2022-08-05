@@ -33,8 +33,8 @@ public class AtlasPerfMetrics {
 
     public void recordMetric(MetricRecorder recorder) {
         if (recorder != null) {
-            final String name      = recorder.name;
-            final long   timeTaken = recorder.getElapsedTime();
+            final String name = recorder.name;
+            final long timeTaken = recorder.getElapsedTime();
 
             Metric metric = metrics.get(name);
 
@@ -86,7 +86,7 @@ public class AtlasPerfMetrics {
 
     public class MetricRecorder {
         private final String name;
-        private final long   startTimeMs = System.currentTimeMillis();
+        private final long startTimeMs = System.currentTimeMillis();
 
         MetricRecorder(String name) {
             this.name = name;
@@ -99,7 +99,7 @@ public class AtlasPerfMetrics {
 
     public static class Metric {
         private final String name;
-        private       short  invocations    = 0;
+        private       long  invocations    = 0;
         private       long   totalTimeMSecs = 0;
 
         public Metric(String name) {
@@ -110,7 +110,7 @@ public class AtlasPerfMetrics {
             return name;
         }
 
-        public short getInvocations() {
+        public long getInvocations() {
             return invocations;
         }
 

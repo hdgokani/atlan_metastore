@@ -138,6 +138,29 @@ public class TaskRegistry {
         }
     }
 
+    @GraphTransaction
+    public void softDelete(String guid) throws AtlasBaseException{
+        try {
+            AtlasGraphQuery query = graph.query()
+                    .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                    .has(TASK_GUID, guid);
+
+            Iterator<AtlasVertex> results = query.vertices().iterator();
+
+            if (results.hasNext()) {
+                AtlasVertex taskVertex = results.next();
+
+                setEncodedProperty(taskVertex, Constants.TASK_STATUS, AtlasTask.Status.DELETED);
+                setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
+            }
+        }
+        catch (Exception exception) {
+            LOG.error("Error: on soft delete: {}", guid);
+
+            throw new AtlasBaseException(exception);
+        }
+    }
+
     public List<AtlasTask> getByIdsES(List<String> guids) throws AtlasBaseException {
         List<AtlasTask> ret = new ArrayList<>();
 
@@ -278,6 +301,11 @@ public class TaskRegistry {
             ret = getTasksForReQueueGraphQuery();
         } else {
             ret = getTasksForReQueueIndexSearch();
+        }
+
+        if (ret.size() > 0) {
+            LOG.info(String.format("Fetched tasks: %s",
+                    String.join(",", ret.stream().map(AtlasTask::getGuid).collect(Collectors.toList()))));
         }
 
         return ret;

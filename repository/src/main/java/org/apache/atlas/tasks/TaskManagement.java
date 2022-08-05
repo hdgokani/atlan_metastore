@@ -20,6 +20,7 @@ package org.apache.atlas.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -49,23 +50,31 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final TaskRegistry              registry;
     private final Statistics                statistics;
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
+    private final ICuratorFactory curatorFactory;
 
     private Thread watcherThread = null;
 
+    public enum DeleteType {
+        SOFT,
+        HARD
+    }
+
     @Inject
-    public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
+    public TaskManagement(Configuration configuration, TaskRegistry taskRegistry, ICuratorFactory curatorFactory) {
         this.configuration      = configuration;
         this.registry           = taskRegistry;
         this.statistics         = new Statistics();
         this.taskTypeFactoryMap = new HashMap<>();
+        this.curatorFactory = curatorFactory;
     }
 
     @VisibleForTesting
-    TaskManagement(Configuration configuration, TaskRegistry taskRegistry, TaskFactory taskFactory) {
+    TaskManagement(Configuration configuration, TaskRegistry taskRegistry, TaskFactory taskFactory, ICuratorFactory curatorFactory) {
         this.configuration      = configuration;
         this.registry           = taskRegistry;
         this.statistics         = new Statistics();
         this.taskTypeFactoryMap = new HashMap<>();
+        this.curatorFactory = curatorFactory;
 
         createTaskTypeFactoryMap(taskTypeFactoryMap, taskFactory);
     }
@@ -195,6 +204,19 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
     }
 
+    public void deleteByGuid(String guid, DeleteType deleteType) throws AtlasBaseException {
+        try {
+            if (deleteType == DeleteType.SOFT) {
+                this.registry.softDelete(guid);
+            }
+            else {
+                this.registry.deleteByGuid(guid);
+            }
+        } catch (Exception exception) {
+            throw new AtlasBaseException(exception);
+        }
+    }
+
     public void deleteByGuids(List<String> guids) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(guids)) {
             return;
@@ -208,7 +230,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private synchronized void startWatcherThread() {
 
         if (this.taskExecutor == null) {
-            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
+            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics, curatorFactory);
         }
 
         if (watcherThread == null) {
