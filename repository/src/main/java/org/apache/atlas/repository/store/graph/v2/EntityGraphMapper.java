@@ -2798,10 +2798,10 @@ public class EntityGraphMapper {
                 if(chunkedGuids != null){
                     propagatedEntitiesGuid.addAll(chunkedGuids);
                 }
-                if (count >= 5){
+                if (count >= 3000){
                     Runtime.getRuntime().gc();
+                    count = 0;
                 }
-//                impactedVertices.subList(0,CHUNK_SIZE).clear();
             }
 
             List<String > remainderChunkedGuids = processChunkedPropagation(impactedVertices.subList(0, remainderChunkLen), classificationVertex);
