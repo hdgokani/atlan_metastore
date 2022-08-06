@@ -3659,7 +3659,6 @@ public class EntityGraphMapper {
             }
         }
         RequestContext.get().endMetricRecord(metricRecorder);
-        propagatedVertices.clear();
         return propagatedEntities;
     }
 
