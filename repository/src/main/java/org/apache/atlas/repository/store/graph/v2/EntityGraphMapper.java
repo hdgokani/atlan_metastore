@@ -2839,6 +2839,9 @@ public class EntityGraphMapper {
         entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification));
 
         chunkedVerticesToPropagate.clear();
+        propagatedEntitiesChunked.clear();
+
+        graph.commit();
 
         return chunkedPropagatedEntitiesGuid;
     }
