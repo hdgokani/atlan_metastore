@@ -2757,37 +2757,6 @@ public class EntityGraphMapper {
 //            long vertexTraverseCounter = 0;
             int CHUNK_SIZE = TASKS_GRAPH_COMMIT_CHUNK_SIZE.getInt();
 
-//            for (AtlasVertex vertexToPropagate : impactedVertices) {
-//                chunkedVerticesToPropagate.add(vertexToPropagate);
-//                long offset = impactedVerticesSize-vertexTraverseCounter;
-//
-//                if (chunkedVerticesToPropagate.size() == TASKS_GRAPH_COMMIT_CHUNK_SIZE.getInt() || offset < CHUNK_SIZE) {
-//
-//                    AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("lockObjectsAfterTraverse");
-//                    List<String> impactedVerticesGuidsToLock = chunkedVerticesToPropagate.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
-//                    RequestContext.get().endMetricRecord(metricRecorder);
-//                    GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedVerticesGuidsToLock);
-//                    AtlasClassification classification       = entityRetriever.toAtlasClassification(classificationVertex);
-//                    List<AtlasVertex>   entitiesPropagatedTo = deleteDelegate.getHandler().addTagPropagation(classificationVertex, chunkedVerticesToPropagate);
-//                    if (CollectionUtils.isEmpty(entitiesPropagatedTo)) {
-//                        continue;
-//                    }
-//                    LOG.info(String.format("%s entities are propagated.", entitiesPropagatedTo.size()));
-//
-//                    List<AtlasEntity> propagatedEntitiesChunked = updateClassificationText(classification, entitiesPropagatedTo);
-//                    propagatedEntitiesGuid.addAll(propagatedEntitiesChunked.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
-//
-//                    entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification));
-//                    vertexTraverseCounter += CHUNK_SIZE;
-//
-//                    chunkedVerticesToPropagate.clear();
-//
-//                    //Commit the Graph In Chunk
-//                    graph.commit();
-//
-//                }
-//            }
-
             int chunkLength = (int) (impactedVerticesSize/CHUNK_SIZE);
             int remainderChunkLen = (int) (impactedVerticesSize%CHUNK_SIZE);
 
@@ -3651,13 +3620,13 @@ public class EntityGraphMapper {
                 }
 
                 if (isActive(entity)) {
-                    String classificationTextForEntity = fullTextMapperV2.getClassificationTextForEntity(entity);
-                    vertex.setProperty(CLASSIFICATION_TEXT_KEY, classificationTextForEntity);
+//                    String classificationTextForEntity = fullTextMapperV2.getClassificationTextForEntity(entity);
+//                    vertex.setProperty(CLASSIFICATION_TEXT_KEY, classificationTextForEntity);
                     propagatedEntities.add(entity);
 
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("updateClassificationText: {}: {}", classification.getTypeName(), classificationTextForEntity);
-                    }
+//                    if (LOG.isDebugEnabled()) {
+//                        LOG.debug("updateClassificationText: {}: {}", classification.getTypeName(), classificationTextForEntity);
+//                    }
                 }
             }
         }
