@@ -333,7 +333,7 @@ public class AtlasPersonaService {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("createOrUpdatePersonaPolicy");
         PersonaContext context = new PersonaContext();
 
-        //validateConnection(context, entityWithExtInfo.getEntity());
+        //TODO: validateConnection(context, entityWithExtInfo.getEntity());
 
         AtlasEntity personaPolicy = entityWithExtInfo.getEntity();
         validatePersonaPolicyRequest(personaPolicy);
@@ -1476,7 +1476,7 @@ public class AtlasPersonaService {
                 List<RangerPolicyItemAccess> accesses = Collections.singletonList(new RangerPolicyItemAccess(SELECT_ACTION));
 
                 if (context.isDataMaskPolicy()) {
-
+                    rangerPolicy.setName("dataPolicy-mask" + UUID.randomUUID());
                     RangerPolicyItemDataMaskInfo maskInfo = new RangerPolicyItemDataMaskInfo(getDataPolicyMaskType(personaPolicy), null, null);
 
                     RangerDataMaskPolicyItem policyItem = new RangerDataMaskPolicyItem(accesses, maskInfo,  null,
@@ -1494,7 +1494,6 @@ public class AtlasPersonaService {
                         rangerPolicy.setDenyPolicyItems(Arrays.asList(policyItem));
                     }
                 }
-
             }
 
             if (MapUtils.isNotEmpty(rangerPolicy.getResources())) {

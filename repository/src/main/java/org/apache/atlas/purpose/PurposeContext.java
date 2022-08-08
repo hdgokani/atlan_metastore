@@ -19,12 +19,16 @@ package org.apache.atlas.purpose;
 
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.commons.lang.StringUtils;
 import org.apache.ranger.plugin.model.RangerPolicy;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.atlas.PersonaPurposeCommonUtil.getDataPolicyMaskType;
 import static org.apache.atlas.purpose.AtlasPurposeUtil.getIsAllow;
+import static org.apache.atlas.repository.Constants.PERSONA_DATA_POLICY_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.PURPOSE_DATA_POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_METADATA_POLICY_ENTITY_TYPE;
 
 public class PurposeContext {
@@ -46,6 +50,7 @@ public class PurposeContext {
 
     private boolean isMetadataPolicy = false;
     private boolean isDataPolicy = false;
+    private boolean isDataMaskPolicy;
 
 
     public PurposeContext() {}
@@ -150,6 +155,14 @@ public class PurposeContext {
         }
     }
 
+    public boolean isDataPolicy() {
+        return isDataPolicy;
+    }
+
+    public boolean isDataMaskPolicy() {
+        return isDataMaskPolicy;
+    }
+
     public boolean isMetadataPolicy() {
         return isMetadataPolicy;
     }
@@ -163,8 +176,19 @@ public class PurposeContext {
             String type = getPurposePolicy().getTypeName();
 
             switch (type) {
-                case PURPOSE_METADATA_POLICY_ENTITY_TYPE: isMetadataPolicy = true; break;
+                case PURPOSE_METADATA_POLICY_ENTITY_TYPE:
+                    isMetadataPolicy = true;
+                    break;
+                case PURPOSE_DATA_POLICY_ENTITY_TYPE:
+                    isDataPolicy = true;
+                    setDataPolicyType();
             }
+        }
+    }
+
+    private void setDataPolicyType() {
+        if (StringUtils.isNotEmpty(getDataPolicyMaskType(purposePolicy))) {//TODO: review this condition
+            isDataMaskPolicy = true;
         }
     }
 }

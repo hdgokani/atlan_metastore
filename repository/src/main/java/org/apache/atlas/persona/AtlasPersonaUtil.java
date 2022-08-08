@@ -137,23 +137,4 @@ public class AtlasPersonaUtil extends PersonaPurposeCommonUtil {
 
         return objectToEntityList(entityWithExtInfo, policies);
     }
-
-    public static List<AtlasEntity> getDataPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        List<AtlasObjectId> policies = (List<AtlasObjectId>) entityWithExtInfo.getEntity().getRelationshipAttribute("dataPolicies");
-
-        return objectToEntityList(entityWithExtInfo, policies);
-    }
-
-    private static List<AtlasEntity> objectToEntityList(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, List<AtlasObjectId> policies) {
-        List<AtlasEntity> ret = new ArrayList<>();
-
-        if (policies != null) {
-            ret = policies.stream()
-                    .map(x -> entityWithExtInfo.getReferredEntity(x.getGuid()))
-                    .filter(x -> x.getStatus() == AtlasEntity.Status.ACTIVE)
-                    .collect(Collectors.toList());
-        }
-
-        return ret;
-    }
 }

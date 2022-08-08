@@ -141,7 +141,7 @@ public class PurposeREST {
             }
 
             String typeName = entityWithExtInfo.getEntity().getTypeName();
-            if(!PURPOSE_METADATA_POLICY_ENTITY_TYPE.equals(typeName)) {
+            if(!PURPOSE_POLICY_TYPES.contains(typeName)) {
                 throw new AtlasBaseException(BAD_REQUEST, "Not a valid type for Purpose Policy");
             }
 

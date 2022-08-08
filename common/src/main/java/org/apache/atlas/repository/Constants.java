@@ -135,12 +135,14 @@ public final class Constants {
     /*
      * Purpose / Persona
      */
-    public static final String PURPOSE_ENTITY_TYPE                 = "Purpose";
     public static final String PERSONA_ENTITY_TYPE                 = "Persona";
     public static final String PERSONA_METADATA_POLICY_ENTITY_TYPE = "PersonaMetadataPolicy";
     public static final String PERSONA_GLOSSARY_POLICY_ENTITY_TYPE = "PersonaGlossaryPolicy";
     public static final String PERSONA_DATA_POLICY_ENTITY_TYPE     = "PersonaDataPolicy";
+
+    public static final String PURPOSE_ENTITY_TYPE                 = "Purpose";
     public static final String PURPOSE_METADATA_POLICY_ENTITY_TYPE = "PurposeMetadataPolicy";
+    public static final String PURPOSE_DATA_POLICY_ENTITY_TYPE     = "PurposeDataPolicy";
 
     public static final List<String> PERSONA_POLICY_TYPES = Arrays.asList(
             PERSONA_METADATA_POLICY_ENTITY_TYPE,
@@ -148,7 +150,8 @@ public final class Constants {
             PERSONA_DATA_POLICY_ENTITY_TYPE);
 
     public static final List<String> PURPOSE_POLICY_TYPES = Arrays.asList(
-            PURPOSE_METADATA_POLICY_ENTITY_TYPE);
+            PURPOSE_METADATA_POLICY_ENTITY_TYPE,
+            PURPOSE_DATA_POLICY_ENTITY_TYPE);
 
 
     /**

@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.PERSONA_ALREADY_EXISTS;
+import static org.apache.atlas.purpose.AtlasPurposeUtil.RESOURCE_TAG;
+import static org.apache.atlas.purpose.AtlasPurposeUtil.getTags;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_TYPE;
@@ -104,6 +106,25 @@ public class PersonaPurposeCommonUtil {
 
     public static String getDescription(AtlasEntity entity) {
         return (String) entity.getAttribute("description");
+    }
+
+    public static List<AtlasEntity> getDataPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
+        List<AtlasObjectId> policies = (List<AtlasObjectId>) entityWithExtInfo.getEntity().getRelationshipAttribute("dataPolicies");
+
+        return objectToEntityList(entityWithExtInfo, policies);
+    }
+
+    public static List<AtlasEntity> objectToEntityList(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, List<AtlasObjectId> policies) {
+        List<AtlasEntity> ret = new ArrayList<>();
+
+        if (policies != null) {
+            ret = policies.stream()
+                    .map(x -> entityWithExtInfo.getReferredEntity(x.getGuid()))
+                    .filter(x -> x.getStatus() == AtlasEntity.Status.ACTIVE)
+                    .collect(Collectors.toList());
+        }
+
+        return ret;
     }
 
     public static List<String> getActions(AtlasEntity personaPolicyEntity) {
@@ -186,7 +207,6 @@ public class PersonaPurposeCommonUtil {
 
         return null;
     }
-
 
     public static List<RangerPolicy> fetchRangerPoliciesByLabel(AtlasRangerService atlasRangerService,
                                                                 String serviceType,

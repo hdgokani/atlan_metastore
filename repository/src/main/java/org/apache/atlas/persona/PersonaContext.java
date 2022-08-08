@@ -43,13 +43,6 @@ public class PersonaContext {
     private boolean isUpdatePersonaPolicy;
     private boolean isDeletePersonaPolicy;
 
-    private boolean hasTermActions;
-    private boolean hasLinkAssetsActions;
-    private boolean hasEntityActions;
-    private boolean hasEntityClassificationActions;
-    private boolean hasEntityBMActions;
-    private boolean hasEntityLabelActions;
-
     private boolean isAllowPolicy;
     private boolean updateIsAllow;
 
@@ -121,54 +114,6 @@ public class PersonaContext {
 
     public void setDeletePersonaPolicy(boolean deletePersonaPolicy) {
         isDeletePersonaPolicy = deletePersonaPolicy;
-    }
-
-    public boolean hasTermActions() {
-        return hasTermActions;
-    }
-
-    public void setHasTermActions(boolean hasTermActions) {
-        this.hasTermActions = hasTermActions;
-    }
-
-    public boolean hasLinkAssetsActions() {
-        return hasLinkAssetsActions;
-    }
-
-    public void setHasLinkAssetsActions(boolean hasLinkAssetsActions) {
-        this.hasLinkAssetsActions = hasLinkAssetsActions;
-    }
-
-    public boolean hasEntityActions() {
-        return hasEntityActions;
-    }
-
-    public void setHasEntityActions(boolean hasEntityActions) {
-        this.hasEntityActions = hasEntityActions;
-    }
-
-    public boolean hasEntityClassificationActions() {
-        return hasEntityClassificationActions;
-    }
-
-    public void setHasEntityClassificationActions(boolean hasEntityClassificationActions) {
-        this.hasEntityClassificationActions = hasEntityClassificationActions;
-    }
-
-    public boolean hasEntityBMActions() {
-        return hasEntityBMActions;
-    }
-
-    public void setHasEntityBMActions(boolean hasEntityBMActions) {
-        this.hasEntityBMActions = hasEntityBMActions;
-    }
-
-    public boolean hasEntityLabelActions() {
-        return hasEntityLabelActions;
-    }
-
-    public void setHasEntityLabelActions(boolean hasEntityLabelActions) {
-        this.hasEntityLabelActions = hasEntityLabelActions;
     }
 
     public AtlasEntity getExistingPersonaPolicy() {
