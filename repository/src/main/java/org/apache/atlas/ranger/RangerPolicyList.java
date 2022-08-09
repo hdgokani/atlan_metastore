@@ -7,35 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RangerPolicyList {
+public class RangerPolicyList extends VList {
 	private static final long serialVersionUID = 1L;
-
-	/**
-	 * Start index for the result
-	 */
-	protected int startIndex;
-	/**
-	 * Page size used for the result
-	 */
-	protected int pageSize;
-	/**
-	 * Total records in the database for the given search conditions
-	 */
-	protected long totalCount;
-	/**
-	 * Number of rows returned for the search condition
-	 */
-	protected int resultSize;
-	/**
-	 * Sort type. Either desc or asc
-	 */
-	protected String sortType;
-	/**
-	 * Comma seperated list of the fields for sorting
-	 */
-	protected String sortBy;
-
-	protected long queryTimeMS = System.currentTimeMillis();
 
 	List<RangerPolicy> policies = new ArrayList<RangerPolicy>();
 

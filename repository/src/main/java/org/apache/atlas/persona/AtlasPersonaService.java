@@ -21,6 +21,7 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.ESAliasStore;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -106,16 +107,19 @@ public class AtlasPersonaService {
     }
 
     public EntityMutationResponse createOrUpdatePersona(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
-        EntityMutationResponse ret = null;
+        EntityMutationResponse ret;
         try {
             AtlasEntity persona = entityWithExtInfo.getEntity();
+            AtlasEntity.AtlasEntityWithExtInfo existingPersonaExtInfo = null;
             AtlasEntity existingPersonaEntity = null;
 
             PersonaContext context = new PersonaContext(entityWithExtInfo);
 
             try {
                 Map<String, Object> uniqueAttributes = mapOf(QUALIFIED_NAME, getQualifiedName(persona));
-                existingPersonaEntity = entityRetriever.toAtlasEntity(new AtlasObjectId(persona.getGuid(), persona.getTypeName(), uniqueAttributes));
+                existingPersonaExtInfo = entityRetriever.toAtlasEntityWithExtInfo(new AtlasObjectId(persona.getGuid(), persona.getTypeName(), uniqueAttributes));
+                existingPersonaEntity = existingPersonaExtInfo.getEntity();
+
             } catch (AtlasBaseException abe) {
                 if (abe.getAtlasErrorCode() != AtlasErrorCode.INSTANCE_GUID_NOT_FOUND &&
                         abe.getAtlasErrorCode() != AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND) {
@@ -126,7 +130,7 @@ public class AtlasPersonaService {
             if (existingPersonaEntity == null) {
                 ret = createPersona(context, entityWithExtInfo);
             } else {
-                ret = updatePersona(context, existingPersonaEntity);
+                ret = updatePersona(context, existingPersonaExtInfo);
             }
 
         } catch (AtlasBaseException abe) {
@@ -147,12 +151,12 @@ public class AtlasPersonaService {
 
         validateUniquenessByName(entityDiscoveryService, getName(entityWithExtInfo.getEntity()), PERSONA_ENTITY_TYPE);
 
-        //unique qualifiedName for Persona
         String tenantId = getTenantId(context.getPersona());
         if (StringUtils.isEmpty(tenantId)) {
             tenantId = "tenant";
         }
         entityWithExtInfo.getEntity().setAttribute(QUALIFIED_NAME, String.format("%s/%s", tenantId, getUUID()));
+
         entityWithExtInfo.getEntity().setAttribute("enabled", true);
 
         RangerRole rangerRole = atlasRangerService.createRangerRole(context);
@@ -168,13 +172,17 @@ public class AtlasPersonaService {
         return ret;
     }
 
-    private EntityMutationResponse updatePersona(PersonaContext context, AtlasEntity existingPersonaEntity) throws AtlasBaseException {
+    private EntityMutationResponse updatePersona(PersonaContext context, AtlasEntity.AtlasEntityWithExtInfo existingPersonaWithExtInfo) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updatePersona");
         LOG.info("Updating Persona");
         EntityMutationResponse ret = null;
         //Atlas Persona entity (existingPersonaEntity) is the source of truth for current state
 
         AtlasEntity persona = context.getPersona();
+
+        persona.setAttribute(QUALIFIED_NAME, getQualifiedName(existingPersonaWithExtInfo.getEntity()));
+
+        AtlasEntity existingPersonaEntity = existingPersonaWithExtInfo.getEntity();
 
         if (!AtlasEntity.Status.ACTIVE.equals(existingPersonaEntity.getStatus())) {
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Persona not Active");
@@ -186,9 +194,9 @@ public class AtlasPersonaService {
 
         if (getIsEnabled(existingPersonaEntity) != getIsEnabled(persona)) {
             if (getIsEnabled(context.getPersona())) {
-                enablePersona(context);
+                enablePersona(existingPersonaWithExtInfo);
             } else {
-                disablePersona(context);
+                disablePersona(existingPersonaWithExtInfo);
             }
         }
 
@@ -202,15 +210,13 @@ public class AtlasPersonaService {
 
         aliasStore.updateAlias(context);
 
-        ret = entityStore.createOrUpdate(new AtlasEntityStream(context.getPersona()), false);
+        ret = entityStore.createOrUpdate(new AtlasEntityStream(persona), false);
 
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
     }
 
     public void deletePersona(String personaGuid) throws AtlasBaseException {
-        //TODO:
-
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("deletePersona");
         AtlasEntity.AtlasEntityWithExtInfo personaExtInfo = entityRetriever.toAtlasEntityWithExtInfo(personaGuid);
         AtlasEntity persona = personaExtInfo.getEntity();
@@ -224,17 +230,27 @@ public class AtlasPersonaService {
             return;
         }
 
+        cleanRoleFromAllRangerPolicies(personaExtInfo);
+
+        atlasRangerService.deleteRangerRole(getPersonaRoleId(persona));
+
+        aliasStore.deleteAlias(getESAliasName(persona));
+
+        entityStore.deleteById(personaGuid);
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private void cleanRoleFromAllRangerPolicies(AtlasEntity.AtlasEntityWithExtInfo personaExtInfo) throws AtlasBaseException {
+        AtlasEntity persona = personaExtInfo.getEntity();
+
         List<RangerPolicy> rangerPolicies = fetchRangerPoliciesByLabel(atlasRangerService,
                 null,
                 null,
                 getPersonaLabel(persona.getGuid()));
 
-
         String role = getRoleName(personaExtInfo.getEntity());
 
-        List<String> allPolicyGuids = getMetadataPolicies(personaExtInfo).stream().map(x -> LABEL_PREFIX_PERSONA_POLICY + x.getGuid()).collect(Collectors.toList());
-        allPolicyGuids.addAll(getDataPolicies(personaExtInfo).stream().map(x -> LABEL_PREFIX_PERSONA_POLICY + x.getGuid()).collect(Collectors.toList()));
-        allPolicyGuids.addAll(getGlossaryPolicies(personaExtInfo).stream().map(x -> LABEL_PREFIX_PERSONA_POLICY + x.getGuid()).collect(Collectors.toList()));
+        List<String> allPolicyGuids = getPersonaAllPolicies(personaExtInfo).stream().map(x -> LABEL_PREFIX_PERSONA_POLICY + x.getGuid()).collect(Collectors.toList());
 
         for (RangerPolicy rangerPolicy : rangerPolicies) {
             boolean needUpdate = false;
@@ -275,9 +291,8 @@ public class AtlasPersonaService {
             }
 
             if (needUpdate) {
-                if (dataPolicy && CollectionUtils.isEmpty(rangerPolicy.getDataMaskPolicyItems())) {
-                        atlasRangerService.deleteRangerPolicy(rangerPolicy);
-                } else if (CollectionUtils.isEmpty(rangerPolicy.getPolicyItems()) && CollectionUtils.isEmpty(rangerPolicy.getDenyPolicyItems())) {
+                if ((dataPolicy && CollectionUtils.isEmpty(rangerPolicy.getDataMaskPolicyItems())) ||
+                        (!dataPolicy && CollectionUtils.isEmpty(rangerPolicy.getPolicyItems()) && CollectionUtils.isEmpty(rangerPolicy.getDenyPolicyItems()))) {
                     atlasRangerService.deleteRangerPolicy(rangerPolicy);
                 } else {
 
@@ -293,36 +308,27 @@ public class AtlasPersonaService {
                 }
             }
         }
-
-        atlasRangerService.deleteRangerRole(getPersonaRoleId(persona));
-
-        aliasStore.deleteAlias(getESAliasName(persona));
-
-        entityStore.deleteById(personaGuid);
-        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void enablePersona(PersonaContext context) {
+    private void enablePersona(AtlasEntity.AtlasEntityWithExtInfo existingPersonaWithExtInfo) throws AtlasBaseException {
         //TODO:create all policies
-        AtlasEntity persona = context.getPersona();
+        List<AtlasEntity> personaPolicies = getPersonaAllPolicies(existingPersonaWithExtInfo);
 
-        List<AtlasEntity> personaPolicies = getPersonaAllPolicies(context.getPersonaExtInfo());
+        for (AtlasEntity personaPolicy : personaPolicies) {
+            PersonaContext contextItr = new PersonaContext(existingPersonaWithExtInfo, personaPolicy);
+            contextItr.setAllowPolicy(getIsAllow(personaPolicy));
+            contextItr.setAllowPolicyUpdate();
+            contextItr.setCreateNewPersonaPolicy(true);
 
-        //createPersonaPolicy()
+            List<RangerPolicy> provisionalRangerPolicies = personaPolicyToRangerPolicies(contextItr, getActions(personaPolicy));
+
+            createPersonaPolicy(contextItr, provisionalRangerPolicies);
+        }
     }
 
-    private void disablePersona(PersonaContext context) throws AtlasBaseException {
+    private void disablePersona(AtlasEntity.AtlasEntityWithExtInfo existingPersonaWithExtInfo) throws AtlasBaseException {
         //TODO: clean roles
-        AtlasEntity persona = context.getPersona();
-
-        List<AtlasEntity> personaPolicies = getPersonaAllPolicies(context.getPersonaExtInfo());
-
-        List<RangerPolicy> rangerPolicies = fetchRangerPoliciesByLabel(atlasRangerService,
-                AtlasConfiguration.RANGER_ATLAS_SERVICE_TYPE.getString(),
-                POLICY_TYPE_ACCESS,
-                getPersonaLabel(persona.getGuid()));
-
-        cleanRoleToDisablePersona(context, rangerPolicies, personaPolicies);
+        cleanRoleFromAllRangerPolicies(existingPersonaWithExtInfo);
     }
 
     /*
@@ -333,8 +339,6 @@ public class AtlasPersonaService {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("createOrUpdatePersonaPolicy");
         PersonaContext context = new PersonaContext();
 
-        //TODO: validateConnection(context, entityWithExtInfo.getEntity());
-
         AtlasEntity personaPolicy = entityWithExtInfo.getEntity();
         validatePersonaPolicyRequest(personaPolicy);
 
@@ -343,7 +347,7 @@ public class AtlasPersonaService {
         if (AtlasTypeUtil.isAssignedGuid(personaPolicy.getGuid())) { //TODO: test with empty guid
             existingPersonaPolicy = entityRetriever.toAtlasEntityWithExtInfo(personaPolicy.getGuid());
             if (existingPersonaPolicy != null) {
-                context.setUpdatePersonaPolicy(true);
+                context.setCreateNewPersonaPolicy(false);
                 context.setExistingPersonaPolicy(existingPersonaPolicy.getEntity());
             } else {
                 context.setCreateNewPersonaPolicy(true);
@@ -371,7 +375,9 @@ public class AtlasPersonaService {
 
         context.setAllowPolicy(getIsAllow(personaPolicy));
         context.setAllowPolicyUpdate();
-        context.setPolicyType();
+
+        //TODO: disabled for testing purpose, enable later
+        //validateConnectionAdmin(context);
 
         //verify Unique name across current Persona's policies
         verifyUniqueNameForPersonaPolicy(context, getName(personaPolicy), personaWithExtInfo);
@@ -407,21 +413,33 @@ public class AtlasPersonaService {
         return response;
     }
 
-    private void validateConnection(PersonaContext context, AtlasEntity entity) throws AtlasBaseException {
-        if (PERSONA_METADATA_POLICY_ENTITY_TYPE.equals(entity.getTypeName())) {
-            String connectionId = getConnectionId(entity);
+    private boolean validateConnectionAdmin(PersonaContext context) throws AtlasBaseException {
+        AtlasEntity personaPolicy = context.getPersonaPolicy();
+        if (PERSONA_METADATA_POLICY_ENTITY_TYPE.equals(personaPolicy.getTypeName()) ||
+                PERSONA_DATA_POLICY_ENTITY_TYPE.equals(personaPolicy.getTypeName())) {
 
+            String connectionId = getConnectionId(personaPolicy);
             AtlasEntity connection = entityRetriever.toAtlasEntity(connectionId);
 
             if (connection != null) {
                 context.setConnection(connection);
             }
+
+            String connectionRoleName = "connection_admins_" + connectionId;
+            RangerRole connectionAdminRole = atlasRangerService.getRangerRole(connectionRoleName);
+
+            LOG.info("role: {}", AtlasType.toJson(connectionAdminRole));
+            LOG.info("AtlasAuthorizationUtils.getCurrentUserName() {}", AtlasAuthorizationUtils.getCurrentUserName());
+
+            List<String> users = connectionAdminRole.getUsers().stream().map(x -> x.getName()).collect(Collectors.toList());
+            if (users.contains(AtlasAuthorizationUtils.getCurrentUserName())) {
+                return true;
+            }
         }
+        throw new AtlasBaseException("User not is not connection admin");
     }
 
-    private List<RangerPolicy> createOrUpdatePersonaPolicy(PersonaContext context) throws AtlasBaseException {
-        List<RangerPolicy> ret = null;
-
+    private void createOrUpdatePersonaPolicy(PersonaContext context) throws AtlasBaseException {
         //convert persona policy into Ranger policies
         List<RangerPolicy> provisionalRangerPolicies = personaPolicyToRangerPolicies(context, getActions(context.getPersonaPolicy()));
 
@@ -430,15 +448,13 @@ public class AtlasPersonaService {
             LOG.info(AtlasType.toJson(provisionalRangerPolicies));
 
             if (context.isCreateNewPersonaPolicy()) {
-                ret = createPersonaPolicy(context, provisionalRangerPolicies);
+                createPersonaPolicy(context, provisionalRangerPolicies);
             } else {
-                ret = updatePersonaPolicy(context, provisionalRangerPolicies);
+                updatePersonaPolicy(context, provisionalRangerPolicies);
             }
         } else {
             throw new AtlasBaseException("provisionalRangerPolicies could not be empty");
         }
-
-        return ret;
     }
 
     private List<RangerPolicy> createPersonaPolicy(PersonaContext context, List<RangerPolicy> provisionalRangerPolicies) throws AtlasBaseException {
@@ -457,9 +473,9 @@ public class AtlasPersonaService {
             if (rangerPolicy == null) {
                 ret.add(atlasRangerService.createRangerPolicy(provisionalPolicy));
             } else {
-                List<RangerPolicy.RangerPolicyItem> policyItems;
-
-                if (context.isAllowPolicy()) {
+                if (context.isDataMaskPolicy()) {
+                    rangerPolicy.getDataMaskPolicyItems().add(provisionalPolicy.getDataMaskPolicyItems().get(0));
+                } else if (context.isAllowPolicy()) {
                     rangerPolicy.getPolicyItems().add(provisionalPolicy.getPolicyItems().get(0));
                 } else {
                     rangerPolicy.getDenyPolicyItems().add(provisionalPolicy.getDenyPolicyItems().get(0));
@@ -566,11 +582,8 @@ public class AtlasPersonaService {
 
         AtlasEntity.AtlasEntityWithExtInfo personaExtInfo = entityRetriever.toAtlasEntityWithExtInfo(getPersonaGuid(personaPolicy));
 
-        PersonaContext context = new PersonaContext();
-        context.setPersonaExtInfo(personaExtInfo);
-        context.setPersonaPolicy(personaPolicy);
+        PersonaContext context = new PersonaContext(personaExtInfo, personaPolicy);
         context.setDeletePersonaPolicy(true);
-        context.setPolicyType();
 
         List<RangerPolicy> rangerPolicies = fetchRangerPoliciesByLabel(atlasRangerService,
                 context.isDataPolicy() ? "heka" : AtlasConfiguration.RANGER_ATLAS_SERVICE_TYPE.getString(),
@@ -1549,7 +1562,7 @@ public class AtlasPersonaService {
                                                   AtlasEntity.AtlasEntityWithExtInfo personaWithExtInfo) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("verifyUniqueNameForPersonaPolicy");
 
-        if (context.isUpdatePersonaPolicy() && !getName(context.getExistingPersonaPolicy()).equals(getName(context.getPersona()))) {
+        if (!context.isCreateNewPersonaPolicy() && !getName(context.getExistingPersonaPolicy()).equals(getName(context.getPersona()))) {
             return;
         }
         List<String> policyNames = new ArrayList<>();

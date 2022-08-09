@@ -40,7 +40,6 @@ public class PersonaContext {
     private AtlasEntity connection;
     private boolean isCreateNewPersona;
     private boolean isCreateNewPersonaPolicy;
-    private boolean isUpdatePersonaPolicy;
     private boolean isDeletePersonaPolicy;
 
     private boolean isAllowPolicy;
@@ -62,6 +61,7 @@ public class PersonaContext {
     public PersonaContext(AtlasEntityWithExtInfo personaExtInfo, AtlasEntity personaPolicy) {
         this.personaExtInfo = personaExtInfo;
         this.personaPolicy = personaPolicy;
+        setPolicyType();
     }
 
     public AtlasEntityWithExtInfo getPersonaExtInfo() {
@@ -82,6 +82,7 @@ public class PersonaContext {
 
     public void setPersonaPolicy(AtlasEntity personaPolicy) {
         this.personaPolicy = personaPolicy;
+        setPolicyType();
     }
 
     public boolean isCreateNewPersona() {
@@ -98,14 +99,6 @@ public class PersonaContext {
 
     public void setCreateNewPersonaPolicy(boolean createNewPersonaPolicy) {
         isCreateNewPersonaPolicy = createNewPersonaPolicy;
-    }
-
-    public boolean isUpdatePersonaPolicy() {
-        return isUpdatePersonaPolicy;
-    }
-
-    public void setUpdatePersonaPolicy(boolean updatePersonaPolicy) {
-        isUpdatePersonaPolicy = updatePersonaPolicy;
     }
 
     public boolean isDeletePersonaPolicy() {

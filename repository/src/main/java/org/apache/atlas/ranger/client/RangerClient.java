@@ -31,6 +31,7 @@ import org.apache.atlas.AtlasBaseClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.ranger.RangerPolicyList;
+import org.apache.atlas.ranger.RangerRoleList;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -47,6 +48,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 
 import static javax.ws.rs.HttpMethod.DELETE;
@@ -78,6 +80,7 @@ public class RangerClient {
     public static final  String POLICY_GET_BY_ID = "service/plugins/policies/%s";
     public static final  String POLICY_DELETE_BY_ID = "service/plugins/policies/%s";
     public static final  String CREATE_ROLE = "service/roles/roles";
+    public static final  String GET_ROLE_BY_NAME = "service/roles/lookup/roles";
     public static final  String UPDATE_ROLE = "service/roles/roles/%s";
     public static final  String DELETE_ROLE = "service/roles/roles/%s";
     public static final  String CREATE_POLICY = "service/public/v2/api/policy";
@@ -198,6 +201,17 @@ public class RangerClient {
         return RangerClientCaller.callAPI(api, RangerRole.class, rangerRole);
     }
 
+    public RangerRoleList getRole(String roleName) throws AtlasServiceException {
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("roleNamePartial", roleName);
+
+        MultivaluedMap<String, String> queryParams = toQueryParams(attrs, null);
+
+        AtlasBaseClient.API api = new AtlasBaseClient.API(GET_ROLE_BY_NAME, GET, Response.Status.OK);
+
+        return RangerClientCaller.callAPI(api, RangerRoleList.class, queryParams);
+    }
+
     public RangerRole updateRole(RangerRole rangerRole) throws AtlasServiceException {
 
         AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(UPDATE_ROLE, rangerRole.getId()), PUT, Response.Status.OK);
@@ -248,9 +262,6 @@ public class RangerClient {
 
         RangerClientCaller.callAPI(api, (Class<?>)null, null);
     }
-
-
-
 
     private MultivaluedMap<String, String> resourcesToQueryParams(Map<String, String> attributes) {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
