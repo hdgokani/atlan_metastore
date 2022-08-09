@@ -60,6 +60,9 @@ import java.util.*;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.springframework.util.StreamUtils.copyToString;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 /**
  * This class provides cassandra support as the backend for audit storage support.
  */
@@ -93,10 +96,11 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private final Configuration configuration;
 
     @Inject
-    public ESBasedAuditRepository(EntityGraphRetriever entityGraphRetriever, Configuration configuration){
+    public ESBasedAuditRepository(EntityGraphRetriever entityGraphRetriever, Configuration configuration) {
         this.entityGraphRetriever = entityGraphRetriever;
         this.configuration = configuration;
     }
+
 
     @Override
     public void putEventsV1(List<EntityAuditEvent> events) throws AtlasException {
@@ -183,7 +187,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException {
-       return searchEvents(queryString, null);
+        return searchEvents(queryString, null);
     }
 
     public EntityAuditSearchResult searchEvents(String queryString, Set<String> attributes) throws AtlasBaseException {
