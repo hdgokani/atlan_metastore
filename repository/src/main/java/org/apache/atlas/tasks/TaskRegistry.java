@@ -225,8 +225,6 @@ public class TaskRegistry {
 
         updateStatus(taskVertex, task);
 
-        graph.commit();
-
         LOG.info(String.format("TaskRegistry complete %s", task.toString()));
     }
 
