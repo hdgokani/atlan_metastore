@@ -505,7 +505,6 @@ public abstract class DeleteHandlerV1 {
                 RequestContext.get().endMetricRecord(countMetricRecorder);
             }
         }
-        if (ret.isEmpty()) return null;
         return ret;
     }
 
