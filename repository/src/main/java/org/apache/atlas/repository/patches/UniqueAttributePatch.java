@@ -23,7 +23,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.pc.WorkItemManager;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.IndexException;
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer.UniqueKind;
+import org.apache.atlas.repository.graph.indexmanager.UniqueKind;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;

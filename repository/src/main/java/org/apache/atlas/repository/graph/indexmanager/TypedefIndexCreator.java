@@ -32,13 +32,15 @@ public class TypedefIndexCreator extends GraphTransactionManager {
     private final AttributeIndexCreator attributeIndexCreator;
     private final AtlasTypeRegistry typeRegistry;
     private final IndexFieldNameResolver indexFieldNameResolver;
+    private final IndexChangeListenerManager indexChangeListenerManager;
 
     @Inject
-    public TypedefIndexCreator(IAtlasGraphProvider provider, AttributeIndexCreator attributeIndexCreator, AtlasTypeRegistry typeRegistry, IndexFieldNameResolver indexFieldNameResolver) {
+    public TypedefIndexCreator(IAtlasGraphProvider provider, AttributeIndexCreator attributeIndexCreator, AtlasTypeRegistry typeRegistry, IndexFieldNameResolver indexFieldNameResolver, IndexChangeListenerManager indexChangeListenerManager) {
         this.provider = provider;
         this.attributeIndexCreator = attributeIndexCreator;
         this.typeRegistry = typeRegistry;
         this.indexFieldNameResolver = indexFieldNameResolver;
+        this.indexChangeListenerManager = indexChangeListenerManager;
     }
 
 
@@ -86,7 +88,7 @@ public class TypedefIndexCreator extends GraphTransactionManager {
             attemptRollback(changedTypeDefs, management);
         }
 
-//        notifyChangeListeners(changedTypeDefs);
+        indexChangeListenerManager.notifyChangeListeners(changedTypeDefs);
     }
 
 

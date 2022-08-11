@@ -35,7 +35,7 @@ public abstract class GraphTransactionManager {
         }
     }
 
-    public void attemptRollback(ChangedTypeDefs changedTypeDefs, AtlasGraphManagement management)
+    protected void attemptRollback(ChangedTypeDefs changedTypeDefs, AtlasGraphManagement management)
             throws AtlasBaseException {
         if (null != management) {
             try {

@@ -35,7 +35,6 @@ import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
-import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
@@ -60,37 +59,24 @@ public class GraphBackedSearchIndexer extends GraphTransactionManager implements
 
     // Added for type lookup when indexing the new typedefs
     private final AtlasTypeRegistry typeRegistry;
-    private final List<IndexChangeListener> indexChangeListeners = new ArrayList<>();
 
     private final GraphBackedIndexCreator graphBackedIndexCreator;
     private final TypedefIndexCreator typedefIndexCreator;
     private final IndexFieldNameResolver indexFieldNameResolver;
     private final VertexIndexCreator vertexIndexCreator;
+    private final IndexChangeListenerManager indexChangeListenerManager;
     //allows injection of a dummy graph for testing
-    private IAtlasGraphProvider provider;
+    private final IAtlasGraphProvider provider;
 
     private Set<String> vertexIndexKeys = new HashSet<>();
 
-    public static boolean isValidSearchWeight(int searchWeight) {
-        if (searchWeight != -1) {
-            return searchWeight >= 1 && searchWeight <= 10;
-        }
-        return true;
-    }
-
-    public static boolean isStringAttribute(AtlasAttribute attribute) {
-        return AtlasBaseTypeDef.ATLAS_TYPE_STRING.equals(attribute.getTypeName());
-    }
-
-    public enum UniqueKind {NONE, GLOBAL_UNIQUE, PER_TYPE_UNIQUE}
-
     @Inject
-    public GraphBackedSearchIndexer(AtlasTypeRegistry typeRegistry, GraphBackedIndexCreator graphBackedIndexCreator, TypedefIndexCreator typedefIndexCreator, IndexFieldNameResolver indexFieldNameResolver, VertexIndexCreator vertexIndexCreator) throws AtlasException {
-        this(new AtlasGraphProvider(), ApplicationProperties.get(), typeRegistry, graphBackedIndexCreator, typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator);
+    public GraphBackedSearchIndexer(AtlasTypeRegistry typeRegistry, GraphBackedIndexCreator graphBackedIndexCreator, TypedefIndexCreator typedefIndexCreator, IndexFieldNameResolver indexFieldNameResolver, VertexIndexCreator vertexIndexCreator, IndexChangeListenerManager indexChangeListenerManager) throws AtlasException {
+        this(new AtlasGraphProvider(), ApplicationProperties.get(), typeRegistry, graphBackedIndexCreator, typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator, indexChangeListenerManager);
     }
 
     @VisibleForTesting
-    GraphBackedSearchIndexer(IAtlasGraphProvider provider, Configuration configuration, AtlasTypeRegistry typeRegistry, GraphBackedIndexCreator graphBackedIndexCreator, TypedefIndexCreator typedefIndexCreator, IndexFieldNameResolver indexFieldNameResolver, VertexIndexCreator vertexIndexCreator)
+    GraphBackedSearchIndexer(IAtlasGraphProvider provider, Configuration configuration, AtlasTypeRegistry typeRegistry, GraphBackedIndexCreator graphBackedIndexCreator, TypedefIndexCreator typedefIndexCreator, IndexFieldNameResolver indexFieldNameResolver, VertexIndexCreator vertexIndexCreator, IndexChangeListenerManager indexChangeListenerManager)
             throws IndexException, RepositoryException {
         this.provider = provider;
         this.typeRegistry = typeRegistry;
@@ -98,18 +84,15 @@ public class GraphBackedSearchIndexer extends GraphTransactionManager implements
         this.typedefIndexCreator = typedefIndexCreator;
         this.indexFieldNameResolver = indexFieldNameResolver;
         this.vertexIndexCreator = vertexIndexCreator;
+        this.indexChangeListenerManager = indexChangeListenerManager;
 
         //make sure solr index follows graph backed index listener
-        addIndexListener(new SolrIndexHelper(typeRegistry));
+        indexChangeListenerManager.addIndexListener(new SolrIndexHelper(typeRegistry));
 
         if (!HAConfiguration.isHAEnabled(configuration)) {
             graphBackedIndexCreator.createDefaultIndexes(provider.get());
         }
-        notifyInitializationStart();
-    }
-
-    public void addIndexListener(IndexChangeListener listener) {
-        indexChangeListeners.add(listener);
+        this.indexChangeListenerManager.notifyInitializationStart();
     }
 
     /**
@@ -165,7 +148,7 @@ public class GraphBackedSearchIndexer extends GraphTransactionManager implements
             //Commit indexes
             commit(management);
 
-            notifyInitializationCompletion(changedTypeDefs);
+            indexChangeListenerManager.notifyChangeListeners(changedTypeDefs);
         } catch (RepositoryException | IndexException e) {
             LOG.error("Failed to update indexes for changed typedefs", e);
             attemptRollback(changedTypeDefs, management);
@@ -227,30 +210,4 @@ public class GraphBackedSearchIndexer extends GraphTransactionManager implements
                 indexTypeESFields
         );
     }
-
-    private void notifyInitializationStart() {
-        for (IndexChangeListener indexChangeListener : indexChangeListeners) {
-            try {
-                indexChangeListener.onInitStart();
-            } catch (Throwable t) {
-                LOG.error("Error encountered in notifying the index change listener {}.", indexChangeListener.getClass().getName(), t);
-                //we need to throw exception if any of the listeners throw execption.
-                throw new RuntimeException("Error encountered in notifying the index change listener " + indexChangeListener.getClass().getName(), t);
-            }
-        }
-    }
-
-    private void notifyInitializationCompletion(ChangedTypeDefs changedTypeDefs) {
-        for (IndexChangeListener indexChangeListener : indexChangeListeners) {
-            try {
-                indexChangeListener.onInitCompletion(changedTypeDefs);
-            } catch (Throwable t) {
-                LOG.error("Error encountered in notifying the index change listener {}.", indexChangeListener.getClass().getName(), t);
-                //we need to throw exception if any of the listeners throw execption.
-                throw new RuntimeException("Error encountered in notifying the index change listener " + indexChangeListener.getClass().getName(), t);
-            }
-        }
-    }
-
-
 }

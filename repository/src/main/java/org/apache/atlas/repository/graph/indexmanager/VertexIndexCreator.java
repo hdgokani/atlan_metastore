@@ -1,6 +1,5 @@
 package org.apache.atlas.repository.graph.indexmanager;
 
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
@@ -25,7 +24,7 @@ public class VertexIndexCreator {
     private static final Logger LOG = LoggerFactory.getLogger(VertexIndexCreator.class);
 
 
-    public String createVertexIndex(AtlasGraphManagement management, String propertyName, GraphBackedSearchIndexer.UniqueKind uniqueKind, Class propertyClass,
+    public String createVertexIndex(AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class propertyClass,
                                     AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes, boolean isStringField, HashMap<String, Object> indexTypeESConfig, HashMap<String, HashMap<String, Object>> indexTypeESFields) {
         String indexFieldName = null;
 
@@ -50,12 +49,12 @@ public class VertexIndexCreator {
             }
 
             if (propertyKey != null) {
-                if (createCompositeIndex || uniqueKind == GraphBackedSearchIndexer.UniqueKind.GLOBAL_UNIQUE || uniqueKind == GraphBackedSearchIndexer.UniqueKind.PER_TYPE_UNIQUE) {
-                    createVertexCompositeIndex(management, propertyClass, propertyKey, uniqueKind == GraphBackedSearchIndexer.UniqueKind.GLOBAL_UNIQUE);
+                if (createCompositeIndex || uniqueKind == UniqueKind.GLOBAL_UNIQUE || uniqueKind == UniqueKind.PER_TYPE_UNIQUE) {
+                    createVertexCompositeIndex(management, propertyClass, propertyKey, uniqueKind == UniqueKind.GLOBAL_UNIQUE);
                 }
 
                 if (createCompositeIndexWithTypeAndSuperTypes) {
-                    createVertexCompositeIndexWithSystemProperty(management, propertyClass, propertyKey, ENTITY_TYPE_PROPERTY_KEY, SINGLE, uniqueKind == GraphBackedSearchIndexer.UniqueKind.PER_TYPE_UNIQUE);
+                    createVertexCompositeIndexWithSystemProperty(management, propertyClass, propertyKey, ENTITY_TYPE_PROPERTY_KEY, SINGLE, uniqueKind == UniqueKind.PER_TYPE_UNIQUE);
                     createVertexCompositeIndexWithSystemProperty(management, propertyClass, propertyKey, SUPER_TYPES_PROPERTY_KEY, SET, false);
                 }
             } else {

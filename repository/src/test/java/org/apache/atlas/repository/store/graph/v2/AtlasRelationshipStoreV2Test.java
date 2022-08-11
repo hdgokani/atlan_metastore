@@ -103,7 +103,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
     public void setUp() throws Exception {
         super.initialize();
 
-        new GraphBackedSearchIndexer(typeRegistry, new GraphBackedIndexCreator(typeRegistry, vertexIndexCreator, edgeIndexCreator), typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator);
+        new GraphBackedSearchIndexer(typeRegistry, new GraphBackedIndexCreator(typeRegistry, vertexIndexCreator, edgeIndexCreator), typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator, indexChangeListenerManager);
 
         // create employee relationship types
         AtlasTypesDef employeeTypes = getDepartmentEmployeeTypes();

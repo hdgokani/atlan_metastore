@@ -21,6 +21,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.indexmanager.IndexManagerUtilFunctions;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
 import org.apache.atlas.type.AtlasBusinessMetadataType;
@@ -162,16 +163,16 @@ public class SolrIndexHelper implements IndexChangeListener {
     }
 
     private void processAttribute(Map<String, Integer> indexFieldNameWithSearchWeights, AtlasAttribute attribute) {
-        if (attribute != null && GraphBackedSearchIndexer.isStringAttribute(attribute) && StringUtils.isNotEmpty(attribute.getIndexFieldName())) {
+        if (attribute != null && IndexManagerUtilFunctions.isStringAttribute(attribute) && StringUtils.isNotEmpty(attribute.getIndexFieldName())) {
             int searchWeight = attribute.getSearchWeight();
 
             if (searchWeight == DEFAULT_SEARCHWEIGHT) {
                 //We will use default search weight of 3 for string attributes.
                 //this will make the string data searchable like in FullTextIndex Searcher using Free Text searcher.
                 searchWeight = DEFAULT_SEARCHWEIGHT_FOR_STRINGS;
-            } else if (!GraphBackedSearchIndexer.isValidSearchWeight(searchWeight)) { //validate the value provided in the model.
+            } else if (!IndexManagerUtilFunctions.isValidSearchWeight(searchWeight)) { //validate the value provided in the model.
                 LOG.warn("Invalid search weight {} for attribute {}. Will use default {}",
-                         searchWeight, attribute.getQualifiedName(), DEFAULT_SEARCHWEIGHT_FOR_STRINGS);
+                        searchWeight, attribute.getQualifiedName(), DEFAULT_SEARCHWEIGHT_FOR_STRINGS);
 
                 searchWeight = DEFAULT_SEARCHWEIGHT_FOR_STRINGS;
             }

@@ -7,7 +7,6 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
@@ -122,7 +121,7 @@ public class AttributeIndexCreator {
                     vertexIndexCreator.createVertexIndex(
                             management,
                             propertyName,
-                            GraphBackedSearchIndexer.UniqueKind.NONE,
+                            UniqueKind.NONE,
                             primitiveClassType,
                             cardinality,
                             isIndexable,
@@ -136,7 +135,7 @@ public class AttributeIndexCreator {
                         vertexIndexCreator.createVertexIndex(
                                 management,
                                 uniqPropName,
-                                GraphBackedSearchIndexer.UniqueKind.PER_TYPE_UNIQUE,
+                                UniqueKind.PER_TYPE_UNIQUE,
                                 primitiveClassType,
                                 cardinality,
                                 isIndexable,
@@ -156,7 +155,7 @@ public class AttributeIndexCreator {
                     vertexIndexCreator.createVertexIndex(
                             management,
                             propertyName,
-                            GraphBackedSearchIndexer.UniqueKind.NONE,
+                            UniqueKind.NONE,
                             String.class,
                             cardinality,
                             isIndexable,
@@ -170,7 +169,7 @@ public class AttributeIndexCreator {
                         vertexIndexCreator.createVertexIndex(
                                 management,
                                 uniqPropName,
-                                GraphBackedSearchIndexer.UniqueKind.PER_TYPE_UNIQUE,
+                                UniqueKind.PER_TYPE_UNIQUE,
                                 String.class,
                                 cardinality,
                                 isIndexable,

@@ -2,7 +2,6 @@ package org.apache.atlas.repository.graph.indexmanager;
 
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -92,63 +91,63 @@ public class GraphBackedIndexCreator extends GraphTransactionManager {
             ES_ATLAN_TEXT_COMMA_ANALYZER_CONFIG.put("analyzer", "atlan_text_comma_analyzer");
 
             // create vertex indexes
-            createCommonVertexIndex(management, GUID_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, true, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, HISTORICAL_GUID_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, GUID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, true, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, HISTORICAL_GUID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
 
-            createCommonVertexIndex(management, TYPENAME_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, TYPESERVICETYPE_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, VERTEX_TYPE_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, VERTEX_ID_IN_IMPORT_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, Long.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TYPENAME_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TYPESERVICETYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, VERTEX_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, VERTEX_ID_IN_IMPORT_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
 
-            createCommonVertexIndex(management, ENTITY_TYPE_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), KEYWORD_MULTIFIELD);
-            createCommonVertexIndex(management, SUPER_TYPES_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SET, true, false, false, new HashMap<>(), KEYWORD_MULTIFIELD);
-            createCommonVertexIndex(management, TIMESTAMP_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), TIMESTAMP_MULTIFIELDS);
-            createCommonVertexIndex(management, MODIFICATION_TIMESTAMP_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), TIMESTAMP_MULTIFIELDS);
-            createCommonVertexIndex(management, STATE_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, false, false, true, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, CREATED_BY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, false, false, true, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, CLASSIFICATION_TEXT_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, false, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, MODIFIED_BY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, false, false, true, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, CLASSIFICATION_NAMES_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, PROPAGATED_CLASSIFICATION_NAMES_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, TRAIT_NAMES_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SET, true, true, true, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, LIST, true, true, true, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, PENDING_TASKS_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SET, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, IS_INCOMPLETE_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, Integer.class, SINGLE, true, true, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, CUSTOM_ATTRIBUTES_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, LABELS_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, Long.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, ENTITY_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), KEYWORD_MULTIFIELD);
+            createCommonVertexIndex(management, SUPER_TYPES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false, false, new HashMap<>(), KEYWORD_MULTIFIELD);
+            createCommonVertexIndex(management, TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), TIMESTAMP_MULTIFIELDS);
+            createCommonVertexIndex(management, MODIFICATION_TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), TIMESTAMP_MULTIFIELDS);
+            createCommonVertexIndex(management, STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, CREATED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, CLASSIFICATION_TEXT_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, MODIFIED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, CLASSIFICATION_NAMES_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, PROPAGATED_CLASSIFICATION_NAMES_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TRAIT_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, true, true, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, LIST, true, true, true, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, PENDING_TASKS_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, IS_INCOMPLETE_PROPERTY_KEY, UniqueKind.NONE, Integer.class, SINGLE, true, true, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, CUSTOM_ATTRIBUTES_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, LABELS_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
 
-            createCommonVertexIndex(management, PATCH_ID_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, PATCH_DESCRIPTION_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, PATCH_TYPE_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, PATCH_ACTION_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, PATCH_STATE_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, MEANINGS_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SET, true, false, true, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, MEANINGS_TEXT_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, false, ES_ATLAN_TEXT_COMMA_ANALYZER_CONFIG, new HashMap<>());
-            createCommonVertexIndex(management, MEANING_NAMES_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, LIST, true, false, true, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, GLOSSARY_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, true, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, CATEGORIES_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SET, true, false, true, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, CATEGORIES_PARENT_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, true, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, PATCH_ID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, PATCH_DESCRIPTION_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, PATCH_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, PATCH_ACTION_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, PATCH_STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, MEANINGS_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false, true, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, MEANINGS_TEXT_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, ES_ATLAN_TEXT_COMMA_ANALYZER_CONFIG, new HashMap<>());
+            createCommonVertexIndex(management, MEANING_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, LIST, true, false, true, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, GLOSSARY_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, true, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, CATEGORIES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false, true, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, CATEGORIES_PARENT_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, true, new HashMap<>(), new HashMap<>());
 
 
             // tasks
-            createCommonVertexIndex(management, TASK_GUID, GraphBackedSearchIndexer.UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, TASK_TYPE_PROPERTY_KEY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, TASK_CREATED_TIME, GraphBackedSearchIndexer.UniqueKind.NONE, Long.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, TASK_STATUS, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TASK_GUID, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TASK_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TASK_CREATED_TIME, UniqueKind.NONE, Long.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TASK_STATUS, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
 
-            createCommonVertexIndex(management, TASK_TYPE, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, true, false, true, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, TASK_CREATED_BY, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, false, false, true, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, TASK_ERROR_MESSAGE, GraphBackedSearchIndexer.UniqueKind.NONE, String.class, SINGLE, false, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, TASK_ATTEMPT_COUNT, GraphBackedSearchIndexer.UniqueKind.NONE, Integer.class, SINGLE, false, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TASK_TYPE, UniqueKind.NONE, String.class, SINGLE, true, false, true, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TASK_CREATED_BY, UniqueKind.NONE, String.class, SINGLE, false, false, true, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TASK_ERROR_MESSAGE, UniqueKind.NONE, String.class, SINGLE, false, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TASK_ATTEMPT_COUNT, UniqueKind.NONE, Integer.class, SINGLE, false, false, false, new HashMap<>(), new HashMap<>());
 
-            createCommonVertexIndex(management, TASK_UPDATED_TIME, GraphBackedSearchIndexer.UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, TASK_TIME_TAKEN_IN_SECONDS, GraphBackedSearchIndexer.UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, TASK_START_TIME, GraphBackedSearchIndexer.UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), new HashMap<>());
-            createCommonVertexIndex(management, TASK_END_TIME, GraphBackedSearchIndexer.UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TASK_UPDATED_TIME, UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TASK_TIME_TAKEN_IN_SECONDS, UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TASK_START_TIME, UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, TASK_END_TIME, UniqueKind.NONE, Long.class, SINGLE, false, false, false, new HashMap<>(), new HashMap<>());
 
             // index recovery
-            createCommonVertexIndex(management, PROPERTY_KEY_INDEX_RECOVERY_NAME, GraphBackedSearchIndexer.UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
+            createCommonVertexIndex(management, PROPERTY_KEY_INDEX_RECOVERY_NAME, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, false, new HashMap<>(), new HashMap<>());
 
             // create vertex-centric index
             createVertexCentricIndex(management, CLASSIFICATION_LABEL, AtlasEdgeDirection.BOTH, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class, SINGLE);
@@ -183,7 +182,7 @@ public class GraphBackedIndexCreator extends GraphTransactionManager {
 
     private void createCommonVertexIndex(AtlasGraphManagement management,
                                          String propertyName,
-                                         GraphBackedSearchIndexer.UniqueKind uniqueKind,
+                                         UniqueKind uniqueKind,
                                          Class propertyClass,
                                          AtlasCardinality cardinality,
                                          boolean createCompositeIndex,

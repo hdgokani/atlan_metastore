@@ -103,7 +103,7 @@ public class AtlasEntityTestBase extends AtlasTestBase {
 
         super.initialize();
 
-        new GraphBackedSearchIndexer(typeRegistry, new GraphBackedIndexCreator(typeRegistry, vertexIndexCreator, edgeIndexCreator), typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator);
+        new GraphBackedSearchIndexer(typeRegistry, new GraphBackedIndexCreator(typeRegistry, vertexIndexCreator, edgeIndexCreator), typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator, indexChangeListenerManager);
     }
 
     @AfterClass
