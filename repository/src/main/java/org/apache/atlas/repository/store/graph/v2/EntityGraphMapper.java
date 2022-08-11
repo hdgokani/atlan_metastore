@@ -2758,17 +2758,14 @@ public class EntityGraphMapper {
             LOG.info(String.format("Total number of vertices to propagate: %d", impactedVerticesSize));
             AtlasPerfMetrics.MetricRecorder chunkedPropMetricRecorder = RequestContext.get().startMetricRecord("chunkedPropagationAndNotification");
 
+            int toIndex;
+
             do {
-                int toIndex;
-                if (offset + CHUNK_SIZE > impactedVerticesSize) {
-                    toIndex = (int) impactedVerticesSize;
-                }
-                else {
-                    toIndex = offset + CHUNK_SIZE;
-                }
+                toIndex = ((offset + CHUNK_SIZE > impactedVerticesSize) ? (int) impactedVerticesSize : (offset + CHUNK_SIZE));
+
                 List<String> chunkedGuids = processChunkedPropagation(impactedVertices.subList(offset, toIndex), classificationVertex);
 
-                if((chunkedGuids != null) && (! chunkedGuids.isEmpty())){
+                if(! chunkedGuids.isEmpty()){
                     propagatedEntitiesGuid.addAll(chunkedGuids);
                 }
                 offset += CHUNK_SIZE;
