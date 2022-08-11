@@ -22,16 +22,12 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import org.apache.commons.collections.CollectionUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import org.apache.commons.collections.CollectionUtils;
+import java.util.*;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -245,5 +241,31 @@ public class AtlasTypesDef {
     @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
+    }
+
+    public boolean hasIndexSettingsChanged(AtlasTypesDef newTypeDefinitions) {
+        Map<String, AtlasStructDef> existingTypeNameMap = newTypeDefinitions.createNameMapFromTypeDefs();
+        Map<String, AtlasStructDef> newTypeNameMap = createNameMapFromTypeDefs();
+        return existingTypeNameMap.entrySet()
+                .stream()
+                .filter(entry -> newTypeNameMap.containsKey(entry.getKey()))
+                .anyMatch(entry -> entry.getValue().indexSettingsAreDifferentFrom(newTypeNameMap.get(entry.getKey())));
+    }
+
+    public Map<String, AtlasStructDef> createNameMapFromTypeDefs() {
+        Map<String, AtlasStructDef> nameMap = new HashMap<>();
+
+        addTypeToMap(getEntityDefs(), nameMap);
+        addTypeToMap(getClassificationDefs(), nameMap);
+        addTypeToMap(getBusinessMetadataDefs(), nameMap);
+        addTypeToMap(getRelationshipDefs(), nameMap);
+
+        return nameMap;
+    }
+
+    private void addTypeToMap(List<? extends AtlasStructDef> typeDefinitions, Map<String, AtlasStructDef> nameMap) {
+        for (AtlasStructDef typeDef : typeDefinitions) {
+            nameMap.put(typeDef.getName(), typeDef);
+        }
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,25 +20,8 @@ package org.apache.atlas.model.typedef;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlSeeAlso;
-
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
@@ -46,16 +29,25 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.hadoop.util.StringUtils;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
+import java.io.Serializable;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static java.util.Objects.isNull;
 
 
 /**
  * class that captures details of a struct-type.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
@@ -124,13 +116,13 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             this.attributeDefs = new ArrayList<>(attributeDefs);
         } else {
             // if multiple attributes with same name are present, keep only the last entry
-            List<AtlasAttributeDef> tmpList     = new ArrayList<>(attributeDefs.size());
-            Set<String>             attribNames = new HashSet<>();
+            List<AtlasAttributeDef> tmpList = new ArrayList<>(attributeDefs.size());
+            Set<String> attribNames = new HashSet<>();
 
             ListIterator<AtlasAttributeDef> iter = attributeDefs.listIterator(attributeDefs.size());
             while (iter.hasPrevious()) {
                 AtlasAttributeDef attributeDef = iter.previous();
-                String            attribName   = attributeDef != null ? attributeDef.getName() : null;
+                String attribName = attributeDef != null ? attributeDef.getName() : null;
 
                 if (attribName != null) {
                     attribName = attribName.toLowerCase();
@@ -147,6 +139,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             this.attributeDefs = tmpList;
         }
     }
+
     public AtlasAttributeDef getAttribute(String attrName) {
         return findAttribute(this.attributeDefs, attrName);
     }
@@ -261,57 +254,100 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         return RandomStringUtils.randomAlphabetic(1) + RandomStringUtils.randomAlphanumeric(21);
     }
 
+    public boolean indexSettingsAreDifferentFrom(AtlasStructDef newStruct) {
+        Map<String, AtlasAttributeDef> existingAttributesNameMap = createAttributeDefMap();
+        Map<String, AtlasAttributeDef> newAttributesNameMap = newStruct.createAttributeDefMap();
+        return existingAttributesNameMap.entrySet()
+                .stream()
+                .filter(entry -> newAttributesNameMap.containsKey(entry.getKey()))
+                .anyMatch(entry -> entry.getValue().indexSettingAreDifferentFrom(newAttributesNameMap.get(entry.getKey())));
+    }
+
+    private Map<String, AtlasAttributeDef> createAttributeDefMap() {
+        return attributeDefs.stream()
+                .collect(Collectors.toMap(AtlasAttributeDef::getName, (attribute) -> attribute));
+    }
+
     /**
      * class that captures details of a struct-attribute.
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include= JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class AtlasAttributeDef implements Serializable {
-        private static final long     serialVersionUID              = 1L;
-        public static final int       DEFAULT_SEARCHWEIGHT          = -1;
+        private static final long serialVersionUID = 1L;
+        public static final int DEFAULT_SEARCHWEIGHT = -1;
 
 
-        public static final String    SEARCH_WEIGHT_ATTR_NAME                 = "searchWeight";
-        public static final String    INDEX_TYPE_ATTR_NAME                    = "indexType";
-        public static final String    ATTRDEF_OPTION_SOFT_REFERENCE           = "isSoftReference";
-        public static final String    ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE = "isAppendOnPartialUpdate";
-        private final String          STRING_TRUE                             = "true";
-        private final String          MULTIFIELDS                             = "multifields";
+        public static final String SEARCH_WEIGHT_ATTR_NAME = "searchWeight";
+        public static final String INDEX_TYPE_ATTR_NAME = "indexType";
+        public static final String ATTRDEF_OPTION_SOFT_REFERENCE = "isSoftReference";
+        public static final String ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE = "isAppendOnPartialUpdate";
+        private final String STRING_TRUE = "true";
+        private final String MULTIFIELDS = "multifields";
+
+        public boolean indexSettingAreDifferentFrom(AtlasAttributeDef atlasAttributeDef) {
+            return isIndexTypeDifferent(atlasAttributeDef)
+                    || isTypeConfigDifferent(atlasAttributeDef)
+                    || areTypeFieldsDifferent(atlasAttributeDef);
+        }
+
+        private boolean isIndexTypeDifferent(AtlasAttributeDef atlasAttributeDef) {
+            return !indexType.equals(atlasAttributeDef.indexType);
+        }
+
+        private boolean isTypeConfigDifferent(AtlasAttributeDef atlasAttributeDef) {
+            if (isNull(indexTypeESConfig) && isNull(atlasAttributeDef.indexTypeESConfig)) {
+                return false;
+            }
+            ObjectMapper objectMapper = new ObjectMapper();
+            return !objectMapper.valueToTree(indexTypeESConfig).equals(objectMapper.valueToTree(atlasAttributeDef.indexTypeESConfig));
+        }
+
+        private boolean areTypeFieldsDifferent(AtlasAttributeDef atlasAttributeDef) {
+            if (isNull(indexTypeESFields) && isNull(atlasAttributeDef.indexTypeESFields)) {
+                return false;
+            }
+            ObjectMapper objectMapper = new ObjectMapper();
+            return !objectMapper.valueToTree(indexTypeESFields).equals(objectMapper.valueToTree(atlasAttributeDef.indexTypeESFields));
+
+        }
 
         /**
          * single-valued attribute or multi-valued attribute.
          */
-        public enum Cardinality { SINGLE, LIST, SET }
+        public enum Cardinality {SINGLE, LIST, SET}
 
-        public enum IndexType { DEFAULT, STRING}
+        public enum IndexType {DEFAULT, STRING}
 
         public static final int COUNT_NOT_SET = -1;
 
-        private String                   name;
-        private String                   typeName;
-        private boolean                  isOptional;
-        private Cardinality              cardinality;
-        private int                      valuesMinCount;
-        private int                      valuesMaxCount;
-        private boolean                  isUnique;
-        private boolean                  isIndexable;
-        private boolean                  includeInNotification;
-        private boolean                  skipScrubbing;
-        private String                   defaultValue;
-        private String                   description;
-        private int                      searchWeight = DEFAULT_SEARCHWEIGHT;
-        private IndexType                indexType    = null;
+        private String name;
+        private String typeName;
+        private boolean isOptional;
+        private Cardinality cardinality;
+        private int valuesMinCount;
+        private int valuesMaxCount;
+        private boolean isUnique;
+        private boolean isIndexable;
+        private boolean includeInNotification;
+        private boolean skipScrubbing;
+        private String defaultValue;
+        private String description;
+        private int searchWeight = DEFAULT_SEARCHWEIGHT;
+        private IndexType indexType = null;
         private List<AtlasConstraintDef> constraints;
-        private Map<String, String>      options;
-        private String                   displayName;
+        private Map<String, String> options;
+        private String displayName;
         HashMap<String, Object> indexTypeESConfig;
         HashMap<String, HashMap<String, Object>> indexTypeESFields;
         HashMap<String, ArrayList> autoUpdateAttributes;
 
-        public AtlasAttributeDef() { this(null, null); }
+        public AtlasAttributeDef() {
+            this(null, null);
+        }
 
         public AtlasAttributeDef(String name, String typeName) {
             this(name, typeName, DEFAULT_SEARCHWEIGHT);
@@ -319,12 +355,12 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
         public AtlasAttributeDef(String name, String typeName, boolean isUnique, boolean isIndexable) {
             this(name, typeName, false, Cardinality.SINGLE, COUNT_NOT_SET, COUNT_NOT_SET, isUnique, isIndexable,
-                false, null,null, null, null, DEFAULT_SEARCHWEIGHT, null, false);
+                    false, null, null, null, null, DEFAULT_SEARCHWEIGHT, null, false);
         }
 
         public AtlasAttributeDef(String name, String typeName, Cardinality cardinality, boolean isUnique, boolean isIndexable) {
             this(name, typeName, false, cardinality, COUNT_NOT_SET, COUNT_NOT_SET, isUnique, isIndexable,
-                false, null,null, null, null, DEFAULT_SEARCHWEIGHT, null, false );
+                    false, null, null, null, null, DEFAULT_SEARCHWEIGHT, null, false);
         }
 
         public AtlasAttributeDef(String name, String typeName, int searchWeight) {
@@ -350,12 +386,12 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
         private AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
                                   int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, List<AtlasConstraintDef> constraints, int searchWeight, IndexType indexType) {
-            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, null, constraints, null, null, searchWeight, indexType , false);
+            this(name, typeName, isOptional, cardinality, valuesMinCount, valuesMaxCount, isUnique, isIndexable, includeInNotification, null, constraints, null, null, searchWeight, indexType, false);
         }
 
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
                                  int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable, boolean includeInNotification, String defaultValue,
-                                 List<AtlasConstraintDef> constraints, Map<String,String> options, String description, int searchWeight, IndexType indexType, boolean skipScrubbing) {
+                                 List<AtlasConstraintDef> constraints, Map<String, String> options, String description, int searchWeight, IndexType indexType, boolean skipScrubbing) {
             setName(name);
             setTypeName(typeName);
             setIsOptional(isOptional);
@@ -443,7 +479,9 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             return isOptional;
         }
 
-        public void setIsOptional(boolean optional) { isOptional = optional; }
+        public void setIsOptional(boolean optional) {
+            isOptional = optional;
+        }
 
         public void setCardinality(Cardinality cardinality) {
             this.cardinality = cardinality;
@@ -481,15 +519,19 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             return isIndexable;
         }
 
-        public boolean getIncludeInNotification() { return includeInNotification; }
+        public boolean getIncludeInNotification() {
+            return includeInNotification;
+        }
 
-        public void setIncludeInNotification(Boolean isInNotification) { this.includeInNotification = isInNotification == null ? Boolean.FALSE : isInNotification; }
+        public void setIncludeInNotification(Boolean isInNotification) {
+            this.includeInNotification = isInNotification == null ? Boolean.FALSE : isInNotification;
+        }
 
-        public String getDefaultValue(){
+        public String getDefaultValue() {
             return defaultValue;
         }
 
-        public void setDefaultValue(String defaultValue){
+        public void setDefaultValue(String defaultValue) {
             this.defaultValue = defaultValue;
         }
 
@@ -497,7 +539,9 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             isIndexable = idexable;
         }
 
-        public List<AtlasConstraintDef> getConstraints() { return constraints; }
+        public List<AtlasConstraintDef> getConstraints() {
+            return constraints;
+        }
 
         public void setConstraints(List<AtlasConstraintDef> constraints) {
             if (this.constraints != null && this.constraints == constraints) {
@@ -522,6 +566,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
             cDefs.add(constraintDef);
         }
+
         public Map<String, String> getOptions() {
             return options;
         }
@@ -572,19 +617,25 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             this.description = description;
         }
 
-        public void setIndexTypeESConfig(HashMap<String, Object> indexTypeESConfig) { this.indexTypeESConfig = indexTypeESConfig; }
+        public void setIndexTypeESConfig(HashMap<String, Object> indexTypeESConfig) {
+            this.indexTypeESConfig = indexTypeESConfig;
+        }
 
         public HashMap<String, Object> getIndexTypeESConfig() {
             return this.indexTypeESConfig;
         }
 
-        public void setIndexTypeESFields(HashMap<String, HashMap<String, Object>> indexTypeESFields) { this.indexTypeESFields = indexTypeESFields; }
+        public void setIndexTypeESFields(HashMap<String, HashMap<String, Object>> indexTypeESFields) {
+            this.indexTypeESFields = indexTypeESFields;
+        }
 
         public HashMap<String, HashMap<String, Object>> getIndexTypeESFields() {
             return this.indexTypeESFields;
         }
 
-        public void setAutoUpdateAttributes(HashMap<String, ArrayList> autoUpdateAttributes) { this.autoUpdateAttributes = autoUpdateAttributes; }
+        public void setAutoUpdateAttributes(HashMap<String, ArrayList> autoUpdateAttributes) {
+            this.autoUpdateAttributes = autoUpdateAttributes;
+        }
 
         public HashMap<String, ArrayList> getAutoUpdateAttributes() {
             return this.autoUpdateAttributes;
@@ -679,27 +730,27 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
     }
 
 
-
     /**
      * class that captures details of a constraint.
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class AtlasConstraintDef implements Serializable {
         private static final long serialVersionUID = 1L;
 
-        public static final String CONSTRAINT_TYPE_OWNED_REF   = "ownedRef";
+        public static final String CONSTRAINT_TYPE_OWNED_REF = "ownedRef";
         public static final String CONSTRAINT_TYPE_INVERSE_REF = "inverseRef";
-        public static final String CONSTRAINT_PARAM_ATTRIBUTE  = "attribute";
+        public static final String CONSTRAINT_PARAM_ATTRIBUTE = "attribute";
 
-        private String              type;   // foreignKey/mappedFromRef/valueInRange
+        private String type;   // foreignKey/mappedFromRef/valueInRange
         private Map<String, Object> params; // onDelete=cascade/refAttribute=attr2/min=0,max=23
 
 
-        public AtlasConstraintDef() { }
+        public AtlasConstraintDef() {
+        }
 
         public AtlasConstraintDef(String type) {
             this(type, null);
@@ -779,15 +830,17 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         }
 
         @Override
-        public String toString() { return toString(new StringBuilder()).toString(); }
+        public String toString() {
+            return toString(new StringBuilder()).toString();
+        }
     }
 
     /**
      * REST serialization friendly list.
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     @XmlSeeAlso(AtlasStructDef.class)
