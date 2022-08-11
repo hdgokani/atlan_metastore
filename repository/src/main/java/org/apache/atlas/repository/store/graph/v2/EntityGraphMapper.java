@@ -2765,7 +2765,7 @@ public class EntityGraphMapper {
 
                 List<String> chunkedGuids = processChunkedPropagation(impactedVertices.subList(offset, toIndex), classificationVertex);
 
-                if(! chunkedGuids.isEmpty()){
+                if((chunkedGuids != null) && (! chunkedGuids.isEmpty())){
                     propagatedEntitiesGuid.addAll(chunkedGuids);
                 }
                 offset += CHUNK_SIZE;
