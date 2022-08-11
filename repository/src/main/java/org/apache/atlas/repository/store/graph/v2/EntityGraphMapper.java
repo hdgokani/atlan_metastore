@@ -2693,7 +2693,7 @@ public class EntityGraphMapper {
                 Set<AtlasVertex>  vertices           = addedClassifications.get(classification);
                 List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
 
-                entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification));
+                entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification), false);
             }
 
             RequestContext.get().endMetricRecord(metric);
@@ -2799,7 +2799,7 @@ public class EntityGraphMapper {
             graph.commit();
 
             List<String> chunkedPropagatedEntitiesGuid = propagatedEntitiesChunked.stream().map(x -> x.getGuid()).collect(Collectors.toList());
-            entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification));
+            entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), true);
 
             return chunkedPropagatedEntitiesGuid;
         } catch (AtlasBaseException ex) {
