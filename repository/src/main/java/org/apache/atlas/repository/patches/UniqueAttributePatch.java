@@ -24,11 +24,7 @@ import org.apache.atlas.pc.WorkItemManager;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer.UniqueKind;
-import org.apache.atlas.repository.graphdb.AtlasCardinality;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
-import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasEntityType;
@@ -39,9 +35,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
+import static org.apache.atlas.repository.graph.indexmanager.AtlasCardinalityMapper.toAtlasCardinality;
+import static org.apache.atlas.repository.graph.indexmanager.PrimitiveClassMapper.getPrimitiveClass;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 
 public class UniqueAttributePatch extends AtlasPatchHandler {
@@ -136,20 +135,14 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
                         continue;
                     }
 
-                    AtlasAttributeDef attributeDef   = attribute.getAttributeDef();
-                    boolean           isIndexable    = attributeDef.getIsIndexable();
-                    String            attribTypeName = attributeDef.getTypeName();
-                    Class             propertyClass  = getIndexer().getPrimitiveClass(attribTypeName);
-                    AtlasCardinality  cardinality    = getIndexer().toAtlasCardinality(attributeDef.getCardinality());
+                    AtlasAttributeDef attributeDef = attribute.getAttributeDef();
+                    boolean isIndexable = attributeDef.getIsIndexable();
+                    String attribTypeName = attributeDef.getTypeName();
+                    Class propertyClass = getPrimitiveClass(attribTypeName);
+                    AtlasCardinality cardinality = toAtlasCardinality(attributeDef.getCardinality());
 
-                    getIndexer().createVertexIndex(management,
-                                                   uniquePropertyName,
-                                                   UniqueKind.PER_TYPE_UNIQUE,
-                                                   propertyClass,
-                                                   cardinality,
-                                                   isIndexable,
-                                                   true,
-                                                   AtlasAttributeDef.IndexType.STRING.equals(attribute.getIndexType()));
+                    getIndexer().createVertexIndex(management, uniquePropertyName, UniqueKind.PER_TYPE_UNIQUE, propertyClass,
+                            cardinality, isIndexable, true, AtlasAttributeDef.IndexType.STRING.equals(attribute.getIndexType()), new HashMap<>(), new HashMap<>());
                 }
 
                 getIndexer().commit(management);

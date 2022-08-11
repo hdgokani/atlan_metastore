@@ -34,13 +34,13 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.DEFAULT_SEARCHWEIGHT;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_TEXT_KEY;
-import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.*;
 
 /**
  This is a component that will go through all entity type definitions and create free text index

@@ -18,21 +18,19 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.graph.indexmanager.*;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -40,35 +38,19 @@ import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.DeleteType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Guice;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static org.apache.atlas.TestRelationshipUtilsV2.EMPLOYEE_TYPE;
-import static org.apache.atlas.TestRelationshipUtilsV2.getDepartmentEmployeeInstances;
-import static org.apache.atlas.TestRelationshipUtilsV2.getDepartmentEmployeeTypes;
-import static org.apache.atlas.TestRelationshipUtilsV2.getInverseReferenceTestTypes;
+import static org.apache.atlas.TestRelationshipUtilsV2.*;
 import static org.apache.atlas.TestUtilsV2.NAME;
 import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
 import static org.mockito.Mockito.mock;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.*;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
@@ -94,10 +76,22 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
     @Inject
     AtlasGraph atlasGraph;
 
-    AtlasEntityStore          entityStore;
-    AtlasRelationshipStore    relationshipStore;
+    @Inject
+    TypedefIndexCreator typedefIndexCreator;
+
+    @Inject
+    VertexIndexCreator vertexIndexCreator;
+
+    @Inject
+    EdgeIndexCreator edgeIndexCreator;
+
+    @Inject
+    IndexFieldNameResolver indexFieldNameResolver;
+
+    AtlasEntityStore entityStore;
+    AtlasRelationshipStore relationshipStore;
     AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
-    private final DeleteType  deleteType;
+    private final DeleteType deleteType;
 
     protected Map<String, AtlasObjectId> employeeNameIdMap = new HashMap<>();
 
@@ -109,7 +103,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
     public void setUp() throws Exception {
         super.initialize();
 
-        new GraphBackedSearchIndexer(typeRegistry);
+        new GraphBackedSearchIndexer(typeRegistry, new GraphBackedIndexCreator(typeRegistry, vertexIndexCreator, edgeIndexCreator), typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator);
 
         // create employee relationship types
         AtlasTypesDef employeeTypes = getDepartmentEmployeeTypes();

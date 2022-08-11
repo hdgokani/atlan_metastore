@@ -19,12 +19,12 @@ package org.apache.atlas.repository.patches;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.pc.WorkItemBuilder;
 import org.apache.atlas.pc.WorkItemConsumer;
 import org.apache.atlas.pc.WorkItemManager;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
-import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.type.AtlasEntityType;
@@ -40,26 +40,26 @@ public abstract class ConcurrentPatchProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ConcurrentPatchProcessor.class);
 
     private static final String NUM_WORKERS_PROPERTY = "atlas.patch.numWorkers";
-    private static final String BATCH_SIZE_PROPERTY  = "atlas.patch.batchSize";
-    private static final String ATLAS_SOLR_SHARDS    = "ATLAS_SOLR_SHARDS";
-    private static final String WORKER_NAME_PREFIX   = "patchWorkItem";
-    public static final int    NUM_WORKERS;
-    public static final int    BATCH_SIZE;
+    private static final String BATCH_SIZE_PROPERTY = "atlas.patch.batchSize";
+    private static final String ATLAS_SOLR_SHARDS = "ATLAS_SOLR_SHARDS";
+    private static final String WORKER_NAME_PREFIX = "patchWorkItem";
+    public static final int NUM_WORKERS;
+    public static final int BATCH_SIZE;
 
-    private final EntityGraphMapper        entityGraphMapper;
-    private final AtlasGraph               graph;
+    private final EntityGraphMapper entityGraphMapper;
+    private final AtlasGraph graph;
     private final GraphBackedSearchIndexer indexer;
-    private final AtlasTypeRegistry        typeRegistry;
+    private final AtlasTypeRegistry typeRegistry;
 
     static {
         int numWorkers = 3;
-        int batchSize  = 300;
+        int batchSize = 300;
 
         try {
             Configuration config = ApplicationProperties.get();
 
             numWorkers = config.getInt(NUM_WORKERS_PROPERTY, config.getInt(ATLAS_SOLR_SHARDS, 1) * 3);
-            batchSize  = config.getInt(BATCH_SIZE_PROPERTY, 300);
+            batchSize = config.getInt(BATCH_SIZE_PROPERTY, 300);
 
             LOG.info("ConcurrentPatchProcessor: {}={}, {}={}", NUM_WORKERS_PROPERTY, numWorkers, BATCH_SIZE_PROPERTY, batchSize);
         } catch (Exception e) {
@@ -67,13 +67,13 @@ public abstract class ConcurrentPatchProcessor {
         }
 
         NUM_WORKERS = numWorkers;
-        BATCH_SIZE  = batchSize;
+        BATCH_SIZE = batchSize;
     }
 
     public ConcurrentPatchProcessor(PatchContext context) {
-        this.graph             = context.getGraph();
-        this.indexer           = context.getIndexer();
-        this.typeRegistry      = context.getTypeRegistry();
+        this.graph = context.getGraph();
+        this.indexer = context.getIndexer();
+        this.typeRegistry = context.getTypeRegistry();
         this.entityGraphMapper = context.getEntityGraphMapper();
     }
 
@@ -99,12 +99,14 @@ public abstract class ConcurrentPatchProcessor {
     }
 
     protected abstract void prepareForExecution() throws AtlasBaseException;
+
     protected abstract void submitVerticesToUpdate(WorkItemManager manager);
+
     protected abstract void processVertexItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) throws AtlasBaseException;
 
     private void execute() {
         WorkItemManager manager = new WorkItemManager(new ConsumerBuilder(graph, typeRegistry, this),
-                                                      WORKER_NAME_PREFIX, BATCH_SIZE, NUM_WORKERS, false);
+                WORKER_NAME_PREFIX, BATCH_SIZE, NUM_WORKERS, false);
 
         try {
             submitVerticesToUpdate(manager);
@@ -147,7 +149,7 @@ public abstract class ConcurrentPatchProcessor {
         public Consumer(AtlasGraph graph, AtlasTypeRegistry typeRegistry, BlockingQueue<Long> queue, ConcurrentPatchProcessor individualItemProcessor) {
             super(queue);
 
-            this.graph        = graph;
+            this.graph = graph;
             this.typeRegistry = typeRegistry;
             this.counter = new AtomicLong(0);
             this.individualItemProcessor = individualItemProcessor;
@@ -177,7 +179,7 @@ public abstract class ConcurrentPatchProcessor {
                     graph.commit();
 
                     break;
-                } catch(Exception ex) {
+                } catch (Exception ex) {
                     LOG.error("Commit exception: ", retryCount, ex);
 
                     try {
@@ -204,7 +206,7 @@ public abstract class ConcurrentPatchProcessor {
                 return;
             }
 
-            String          typeName   = AtlasGraphUtilsV2.getTypeName(vertex);
+            String typeName = AtlasGraphUtilsV2.getTypeName(vertex);
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
             if (entityType == null) {
                 return;

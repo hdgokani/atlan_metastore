@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,37 +19,17 @@ package org.apache.atlas.repository.graphdb.janus;
 
 import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.repository.graphdb.AtlasCardinality;
-import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
-import org.apache.atlas.repository.graphdb.AtlasEdgeLabel;
-import org.apache.atlas.repository.graphdb.AtlasElement;
-
+import org.apache.atlas.repository.graphdb.*;
 import org.apache.commons.collections.MapUtils;
-
-import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
-import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
-import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.commons.lang.StringUtils;
-
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphFactory;
-import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.*;
 import org.janusgraph.core.log.TransactionRecovery;
-import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.core.schema.JanusGraphIndex;
-import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.core.schema.*;
 import org.janusgraph.core.schema.JanusGraphManagement.IndexBuilder;
-import org.janusgraph.core.schema.Mapping;
-import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.core.schema.PropertyKeyMaker;
-import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
 import org.janusgraph.graphdb.database.IndexSerializer;
@@ -65,20 +45,12 @@ import org.janusgraph.graphdb.types.ParameterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static org.janusgraph.core.schema.SchemaAction.ENABLE_INDEX;
-import static org.janusgraph.core.schema.SchemaStatus.ENABLED;
-import static org.janusgraph.core.schema.SchemaStatus.INSTALLED;
-import static org.janusgraph.core.schema.SchemaStatus.REGISTERED;
+import static org.janusgraph.core.schema.SchemaStatus.*;
 
 /**
  * Janus implementation of AtlasGraphManagement.
@@ -87,18 +59,18 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     private static final boolean lockEnabled = AtlasConfiguration.STORAGE_CONSISTENCY_LOCK_ENABLED.getBoolean();
     private static final Parameter[] STRING_PARAMETER_ARRAY = new Parameter[]{Mapping.STRING.asParameter()};
 
-    private static final Logger LOG            = LoggerFactory.getLogger(AtlasJanusGraphManagement.class);
-    private static final char[] RESERVED_CHARS = { '{', '}', '"', '$', Token.SEPARATOR_CHAR };
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasJanusGraphManagement.class);
+    private static final char[] RESERVED_CHARS = {'{', '}', '"', '$', Token.SEPARATOR_CHAR};
     private String ES_SEARCH_FIELD_KEY = "search";
     private String ES_FILTER_FIELD_KEY = "filter";
 
-    private AtlasJanusGraph      graph;
+    private AtlasJanusGraph graph;
     private JanusGraphManagement management;
-    private Set<String>          newMultProperties = new HashSet<>();
+    private Set<String> newMultProperties = new HashSet<>();
 
     public AtlasJanusGraphManagement(AtlasJanusGraph graph, JanusGraphManagement managementSystem) {
         this.management = managementSystem;
-        this.graph      = graph;
+        this.graph = graph;
     }
 
     @Override
@@ -133,8 +105,8 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
             edgeLabel = management.makeEdgeLabel(label).make();
         }
 
-        Direction     direction = AtlasJanusObjectFactory.createDirection(edgeDirection);
-        PropertyKey[] keys      = AtlasJanusObjectFactory.createPropertyKeys(propertyKeys);
+        Direction direction = AtlasJanusObjectFactory.createDirection(edgeDirection);
+        PropertyKey[] keys = AtlasJanusObjectFactory.createPropertyKeys(propertyKeys);
 
         if (management.getRelationIndex(edgeLabel, indexName) == null) {
             management.buildEdgeIndex(edgeLabel, indexName, direction, keys);
@@ -212,7 +184,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
         if (null == janusPropertyKey) return;
 
-        for (int i = 0;; i++) {
+        for (int i = 0; ; i++) {
             String deletedKeyName = janusPropertyKey + "_deleted_" + i;
 
             if (null == management.getPropertyKey(deletedKeyName)) {
@@ -241,12 +213,12 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
     @Override
     public String addMixedIndex(String indexName, AtlasPropertyKey propertyKey, boolean isStringField, HashMap<String, Object> indexTypeESConfig, HashMap<String, HashMap<String, Object>> indexTypeESFields) {
-        PropertyKey     janusKey        = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
+        PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
         JanusGraphIndex janusGraphIndex = management.getGraphIndex(indexName);
 
         ArrayList<Parameter> params = new ArrayList<>();
 
-        if(isStringField) {
+        if (isStringField) {
             params.add(Mapping.STRING.asParameter());
             LOG.debug("string type for {} with janueKey {}.", propertyKey.getName(), janusKey);
         }
@@ -264,14 +236,14 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         }
 
         if (params.size() > 0) {
-            management.addIndexKey(janusGraphIndex,janusKey,params.toArray(new Parameter[0]));
+            management.addIndexKey(janusGraphIndex, janusKey, params.toArray(new Parameter[0]));
         } else {
-            management.addIndexKey(janusGraphIndex,janusKey);
+            management.addIndexKey(janusGraphIndex, janusKey);
         }
         LOG.debug("created a type for {} with janueKey {}.", propertyKey.getName(), janusKey);
 
         String encodedName = "";
-        if(isStringField) {
+        if (isStringField) {
             encodedName = graph.getIndexFieldName(propertyKey, janusGraphIndex, STRING_PARAMETER_ARRAY);
         } else {
             encodedName = graph.getIndexFieldName(propertyKey, janusGraphIndex);
@@ -287,7 +259,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     public String getIndexFieldName(String indexName, AtlasPropertyKey propertyKey, boolean isStringField) {
         JanusGraphIndex janusGraphIndex = management.getGraphIndex(indexName);
 
-        if(isStringField) {
+        if (isStringField) {
             return graph.getIndexFieldName(propertyKey, janusGraphIndex, STRING_PARAMETER_ARRAY);
         } else {
             return graph.getIndexFieldName(propertyKey, janusGraphIndex);
@@ -363,13 +335,13 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
             if (index.isCompositeIndex()) {
                 PropertyKey[] propertyKeys = index.getFieldKeys();
-                SchemaStatus status       = index.getIndexStatus(propertyKeys[0]);
-                String        indexName    = index.name();
+                SchemaStatus status = index.getIndexStatus(propertyKeys[0]);
+                String indexName = index.name();
 
                 try {
                     if (status == REGISTERED) {
                         JanusGraphManagement management = graph.openManagement();
-                        JanusGraphIndex indexToUpdate   = management.getGraphIndex(indexName);
+                        JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
                         management.updateIndex(indexToUpdate, ENABLE_INDEX).get();
                         management.commit();
 
@@ -416,8 +388,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
                 mgmt.setConsistency(index, ConsistencyModifier.LOCK);
                 count++;
             }
-        }
-        finally {
+        } finally {
             LOG.info("setConsistency: {}: {}: Done!", elementType.getSimpleName(), count);
         }
     }
@@ -449,8 +420,8 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
     @Override
     public Object startIndexRecovery(long recoveryStartTime) {
-        Instant    recoveryStartInstant = Instant.ofEpochMilli(recoveryStartTime);
-        JanusGraph janusGraph           = this.graph.getGraph();
+        Instant recoveryStartInstant = Instant.ofEpochMilli(recoveryStartTime);
+        JanusGraph janusGraph = this.graph.getGraph();
 
         return JanusGraphFactory.startTransactionRecovery(janusGraph, recoveryStartInstant);
     }
@@ -464,7 +435,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         try {
             if (txRecoveryObject instanceof TransactionRecovery) {
                 TransactionRecovery txRecovery = (TransactionRecovery) txRecoveryObject;
-                StandardJanusGraph  janusGraph = (StandardJanusGraph) this.graph.getGraph();
+                StandardJanusGraph janusGraph = (StandardJanusGraph) this.graph.getGraph();
 
                 LOG.info("stopIndexRecovery: Index Client is unhealthy. Index recovery: Paused!");
 
@@ -488,7 +459,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         try {
             if (txRecoveryObject instanceof TransactionRecovery) {
                 StandardTransactionLogProcessor txRecovery = (StandardTransactionLogProcessor) txRecoveryObject;
-                long[]                          statistics = txRecovery.getStatistics();
+                long[] statistics = txRecovery.getStatistics();
 
                 if (statistics.length >= 2) {
                     LOG.info("Index Recovery: Stats: Success:{}: Failed: {}", statistics[0], statistics[1]);
