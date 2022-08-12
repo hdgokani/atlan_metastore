@@ -4,7 +4,6 @@ import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.atlas.type.AtlasBusinessMetadataType;
@@ -21,6 +20,7 @@ import java.util.List;
 import static org.apache.atlas.repository.graph.indexmanager.AtlasCardinalityMapper.toAtlasCardinality;
 import static org.apache.atlas.repository.graph.indexmanager.IndexApplicabilityChecker.isIndexApplicable;
 import static org.apache.atlas.repository.graph.indexmanager.PrimitiveClassMapper.getPrimitiveClass;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
 
 @Component
 public class IndexFieldNameResolver {
@@ -82,7 +82,7 @@ public class IndexFieldNameResolver {
                     AtlasPropertyKey propertyKey = managementSystem.getPropertyKey(attribute.getVertexPropertyName());
                     boolean isStringField = AtlasStructDef.AtlasAttributeDef.IndexType.STRING.equals(attribute.getIndexType());
                     if (propertyKey != null) {
-                        String indexFieldName = managementSystem.getIndexFieldName(Constants.VERTEX_INDEX, propertyKey, isStringField);
+                        String indexFieldName = managementSystem.getIndexFieldName(getCurrentIndexName(), propertyKey, isStringField);
 
                         attribute.setIndexFieldName(indexFieldName);
 

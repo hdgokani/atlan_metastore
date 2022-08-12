@@ -37,6 +37,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
+
 /**
  * This class is needed when this is a registered classification type or wildcard search,
  * registered classification includes special type as well. (tag filters will be ignored, and front-end should not enable
@@ -44,8 +46,8 @@ import java.util.*;
  */
 public class ClassificationSearchProcessor extends SearchProcessor {
 
-    private static final Logger LOG       = LoggerFactory.getLogger(ClassificationSearchProcessor.class);
-    private static final Logger PERF_LOG  = AtlasPerfTracer.getPerfLogger("ClassificationSearchProcessor");
+    private static final Logger LOG = LoggerFactory.getLogger(ClassificationSearchProcessor.class);
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("ClassificationSearchProcessor");
 
     private final AtlasIndexQuery        indexQuery;
     private final AtlasIndexQuery        classificationIndexQuery;
@@ -139,8 +141,8 @@ public class ClassificationSearchProcessor extends SearchProcessor {
 
             String indexQueryString = STRAY_AND_PATTERN.matcher(queryString).replaceAll(")");
             indexQueryString        = STRAY_OR_PATTERN.matcher(indexQueryString).replaceAll(")");
-            indexQueryString        = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
-            indexQuery              = graph.indexQuery(Constants.VERTEX_INDEX, indexQueryString);
+            indexQueryString = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
+            indexQuery = graph.indexQuery(getCurrentIndexName(), indexQueryString);
 
             LOG.debug("Using query string  '{}'.", indexQuery);
         } else {
@@ -161,7 +163,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             indexQueryString = STRAY_OR_PATTERN.matcher(indexQueryString).replaceAll(")");
             indexQueryString = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
 
-            this.classificationIndexQuery = graph.indexQuery(Constants.VERTEX_INDEX, indexQueryString);
+            this.classificationIndexQuery = graph.indexQuery(getCurrentIndexName(), indexQueryString);
 
             typeNamePredicate  = isClassificationRootType() ? null :
                                  SearchPredicateUtil.getINPredicateGenerator().generatePredicate(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes, String.class);

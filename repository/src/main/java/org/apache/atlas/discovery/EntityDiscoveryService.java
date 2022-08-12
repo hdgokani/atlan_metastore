@@ -72,6 +72,7 @@ import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.ASSET_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.OWNER_ATTRIBUTE;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.BASIC_SEARCH_STATE_FILTER;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TO_RANGE_LIST;
 
@@ -982,7 +983,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         try {
-            indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
+            indexQuery = graph.elasticsearchQuery(getCurrentIndexName(), searchParams);
 
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
 

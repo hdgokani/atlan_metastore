@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,7 +42,7 @@ public class AtlasElasticsearchDatabase {
         Configuration configuration = ApplicationProperties.get();
         String indexConf = configuration.getString(INDEX_BACKEND_CONF);
         String[] hosts = indexConf.split(",");
-        for (String host: hosts) {
+        for (String host : hosts) {
             host = host.trim();
             String[] hostAndPort = host.split(":");
             if (hostAndPort.length == 1) {
@@ -63,11 +63,13 @@ public class AtlasElasticsearchDatabase {
                     try {
                         List<HttpHost> httpHosts = getHttpHosts();
 
-                        RestClientBuilder restClientBuilder = RestClient.builder(httpHosts.toArray(new HttpHost[0]))
-                                .setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder.setConnectTimeout(900000)
-                                        .setSocketTimeout(900000));
-                        searchClient =
-                                new RestHighLevelClient(restClientBuilder);
+                        RestClientBuilder restClientBuilder = RestClient
+                                .builder(httpHosts.toArray(new HttpHost[0]))
+                                .setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
+                                        .setConnectTimeout(900000)
+                                        .setSocketTimeout(900000)
+                                );
+                        searchClient = new RestHighLevelClient(restClientBuilder);
                     } catch (AtlasException e) {
                         LOG.error("Failed to initialize high level client for ES");
                     }

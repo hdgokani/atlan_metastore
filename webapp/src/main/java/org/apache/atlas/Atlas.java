@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,39 +18,22 @@
 
 package org.apache.atlas;
 
-import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.web.service.EmbeddedServer;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.util.ShutdownHookManager;
-import org.elasticsearch.action.support.master.AcknowledgedResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
-import org.elasticsearch.client.indices.PutIndexTemplateRequest;
-import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.*;
-
-import static org.apache.atlas.repository.Constants.INDEX_PREFIX;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
+import java.util.Iterator;
 
 /**
  * Driver for running Metadata as a standalone server with embedded jetty server.
@@ -69,20 +52,17 @@ public final class Atlas {
     private static EmbeddedServer server;
 
     static {
-        ShutdownHookManager.get().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                try {
-                    LOG.info("==> Shutdown of Atlas");
+        ShutdownHookManager.get().addShutdownHook(new Thread(() -> {
+            try {
+                LOG.info("==> Shutdown of Atlas");
 
-                    shutdown();
-                } catch (Exception e) {
-                    LOG.error("Failed to shutdown", e);
-                } finally {
-                    LOG.info("<== Shutdown of Atlas");
-                }
+                shutdown();
+            } catch (Exception e) {
+                LOG.error("Failed to shutdown", e);
+            } finally {
+                LOG.info("<== Shutdown of Atlas");
             }
-        }, AtlasConstants.ATLAS_SHUTDOWN_HOOK_PRIORITY);
+        }), AtlasConstants.ATLAS_SHUTDOWN_HOOK_PRIORITY);
     }
 
     private static void shutdown() {
@@ -126,9 +106,9 @@ public final class Atlas {
 
         if (!isLocalAddress(InetAddress.getByName(appHost))) {
             String msg =
-                "Failed to start Atlas server. Address " + appHost
-                    + " does not belong to this host. Correct configuration parameter: "
-                    + SecurityProperties.BIND_ADDRESS;
+                    "Failed to start Atlas server. Address " + appHost
+                            + " does not belong to this host. Correct configuration parameter: "
+                            + SecurityProperties.BIND_ADDRESS;
             LOG.error(msg);
             throw new IOException(msg);
         }
@@ -139,10 +119,6 @@ public final class Atlas {
         configuration.setProperty(SecurityProperties.TLS_ENABLED, String.valueOf(enableTLS));
 
         showStartupInfo(buildConfiguration, enableTLS, appPort);
-        if (configuration.getProperty("atlas.graph.index.search.backend").equals("elasticsearch")) {
-            initElasticsearch();
-        }
-
         server = EmbeddedServer.newServer(appHost, appPort, appPath, enableTLS);
         installLogBridge();
 
@@ -185,8 +161,8 @@ public final class Atlas {
 
         assert configuration != null;
         appPort = StringUtils.isEmpty(enableTLSFlag) || enableTLSFlag.equals("true") ?
-            configuration.getInt(ATLAS_SERVER_HTTPS_PORT, 21443) :
-            configuration.getInt(ATLAS_SERVER_HTTP_PORT, 21000);
+                configuration.getInt(ATLAS_SERVER_HTTPS_PORT, 21443) :
+                configuration.getInt(ATLAS_SERVER_HTTP_PORT, 21000);
         return appPort;
     }
 
@@ -241,42 +217,5 @@ public final class Atlas {
         // add SLF4JBridgeHandler to j.u.l's root logger, should be done once during
         // the initialization phase of your application
         SLF4JBridgeHandler.install();
-    }
-
-    private static void initElasticsearch() throws IOException {
-        RestHighLevelClient esClient = AtlasElasticsearchDatabase.getClient();
-        IndexTemplatesExistRequest indexTemplateExistsRequest = new IndexTemplatesExistRequest("atlan-template");
-        boolean exists = false;
-        try {
-            exists = esClient.indices().existsTemplate(indexTemplateExistsRequest, RequestOptions.DEFAULT);
-            if (exists) {
-                LOG.info("atlan-template es index template exists!");
-            } else {
-                LOG.info("atlan-template es index template does not exists!");
-            }
-        } catch (Exception es) {
-            LOG.error("Caught exception: ", es.toString());
-        }
-        if (!exists) {
-            String vertexIndex = INDEX_PREFIX + VERTEX_INDEX;
-            PutIndexTemplateRequest request = new PutIndexTemplateRequest("atlan-template");
-            request.patterns(Arrays.asList(vertexIndex));
-            String atlasHomeDir  = System.getProperty("atlas.home");
-            String elasticsearchSettingsFilePath = (org.apache.commons.lang3.StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "elasticsearch" + File.separator + "es-settings.json";
-            File elasticsearchSettingsFile  = new File(elasticsearchSettingsFilePath);
-            String jsonString  = new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
-            request.settings(jsonString, XContentType.JSON);
-            try {
-                AcknowledgedResponse putTemplateResponse = esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
-                if (putTemplateResponse.isAcknowledged()) {
-                    LOG.info("Atlan index template created.");
-                } else {
-                    LOG.error("error creating atlan index template");
-                }
-            } catch (Exception e) {
-                LOG.error("Caught exception: ", e.toString());
-                throw e;
-            }
-        }
     }
 }

@@ -18,11 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.GraphTransactionInterceptor;
-import org.apache.atlas.RequestContext;
-import org.apache.atlas.SortOrder;
+import org.apache.atlas.*;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -50,22 +46,11 @@ import org.slf4j.LoggerFactory;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
-import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.GLOSSARY_TERMS_EDGE_LABEL;
-import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
-import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
-import static org.apache.atlas.repository.Constants.NAME;
-import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
 
 /**
  * Utility methods for Graph.
@@ -788,7 +773,7 @@ public class AtlasGraphUtilsV2 {
                 .append(" AND ")
                 .append(INDEX_SEARCH_PREFIX + "\"").append(STATE_PROPERTY_KEY).append("\":ACTIVE");
 
-        return graph.indexQuery(Constants.VERTEX_INDEX, sb.toString());
+        return graph.indexQuery(getCurrentIndexName(), sb.toString());
     }
 
     public static String getIndexSearchPrefix() {

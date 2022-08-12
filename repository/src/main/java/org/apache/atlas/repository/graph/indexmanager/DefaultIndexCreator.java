@@ -1,16 +1,20 @@
 package org.apache.atlas.repository.graph.indexmanager;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.io.IOException;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
@@ -29,6 +33,7 @@ import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.indexmanager.IndexApplicabilityChecker.isIndexApplicable;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.*;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
 import static org.apache.atlas.type.Constants.*;
 
 @Component
@@ -41,12 +46,19 @@ public class DefaultIndexCreator extends GraphTransactionManager {
     private final EdgeIndexCreator edgeIndexCreator;
 
     @Inject
-    public DefaultIndexCreator(AtlasTypeRegistry typeRegistry, VertexIndexCreator vertexIndexCreator, EdgeIndexCreator edgeIndexCreator) {
+    public DefaultIndexCreator(AtlasTypeRegistry typeRegistry,
+                               VertexIndexCreator vertexIndexCreator,
+                               EdgeIndexCreator edgeIndexCreator,
+                               AtlasIndexCreator atlasIndexCreator) throws IOException, AtlasException {
         this.typeRegistry = typeRegistry;
         this.vertexIndexCreator = vertexIndexCreator;
         this.edgeIndexCreator = edgeIndexCreator;
-    }
+        Configuration configuration = ApplicationProperties.get();
 
+        if (configuration.getProperty("atlas.graph.index.search.backend").equals("elasticsearch")) {
+            atlasIndexCreator.createIndex(getCurrentIndexName());
+        }
+    }
 
     public void createDefaultIndexes(AtlasGraph graph) throws RepositoryException, IndexException {
         AtlasGraphManagement management = graph.getManagementSystem();
@@ -54,10 +66,10 @@ public class DefaultIndexCreator extends GraphTransactionManager {
         try {
             LOG.info("Creating indexes for graph.");
 
-            if (management.getGraphIndex(VERTEX_INDEX) == null) {
-                management.createVertexMixedIndex(VERTEX_INDEX, BACKING_INDEX, Collections.emptyList());
+            if (management.getGraphIndex(getCurrentIndexName()) == null) {
+                management.createVertexMixedIndex(getCurrentIndexName(), BACKING_INDEX, Collections.emptyList());
 
-                LOG.info("Created index : {}", VERTEX_INDEX);
+                LOG.info("Created index : {}", getCurrentIndexName());
             }
 
             if (management.getGraphIndex(EDGE_INDEX) == null) {
@@ -83,9 +95,6 @@ public class DefaultIndexCreator extends GraphTransactionManager {
             ES_KEYWORD_FIELD.put("normalizer", "atlan_normalizer");
             HashMap<String, HashMap<String, Object>> KEYWORD_MULTIFIELD = new HashMap<>();
             KEYWORD_MULTIFIELD.put("keyword", ES_KEYWORD_FIELD);
-
-            HashMap<String, Object> ES_ATLAN_TEXT_ANALYZER_CONFIG = new HashMap<>();
-            ES_ATLAN_TEXT_ANALYZER_CONFIG.put("analyzer", "atlan_text_analyzer");
 
             HashMap<String, Object> ES_ATLAN_TEXT_COMMA_ANALYZER_CONFIG = new HashMap<>();
             ES_ATLAN_TEXT_COMMA_ANALYZER_CONFIG.put("analyzer", "atlan_text_comma_analyzer");

@@ -13,10 +13,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.indexmanager.IndexApplicabilityChecker.isIndexApplicable;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.SET;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.SINGLE;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
 
 @Component
 public class VertexIndexCreator {
@@ -34,17 +36,17 @@ public class VertexIndexCreator {
                 propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
             }
 
-            if (isIndexApplicable(propertyClass, cardinality) && !management.getGraphIndex(VERTEX_INDEX).getFieldKeys().contains(propertyKey)) {
+            if (isIndexApplicable(propertyClass, cardinality) && !management.getGraphIndex(getCurrentIndexName()).getFieldKeys().contains(propertyKey)) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Creating backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
                 }
 
-                indexFieldName = management.addMixedIndex(VERTEX_INDEX, propertyKey, isStringField, indexTypeESConfig, indexTypeESFields);
+                indexFieldName = management.addMixedIndex(getCurrentIndexName(), propertyKey, isStringField, indexTypeESConfig, indexTypeESFields);
                 LOG.info("Created backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
             }
 
             if (indexFieldName == null && isIndexApplicable(propertyClass, cardinality)) {
-                indexFieldName = management.getIndexFieldName(VERTEX_INDEX, propertyKey, isStringField);
+                indexFieldName = management.getIndexFieldName(getCurrentIndexName(), propertyKey, isStringField);
             }
 
             if (propertyKey != null) {

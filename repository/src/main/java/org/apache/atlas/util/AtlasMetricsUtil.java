@@ -24,7 +24,6 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.util.AtlasMetricsCounter.StatsReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
@@ -37,6 +36,7 @@ import java.util.concurrent.*;
 import static org.apache.atlas.model.metrics.AtlasMetrics.*;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_INTERNAL;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
 import static org.apache.atlas.util.AtlasMetricsCounter.Period.*;
 
 @Component
@@ -220,7 +220,7 @@ public class AtlasMetricsUtil {
             runWithTimeout(new Runnable() {
                 @Override
                 public void run() {
-                    graph.indexQuery(Constants.VERTEX_INDEX, query).vertices(0, 1);
+                    graph.indexQuery(getCurrentIndexName(), query).vertices(0, 1);
 
                     graphCommit();
                 }
