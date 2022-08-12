@@ -20,16 +20,15 @@
 package org.apache.atlas.web.rest;
 
 
+import org.apache.atlas.accesscontrol.AtlasAccessControlService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.purpose.AtlasPurposeService;
-import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
+import org.apache.atlas.accesscontrol.persona.AtlasPersonaService;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang.StringUtils;
+import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -44,108 +43,105 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import java.io.IOException;
+
+import static org.apache.atlas.accesscontrol.AccessControlUtil.getPolicyCategory;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.repository.Constants.*;
 
 /**
- * REST for a Purpose operations
+ * REST for a Persona/ Purpose operations
  */
-@Path("v2/purpose")
+@Path("v2/accesscontrol")
 @Singleton
 @Service
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 @Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
-public class PurposeREST {
+public class AccessControlREST {
 
-    private static final Logger LOG      = LoggerFactory.getLogger(PurposeREST.class);
-    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.PurposeREST");
+    private static final Logger LOG      = LoggerFactory.getLogger(AccessControlREST.class);
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.AccessControlREST");
 
-    private final AtlasPurposeService atlasPurposeService;
+
+    private final AtlasAccessControlService accessControlService;
 
     @Inject
-    public PurposeREST(AtlasPurposeService atlasPurposeService) {
-        this.atlasPurposeService = atlasPurposeService;
+    public AccessControlREST(AtlasAccessControlService accessControlService) {
+        this.accessControlService = accessControlService;
     }
 
-
     /**
-     * Create or Update Purpose
+     * Create or Update Persona/Purpose
      *
-     * @param entityWithExtInfo Purpose entity
+     * @param entityWithExtInfo Persona/Purpose entity
      * @return EntityMutationResponse
      * @throws AtlasBaseException
      */
     @POST
-    public EntityMutationResponse createOrUpdatePurpose(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+    public EntityMutationResponse createOrUpdate(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException, JSONException, IOException {
         AtlasPerfTracer perf = null;
-        EntityMutationResponse response;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "PurposeREST.createOrUpdate()");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AccessControlREST.createOrUpdate()");
             }
 
-            if(!entityWithExtInfo.getEntity().getTypeName().equals(PURPOSE_ENTITY_TYPE)) {
-                throw new AtlasBaseException(BAD_REQUEST, "Please provide entity of type {}", PURPOSE_ENTITY_TYPE);
-            }
-
-            //TODO: Validate tags names?
-
-            response = atlasPurposeService.createOrUpdatePurpose(entityWithExtInfo);
+            return accessControlService.createOrUpdate(entityWithExtInfo);
         } finally {
             AtlasPerfTracer.log(perf);
         }
-
-        return response;
     }
 
     /**
-     * Delete a Purpose
+     * Delete a Persona/Purpose
      *
-     * @param guid of Purpose entity
+     * @param guid of Persona/purpose entity
      * @return EntityMutationResponse
      * @throws AtlasBaseException
      */
     @DELETE
     @Path("/{guid}")
-    public void deletePurpose(@PathParam("guid") String guid) throws AtlasBaseException {
+    public void delete(@PathParam("guid") String guid) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "PurposeREST.deletePurpose()");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AccessControlREST.delete()");
             }
 
-            atlasPurposeService.deletePurpose(guid);
+            accessControlService.delete(guid);
         } finally {
             AtlasPerfTracer.log(perf);
         }
     }
 
     /**
-     * Create or Update Purpose policy
+     * Create or Update an access control policy
      *
-     * @param entityWithExtInfo Purpose policy entity
+     * @param entityWithExtInfo access control policy entity
      * @return EntityMutationResponse
      * @throws AtlasBaseException
      */
     @POST
     @Path("policy")
-    public EntityMutationResponse createOrUpdatePurposePolicy(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+    public EntityMutationResponse createOrUpdatePolicy(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         EntityMutationResponse response;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "PurposeREST.createOrUpdatePurposePolicy()");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AccessControlREST.createOrUpdateAccessControlPolicy()");
             }
 
-            String typeName = entityWithExtInfo.getEntity().getTypeName();
-            if(!PURPOSE_METADATA_POLICY_ENTITY_TYPE.equals(typeName)) {
-                throw new AtlasBaseException(BAD_REQUEST, "Not a valid type for Purpose Policy");
+            if(!POLICY_ENTITY_TYPE.equals(entityWithExtInfo.getEntity().getTypeName())) {
+                throw new AtlasBaseException(BAD_REQUEST, "Please provide entity of type {}", POLICY_ENTITY_TYPE);
             }
 
-            response = atlasPurposeService.createOrUpdatePurposePolicy(entityWithExtInfo);
+            if(StringUtils.isEmpty(getPolicyCategory(entityWithExtInfo.getEntity()))) {
+                throw new AtlasBaseException(BAD_REQUEST, "Policy must have accessControlPolicyCategory {}", POLICY_CATEGORY_PERSONA);
+            }
+
+            response = accessControlService.createOrUpdatePolicy(entityWithExtInfo);
 
         } finally {
             AtlasPerfTracer.log(perf);
@@ -155,23 +151,23 @@ public class PurposeREST {
     }
 
     /**
-     * Delete a Purpose Policy
+     * Delete an access control Policy
      *
-     * @param guid of Purpose Policy entity
+     * @param guid of access control Policy entity
      * @return EntityMutationResponse
      * @throws AtlasBaseException
      */
     @DELETE
     @Path("policy/{guid}")
-    public void deletePurposePolicy(@PathParam("guid") String guid) throws AtlasBaseException {
+    public void deletePolicy(@PathParam("guid") String guid) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "PurposeREST.deletePurposePolicy()");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AccessControlREST.deleteAccessControlPolicy()");
             }
 
-            atlasPurposeService.deletePurposePolicy(guid);
+            accessControlService.deletePolicy(guid);
         } finally {
             AtlasPerfTracer.log(perf);
         }

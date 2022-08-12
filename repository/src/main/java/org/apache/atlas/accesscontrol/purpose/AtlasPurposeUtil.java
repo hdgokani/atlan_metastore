@@ -1,7 +1,7 @@
-package org.apache.atlas.purpose;
+package org.apache.atlas.accesscontrol.purpose;
 
+import org.apache.atlas.accesscontrol.AccessControlUtil;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.PersonaPurposeCommonUtil;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
@@ -9,9 +9,9 @@ import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.util.NanoIdUtils;
+import org.apache.atlas.ranger.AtlasRangerService;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.ranger.plugin.model.RangerRole;
+import org.apache.ranger.plugin.model.RangerPolicy;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,9 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.repository.Constants.*;
-
-public class AtlasPurposeUtil extends PersonaPurposeCommonUtil {
+public class AtlasPurposeUtil extends AccessControlUtil {
 
     public static final String RESOURCE_TAG = "tag";
     public static final String SERVICE_NAME = AtlasConfiguration.RANGER_ATLAS_SERVICE_TYPE.getString();
@@ -30,40 +28,15 @@ public class AtlasPurposeUtil extends PersonaPurposeCommonUtil {
 
 
     public static List<String> getTags(AtlasEntity purpose) {
-        return (List<String>) purpose.getAttribute("tags");
+        return (List<String>) purpose.getAttribute("purposeClassifications");
     }
 
     public static List<String> getTags(AtlasEntityHeader purpose) {
-        return (List<String>) purpose.getAttribute("tags");
+        return (List<String>) purpose.getAttribute("purposeClassifications");
     }
 
     public static boolean getIsAllUsers(AtlasEntity policy) {
-        return (boolean) policy.getAttribute("allUsers");
-    }
-
-    public static List<AtlasEntity> getPurposeAllPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        List<AtlasEntity> ret = new ArrayList<>();
-
-        ret.addAll(getMetadataPolicies(entityWithExtInfo));
-        //TODO: add data policies
-
-        return ret;
-    }
-
-    public static List<AtlasEntity> getMetadataPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        List<AtlasEntity> ret = new ArrayList<>();
-        AtlasEntity purpose = entityWithExtInfo.getEntity();
-
-        List<AtlasObjectId> policies = (List<AtlasObjectId>) purpose.getRelationshipAttribute("metadataPolicies");
-
-        if (policies != null) {
-            ret = policies.stream()
-                    .map(x -> entityWithExtInfo.getReferredEntity(x.getGuid()))
-                    .filter(x -> x.getStatus() == AtlasEntity.Status.ACTIVE)
-                    .collect(Collectors.toList());
-        }
-
-        return ret;
+        return (boolean) policy.getAttribute("applyPolicyToAllUsers");
     }
 
     public static String getPurposeLabel(String purposeGuid) {
@@ -79,11 +52,19 @@ public class AtlasPurposeUtil extends PersonaPurposeCommonUtil {
     }
 
     protected static String formatAccessType(String type){
-        return String.format("%s:%s", SERVICE_NAME, type);
+        return formatAccessType(SERVICE_NAME, type);
+    }
+
+    protected static String formatMaskType(String type){
+        return formatAccessType("heka", type);
+    }
+
+    protected static String formatAccessType(String prefix, String type){
+        return String.format("%s:%s", prefix, type);
     }
 
     protected static String getPurposeGuid(AtlasEntity policyEntity) {
-        Object purpose = policyEntity.getRelationshipAttribute("purpose");
+        Object purpose = policyEntity.getRelationshipAttribute("accessControl");
         if (purpose instanceof AtlasObjectId) {
             return ((AtlasObjectId) purpose).getGuid();
         } else if (purpose instanceof Map) {
@@ -117,6 +98,53 @@ public class AtlasPurposeUtil extends PersonaPurposeCommonUtil {
                 }
             }
         }
+    }
+
+    public static List<RangerPolicy> fetchRangerPoliciesByResourcesForPurposeDelete(AtlasRangerService atlasRangerService,
+                                                                                    AtlasEntity purpose) throws AtlasBaseException {
+        List<RangerPolicy> rangerPolicies = new ArrayList<>();
+        List<RangerPolicy> ret = new ArrayList<>();
+
+        Map <String, String> params = new HashMap<>();
+        int size = 25;
+        int from = 0;
+
+        params.put("page", "0");
+        params.put("pageSize", String.valueOf(size));
+        params.put("serviceType", "tag");
+        List<String> tags = getTags(purpose);
+
+        int fetched;
+        do {
+            params.put("startIndex", String.valueOf(from));
+
+            List<RangerPolicy> rangerPoliciesPaginated = atlasRangerService.getPoliciesByResources(getResourcesForPurposeDelete(tags.get(0)), params);
+            fetched = rangerPoliciesPaginated.size();
+            rangerPolicies.addAll(rangerPoliciesPaginated);
+
+            from += size;
+
+        } while (fetched == size);
+
+        if (CollectionUtils.isNotEmpty(rangerPolicies)) {
+            //find exact matches among the result list
+            for (RangerPolicy policy : rangerPolicies) {
+                List<String> policyTags = policy.getResources().get(RESOURCE_TAG).getValues();
+
+                if (CollectionUtils.isEqualCollection(policyTags, tags)) {
+                    ret.add(policy);
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    private static Map<String, String> getResourcesForPurposeDelete(String tag) {
+        Map<String, String> resources = new HashMap<>();
+        resources.put(RESOURCE_TAG, tag);
+
+        return resources;
     }
 }
 

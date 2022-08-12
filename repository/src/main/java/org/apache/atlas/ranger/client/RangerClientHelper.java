@@ -20,6 +20,7 @@ package org.apache.atlas.ranger.client;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.ranger.RangerPolicyList;
+import org.apache.atlas.ranger.RangerRoleList;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.ranger.plugin.model.RangerPolicy;
 import org.apache.ranger.plugin.model.RangerRole;
@@ -43,6 +44,10 @@ public class RangerClientHelper {
 
     public static RangerRole createRole(RangerRole rangerRole) throws AtlasServiceException {
         return client.createRole(rangerRole);
+    }
+
+    public static RangerRoleList getRole(String roleName) throws AtlasServiceException {
+        return client.getRole(roleName);
     }
 
     public static RangerRole updateRole(RangerRole rangerRole) throws AtlasServiceException {

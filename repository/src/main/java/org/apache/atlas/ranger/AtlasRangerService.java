@@ -20,7 +20,7 @@ package org.apache.atlas.ranger;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.persona.PersonaContext;
+import org.apache.atlas.accesscontrol.persona.PersonaContext;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.ranger.client.RangerClientHelper;
 import org.apache.atlas.type.AtlasType;
@@ -35,8 +35,9 @@ import javax.inject.Inject;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-import static org.apache.atlas.persona.AtlasPersonaUtil.*;
+import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.*;
 
 
 @Component
@@ -78,6 +79,31 @@ public class AtlasRangerService {
         } catch (Exception e) {
             e.printStackTrace();
             throw new AtlasBaseException("Failed to create Ranger role: " + e.getMessage());
+        }
+        return ret;
+    }
+
+    public RangerRole getRangerRole(String roleName) throws AtlasBaseException {
+        RangerRoleList roles;
+        RangerRole ret;
+
+        try {
+            roles = RangerClientHelper.getRole(roleName);
+
+            Optional<RangerRole> opt = roles.getList().stream().filter(x -> roleName.equals(x.getName())).findFirst();
+
+            if (opt.isPresent()) {
+                ret = opt.get();
+            } else {
+                throw new AtlasBaseException("Role for connection not found");
+            }
+
+        } catch (AtlasServiceException e) {
+            e.printStackTrace();
+            throw new AtlasBaseException("Failed to get Ranger role due to Ranger issue: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new AtlasBaseException("Failed to get Ranger role: " + e.getMessage());
         }
         return ret;
     }

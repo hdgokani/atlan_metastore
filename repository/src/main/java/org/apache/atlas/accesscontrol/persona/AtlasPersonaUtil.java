@@ -1,13 +1,11 @@
-package org.apache.atlas.persona;
+package org.apache.atlas.accesscontrol.persona;
 
-import org.apache.atlas.PersonaPurposeCommonUtil;
+import org.apache.atlas.accesscontrol.AccessControlUtil;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.util.NanoIdUtils;
 import org.apache.ranger.plugin.model.RangerRole;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -17,27 +15,26 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.NAME;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.POLICY_TYPE_GLOSSARY;
 
 
-public class AtlasPersonaUtil extends PersonaPurposeCommonUtil {
+public class AtlasPersonaUtil extends AccessControlUtil {
 
-    public static final String RESOURCE_KEY_ENTITY = "entity";
-    public static final String RESOURCE_ENTITY_TYPE = "entity-type";
+    public static final String RESOURCE_KEY_ENTITY   = "entity";
+    public static final String RESOURCE_ENTITY_TYPE  = "entity-type";
     public static final String RESOURCE_ENTITY_CLASS = "entity-classification";
     public static final String RESOURCE_ENTITY_LABEL = "entity-label";
-    public static final String RESOURCE_BM = "entity-business-metadata";
-    public static final String RESOURCE_CLASS = "classification";
+    public static final String RESOURCE_BM           = "entity-business-metadata";
+    public static final String RESOURCE_CLASS        = "classification";
 
     public static final String RESOURCE_REL_TYPE = "relationship-type";
 
-    public static final String RESOURCE_END_ONE_ENTITY = "end-one-entity";
-    public static final String RESOURCE_END_ONE_ENTITY_TYPE = "end-one-entity-type";
+    public static final String RESOURCE_END_ONE_ENTITY       = "end-one-entity";
+    public static final String RESOURCE_END_ONE_ENTITY_TYPE  = "end-one-entity-type";
     public static final String RESOURCE_END_ONE_ENTITY_CLASS = "end-one-entity-classification";
 
-    public static final String RESOURCE_END_TWO_ENTITY = "end-two-entity";
-    public static final String RESOURCE_END_TWO_ENTITY_TYPE = "end-two-entity-type";
+    public static final String RESOURCE_END_TWO_ENTITY       = "end-two-entity";
+    public static final String RESOURCE_END_TWO_ENTITY_TYPE  = "end-two-entity-type";
     public static final String RESOURCE_END_TWO_ENTITY_CLASS = "end-two-entity-classification";
 
 
@@ -82,23 +79,27 @@ public class AtlasPersonaUtil extends PersonaPurposeCommonUtil {
     }
 
     public static List<RangerRole.RoleMember> getGroupsAsRangerRole(AtlasEntity entity) {
-        List<String> groups =  (List<String>) entity.getAttribute("groups");
+        List<String> groups =  getPersonaGroups(entity);
 
         return groups.stream().map(x -> new RangerRole.RoleMember(x, false)).collect(Collectors.toList());
     }
 
     public static List<RangerRole.RoleMember> getUsersAsRangerRole(AtlasEntity entity) {
-        List<String> users = (List<String>) entity.getAttribute("users");
+        List<String> users = getPersonaUsers(entity);
 
         return users.stream().map(x -> new RangerRole.RoleMember(x, false)).collect(Collectors.toList());
     }
 
-    public static String getConnectionId(AtlasEntity personaPolicyEntity) {
-        return (String) personaPolicyEntity.getAttribute("connectionId");
+    public static List<String> getPersonaGroups(AtlasEntity entity) {
+        return (List<String>) entity.getAttribute("personaGroups");
+    }
+
+    public static List<String> getPersonaUsers(AtlasEntity entity) {
+        return (List<String>) entity.getAttribute("personaUsers");
     }
 
     public static String getPersonaGuid(AtlasEntity personaPolicyEntity) {
-        Object persona = personaPolicyEntity.getRelationshipAttribute("persona");
+        Object persona = personaPolicyEntity.getRelationshipAttribute("accessControl");
         if (persona instanceof AtlasObjectId) {
             return ((AtlasObjectId) persona).getGuid();
         } else if (persona instanceof Map) {
@@ -108,52 +109,13 @@ public class AtlasPersonaUtil extends PersonaPurposeCommonUtil {
         return null;
     }
 
-    public static List<String> getAssets(AtlasEntity personaPolicyEntity) {
-        return (List<String>) personaPolicyEntity.getAttribute("assets");
-    }
-
-    public static List<String> getGlossaryQualifiedNames(AtlasEntity personaPolicyEntity) {
-        return (List<String>) personaPolicyEntity.getAttribute("glossaryQualifiedNames");
-    }
-
-    public static List<AtlasEntity> getPersonaAllPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        List<AtlasEntity> ret = new ArrayList<>();
-
-        ret.addAll(getMetadataPolicies(entityWithExtInfo));
-        ret.addAll(getGlossaryPolicies(entityWithExtInfo));
-        ret.addAll(getDataPolicies(entityWithExtInfo));
-
-        return ret;
-    }
-
-    public static List<AtlasEntity> getMetadataPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        List<AtlasObjectId> policies = (List<AtlasObjectId>) entityWithExtInfo.getEntity().getRelationshipAttribute("metadataPolicies");
-
-        return objectToEntityList(entityWithExtInfo, policies);
-    }
-
     public static List<AtlasEntity> getGlossaryPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        List<AtlasObjectId> policies = (List<AtlasObjectId>) entityWithExtInfo.getEntity().getRelationshipAttribute("glossaryPolicies");
+        List<AtlasEntity> policies = getPolicies(entityWithExtInfo);
 
-        return objectToEntityList(entityWithExtInfo, policies);
+        return policies.stream().filter(AtlasPersonaUtil::isGlossaryPolicy).collect(Collectors.toList());
     }
 
-    public static List<AtlasEntity> getDataPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        List<AtlasObjectId> policies = (List<AtlasObjectId>) entityWithExtInfo.getEntity().getRelationshipAttribute("dataPolicies");
-
-        return objectToEntityList(entityWithExtInfo, policies);
-    }
-
-    private static List<AtlasEntity> objectToEntityList(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, List<AtlasObjectId> policies) {
-        List<AtlasEntity> ret = new ArrayList<>();
-
-        if (policies != null) {
-            ret = policies.stream()
-                    .map(x -> entityWithExtInfo.getReferredEntity(x.getGuid()))
-                    .filter(x -> x.getStatus() == AtlasEntity.Status.ACTIVE)
-                    .collect(Collectors.toList());
-        }
-
-        return ret;
+    public static boolean isGlossaryPolicy(AtlasEntity policyEntity) {
+        return POLICY_TYPE_GLOSSARY.equals(getPolicyType(policyEntity));
     }
 }

@@ -15,27 +15,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.purpose;
+package org.apache.atlas.accesscontrol.purpose;
 
+import org.apache.atlas.accesscontrol.AccessControlUtil;
+import org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.commons.lang.StringUtils;
 import org.apache.ranger.plugin.model.RangerPolicy;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.atlas.purpose.AtlasPurposeUtil.getIsAllow;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.getDataPolicyMaskType;
+import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.getIsAllow;
+import static org.apache.atlas.repository.Constants.PURPOSE_DATA_POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_METADATA_POLICY_ENTITY_TYPE;
 
 public class PurposeContext {
-
 
     private AtlasEntityWithExtInfo purposeExtInfo;
     private AtlasEntity purposePolicy;
     private AtlasEntity existingPurposePolicy;
     private boolean isCreateNewPurpose;
     private boolean isCreateNewPurposePolicy;
-    private boolean isUpdatePurposePolicy;
     private boolean isDeletePurposePolicy;
 
 
@@ -46,6 +49,7 @@ public class PurposeContext {
 
     private boolean isMetadataPolicy = false;
     private boolean isDataPolicy = false;
+    private boolean isDataMaskPolicy;
 
 
     public PurposeContext() {}
@@ -57,6 +61,7 @@ public class PurposeContext {
     public PurposeContext(AtlasEntityWithExtInfo purposeExtInfo, AtlasEntity purposePolicy) {
         this.purposeExtInfo = purposeExtInfo;
         this.purposePolicy = purposePolicy;
+        setPolicyType();
     }
 
     public AtlasEntityWithExtInfo getPurposeExtInfo() {
@@ -94,14 +99,6 @@ public class PurposeContext {
 
     public void setCreateNewPurposePolicy(boolean createNewPurposePolicy) {
         isCreateNewPurposePolicy = createNewPurposePolicy;
-    }
-
-    public boolean isUpdatePurposePolicy() {
-        return isUpdatePurposePolicy;
-    }
-
-    public void setUpdatePurposePolicy(boolean updatePurposePolicy) {
-        isUpdatePurposePolicy = updatePurposePolicy;
     }
 
     public boolean isDeletePurposePolicy() {
@@ -150,21 +147,49 @@ public class PurposeContext {
         }
     }
 
+    public boolean isDataPolicy() {
+        return isDataPolicy;
+    }
+
+    public boolean isDataMaskPolicy() {
+        return isDataMaskPolicy;
+    }
+
+    public void setIsDataPolicy(boolean isDataPolicy) {
+        this.isDataPolicy = isDataPolicy;
+        this.isMetadataPolicy = false;
+    }
+
+    public boolean isDataMaskPolicy(AtlasEntity purposePolicy) {
+        if (StringUtils.isNotEmpty(getDataPolicyMaskType(purposePolicy))) {
+            return true;
+        }
+        return false;
+    }
+
     public boolean isMetadataPolicy() {
         return isMetadataPolicy;
     }
 
-    public void setMetadataPolicy(boolean metadataPolicy) {
-        isMetadataPolicy = metadataPolicy;
+    public void setIsMetadataPolicy(boolean isMetadataPolicy) {
+        this.isMetadataPolicy = isMetadataPolicy;
+        this.isDataPolicy = false;
     }
 
     public void setPolicyType() {
-        if (getPurposePolicy() != null) {
-            String type = getPurposePolicy().getTypeName();
-
-            switch (type) {
-                case PURPOSE_METADATA_POLICY_ENTITY_TYPE: isMetadataPolicy = true; break;
+        if (purposePolicy != null) {
+            if (AccessControlUtil.isMetadataPolicy(purposePolicy)) {
+                isMetadataPolicy = true;
+            } else if (AccessControlUtil.isDataPolicy(purposePolicy)) {
+                isDataPolicy = true;
+                setDataMaskPolicyType();
             }
+        }
+    }
+
+    private void setDataMaskPolicyType() {
+        if (StringUtils.isNotEmpty(getDataPolicyMaskType(purposePolicy))) {
+            isDataMaskPolicy = true;
         }
     }
 }

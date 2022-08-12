@@ -88,9 +88,8 @@ public enum AtlasConfiguration {
     UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true),
     ENABLE_SEARCH_LOGGING("atlas.enable.search.logging", true),
 
-    RANGER_USERNAME("ranger.username", true),
-    RANGER_PASSWORD("ranger.password", true),
-    RANGER_ATLAS_SERVICE_TYPE("ranger.atlas.service.type", "atlas");
+    RANGER_ATLAS_SERVICE_TYPE("atlas.ranger.service.type.atlas", "atlas"),
+    RANGER_HEKA_SERVICE_TYPE("atlas.ranger.service.type.heka", "heka");
 
 
 

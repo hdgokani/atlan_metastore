@@ -22,7 +22,6 @@ import com.sun.jersey.api.client.*;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 import com.sun.jersey.api.json.JSONConfiguration;
-import com.sun.jersey.client.urlconnection.HttpURLConnectionFactory;
 import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import com.sun.jersey.multipart.impl.MultiPartWriter;
@@ -31,6 +30,7 @@ import org.apache.atlas.AtlasBaseClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.ranger.RangerPolicyList;
+import org.apache.atlas.ranger.RangerRoleList;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -40,20 +40,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
-import static org.apache.atlas.persona.AtlasPersonaUtil.RESOURCE_PREFIX;
+import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.RESOURCE_PREFIX;
 
 @Component
 public class RangerClient {
@@ -65,9 +62,9 @@ public class RangerClient {
     private String basicAuthPassword;
 
 
-    private static final String PROP_RANGER_BASE_URL = "ranger.base.url";
-    private static final String PROP_RANGER_USERNAME = "ranger.username";
-    private static final String PROP_RANGER_PASSWORD = "ranger.password";
+    private static final String PROP_RANGER_BASE_URL = "atlas.ranger.base.url";
+    private static final String PROP_RANGER_USERNAME = "atlas.ranger.username";
+    private static final String PROP_RANGER_PASSWORD = "atlas.ranger.password";
 
     private static final String BASE_URI_DEFAULT = "http://localhost:8080/api/policy/";
 
@@ -78,6 +75,7 @@ public class RangerClient {
     public static final  String POLICY_GET_BY_ID = "service/plugins/policies/%s";
     public static final  String POLICY_DELETE_BY_ID = "service/plugins/policies/%s";
     public static final  String CREATE_ROLE = "service/roles/roles";
+    public static final  String GET_ROLE_BY_NAME = "service/roles/lookup/roles";
     public static final  String UPDATE_ROLE = "service/roles/roles/%s";
     public static final  String DELETE_ROLE = "service/roles/roles/%s";
     public static final  String CREATE_POLICY = "service/public/v2/api/policy";
@@ -100,13 +98,13 @@ public class RangerClient {
         basicAuthUserNamePassword[1] = basicAuthPassword;
 
         try {
-            init(BASE_URL, basicAuthUserNamePassword);
+            init();
         } catch (AtlasException e) {
             e.printStackTrace();
         }
     }
 
-    private void init (String baseurl, String[] userPass) throws AtlasException {
+    private void init() throws AtlasException {
         this.configuration = getClientProperties();
         Client client = getClient(configuration);
 
@@ -116,7 +114,7 @@ public class RangerClient {
 
         }
 
-        RangerClientCaller.service = client.resource(UriBuilder.fromUri(baseurl).build());
+        RangerClientCaller.service = client.resource(UriBuilder.fromUri(BASE_URL).build());
     }
 
     protected Client getClient(Configuration configuration) {
@@ -126,8 +124,8 @@ public class RangerClient {
         config.getClasses().add(JacksonJaxbJsonProvider.class);
         config.getClasses().add(MultiPartWriter.class);
 
-        int readTimeout = configuration.getInt("ranger.client.readTimeoutMSecs", 60000);
-        int connectTimeout = configuration.getInt("ranger.client.connectTimeoutMSecs", 60000);
+        int readTimeout = configuration.getInt("atlas.ranger.client.readTimeoutMSecs", 60000);
+        int connectTimeout = configuration.getInt("atlas.ranger.client.connectTimeoutMSecs", 60000);
 
         final URLConnectionClientHandler handler = new URLConnectionClientHandler();
 
@@ -139,41 +137,6 @@ public class RangerClient {
 
     protected Configuration getClientProperties() throws AtlasException {
         return ApplicationProperties.get();
-    }
-
-    public  URLConnectionClientHandler getUrlConnectionClientHandler() {
-        return new URLConnectionClientHandler(new HttpURLConnectionFactory() {
-            @Override
-            public HttpURLConnection getHttpURLConnection(URL url)
-                    throws IOException {
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
-                /*if (connection instanceof HttpsURLConnection) {
-                    LOG.debug("Attempting to configure HTTPS connection using client "
-                            + "configuration");
-                    final SSLFactory factory;
-                    final SSLSocketFactory sf;
-                    final HostnameVerifier hv;
-
-                    try {
-                        org.apache.hadoop.conf.Configuration conf = new org.apache.hadoop.conf.Configuration();
-                        conf.addResource(conf.get(SSLFactory.SSL_CLIENT_CONF_KEY, SecurityProperties.SSL_CLIENT_PROPERTIES));
-                        UserGroupInformation.setConfiguration(conf);
-
-                        HttpsURLConnection c = (HttpsURLConnection) connection;
-                        factory = getSSLFactory(conf);
-                        sf = factory.createSSLSocketFactory();
-                        hv = factory.getHostnameVerifier();
-                        c.setSSLSocketFactory(sf);
-                        c.setHostnameVerifier(hv);
-                    } catch (Exception e) {
-                        LOG.info("Unable to configure HTTPS connection from "
-                                + "configuration.  Leveraging JDK properties.");
-                    }
-                }*/
-                return connection;
-            }
-        });
     }
 
     public RangerPolicy getPolicyById(String policyId) throws AtlasServiceException {
@@ -196,6 +159,17 @@ public class RangerClient {
         AtlasBaseClient.API api = new AtlasBaseClient.API(CREATE_ROLE, POST, Response.Status.OK);
 
         return RangerClientCaller.callAPI(api, RangerRole.class, rangerRole);
+    }
+
+    public RangerRoleList getRole(String roleName) throws AtlasServiceException {
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("roleNamePartial", roleName);
+
+        MultivaluedMap<String, String> queryParams = toQueryParams(attrs, null);
+
+        AtlasBaseClient.API api = new AtlasBaseClient.API(GET_ROLE_BY_NAME, GET, Response.Status.OK);
+
+        return RangerClientCaller.callAPI(api, RangerRoleList.class, queryParams);
     }
 
     public RangerRole updateRole(RangerRole rangerRole) throws AtlasServiceException {
@@ -248,9 +222,6 @@ public class RangerClient {
 
         RangerClientCaller.callAPI(api, (Class<?>)null, null);
     }
-
-
-
 
     private MultivaluedMap<String, String> resourcesToQueryParams(Map<String, String> attributes) {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();

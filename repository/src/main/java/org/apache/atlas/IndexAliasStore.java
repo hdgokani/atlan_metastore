@@ -18,16 +18,9 @@
 package org.apache.atlas;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.persona.PersonaContext;
-import org.apache.atlas.purpose.PurposeContext;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.codehaus.jettison.json.JSONException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.atlas.accesscontrol.persona.PersonaContext;
+import org.apache.atlas.accesscontrol.purpose.PurposeContext;
 import org.springframework.stereotype.Component;
-
-import javax.inject.Inject;
-import java.io.IOException;
 
 @Component
 public interface IndexAliasStore {
