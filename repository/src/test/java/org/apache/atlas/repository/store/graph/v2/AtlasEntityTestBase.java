@@ -31,7 +31,6 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.indexmanager.*;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
@@ -93,6 +92,9 @@ public class AtlasEntityTestBase extends AtlasTestBase {
     @Inject
     IndexFieldNameResolver indexFieldNameResolver;
 
+    @Inject
+    IndexChangeListenerManager indexChangeListenerManager;
+
 
     AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
 
@@ -103,7 +105,7 @@ public class AtlasEntityTestBase extends AtlasTestBase {
 
         super.initialize();
 
-        new GraphBackedSearchIndexer(typeRegistry, new GraphBackedIndexCreator(typeRegistry, vertexIndexCreator, edgeIndexCreator), typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator, indexChangeListenerManager);
+        new GraphBackedSearchIndexer(typeRegistry, new DefaultIndexCreator(typeRegistry, vertexIndexCreator, edgeIndexCreator), typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator, indexChangeListenerManager);
     }
 
     @AfterClass

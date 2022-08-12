@@ -45,7 +45,7 @@ public class IndexChangeListenerManager {
         }
     }
 
-    private void notifyInitializationCompletion(ChangedTypeDefs changedTypeDefs) {
+    public void notifyInitializationCompletion(ChangedTypeDefs changedTypeDefs) {
         for (IndexChangeListener indexChangeListener : indexChangeListeners) {
             try {
                 indexChangeListener.onInitCompletion(changedTypeDefs);

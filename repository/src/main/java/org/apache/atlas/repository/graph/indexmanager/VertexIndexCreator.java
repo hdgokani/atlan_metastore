@@ -23,7 +23,6 @@ public class VertexIndexCreator {
 
     private static final Logger LOG = LoggerFactory.getLogger(VertexIndexCreator.class);
 
-
     public String createVertexIndex(AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class propertyClass,
                                     AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes, boolean isStringField, HashMap<String, Object> indexTypeESConfig, HashMap<String, HashMap<String, Object>> indexTypeESFields) {
         String indexFieldName = null;

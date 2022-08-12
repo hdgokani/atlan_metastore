@@ -35,7 +35,11 @@ public class TypedefIndexCreator extends GraphTransactionManager {
     private final IndexChangeListenerManager indexChangeListenerManager;
 
     @Inject
-    public TypedefIndexCreator(IAtlasGraphProvider provider, AttributeIndexCreator attributeIndexCreator, AtlasTypeRegistry typeRegistry, IndexFieldNameResolver indexFieldNameResolver, IndexChangeListenerManager indexChangeListenerManager) {
+    public TypedefIndexCreator(IAtlasGraphProvider provider,
+                               AttributeIndexCreator attributeIndexCreator,
+                               AtlasTypeRegistry typeRegistry,
+                               IndexFieldNameResolver indexFieldNameResolver,
+                               IndexChangeListenerManager indexChangeListenerManager) {
         this.provider = provider;
         this.attributeIndexCreator = attributeIndexCreator;
         this.typeRegistry = typeRegistry;

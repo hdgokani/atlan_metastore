@@ -32,16 +32,16 @@ import static org.apache.atlas.repository.graphdb.AtlasCardinality.*;
 import static org.apache.atlas.type.Constants.*;
 
 @Component
-public class GraphBackedIndexCreator extends GraphTransactionManager {
+public class DefaultIndexCreator extends GraphTransactionManager {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GraphBackedIndexCreator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultIndexCreator.class);
 
     private final AtlasTypeRegistry typeRegistry;
     private final VertexIndexCreator vertexIndexCreator;
     private final EdgeIndexCreator edgeIndexCreator;
 
     @Inject
-    public GraphBackedIndexCreator(AtlasTypeRegistry typeRegistry, VertexIndexCreator vertexIndexCreator, EdgeIndexCreator edgeIndexCreator) {
+    public DefaultIndexCreator(AtlasTypeRegistry typeRegistry, VertexIndexCreator vertexIndexCreator, EdgeIndexCreator edgeIndexCreator) {
         this.typeRegistry = typeRegistry;
         this.vertexIndexCreator = vertexIndexCreator;
         this.edgeIndexCreator = edgeIndexCreator;

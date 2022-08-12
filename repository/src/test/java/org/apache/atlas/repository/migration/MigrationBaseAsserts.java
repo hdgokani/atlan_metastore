@@ -22,8 +22,8 @@ import com.google.inject.Inject;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graph.indexmanager.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -38,9 +38,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.*;
 
 public class MigrationBaseAsserts extends AtlasTestBase {
     private   static final String TYPE_NAME_PROPERTY   = "__typeName";

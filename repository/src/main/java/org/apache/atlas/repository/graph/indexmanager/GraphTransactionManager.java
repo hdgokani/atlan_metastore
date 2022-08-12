@@ -24,7 +24,7 @@ public abstract class GraphTransactionManager {
         }
     }
 
-    public void rollback(AtlasGraphManagement management) throws IndexException {
+    protected void rollback(AtlasGraphManagement management) throws IndexException {
         try {
             management.rollback();
 

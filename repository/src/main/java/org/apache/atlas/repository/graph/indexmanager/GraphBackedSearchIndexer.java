@@ -16,9 +16,8 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.repository.graph;
+package org.apache.atlas.repository.graph.indexmanager;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.discovery.SearchIndexer;
@@ -30,13 +29,14 @@ import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
-import org.apache.atlas.repository.graph.indexmanager.*;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graph.IAtlasGraphProvider;
+import org.apache.atlas.repository.graph.SolrIndexHelper;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -46,7 +46,6 @@ import javax.inject.Inject;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
-
 
 /**
  * Adds index for properties of a given type when its added before any instances are added.
@@ -59,8 +58,7 @@ public class GraphBackedSearchIndexer extends GraphTransactionManager implements
 
     // Added for type lookup when indexing the new typedefs
     private final AtlasTypeRegistry typeRegistry;
-
-    private final GraphBackedIndexCreator graphBackedIndexCreator;
+    private final DefaultIndexCreator defaultIndexCreator;
     private final TypedefIndexCreator typedefIndexCreator;
     private final IndexFieldNameResolver indexFieldNameResolver;
     private final VertexIndexCreator vertexIndexCreator;
@@ -71,26 +69,25 @@ public class GraphBackedSearchIndexer extends GraphTransactionManager implements
     private Set<String> vertexIndexKeys = new HashSet<>();
 
     @Inject
-    public GraphBackedSearchIndexer(AtlasTypeRegistry typeRegistry, GraphBackedIndexCreator graphBackedIndexCreator, TypedefIndexCreator typedefIndexCreator, IndexFieldNameResolver indexFieldNameResolver, VertexIndexCreator vertexIndexCreator, IndexChangeListenerManager indexChangeListenerManager) throws AtlasException {
-        this(new AtlasGraphProvider(), ApplicationProperties.get(), typeRegistry, graphBackedIndexCreator, typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator, indexChangeListenerManager);
-    }
-
-    @VisibleForTesting
-    GraphBackedSearchIndexer(IAtlasGraphProvider provider, Configuration configuration, AtlasTypeRegistry typeRegistry, GraphBackedIndexCreator graphBackedIndexCreator, TypedefIndexCreator typedefIndexCreator, IndexFieldNameResolver indexFieldNameResolver, VertexIndexCreator vertexIndexCreator, IndexChangeListenerManager indexChangeListenerManager)
-            throws IndexException, RepositoryException {
-        this.provider = provider;
+    public GraphBackedSearchIndexer(AtlasTypeRegistry typeRegistry,
+                                    DefaultIndexCreator defaultIndexCreator,
+                                    TypedefIndexCreator typedefIndexCreator,
+                                    IndexFieldNameResolver indexFieldNameResolver,
+                                    VertexIndexCreator vertexIndexCreator,
+                                    IndexChangeListenerManager indexChangeListenerManager) throws AtlasException {
+        this.provider = new AtlasGraphProvider();
         this.typeRegistry = typeRegistry;
-        this.graphBackedIndexCreator = graphBackedIndexCreator;
+        this.defaultIndexCreator = defaultIndexCreator;
         this.typedefIndexCreator = typedefIndexCreator;
         this.indexFieldNameResolver = indexFieldNameResolver;
         this.vertexIndexCreator = vertexIndexCreator;
         this.indexChangeListenerManager = indexChangeListenerManager;
 
         //make sure solr index follows graph backed index listener
-        indexChangeListenerManager.addIndexListener(new SolrIndexHelper(typeRegistry));
+        this.indexChangeListenerManager.addIndexListener(new SolrIndexHelper(this.typeRegistry));
 
-        if (!HAConfiguration.isHAEnabled(configuration)) {
-            graphBackedIndexCreator.createDefaultIndexes(provider.get());
+        if (!HAConfiguration.isHAEnabled(ApplicationProperties.get())) {
+            this.defaultIndexCreator.createDefaultIndexes(this.provider.get());
         }
         this.indexChangeListenerManager.notifyInitializationStart();
     }
@@ -104,7 +101,7 @@ public class GraphBackedSearchIndexer extends GraphTransactionManager implements
     public void instanceIsActive() throws AtlasException {
         LOG.info("Reacting to active: initializing index");
         try {
-            graphBackedIndexCreator.createDefaultIndexes(provider.get());
+            defaultIndexCreator.createDefaultIndexes(provider.get());
         } catch (RepositoryException | IndexException e) {
             throw new AtlasException("Error in reacting to active on initialization", e);
         }
@@ -148,7 +145,7 @@ public class GraphBackedSearchIndexer extends GraphTransactionManager implements
             //Commit indexes
             commit(management);
 
-            indexChangeListenerManager.notifyChangeListeners(changedTypeDefs);
+            indexChangeListenerManager.notifyInitializationCompletion(changedTypeDefs);
         } catch (RepositoryException | IndexException e) {
             LOG.error("Failed to update indexes for changed typedefs", e);
             attemptRollback(changedTypeDefs, management);
