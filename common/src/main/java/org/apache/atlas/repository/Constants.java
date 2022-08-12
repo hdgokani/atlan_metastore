@@ -132,26 +132,22 @@ public final class Constants {
     public static final String QUERY_FOLDER_ENTITY_TYPE     = "QueryFolder";
     public static final String QUERY_COLLECTION_ENTITY_TYPE = "QueryCollection";
 
-    /*
-     * Purpose / Persona
-     */
-    public static final String PERSONA_ENTITY_TYPE                 = "Persona";
-    public static final String PERSONA_METADATA_POLICY_ENTITY_TYPE = "PersonaMetadataPolicy";
-    public static final String PERSONA_GLOSSARY_POLICY_ENTITY_TYPE = "PersonaGlossaryPolicy";
-    public static final String PERSONA_DATA_POLICY_ENTITY_TYPE     = "PersonaDataPolicy";
-
-    public static final String PURPOSE_ENTITY_TYPE                 = "Purpose";
     public static final String PURPOSE_METADATA_POLICY_ENTITY_TYPE = "PurposeMetadataPolicy";
     public static final String PURPOSE_DATA_POLICY_ENTITY_TYPE     = "PurposeDataPolicy";
 
-    public static final List<String> PERSONA_POLICY_TYPES = Arrays.asList(
-            PERSONA_METADATA_POLICY_ENTITY_TYPE,
-            PERSONA_GLOSSARY_POLICY_ENTITY_TYPE,
-            PERSONA_DATA_POLICY_ENTITY_TYPE);
+    /*
+     * Purpose / Persona
+     */
+    public static final String PERSONA_ENTITY_TYPE = "Persona";
+    public static final String PURPOSE_ENTITY_TYPE = "Purpose";
+    public static final String POLICY_ENTITY_TYPE  = "Policy";
 
-    public static final List<String> PURPOSE_POLICY_TYPES = Arrays.asList(
-            PURPOSE_METADATA_POLICY_ENTITY_TYPE,
-            PURPOSE_DATA_POLICY_ENTITY_TYPE);
+    public static final String POLICY_TYPE_METADATA = "metadata";
+    public static final String POLICY_TYPE_GLOSSARY = "glossary";
+    public static final String POLICY_TYPE_DATA     = "data";
+
+    public static final String POLICY_CATEGORY_PERSONA = "persona";
+    public static final String POLICY_CATEGORY_PURPOSE = "purpose";
 
 
     /**

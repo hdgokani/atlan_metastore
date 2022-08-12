@@ -15,8 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.purpose;
+package org.apache.atlas.accesscontrol.purpose;
 
+import org.apache.atlas.accesscontrol.AccessControlUtil;
+import org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.commons.lang.StringUtils;
@@ -25,8 +27,8 @@ import org.apache.ranger.plugin.model.RangerPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.atlas.PersonaPurposeCommonUtil.getDataPolicyMaskType;
-import static org.apache.atlas.purpose.AtlasPurposeUtil.getIsAllow;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.getDataPolicyMaskType;
+import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.getIsAllow;
 import static org.apache.atlas.repository.Constants.PURPOSE_DATA_POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_METADATA_POLICY_ENTITY_TYPE;
 
@@ -175,21 +177,17 @@ public class PurposeContext {
     }
 
     public void setPolicyType() {
-        if (purposePolicy!= null) {
-            String type = purposePolicy.getTypeName();
-
-            switch (type) {
-                case PURPOSE_METADATA_POLICY_ENTITY_TYPE:
-                    isMetadataPolicy = true;
-                    break;
-                case PURPOSE_DATA_POLICY_ENTITY_TYPE:
-                    isDataPolicy = true;
-                    setDataPolicyType();
+        if (purposePolicy != null) {
+            if (AccessControlUtil.isMetadataPolicy(purposePolicy)) {
+                isMetadataPolicy = true;
+            } else if (AccessControlUtil.isDataPolicy(purposePolicy)) {
+                isDataPolicy = true;
+                setDataMaskPolicyType();
             }
         }
     }
 
-    private void setDataPolicyType() {
+    private void setDataMaskPolicyType() {
         if (StringUtils.isNotEmpty(getDataPolicyMaskType(purposePolicy))) {
             isDataMaskPolicy = true;
         }

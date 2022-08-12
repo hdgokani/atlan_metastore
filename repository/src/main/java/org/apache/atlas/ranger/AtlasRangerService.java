@@ -20,11 +20,10 @@ package org.apache.atlas.ranger;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.persona.PersonaContext;
+import org.apache.atlas.accesscontrol.persona.PersonaContext;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.ranger.client.RangerClientHelper;
 import org.apache.atlas.type.AtlasType;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ranger.plugin.model.RangerPolicy;
 import org.apache.ranger.plugin.model.RangerRole;
@@ -38,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.apache.atlas.persona.AtlasPersonaUtil.*;
+import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.*;
 
 
 @Component

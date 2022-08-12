@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.persona;
+package org.apache.atlas.accesscontrol.persona;
 
+import org.apache.atlas.accesscontrol.AccessControlUtil;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.commons.lang.StringUtils;
@@ -25,11 +26,8 @@ import org.apache.ranger.plugin.model.RangerPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.atlas.persona.AtlasPersonaUtil.getDataPolicyMaskType;
-import static org.apache.atlas.persona.AtlasPersonaUtil.getIsAllow;
-import static org.apache.atlas.repository.Constants.PERSONA_DATA_POLICY_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.PERSONA_GLOSSARY_POLICY_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.PERSONA_METADATA_POLICY_ENTITY_TYPE;
+import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getDataPolicyMaskType;
+import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getIsAllow;
 
 public class PersonaContext {
 
@@ -165,24 +163,19 @@ public class PersonaContext {
 
     public void setPolicyType(){
         if (personaPolicy != null) {
-            String type = personaPolicy.getTypeName();
-
-            switch (type) {
-                case PERSONA_METADATA_POLICY_ENTITY_TYPE:
-                    isMetadataPolicy = true;
-                    break;
-                case PERSONA_GLOSSARY_POLICY_ENTITY_TYPE:
-                    isGlossaryPolicy = true;
-                    break;
-                case PERSONA_DATA_POLICY_ENTITY_TYPE:
-                    isDataPolicy = true;
-                    setDataPolicyType();
+            if (AccessControlUtil.isMetadataPolicy(personaPolicy)) {
+                isMetadataPolicy = true;
+            } else if (AtlasPersonaUtil.isGlossaryPolicy(personaPolicy)) {
+                isGlossaryPolicy = true;
+            } else if (AccessControlUtil.isDataPolicy(personaPolicy)) {
+                isDataPolicy = true;
+                setDataMaskPolicyType();
             }
         }
     }
 
-    private void setDataPolicyType() {
-        if (StringUtils.isNotEmpty(getDataPolicyMaskType(personaPolicy))) {//TODO: review this condition
+    private void setDataMaskPolicyType() {
+        if (StringUtils.isNotEmpty(getDataPolicyMaskType(personaPolicy))) {
             isDataMaskPolicy = true;
         }
     }

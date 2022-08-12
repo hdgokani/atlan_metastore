@@ -20,10 +20,10 @@ package org.apache.atlas;
 import org.apache.atlas.ESAliasRequestBuilder.AliasAction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.persona.AtlasPersonaUtil;
-import org.apache.atlas.persona.PersonaContext;
-import org.apache.atlas.purpose.AtlasPurposeUtil;
-import org.apache.atlas.purpose.PurposeContext;
+import org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil;
+import org.apache.atlas.accesscontrol.persona.PersonaContext;
+import org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil;
+import org.apache.atlas.accesscontrol.purpose.PurposeContext;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.commons.collections.CollectionUtils;
@@ -35,22 +35,20 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.ADD;
-import static org.apache.atlas.PersonaPurposeCommonUtil.ACCESS_ENTITY_READ;
-import static org.apache.atlas.PersonaPurposeCommonUtil.getActions;
-import static org.apache.atlas.PersonaPurposeCommonUtil.getESAliasName;
-import static org.apache.atlas.persona.AtlasPersonaUtil.getAssets;
-import static org.apache.atlas.persona.AtlasPersonaUtil.getConnectionId;
-import static org.apache.atlas.persona.AtlasPersonaUtil.getGlossaryQualifiedNames;
-import static org.apache.atlas.persona.AtlasPersonaUtil.getIsAllow;
-import static org.apache.atlas.persona.AtlasPersonaUtil.getQualifiedName;
-import static org.apache.atlas.persona.AtlasPersonaUtil.mapOf;
-import static org.apache.atlas.purpose.AtlasPurposeUtil.getTags;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.ACCESS_ENTITY_READ;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.getActions;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.getESAliasName;
+import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getAssets;
+import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getConnectionId;
+import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getIsAllow;
+import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getQualifiedName;
+import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.mapOf;
+import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.getTags;
 import static org.apache.atlas.repository.Constants.INDEX_PREFIX;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
@@ -170,7 +168,7 @@ public class ESAliasStore implements IndexAliasStore {
                     continue;
                 }
 
-                List<String> glossaryQNames = getGlossaryQualifiedNames(entity);
+                List<String> glossaryQNames = getAssets(entity);
 
                 for (String glossaryQName : glossaryQNames) {
                     addPersonaGlossaryFilterClauses(glossaryQName, getIsAllow(entity) ? allowClauseList : denyClauseList);

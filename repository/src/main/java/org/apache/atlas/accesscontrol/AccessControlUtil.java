@@ -1,12 +1,12 @@
-package org.apache.atlas;
+package org.apache.atlas.accesscontrol;
 
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil;
 import org.apache.atlas.ranger.AtlasRangerService;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.util.NanoIdUtils;
@@ -14,34 +14,29 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ranger.plugin.model.RangerPolicy;
 import org.apache.ranger.plugin.model.RangerPolicyResourceSignature;
-import org.apache.ranger.plugin.model.RangerRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.AtlasErrorCode.PERSONA_ALREADY_EXISTS;
-import static org.apache.atlas.purpose.AtlasPurposeUtil.RESOURCE_TAG;
-import static org.apache.atlas.purpose.AtlasPurposeUtil.getTags;
-import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_TYPE;
+import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.getTags;
 import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.POLICY_TYPE_DATA;
+import static org.apache.atlas.repository.Constants.POLICY_TYPE_METADATA;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 
 
-public class PersonaPurposeCommonUtil {
-    private static final Logger LOG = LoggerFactory.getLogger(PersonaPurposeCommonUtil.class);
+public class AccessControlUtil {
+    private static final Logger LOG = LoggerFactory.getLogger(AccessControlUtil.class);
 
     public static final String RESOURCE_PREFIX = "resource:";
 
-    public static final String POLICY_TYPE_ACCESS = "0";
-    public static final String POLICY_TYPE_DATA_MASK = "1";
+    public static final String RANGER_POLICY_TYPE_ACCESS    = "0";
+    public static final String RANGER_POLICY_TYPE_DATA_MASK = "1";
 
     public static final String ACCESS_ENTITY_CREATE = "entity-create";
     public static final String ACCESS_ENTITY_READ   = "entity-read";
@@ -51,13 +46,13 @@ public class PersonaPurposeCommonUtil {
 
     public static final String LINK_ASSET_ACTION = "link-assets";
 
-    public static final String RANGER_MASK_REDACT = "MASK_REDACT";
-    public static final String RANGER_MASK_LAST_$ = "MASK_SHOW_LAST_4";
-    public static final String RANGER_MASK_FIRST_4 = "MASK_SHOW_FIRST_4";
-    public static final String RANGER_MASK_HASH = "MASK_HASH";
-    public static final String RANGER_MASK_NULL = "MASK_NULL";
+    public static final String RANGER_MASK_REDACT    = "MASK_REDACT";
+    public static final String RANGER_MASK_LAST_4    = "MASK_SHOW_LAST_4";
+    public static final String RANGER_MASK_FIRST_4   = "MASK_SHOW_FIRST_4";
+    public static final String RANGER_MASK_HASH      = "MASK_HASH";
+    public static final String RANGER_MASK_NULL      = "MASK_NULL";
     public static final String RANGER_MASK_SHOW_YEAR = "MASK_DATE_SHOW_YEAR";
-    public static final String RANGER_MASK_NONE = "MASK_NONE";
+    public static final String RANGER_MASK_NONE      = "MASK_NONE";
 
 
     public static String getUUID() {
@@ -81,7 +76,7 @@ public class PersonaPurposeCommonUtil {
     }
 
     public static boolean getIsAllow(AtlasEntity entity) {
-        return (boolean) entity.getAttribute("allow");
+        return (boolean) entity.getAttribute("isAllowPolicy");
     }
 
     public static String getTenantId(AtlasEntity entity) {
@@ -89,15 +84,24 @@ public class PersonaPurposeCommonUtil {
     }
 
     public static boolean getIsEnabled(AtlasEntity entity) throws AtlasBaseException {
-        return (boolean) entity.getAttribute("enabled");
+        return (boolean) entity.getAttribute("isAccessControlEnabled");
     }
 
-    public static List<String> getGroups(AtlasEntity entity) {
-        return (List<String>) entity.getAttribute("groups");
+
+    public static List<String> getAssets(AtlasEntity personaPolicyEntity) {
+        return (List<String>) personaPolicyEntity.getAttribute("policyAssetQualifiedNames");
     }
 
-    public static List<String> getUsers(AtlasEntity entity) {
-        return (List<String>) entity.getAttribute("users");
+    public static List<String> getPolicyGroups(AtlasEntity entity) {
+        return (List<String>) entity.getAttribute("policyGroups");
+    }
+
+    public static List<String> getPolicyUsers(AtlasEntity entity) {
+        return (List<String>) entity.getAttribute("policyUsers");
+    }
+
+    public static String getConnectionId(AtlasEntity personaPolicyEntity) {
+        return (String) personaPolicyEntity.getAttribute("connectionGuid");
     }
 
     public static String getDisplayName(AtlasEntity entity) {
@@ -108,10 +112,38 @@ public class PersonaPurposeCommonUtil {
         return (String) entity.getAttribute("description");
     }
 
-    public static List<AtlasEntity> getDataPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        List<AtlasObjectId> policies = (List<AtlasObjectId>) entityWithExtInfo.getEntity().getRelationshipAttribute("dataPolicies");
+    public static List<AtlasEntity> getPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
+        List<AtlasObjectId> policies = (List<AtlasObjectId>) entityWithExtInfo.getEntity().getRelationshipAttribute("policies");
 
         return objectToEntityList(entityWithExtInfo, policies);
+    }
+
+    public static List<AtlasEntity> getMetadataPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
+        List<AtlasEntity> policies = getPolicies(entityWithExtInfo);
+
+        return policies.stream().filter(AtlasPersonaUtil::isMetadataPolicy).collect(Collectors.toList());
+    }
+
+    public static List<AtlasEntity> getDataPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
+        List<AtlasEntity> policies = getPolicies(entityWithExtInfo);
+
+        return policies.stream().filter(AtlasPersonaUtil::isDataPolicy).collect(Collectors.toList());
+    }
+
+    public static boolean isMetadataPolicy(AtlasEntity policyEntity) {
+        return POLICY_TYPE_METADATA.equals(getPolicyType(policyEntity));
+    }
+
+    public static boolean isDataPolicy(AtlasEntity policyEntity) {
+        return POLICY_TYPE_DATA.equals(getPolicyType(policyEntity));
+    }
+
+    public static String getPolicyType(AtlasEntity policyEntity) {
+        return (String) policyEntity.getAttribute("accessControlPolicyType");
+    }
+
+    public static String getPolicyCategory(AtlasEntity policyEntity) {
+        return (String) policyEntity.getAttribute("accessControlPolicyCategory");
     }
 
     public static List<AtlasEntity> objectToEntityList(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, List<AtlasObjectId> policies) {
@@ -127,12 +159,12 @@ public class PersonaPurposeCommonUtil {
         return ret;
     }
 
-    public static List<String> getActions(AtlasEntity personaPolicyEntity) {
-        return (List<String>) personaPolicyEntity.getAttribute("actions");
+    public static List<String> getActions(AtlasEntity policyEntity) {
+        return (List<String>) policyEntity.getAttribute("policyActions");
     }
 
     public static String getDataPolicyMaskType(AtlasEntity dataPolicy) {
-        return (String) dataPolicy.getAttribute("mask");
+        return (String) dataPolicy.getAttribute("dataMaskingOption");
     }
 
     public static void validateUniquenessByName(EntityDiscoveryService entityDiscoveryService, String name, String typeName) throws AtlasBaseException {
