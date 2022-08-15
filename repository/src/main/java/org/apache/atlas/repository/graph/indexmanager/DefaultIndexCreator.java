@@ -1,14 +1,11 @@
 package org.apache.atlas.repository.graph.indexmanager;
 
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -46,21 +43,18 @@ public class DefaultIndexCreator extends GraphTransactionManager {
     private final EdgeIndexCreator edgeIndexCreator;
 
     @Inject
-    public DefaultIndexCreator(AtlasTypeRegistry typeRegistry,
-                               VertexIndexCreator vertexIndexCreator,
-                               EdgeIndexCreator edgeIndexCreator,
-                               AtlasIndexCreator atlasIndexCreator) throws IOException, AtlasException {
+    public DefaultIndexCreator(final AtlasTypeRegistry typeRegistry,
+                               final VertexIndexCreator vertexIndexCreator,
+                               final EdgeIndexCreator edgeIndexCreator,
+                               final AtlasIndexCreator atlasIndexCreator) throws IOException {
         this.typeRegistry = typeRegistry;
         this.vertexIndexCreator = vertexIndexCreator;
         this.edgeIndexCreator = edgeIndexCreator;
-        Configuration configuration = ApplicationProperties.get();
 
-        if (configuration.getProperty("atlas.graph.index.search.backend").equals("elasticsearch")) {
-            atlasIndexCreator.createIndex(getCurrentIndexName());
-        }
+        atlasIndexCreator.createIndexIfNotExists(getCurrentIndexName());
     }
 
-    public void createDefaultIndexes(AtlasGraph graph) throws RepositoryException, IndexException {
+    public void createDefaultIndexes(AtlasGraph graph) throws RepositoryException, IndexException, IOException {
         AtlasGraphManagement management = graph.getManagementSystem();
 
         try {

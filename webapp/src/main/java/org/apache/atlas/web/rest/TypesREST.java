@@ -39,6 +39,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -396,7 +397,7 @@ public class TypesREST {
 
     @POST
     @Path("/hebele")
-    public void hebele() throws AtlasBaseException, IndexException, RepositoryException {
+    public void hebele() throws AtlasBaseException, IndexException, RepositoryException, IOException {
         typeSyncService.syncTypes(null);
     }
 

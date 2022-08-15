@@ -33,6 +33,7 @@ import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.indexmanager.*;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasIndexCreator;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
@@ -95,6 +96,8 @@ public class AtlasEntityTestBase extends AtlasTestBase {
     @Inject
     IndexChangeListenerManager indexChangeListenerManager;
 
+    @Inject
+    AtlasIndexCreator atlasIndexCreator;
 
     AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
 

@@ -43,6 +43,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.io.IOException;
 import java.util.*;
 
 import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
@@ -74,7 +75,7 @@ public class GraphBackedSearchIndexer extends GraphTransactionManager implements
                                     TypedefIndexCreator typedefIndexCreator,
                                     IndexFieldNameResolver indexFieldNameResolver,
                                     VertexIndexCreator vertexIndexCreator,
-                                    IndexChangeListenerManager indexChangeListenerManager) throws AtlasException {
+                                    IndexChangeListenerManager indexChangeListenerManager) throws AtlasException, IOException {
         this.provider = new AtlasGraphProvider();
         this.typeRegistry = typeRegistry;
         this.defaultIndexCreator = defaultIndexCreator;
@@ -102,7 +103,7 @@ public class GraphBackedSearchIndexer extends GraphTransactionManager implements
         LOG.info("Reacting to active: initializing index");
         try {
             defaultIndexCreator.createDefaultIndexes(provider.get());
-        } catch (RepositoryException | IndexException e) {
+        } catch (RepositoryException | IndexException | IOException e) {
             throw new AtlasException("Error in reacting to active on initialization", e);
         }
     }

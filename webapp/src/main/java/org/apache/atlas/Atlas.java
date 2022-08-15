@@ -18,6 +18,7 @@
 
 package org.apache.atlas;
 
+import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.web.service.EmbeddedServer;
 import org.apache.commons.cli.*;
@@ -25,6 +26,11 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.util.ShutdownHookManager;
+import org.elasticsearch.action.admin.indices.template.put.PutIndexTemplateRequest;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -33,7 +39,12 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Iterator;
+
+import static org.apache.atlas.repository.Constants.INDEX_PREFIX;
 
 /**
  * Driver for running Metadata as a standalone server with embedded jetty server.
@@ -119,10 +130,36 @@ public final class Atlas {
         configuration.setProperty(SecurityProperties.TLS_ENABLED, String.valueOf(enableTLS));
 
         showStartupInfo(buildConfiguration, enableTLS, appPort);
+
+        if (configuration.getProperty("atlas.graph.index.search.backend").equals("elasticsearch")) {
+            createOrUpdateESIndexTemplate();
+        }
         server = EmbeddedServer.newServer(appHost, appPort, appPath, enableTLS);
         installLogBridge();
 
         server.start();
+    }
+
+    private static void createOrUpdateESIndexTemplate() throws IOException {
+        RestHighLevelClient esClient = AtlasElasticsearchDatabase.getClient();
+        PutIndexTemplateRequest request = new PutIndexTemplateRequest("atlan-template");
+        request.patterns(Collections.singletonList(INDEX_PREFIX + "vertex_index*"));
+        String atlasHomeDir = System.getProperty("atlas.home");
+
+        Path elasticsearchSettingsFilePath = Paths.get(org.apache.commons.lang3.StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir, "elasticsearch", "es-settings.json");
+        Settings requestSettings = Settings.builder().loadFromPath(elasticsearchSettingsFilePath).put("max_result_window", 500000).build();
+        request.settings(requestSettings);
+        try {
+            AcknowledgedResponse putTemplateResponse = esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
+            if (putTemplateResponse.isAcknowledged()) {
+                LOG.info("Atlan index template created.");
+            } else {
+                LOG.error("error creating atlan index template");
+            }
+        } catch (Exception e) {
+            LOG.error("Caught exception: {}", e.toString());
+            throw e;
+        }
     }
 
     private static void setApplicationHome() {

@@ -4,5 +4,6 @@ import java.io.IOException;
 
 public interface AtlasIndexCreator {
 
-    void createIndex(String indexName) throws IOException;
+    void createIndexIfNotExists(String indexName) throws IOException;
+
 }

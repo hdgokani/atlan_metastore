@@ -31,6 +31,7 @@ import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.indexmanager.*;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasIndexCreator;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
@@ -89,6 +90,9 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
 
     @Inject
     IndexChangeListenerManager indexChangeListenerManager;
+
+    @Inject
+    AtlasIndexCreator atlasIndexCreator;
 
     AtlasEntityStore entityStore;
     AtlasRelationshipStore relationshipStore;

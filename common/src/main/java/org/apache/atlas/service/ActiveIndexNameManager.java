@@ -9,18 +9,18 @@ import javax.annotation.PostConstruct;
 @Component
 public class ActiveIndexNameManager {
 
-    private static String CURRENT_VERTEX_INDEX_NAME = "new_index_vertex";
+    private static String CURRENT_VERTEX_INDEX_NAME = "vertex_index";
 
     @PostConstruct
     public void init() {
-        CURRENT_VERTEX_INDEX_NAME = "new_index_vertex";
+        CURRENT_VERTEX_INDEX_NAME = "vertex_index";
     }
 
     public static String getCurrentIndexName() {
         return CURRENT_VERTEX_INDEX_NAME;
     }
 
-    public void setCurrentIndexName(String currentIndexName) {
+    public static void setCurrentIndexName(String currentIndexName) {
         ActiveIndexNameManager.CURRENT_VERTEX_INDEX_NAME = currentIndexName;
     }
 }
