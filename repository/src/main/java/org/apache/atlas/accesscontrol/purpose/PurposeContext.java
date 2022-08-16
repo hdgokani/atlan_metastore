@@ -29,8 +29,6 @@ import java.util.List;
 
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getDataPolicyMaskType;
 import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.getIsAllow;
-import static org.apache.atlas.repository.Constants.PURPOSE_DATA_POLICY_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.PURPOSE_METADATA_POLICY_ENTITY_TYPE;
 
 public class PurposeContext {
 
