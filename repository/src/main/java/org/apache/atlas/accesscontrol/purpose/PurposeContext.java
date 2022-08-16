@@ -160,13 +160,6 @@ public class PurposeContext {
         this.isMetadataPolicy = false;
     }
 
-    public boolean isDataMaskPolicy(AtlasEntity purposePolicy) {
-        if (StringUtils.isNotEmpty(getDataPolicyMaskType(purposePolicy))) {
-            return true;
-        }
-        return false;
-    }
-
     public boolean isMetadataPolicy() {
         return isMetadataPolicy;
     }

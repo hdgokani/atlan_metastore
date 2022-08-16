@@ -138,6 +138,13 @@ public class AccessControlUtil {
         return POLICY_TYPE_DATA.equals(getPolicyType(policyEntity));
     }
 
+    public static boolean isDataMaskPolicy(AtlasEntity purposePolicy) {
+        if (StringUtils.isNotEmpty(getDataPolicyMaskType(purposePolicy))) {
+            return true;
+        }
+        return false;
+    }
+
     public static String getPolicyType(AtlasEntity policyEntity) {
         return (String) policyEntity.getAttribute("accessControlPolicyType");
     }
