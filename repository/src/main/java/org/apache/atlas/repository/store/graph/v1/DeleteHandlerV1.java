@@ -83,6 +83,7 @@ public abstract class DeleteHandlerV1 {
 
     static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
+    private static final int     CHUNK_SIZE      = AtlasConfiguration.TASKS_GRAPH_COMMIT_CHUNK_SIZE.getInt();
     protected final GraphHelper          graphHelper;
     private   final AtlasTypeRegistry    typeRegistry;
     private   final EntityGraphRetriever entityRetriever;
@@ -90,10 +91,13 @@ public abstract class DeleteHandlerV1 {
     private   final boolean              softDelete;
     private   final TaskManagement       taskManagement;
 
+    private   final AtlasGraph            graph;
+
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
         this.typeRegistry                  = typeRegistry;
         this.graphHelper                   = new GraphHelper(graph);
+        this.graph                         = graph;
         this.entityRetriever               = new EntityGraphRetriever(graph, typeRegistry);
         this.shouldUpdateInverseReferences = shouldUpdateInverseReference;
         this.softDelete                    = softDelete;
@@ -578,8 +582,9 @@ public abstract class DeleteHandlerV1 {
     }
 
     public List<AtlasVertex> removeTagPropagation(AtlasVertex classificationVertex) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationVertex");
         List<AtlasVertex> ret = new ArrayList<>();
+
+        int count = 0;
 
         if (classificationVertex != null) {
             List<AtlasEdge> propagatedEdges = getPropagatedEdges(classificationVertex);
@@ -588,6 +593,7 @@ public abstract class DeleteHandlerV1 {
                 AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
 
                 for (AtlasEdge propagatedEdge : propagatedEdges) {
+                    AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationVertex");
                     AtlasVertex entityVertex = propagatedEdge.getOutVertex();
 
                     ret.add(entityVertex);
@@ -596,10 +602,17 @@ public abstract class DeleteHandlerV1 {
                     RequestContext.get().recordRemovedPropagation(getGuid(entityVertex), classification);
 
                     deletePropagatedEdge(propagatedEdge);
+
+                    count += 1;
+
+                    if (count > CHUNK_SIZE) {
+                        graph.commit();
+                        count = 0;
+                    }
+                    RequestContext.get().endMetricRecord(metric);
                 }
             }
         }
-        RequestContext.get().endMetricRecord(metric);
         return ret;
     }
 
