@@ -43,7 +43,7 @@ import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOpe
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.NOT_EQUAL;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
-import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 
 public class EntitySearchProcessor extends SearchProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(EntitySearchProcessor.class);
@@ -123,7 +123,7 @@ public class EntitySearchProcessor extends SearchProcessor {
             indexQueryString = STRAY_OR_PATTERN.matcher(indexQueryString).replaceAll(")");
             indexQueryString = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
 
-            this.indexQuery = context.getGraph().indexQuery(getCurrentIndexName(), indexQueryString);
+            this.indexQuery = context.getGraph().indexQuery(getCurrentReadVertexIndexName(), indexQueryString);
         } else {
             this.indexQuery = null;
         }

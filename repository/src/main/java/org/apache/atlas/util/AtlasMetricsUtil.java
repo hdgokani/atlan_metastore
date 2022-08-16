@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 import static org.apache.atlas.model.metrics.AtlasMetrics.*;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_INTERNAL;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
-import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 import static org.apache.atlas.util.AtlasMetricsCounter.Period.*;
 
 @Component
@@ -220,7 +220,7 @@ public class AtlasMetricsUtil {
             runWithTimeout(new Runnable() {
                 @Override
                 public void run() {
-                    graph.indexQuery(getCurrentIndexName(), query).vertices(0, 1);
+                    graph.indexQuery(getCurrentReadVertexIndexName(), query).vertices(0, 1);
 
                     graphCommit();
                 }

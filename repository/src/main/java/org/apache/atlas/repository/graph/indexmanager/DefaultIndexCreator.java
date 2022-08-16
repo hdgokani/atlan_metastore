@@ -30,7 +30,7 @@ import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.indexmanager.IndexApplicabilityChecker.isIndexApplicable;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.*;
-import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentWriteVertexIndexName;
 import static org.apache.atlas.type.Constants.*;
 
 @Component
@@ -51,7 +51,7 @@ public class DefaultIndexCreator extends GraphTransactionManager {
         this.vertexIndexCreator = vertexIndexCreator;
         this.edgeIndexCreator = edgeIndexCreator;
 
-        atlasIndexCreator.createIndexIfNotExists(getCurrentIndexName());
+        atlasIndexCreator.createIndexIfNotExists(getCurrentWriteVertexIndexName());
     }
 
     public void createDefaultIndexes(AtlasGraph graph) throws RepositoryException, IndexException, IOException {
@@ -60,10 +60,10 @@ public class DefaultIndexCreator extends GraphTransactionManager {
         try {
             LOG.info("Creating indexes for graph.");
 
-            if (management.getGraphIndex(getCurrentIndexName()) == null) {
-                management.createVertexMixedIndex(getCurrentIndexName(), BACKING_INDEX, Collections.emptyList());
+            if (management.getGraphIndex(getCurrentWriteVertexIndexName()) == null) {
+                management.createVertexMixedIndex(getCurrentWriteVertexIndexName(), BACKING_INDEX, Collections.emptyList());
 
-                LOG.info("Created index : {}", getCurrentIndexName());
+                LOG.info("Created index : {}", getCurrentWriteVertexIndexName());
             }
 
             if (management.getGraphIndex(EDGE_INDEX) == null) {

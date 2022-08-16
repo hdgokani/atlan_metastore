@@ -396,9 +396,9 @@ public class TypesREST {
     }
 
     @POST
-    @Path("/hebele")
-    public void hebele() throws AtlasBaseException, IndexException, RepositoryException, IOException {
-        typeSyncService.syncTypes(null);
+    @Path("/syncTypeDefs")
+    public AtlasTypesDef syncTypeDefs(final AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException {
+        return typeSyncService.syncTypes(newTypeDefinitions);
     }
 
     /**

@@ -1,26 +1,24 @@
 package org.apache.atlas.service;
 
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-
-@Order(Integer.MIN_VALUE)
-@Component
 public class ActiveIndexNameManager {
 
-    private static String CURRENT_VERTEX_INDEX_NAME = "vertex_index";
+    private static String CURRENT_READ_VERTEX_INDEX_NAME = "vertex_index";
+    private static String CURRENT_WRITE_VERTEX_INDEX_NAME = "vertex_index";
 
-    @PostConstruct
-    public void init() {
-        CURRENT_VERTEX_INDEX_NAME = "vertex_index";
+
+    public static String getCurrentReadVertexIndexName() {
+        return CURRENT_READ_VERTEX_INDEX_NAME;
     }
 
-    public static String getCurrentIndexName() {
-        return CURRENT_VERTEX_INDEX_NAME;
+    public static void setCurrentReadVertexIndexName(String currentIndexName) {
+        CURRENT_READ_VERTEX_INDEX_NAME = currentIndexName;
     }
 
-    public static void setCurrentIndexName(String currentIndexName) {
-        ActiveIndexNameManager.CURRENT_VERTEX_INDEX_NAME = currentIndexName;
+    public static String getCurrentWriteVertexIndexName() {
+        return CURRENT_WRITE_VERTEX_INDEX_NAME;
+    }
+
+    public static void setCurrentWriteVertexIndexName(String currentWriteVertexIndexName) {
+        CURRENT_WRITE_VERTEX_INDEX_NAME = currentWriteVertexIndexName;
     }
 }

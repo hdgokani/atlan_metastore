@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-import static java.util.Objects.isNull;
 
 
 /**
@@ -295,21 +294,15 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         }
 
         private boolean isIndexTypeDifferent(AtlasAttributeDef atlasAttributeDef) {
-            return !indexType.equals(atlasAttributeDef.indexType);
+            return !Objects.equals(indexType, atlasAttributeDef.indexType);
         }
 
         private boolean isTypeConfigDifferent(AtlasAttributeDef atlasAttributeDef) {
-            if (isNull(indexTypeESConfig) && isNull(atlasAttributeDef.indexTypeESConfig)) {
-                return false;
-            }
             ObjectMapper objectMapper = new ObjectMapper();
             return !objectMapper.valueToTree(indexTypeESConfig).equals(objectMapper.valueToTree(atlasAttributeDef.indexTypeESConfig));
         }
 
         private boolean areTypeFieldsDifferent(AtlasAttributeDef atlasAttributeDef) {
-            if (isNull(indexTypeESFields) && isNull(atlasAttributeDef.indexTypeESFields)) {
-                return false;
-            }
             ObjectMapper objectMapper = new ObjectMapper();
             return !objectMapper.valueToTree(indexTypeESFields).equals(objectMapper.valueToTree(atlasAttributeDef.indexTypeESFields));
 

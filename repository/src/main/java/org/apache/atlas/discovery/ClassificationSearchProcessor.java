@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 
 /**
  * This class is needed when this is a registered classification type or wildcard search,
@@ -142,7 +142,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             String indexQueryString = STRAY_AND_PATTERN.matcher(queryString).replaceAll(")");
             indexQueryString        = STRAY_OR_PATTERN.matcher(indexQueryString).replaceAll(")");
             indexQueryString = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
-            indexQuery = graph.indexQuery(getCurrentIndexName(), indexQueryString);
+            indexQuery = graph.indexQuery(getCurrentReadVertexIndexName(), indexQueryString);
 
             LOG.debug("Using query string  '{}'.", indexQuery);
         } else {
@@ -163,7 +163,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             indexQueryString = STRAY_OR_PATTERN.matcher(indexQueryString).replaceAll(")");
             indexQueryString = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
 
-            this.classificationIndexQuery = graph.indexQuery(getCurrentIndexName(), indexQueryString);
+            this.classificationIndexQuery = graph.indexQuery(getCurrentReadVertexIndexName(), indexQueryString);
 
             typeNamePredicate  = isClassificationRootType() ? null :
                                  SearchPredicateUtil.getINPredicateGenerator().generatePredicate(Constants.TYPE_NAME_PROPERTY_KEY, typeAndSubTypes, String.class);

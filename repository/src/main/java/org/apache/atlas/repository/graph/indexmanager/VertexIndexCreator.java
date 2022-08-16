@@ -18,7 +18,7 @@ import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.indexmanager.IndexApplicabilityChecker.isIndexApplicable;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.SET;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.SINGLE;
-import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentWriteVertexIndexName;
 
 @Component
 public class VertexIndexCreator {
@@ -36,17 +36,17 @@ public class VertexIndexCreator {
                 propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
             }
 
-            if (isIndexApplicable(propertyClass, cardinality) && !management.getGraphIndex(getCurrentIndexName()).getFieldKeys().contains(propertyKey)) {
+            if (isIndexApplicable(propertyClass, cardinality) && !management.getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys().contains(propertyKey)) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Creating backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
                 }
 
-                indexFieldName = management.addMixedIndex(getCurrentIndexName(), propertyKey, isStringField, indexTypeESConfig, indexTypeESFields);
+                indexFieldName = management.addMixedIndex(getCurrentWriteVertexIndexName(), propertyKey, isStringField, indexTypeESConfig, indexTypeESFields);
                 LOG.info("Created backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
             }
 
             if (indexFieldName == null && isIndexApplicable(propertyClass, cardinality)) {
-                indexFieldName = management.getIndexFieldName(getCurrentIndexName(), propertyKey, isStringField);
+                indexFieldName = management.getIndexFieldName(getCurrentWriteVertexIndexName(), propertyKey, isStringField);
             }
 
             if (propertyKey != null) {

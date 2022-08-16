@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
-import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 
 public class ReIndexPatch extends AtlasPatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ReIndexPatch.class);
@@ -78,7 +78,7 @@ public class ReIndexPatch extends AtlasPatchHandler {
     }
 
     public static class ReindexPatchProcessor {
-        private static String[] vertexIndexNames = new String[]{getCurrentIndexName(), Constants.FULLTEXT_INDEX};
+        private static String[] vertexIndexNames = new String[]{getCurrentReadVertexIndexName(), Constants.FULLTEXT_INDEX};
         private static String[] edgeIndexNames = new String[]{Constants.EDGE_INDEX};
         private static String WORKER_PREFIX = "reindex";
 

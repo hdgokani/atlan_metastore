@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.Constants.TASK_STATUS;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
-import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 
 @Component
 public class TaskRegistry {
@@ -353,7 +353,7 @@ public class TaskRegistry {
 
                 indexSearchParams.setDsl(dsl);
 
-                AtlasIndexQuery indexQuery = graph.elasticsearchQuery(getCurrentIndexName(), indexSearchParams);
+                AtlasIndexQuery indexQuery = graph.elasticsearchQuery(getCurrentReadVertexIndexName(), indexSearchParams);
 
                 try {
                     indexQueryResult = indexQuery.vertices(indexSearchParams);

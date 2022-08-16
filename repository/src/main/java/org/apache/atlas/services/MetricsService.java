@@ -49,7 +49,7 @@ import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.metrics.AtlasMetrics.*;
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 
 @AtlasService
 public class MetricsService {
@@ -259,7 +259,7 @@ public class MetricsService {
         indexQuery = String.format(indexQuery, typeName, status.name());
 
         try {
-            ret = atlasGraph.indexQuery(getCurrentIndexName(), indexQuery).vertexTotals();
+            ret = atlasGraph.indexQuery(getCurrentReadVertexIndexName(), indexQuery).vertexTotals();
         }catch (Exception e){
             LOG.error("Failed fetching using indexQuery: " + e.getMessage());
         }
@@ -275,7 +275,7 @@ public class MetricsService {
         indexQuery = String.format(indexQuery, typeName);
 
         try {
-            ret = atlasGraph.indexQuery(getCurrentIndexName(), indexQuery).vertexTotals();
+            ret = atlasGraph.indexQuery(getCurrentReadVertexIndexName(), indexQuery).vertexTotals();
         }catch (Exception e){
             LOG.error("Failed fetching using indexQuery: " + e.getMessage());
         }

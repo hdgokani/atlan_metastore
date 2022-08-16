@@ -53,7 +53,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 
 public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasJanusGraphIndexClient.class);
@@ -244,7 +244,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
 
             solrQuery.setFacetMinCount(MIN_FACET_COUNT_REQUIRED);
 
-            QueryResponse queryResponse = solrClient.query(getCurrentIndexName(), solrQuery, SolrRequest.METHOD.POST);
+            QueryResponse queryResponse = solrClient.query(getCurrentReadVertexIndexName(), solrQuery, SolrRequest.METHOD.POST);
             List<FacetField> facetFields = queryResponse == null ? null : queryResponse.getFacetFields();
 
             if (CollectionUtils.isNotEmpty(facetFields)) {
@@ -330,7 +330,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                 solrQuery.setParam(TERMS_FIELD, indexFieldName);
             }
 
-            QueryResponse queryResponse = solrClient.query(getCurrentIndexName(), solrQuery);
+            QueryResponse queryResponse = solrClient.query(getCurrentReadVertexIndexName(), solrQuery);
             TermsResponse termsResponse = queryResponse == null ? null : queryResponse.getTermsResponse();
 
             if(termsResponse == null) {
@@ -370,12 +370,12 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     private boolean isSolrHealthy() throws SolrServerException, IOException {
         SolrClient client = Solr6Index.getSolrClient();
 
-        return client != null && client.ping(getCurrentIndexName()).getStatus() == SOLR_HEALTHY_STATUS;
+        return client != null && client.ping(getCurrentReadVertexIndexName()).getStatus() == SOLR_HEALTHY_STATUS;
     }
 
     private boolean isElasticsearchHealthy() throws ElasticsearchException, IOException {
         RestHighLevelClient client = AtlasElasticsearchDatabase.getClient();
-        ClusterHealthRequest request = new ClusterHealthRequest(Constants.INDEX_PREFIX + getCurrentIndexName());
+        ClusterHealthRequest request = new ClusterHealthRequest(Constants.INDEX_PREFIX + getCurrentReadVertexIndexName());
         ClusterHealthResponse response = client.cluster().health(request, RequestOptions.DEFAULT);
         RestStatus restStatus = response.status();
         if (restStatus.toString().equals(ELASTICSEARCH_REST_STATUS_OK)){

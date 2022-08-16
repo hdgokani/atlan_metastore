@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 
 
 /**
@@ -90,7 +90,7 @@ public class FreeTextSearchProcessor extends SearchProcessor {
         ElasticsearchQueryBuilder elasticsearchQueryBuilder = new ElasticsearchQueryBuilder();
         QueryBuilder queryBuilder = elasticsearchQueryBuilder.getMatchAllQueryBuilder(searchText, fieldsWithBoostValue);
         SearchSourceBuilder searchSourceBuilder = elasticsearchQueryBuilder.getSourceBuilder(queryBuilder);
-        indexQuery = context.getGraph().elasticsearchQuery(getCurrentIndexName(), searchSourceBuilder);
+        indexQuery = context.getGraph().elasticsearchQuery(getCurrentReadVertexIndexName(), searchSourceBuilder);
     }
 
     private GraphIndexQueryParameters prepareGraphIndexQueryParameters(SearchContext context, StringBuilder queryString) {
@@ -100,7 +100,7 @@ public class FreeTextSearchProcessor extends SearchProcessor {
             parameters.add(context.getGraph().indexQueryParameter(SOLR_QT_PARAMETER, SOLR_REQUEST_HANDLER_NAME));
         }
 
-        return new GraphIndexQueryParameters(getCurrentIndexName(), queryString.toString(), 0, parameters);
+        return new GraphIndexQueryParameters(getCurrentReadVertexIndexName(), queryString.toString(), 0, parameters);
     }
 
     @Override

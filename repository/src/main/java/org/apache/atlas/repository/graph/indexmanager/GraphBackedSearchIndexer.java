@@ -46,7 +46,7 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.*;
 
-import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentWriteVertexIndexName;
 
 /**
  * Adds index for properties of a given type when its added before any instances are added.
@@ -161,7 +161,7 @@ public class GraphBackedSearchIndexer extends GraphTransactionManager implements
                 management = provider.get().getManagementSystem();
 
                 if (management != null) {
-                    AtlasGraphIndex vertexIndex = management.getGraphIndex(getCurrentIndexName());
+                    AtlasGraphIndex vertexIndex = management.getGraphIndex(getCurrentWriteVertexIndexName());
 
                     if (vertexIndex != null) {
                         recomputeIndexedKeys = false;

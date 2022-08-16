@@ -41,7 +41,7 @@ import java.util.Map;
 
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.DEFAULT_SEARCHWEIGHT;
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 
 /**
  This is a component that will go through all entity type definitions and create free text index
@@ -85,8 +85,8 @@ public class SolrIndexHelper implements IndexChangeListener {
                 AtlasGraphIndexClient graphIndexClient = graph.getGraphIndexClient();
                 Map<String, Integer> indexFieldName2SearchWeightMap = geIndexFieldNamesWithSearchWeights();
 
-                graphIndexClient.applySearchWeight(getCurrentIndexName(), indexFieldName2SearchWeightMap);
-                graphIndexClient.applySuggestionFields(getCurrentIndexName(), getIndexFieldNamesForSuggestions(indexFieldName2SearchWeightMap));
+                graphIndexClient.applySearchWeight(getCurrentReadVertexIndexName(), indexFieldName2SearchWeightMap);
+                graphIndexClient.applySuggestionFields(getCurrentReadVertexIndexName(), getIndexFieldNamesForSuggestions(indexFieldName2SearchWeightMap));
             } catch (AtlasException e) {
                 LOG.error("Error encountered in handling type system change notification.", e);
                 throw new RuntimeException("Error encountered in handling type system change notification.", e);

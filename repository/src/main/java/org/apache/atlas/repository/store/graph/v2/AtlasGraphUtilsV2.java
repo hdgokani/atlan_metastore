@@ -50,7 +50,7 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
-import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 
 /**
  * Utility methods for Graph.
@@ -773,7 +773,7 @@ public class AtlasGraphUtilsV2 {
                 .append(" AND ")
                 .append(INDEX_SEARCH_PREFIX + "\"").append(STATE_PROPERTY_KEY).append("\":ACTIVE");
 
-        return graph.indexQuery(getCurrentIndexName(), sb.toString());
+        return graph.indexQuery(getCurrentReadVertexIndexName(), sb.toString());
     }
 
     public static String getIndexSearchPrefix() {
