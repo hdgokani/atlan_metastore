@@ -20,7 +20,7 @@ import java.util.List;
 import static org.apache.atlas.repository.graph.indexmanager.AtlasCardinalityMapper.toAtlasCardinality;
 import static org.apache.atlas.repository.graph.indexmanager.IndexApplicabilityChecker.isIndexApplicable;
 import static org.apache.atlas.repository.graph.indexmanager.PrimitiveClassMapper.getPrimitiveClass;
-import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentWriteVertexIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 
 @Component
 public class IndexFieldNameResolver {
@@ -82,7 +82,7 @@ public class IndexFieldNameResolver {
                     AtlasPropertyKey propertyKey = managementSystem.getPropertyKey(attribute.getVertexPropertyName());
                     boolean isStringField = AtlasStructDef.AtlasAttributeDef.IndexType.STRING.equals(attribute.getIndexType());
                     if (propertyKey != null) {
-                        String indexFieldName = managementSystem.getIndexFieldName(getCurrentWriteVertexIndexName(), propertyKey, isStringField);
+                        String indexFieldName = managementSystem.getIndexFieldName(getCurrentReadVertexIndexName(), propertyKey, isStringField);
 
                         attribute.setIndexFieldName(indexFieldName);
 
