@@ -265,12 +265,12 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     @Override
-    public void onClassificationsDeletedFromEntities(List<AtlasEntity> entities, List<AtlasClassification> deletedClassifications) throws AtlasBaseException {
+    public void onClassificationsDeletedFromEntities(List<AtlasEntity> entities, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException {
         doFullTextMappingHelper(entities);
 
         if (isV2EntityNotificationEnabled) {
             for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
-                listener.onClassificationsDeleted(entities, deletedClassifications);
+                listener.onClassificationsDeleted(entities, deletedClassifications, forceInline);
             }
         } else {
             if (instanceConverter != null) {

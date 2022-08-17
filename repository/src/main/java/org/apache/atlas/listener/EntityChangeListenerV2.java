@@ -108,7 +108,7 @@ public interface EntityChangeListenerV2 {
      * @param classifications classifications that needs to be deleted from entities
      * @throws AtlasBaseException if the listener notification fails
      */
-    void onClassificationsDeleted(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException;
+    void onClassificationsDeleted(List<AtlasEntity> entities, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException;
 
     /**
      * This is upon adding a new term to an entity.
