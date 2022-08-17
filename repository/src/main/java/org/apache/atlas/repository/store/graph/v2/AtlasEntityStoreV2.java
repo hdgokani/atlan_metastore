@@ -567,7 +567,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
         ensureNonAccessControlEntityType(Collections.singletonList(getTypeName(vertex)));
 
-        deleteById(vertex);
+        return deleteById(vertex);
     }
 
     @GraphTransaction
