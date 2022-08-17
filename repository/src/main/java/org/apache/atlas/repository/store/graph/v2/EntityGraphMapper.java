@@ -3319,7 +3319,18 @@ public class EntityGraphMapper {
             }
             while (offset < propagatedEdgesSize);
 
-            deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+            for (int i = 1; i <= MAX_NUMBER_OF_RETRIES; i++) {
+                try {
+                    deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+                    break; //do not retry on success
+                } catch (Exception ex) {
+                    if (i == MAX_NUMBER_OF_RETRIES) {
+                        LOG.error(String.format("Maximum retries reached for deleting classification vertex with id %s from graph. Retried %s times. Skipping...", classificationVertex.getId(), i));
+                        continue;
+                    }
+                    LOG.warn(String.format("Vertex with id %s could not be fetched from graph. Retrying for %s time. Exception: %s", classificationVertex.getId(), i, ex.getMessage()));
+                }
+            }
 
             return deletedPropagationsGuid;
         } catch (Exception e) {
