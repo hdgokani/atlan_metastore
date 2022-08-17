@@ -121,8 +121,8 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
-    public void onClassificationsDeleted(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
-        notifyClassificationEvents(entities, CLASSIFICATION_DELETE, classifications);
+    public void onClassificationsDeleted(List<AtlasEntity> entities, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException {
+        notifyClassificationEvents(entities, CLASSIFICATION_DELETE, classifications, forceInline);
     }
 
     @Override
