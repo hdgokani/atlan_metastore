@@ -584,7 +584,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (LOG.isDebugEnabled()) {
                 // Entity does not exist - treat as non-error, since the caller
                 // wanted to delete the entity and it's already gone.
-                LOG.debug("Deletion request ignored for non-existent entity with guid " + guid);
+                LOG.debug("Deletion request ignored for non-existent entity with guid " + getGuid(vertex));
             }
         }
 
