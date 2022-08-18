@@ -96,6 +96,7 @@ import java.util.stream.Collectors;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.ensureNonAccessControlEntityType;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
@@ -512,6 +513,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         AtlasEntityHeader entity     = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
         AtlasEntityType   entityType = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
+        ensureNonAccessControlEntityType(Collections.singletonList(entityType.getTypeName()));
         AtlasAttribute    attr       = entityType.getAttribute(attrName);
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entity), "update entity ByUniqueAttributes : guid=", guid );
@@ -557,26 +559,40 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     @Override
-    @GraphTransaction
     public EntityMutationResponse deleteById(final String guid) throws AtlasBaseException {
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+        if (vertex != null) {
+            ensureNonAccessControlEntityType(Collections.singletonList(getTypeName(vertex)));
+        } else {
+            if (LOG.isDebugEnabled()) {
+                // Entity does not exist - treat as non-error, since the caller
+                // wanted to delete the entity and it's already gone.
+                LOG.debug("Deletion request ignored for non-existent entity with guid " + guid);
+            }
+        }
+
+        return deleteById(vertex);
+    }
+
+    @GraphTransaction
+    public EntityMutationResponse deleteById(final AtlasVertex vertex) throws AtlasBaseException {
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
-        AtlasVertex             vertex             = AtlasGraphUtilsV2.findByGuid(graph, guid);
 
         if (vertex != null) {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", entityHeader.getGuid());
 
             deletionCandidates.add(vertex);
         } else {
             if (LOG.isDebugEnabled()) {
                 // Entity does not exist - treat as non-error, since the caller
                 // wanted to delete the entity and it's already gone.
-                LOG.debug("Deletion request ignored for non-existent entity with guid " + guid);
+                LOG.debug("Deletion request ignored for non-existent entity with guid " + getGuid(vertex));
             }
         }
 
@@ -657,6 +673,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
 
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
+            ensureNonAccessControlEntityType(Collections.singletonList(entityHeader.getTypeName()));
 
             AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
 
@@ -770,6 +787,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (entityType == null) {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), objectId.getTypeName());
             }
+            ensureNonAccessControlEntityType(Collections.singletonList(entityType.getTypeName()));
 
             AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(graph, entityType, objectId.getUniqueAttributes());
 
