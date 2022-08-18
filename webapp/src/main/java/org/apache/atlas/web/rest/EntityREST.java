@@ -74,6 +74,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.ensureNonAccessControlEntityType;
 import static org.apache.atlas.authorize.AtlasPrivilege.*;
 
 
@@ -416,6 +417,8 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.partialUpdateEntityByUniqueAttrs(" + typeName + "," + uniqueAttributes + ")");
             }
 
+            ensureNonAccessControlEntityType(Collections.singletonList(typeName));
+
             AtlasEntityType entityType = ensureEntityType(typeName);
 
             validateUniqueAttribute(entityType, uniqueAttributes);
@@ -459,6 +462,8 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteByUniqueAttribute(" + typeName + "," + attributes + ")");
             }
 
+            ensureNonAccessControlEntityType(Collections.singletonList(typeName));
+
             AtlasEntityType entityType = ensureEntityType(typeName);
 
             return entitiesStore.deleteByUniqueAttributes(entityType, attributes);
@@ -486,6 +491,8 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate()");
             }
             validateAttributeLength(Lists.newArrayList(entity.getEntity()));
+
+            ensureNonAccessControlEntityType(Collections.singletonList(entity.getEntity().getTypeName()));
 
             return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), replaceClassifications, replaceBusinessAttributes);
         } finally {
@@ -887,6 +894,10 @@ public class EntityREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" +
                         (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size()) + ")");
+            }
+
+            for (AtlasEntity entity : entities.getEntities()) {
+                ensureNonAccessControlEntityType(Collections.singletonList(entity.getTypeName()));
             }
 
             validateAttributeLength(entities.getEntities());
