@@ -1,13 +1,13 @@
 {
   "mappings": {
     "properties": {
-      "requestBody.dsl": {
+      "request.dsl": {
         "type": "nested"
       },
-      "requestBody.attributes": {
+      "request.attributes": {
         "type": "keyword"
       },
-      "requestBody.relationAttributes": {
+      "request.relationAttributes": {
         "type": "keyword"
       },
 
