@@ -3319,7 +3319,7 @@ public class EntityGraphMapper {
             }
             while (offset < propagatedEdgesSize);
 
-            deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+//            deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
 
             return deletedPropagationsGuid;
         } catch (Exception e) {
