@@ -409,7 +409,7 @@ public class AtlasPersonaService {
         return response;
     }
 
-    private boolean validateConnectionAdmin(PersonaContext context) throws AtlasBaseException {
+    private void validateConnectionAdmin(PersonaContext context) throws AtlasBaseException {
         AtlasEntity personaPolicy = context.getPersonaPolicy();
 
         if (isMetadataPolicy(personaPolicy) || isDataPolicy(personaPolicy)) {
@@ -428,11 +428,10 @@ public class AtlasPersonaService {
             LOG.info("AtlasAuthorizationUtils.getCurrentUserName() {}", AtlasAuthorizationUtils.getCurrentUserName());
 
             List<String> users = connectionAdminRole.getUsers().stream().map(x -> x.getName()).collect(Collectors.toList());
-            if (users.contains(AtlasAuthorizationUtils.getCurrentUserName())) {
-                return true;
+            if (!users.contains(AtlasAuthorizationUtils.getCurrentUserName())) {
+                throw new AtlasBaseException("User not is not connection admin");
             }
         }
-        throw new AtlasBaseException("User not is not connection admin");
     }
 
     private void createOrUpdatePersonaPolicy(PersonaContext context) throws AtlasBaseException {
