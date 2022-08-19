@@ -3294,6 +3294,8 @@ public class EntityGraphMapper {
             int toIndex;
             int offset = 0;
 
+            LOG.info(String.format("Number of edges to be deleted : %s for classification vertex with id : %s", propagatedEdgesSize, classificationVertexId));
+
             do {
                 toIndex = ((offset + CHUNK_SIZE > propagatedEdgesSize) ? (int) propagatedEdgesSize : (offset + CHUNK_SIZE));
 
