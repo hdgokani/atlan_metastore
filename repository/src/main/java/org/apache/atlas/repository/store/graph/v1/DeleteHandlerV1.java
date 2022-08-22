@@ -36,10 +36,7 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.DeleteType;
@@ -589,10 +586,16 @@ public abstract class DeleteHandlerV1 {
             // record remove propagation details to send notifications inline
             RequestContext.get().recordRemovedPropagation(getGuid(entityVertex), classification);
 
-            deletePropagatedEdge(propagatedEdge);
+            try {
+                deletePropagatedEdge(propagatedEdge);
+            } catch (IllegalStateException ex) {
+                LOG.error(String.format("Edge with id %s was already deleted. Skipping... Error: %s ", propagatedEdge.getId(), ex));
+            }
 
             RequestContext.get().endMetricRecord(metric);
         }
+
+        LOG.info(String.format("Deleted edge ids : %s", Arrays.toString(propagatedEdges.stream().map(AtlasElement::getId).toArray())));
 
         return ret;
     }
