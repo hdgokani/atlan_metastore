@@ -52,9 +52,15 @@ public class TypeSyncService {
             atlasIndexCreator.createIndexIfNotExists(newIndexName);
             ActiveIndexNameManager.setCurrentWriteVertexIndexName(newIndexName);
             defaultIndexCreator.createDefaultIndexes(atlasGraph);
-            ActiveIndexNameManager.setCurrentReadVertexIndexName(newIndexName);
         }
-        return atlasTypeDefStore.updateTypesDef(newTypeDefinitions);
+        atlasTypeDefStore.updateTypesDef(newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions));
+        atlasTypeDefStore.createTypesDef(newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions));
+//        atlasTypeDefStore.deleteTypesDef(existingTypeDefinitions.getCreatedOrDeletedTypesDef(newTypeDefinitions));
+
+//        return atlasTypeDefStore.updateTypesDef(newTypeDefinitions);
+//            ActiveIndexNameManager.setCurrentReadVertexIndexName(newIndexName);
+
+        return newTypeDefinitions;
     }
 
 }

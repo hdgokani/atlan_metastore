@@ -54,12 +54,13 @@ public class ElasticInstanceConfigService implements Service {
 
     private AtlasEntityDef createEntityDef() {
         AtlasEntityDef entityDef = new AtlasEntityDef();
-        entityDef.addSuperType("Referenceable");
         entityDef.setName("InstanceConfig");
         entityDef.setServiceType("atlas_core");
         entityDef.setVersion(1L);
         AtlasStructDef.AtlasAttributeDef vertexIndexNameAttribute = createVertexIndexNameAttribute();
+        AtlasStructDef.AtlasAttributeDef qualifiedNameAttribute = cureateQualifiedNameAttrubite();
         entityDef.addAttribute(vertexIndexNameAttribute);
+        entityDef.addAttribute(qualifiedNameAttribute);
         return entityDef;
     }
 
@@ -82,6 +83,14 @@ public class ElasticInstanceConfigService implements Service {
         idDef.setIncludeInNotification(false);
     }
 
+    private AtlasStructDef.AtlasAttributeDef cureateQualifiedNameAttrubite() {
+        AtlasStructDef.AtlasAttributeDef attributeDef = new AtlasStructDef.AtlasAttributeDef();
+        attributeDef.setName("qualifiedName");
+        setCommonAttributeProperties(attributeDef);
+        return attributeDef;
+
+    }
+
 
     public void addInstanceConfigEntity() throws AtlasBaseException {
 
@@ -99,6 +108,9 @@ public class ElasticInstanceConfigService implements Service {
             }
 
         } catch (AtlasBaseException e) {
+            if (e.getMessage().equals("Given typename InstanceConfig was invalid")) {
+                return;
+            }
             throw e;
         }
     }
