@@ -9,13 +9,16 @@ import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.indexmanager.DefaultIndexCreator;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexCreator;
-import org.apache.atlas.service.ActiveIndexNameManager;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.web.dto.TypeSyncResponse;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.io.IOException;
+
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.setCurrentWriteVertexIndexName;
 
 @Order
 @Component
@@ -42,25 +45,28 @@ public class TypeSyncService {
         this.atlasTypeDefStore = atlasTypeDefStore;
     }
 
-
     @GraphTransaction
-    public AtlasTypesDef syncTypes(AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException {
+    public TypeSyncResponse syncTypes(AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException {
         AtlasTypesDef existingTypeDefinitions = typeDefStore.searchTypesDef(new SearchFilter());
         boolean haveIndexSettingsChanged = existingTypeDefinitions.hasIndexSettingsChanged(newTypeDefinitions);
+        String newIndexName = null;
         if (haveIndexSettingsChanged) {
-            String newIndexName = elasticInstanceConfigService.updateCurrentIndexName();
+            newIndexName = elasticInstanceConfigService.updateCurrentIndexName();
             atlasIndexCreator.createIndexIfNotExists(newIndexName);
-            ActiveIndexNameManager.setCurrentWriteVertexIndexName(newIndexName);
+            setCurrentWriteVertexIndexName(newIndexName);
             defaultIndexCreator.createDefaultIndexes(atlasGraph);
         }
         atlasTypeDefStore.updateTypesDef(newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions));
         atlasTypeDefStore.createTypesDef(newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions));
 //        atlasTypeDefStore.deleteTypesDef(existingTypeDefinitions.getCreatedOrDeletedTypesDef(newTypeDefinitions));
 
-//        return atlasTypeDefStore.updateTypesDef(newTypeDefinitions);
-//            ActiveIndexNameManager.setCurrentReadVertexIndexName(newIndexName);
 
-        return newTypeDefinitions;
+        return new TypeSyncResponse(
+                haveIndexSettingsChanged,
+                haveIndexSettingsChanged,
+                getCurrentReadVertexIndexName(),
+                newIndexName
+        );
     }
 
 }

@@ -27,6 +27,7 @@ import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.apache.atlas.web.dto.TypeSyncResponse;
 import org.apache.atlas.web.service.TypeSyncService;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.http.annotation.Experimental;
@@ -397,7 +398,7 @@ public class TypesREST {
 
     @POST
     @Path("/syncTypeDefs")
-    public AtlasTypesDef syncTypeDefs(final AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException {
+    public TypeSyncResponse syncTypeDefs(final AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException {
         return typeSyncService.syncTypes(newTypeDefinitions);
     }
 
