@@ -586,11 +586,7 @@ public abstract class DeleteHandlerV1 {
             // record remove propagation details to send notifications inline
             RequestContext.get().recordRemovedPropagation(getGuid(entityVertex), classification);
 
-            try {
-                deletePropagatedEdge(propagatedEdge);
-            } catch (IllegalStateException ex) {
-                LOG.error(String.format("Edge with id %s was already deleted. Skipping... Error: %s ", propagatedEdge.getId(), ex));
-            }
+            deletePropagatedEdge(propagatedEdge);
 
             RequestContext.get().endMetricRecord(metric);
         }
