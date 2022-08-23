@@ -184,6 +184,7 @@ public class AccessControlUtil {
 
         List mustClauseList = new ArrayList();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
+        mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
         mustClauseList.add(mapOf("term", mapOf("name.keyword", name)));
 
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
