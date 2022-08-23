@@ -209,10 +209,14 @@ public class AtlasPurposeService {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void enablePurpose(AtlasEntityWithExtInfo existingPurposeWithExtInfo) {
+    private void enablePurpose(AtlasEntityWithExtInfo existingPurposeWithExtInfo) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("enablePurpose");
 
-        //TODO
+        PurposeContext context = new PurposeContext();
+        context.setPurposeExtInfo(existingPurposeWithExtInfo);
+
+        List<RangerPolicy> provisionalRangerPolicies = purposePolicyToRangerPolicy(context);
+        updatePurposePolicies(context, provisionalRangerPolicies);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
