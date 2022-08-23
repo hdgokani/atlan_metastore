@@ -31,7 +31,7 @@ import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.indexmanager.*;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasIndexCreator;
+import org.apache.atlas.repository.graphdb.AtlasMixedBackendIndexManager;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
@@ -92,7 +92,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
     IndexChangeListenerManager indexChangeListenerManager;
 
     @Inject
-    AtlasIndexCreator atlasIndexCreator;
+    AtlasMixedBackendIndexManager atlasMixedBackendIndexManager;
 
     AtlasEntityStore entityStore;
     AtlasRelationshipStore relationshipStore;
@@ -109,7 +109,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
     public void setUp() throws Exception {
         super.initialize();
 
-        new GraphBackedSearchIndexer(typeRegistry, new DefaultIndexCreator(typeRegistry, vertexIndexCreator, edgeIndexCreator, atlasIndexCreator), typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator, indexChangeListenerManager);
+        new GraphBackedSearchIndexer(typeRegistry, new DefaultIndexCreator(typeRegistry, vertexIndexCreator, edgeIndexCreator, atlasMixedBackendIndexManager), typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator, indexChangeListenerManager);
 
         // create employee relationship types
         AtlasTypesDef employeeTypes = getDepartmentEmployeeTypes();

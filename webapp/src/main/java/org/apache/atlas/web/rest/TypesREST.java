@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 /**
  * REST interface for CRUD operations on type definitions
@@ -398,8 +399,14 @@ public class TypesREST {
 
     @POST
     @Path("/syncTypeDefs")
-    public TypeSyncResponse syncTypeDefs(final AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException {
+    public TypeSyncResponse syncTypeDefs(final AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException, ExecutionException, InterruptedException {
         return typeSyncService.syncTypes(newTypeDefinitions);
+    }
+
+    @DELETE
+    @Path("/cleanupTypeSync")
+    public void cleanupTypeSync() {
+        typeSyncService.cleanupTypeSync();
     }
 
     /**

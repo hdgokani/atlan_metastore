@@ -46,12 +46,12 @@ public class DefaultIndexCreator extends GraphTransactionManager {
     public DefaultIndexCreator(final AtlasTypeRegistry typeRegistry,
                                final VertexIndexCreator vertexIndexCreator,
                                final EdgeIndexCreator edgeIndexCreator,
-                               final AtlasIndexCreator atlasIndexCreator) throws IOException {
+                               final AtlasMixedBackendIndexManager atlasMixedBackendIndexManager) throws IOException {
         this.typeRegistry = typeRegistry;
         this.vertexIndexCreator = vertexIndexCreator;
         this.edgeIndexCreator = edgeIndexCreator;
 
-        atlasIndexCreator.createIndexIfNotExists(getCurrentWriteVertexIndexName());
+        atlasMixedBackendIndexManager.createIndexIfNotExists(getCurrentWriteVertexIndexName());
     }
 
     public void createDefaultIndexes(AtlasGraph graph) throws RepositoryException, IndexException, IOException {

@@ -33,7 +33,7 @@ import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.indexmanager.*;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasIndexCreator;
+import org.apache.atlas.repository.graphdb.AtlasMixedBackendIndexManager;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
@@ -97,7 +97,7 @@ public class AtlasEntityTestBase extends AtlasTestBase {
     IndexChangeListenerManager indexChangeListenerManager;
 
     @Inject
-    AtlasIndexCreator atlasIndexCreator;
+    AtlasMixedBackendIndexManager atlasMixedBackendIndexManager;
 
     AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
 
@@ -108,7 +108,7 @@ public class AtlasEntityTestBase extends AtlasTestBase {
 
         super.initialize();
 
-        new GraphBackedSearchIndexer(typeRegistry, new DefaultIndexCreator(typeRegistry, vertexIndexCreator, edgeIndexCreator, atlasIndexCreator), typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator, indexChangeListenerManager);
+        new GraphBackedSearchIndexer(typeRegistry, new DefaultIndexCreator(typeRegistry, vertexIndexCreator, edgeIndexCreator, atlasMixedBackendIndexManager), typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator, indexChangeListenerManager);
     }
 
     @AfterClass

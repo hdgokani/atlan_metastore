@@ -1,6 +1,7 @@
 package org.apache.atlas.repository.graphdb.janus;
 
-import org.apache.atlas.repository.graphdb.AtlasIndexCreator;
+import org.apache.atlas.repository.graphdb.AtlasMixedBackendIndexManager;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -15,9 +16,9 @@ import java.io.IOException;
 import static org.apache.atlas.repository.Constants.INDEX_PREFIX;
 
 @Component
-public class ESIndexCreator implements AtlasIndexCreator {
+public class ESIndexManager implements AtlasMixedBackendIndexManager {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ESIndexCreator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ESIndexManager.class);
 
     private final RestHighLevelClient esClient = AtlasElasticsearchDatabase.getClient();
 
@@ -51,5 +52,22 @@ public class ESIndexCreator implements AtlasIndexCreator {
             LOG.error("Caught exception: {}", e.toString());
             throw e;
         }
+    }
+
+    @Override
+    public void deleteIndex(String indexName) throws IOException {
+        DeleteIndexRequest deleteIndexRequest = new DeleteIndexRequest(INDEX_PREFIX + indexName);
+        try {
+            AcknowledgedResponse response = esClient.indices().delete(deleteIndexRequest, RequestOptions.DEFAULT);
+            if (response.isAcknowledged()) {
+                LOG.info("Atlan index {} deleted.", INDEX_PREFIX + indexName);
+            } else {
+                LOG.error("error deleting atlan index {}", INDEX_PREFIX + indexName);
+            }
+        } catch (Exception e) {
+            LOG.error("Caught exception: {}", e.toString());
+            throw e;
+        }
+
     }
 }
