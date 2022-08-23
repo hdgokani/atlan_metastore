@@ -3297,18 +3297,32 @@ public class EntityGraphMapper {
             }
 
             AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
-            List<AtlasVertex> entityVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
+
+            int verticesCount = 0;
+
+            List<AtlasEntity> propagatedEntities = new ArrayList<>();
+
+            do {
+                List<AtlasVertex> entityVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex, CHUNK_SIZE);
+                if (CollectionUtils.isEmpty(entityVertices)) {
+                    continue;
+                }
+                List<String> impactedGuids = entityVertices.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
+                GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
+                List<AtlasEntity>   chunkedPropagatedEntities = updateClassificationText(classification, entityVertices);
+                propagatedEntities.addAll(chunkedPropagatedEntities);
+
+                graph.commit();
+
+                entityChangeNotifier.onClassificationsDeletedFromEntities(chunkedPropagatedEntities, Collections.singletonList(classification));
+
+                verticesCount = entityVertices.size();
+
+                GraphTransactionInterceptor.clearCache();
+
+            } while (verticesCount >= CHUNK_SIZE);
+
             deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
-            if (CollectionUtils.isEmpty(entityVertices)) {
-                return null;
-            }
-
-            List<String> impactedGuids = entityVertices.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
-            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
-
-            List<AtlasEntity>   propagatedEntities = updateClassificationText(classification, entityVertices);
-
-            entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification));
 
             return propagatedEntities.stream().map(x -> x.getGuid()).collect(Collectors.toList());
         } catch (Exception e) {
