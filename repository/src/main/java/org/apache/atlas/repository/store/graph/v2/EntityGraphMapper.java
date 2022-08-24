@@ -3308,18 +3308,16 @@ public class EntityGraphMapper {
                 if (CollectionUtils.isEmpty(entityVertices)) {
                     continue;
                 }
+
                 List<String> impactedGuids = entityVertices.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
                 GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
                 List<AtlasEntity>   chunkedPropagatedEntities = updateClassificationText(classification, entityVertices);
                 propagatedEntities.addAll(chunkedPropagatedEntities);
 
-                graph.commit();
-
                 entityChangeNotifier.onClassificationsDeletedFromEntities(chunkedPropagatedEntities, Collections.singletonList(classification));
-
                 verticesCount = entityVertices.size();
 
-                GraphTransactionInterceptor.clearCache();
+                transactionInterceptHelper.intercept();
 
             } while (verticesCount >= CHUNK_SIZE);
 
