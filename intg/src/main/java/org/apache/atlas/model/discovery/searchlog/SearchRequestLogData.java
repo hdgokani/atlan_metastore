@@ -31,6 +31,8 @@ public class SearchRequestLogData {
     private Set<String> attributes;
     private Set<String> relationAttributes;
 
+    private String persona;
+    private String purpose;
     private String userAgent;
     private String host;
     private String ipAddress;
@@ -55,6 +57,7 @@ public class SearchRequestLogData {
     private long timestamp;
 
     public SearchRequestLogData(Map<String, Object> dsl, Set<String> attributes, Set<String> relationAttributes,
+                                String persona, String purpose,
                                 String userAgent, String host, String ipAddress, String userName,
                                 String errorDetails, String errorCode,
                                 Set<String> entityGuidsAll, Set<String> entityQFNamesAll, Set<String> entityGuidsAllowed,
@@ -82,6 +85,8 @@ public class SearchRequestLogData {
         this.resultsCount = resultsCount;
         this.responseTime = responseTime;
         this.timestamp = timestamp;
+        this.persona = persona;
+        this.purpose = purpose;
     }
 
     @JsonProperty("request.dsl")
@@ -97,6 +102,14 @@ public class SearchRequestLogData {
     @JsonProperty("request.relationAttributes")
     public Set<String> getRelationAttributes() {
         return relationAttributes;
+    }
+
+    public String getPersona() {
+        return persona;
+    }
+
+    public String getPurpose() {
+        return purpose;
     }
 
     public String getUserAgent() {
@@ -185,6 +198,8 @@ public class SearchRequestLogData {
         private Set<String> attributes;
         private Set<String> relationAttributes;
 
+        private String persona;
+        private String purpose;
         private String userAgent;
         private String host;
         private String ipAddress;
@@ -221,6 +236,16 @@ public class SearchRequestLogData {
 
         public SearchRequestLogDataBuilder setRelationAttributes(Set<String> relationAttributes) {
             this.relationAttributes = relationAttributes;
+            return this;
+        }
+
+        public SearchRequestLogDataBuilder setPersona(String persona) {
+            this.persona = persona;
+            return this;
+        }
+
+        public SearchRequestLogDataBuilder setPurpose(String purpose) {
+            this.purpose = purpose;
             return this;
         }
 
@@ -315,7 +340,8 @@ public class SearchRequestLogData {
         }
 
         public SearchRequestLogData build() {
-            return new SearchRequestLogData(dsl, attributes, relationAttributes, userAgent, host, ipAddress, userName,
+            return new SearchRequestLogData(dsl, attributes, relationAttributes,
+                    persona, purpose, userAgent, host, ipAddress, userName,
                     errorDetails, errorCode, entityGuidsAll, entityQFNamesAll, entityGuidsAllowed,
                     entityQFNamesAllowed, entityGuidsDenied, entityQFNamesDenied, utmTags,
                     hasResult, isFailed, resultsCount, responseTime, timestamp);

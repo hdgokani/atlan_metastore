@@ -540,6 +540,9 @@ public class DiscoveryREST {
                 .setAttributes(parameters.getAttributes())
                 .setRelationAttributes(parameters.getRelationAttributes())
 
+                .setPersona(parameters.getPersona())
+                .setPurpose(parameters.getPurpose())
+
                 .setUserAgent(servletRequest.getHeader(REQUEST_HEADER_USER_AGENT))
                 .setHost(servletRequest.getHeader(REQUEST_HEADER_HOST))
 

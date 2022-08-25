@@ -11,6 +11,13 @@
         "type": "keyword"
       },
 
+      "persona": {
+        "type": "keyword"
+      },
+      "purpose": {
+        "type": "keyword"
+      },
+
       "userAgent": {
         "type": "keyword"
       },
