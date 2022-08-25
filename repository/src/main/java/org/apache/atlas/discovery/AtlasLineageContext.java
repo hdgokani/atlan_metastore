@@ -34,6 +34,7 @@ public class AtlasLineageContext {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasLineageContext.class);
 
     private int depth;
+    private int offset;
     private int limit;
     private String guid;
     private boolean hideProcess;
@@ -56,6 +57,7 @@ public class AtlasLineageContext {
         this.hideProcess = lineageRequest.isHideProcess();
         this.allowDeletedProcess = lineageRequest.isAllowDeletedProcess();
         this.attributes = lineageRequest.getAttributes();
+        this.offset = lineageRequest.getOffset();
 
         predicate = constructInMemoryPredicate(typeRegistry, lineageRequest.getEntityFilters());
     }
@@ -140,6 +142,10 @@ public class AtlasLineageContext {
         this.allowDeletedProcess = allowDeletedProcess;
     }
 
+    public int getOffset() {
+        return offset;
+    }
+
     protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteria) {
         LineageSearchProcessor lineageSearchProcessor = new LineageSearchProcessor();
         return lineageSearchProcessor.constructInMemoryPredicate(typeRegistry, filterCriteria);
@@ -152,8 +158,8 @@ public class AtlasLineageContext {
         return true;
     }
 
-    public boolean shouldApplyLimit() {
-        return limit > 0;
+    public boolean shouldApplyPagination() {
+        return offset > -1;
     }
 
     @Override
