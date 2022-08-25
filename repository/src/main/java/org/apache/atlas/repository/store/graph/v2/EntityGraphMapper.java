@@ -3281,7 +3281,6 @@ public class EntityGraphMapper {
         }
     }
 
-    @GraphTransaction
     public List<String> deleteClassificationPropagation(String entityGuid, String classificationVertexId) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(classificationVertexId)) {
@@ -3313,17 +3312,17 @@ public class EntityGraphMapper {
                 List<AtlasEntity>   chunkedPropagatedEntities = updateClassificationText(classification, entityVertices);
                 propagatedEntities.addAll(chunkedPropagatedEntities);
 
-                graph.commit();
-
                 entityChangeNotifier.onClassificationsDeletedFromEntities(chunkedPropagatedEntities, Collections.singletonList(classification));
 
                 verticesCount = entityVertices.size();
 
-                GraphTransactionInterceptor.clearCache();
+                transactionInterceptHelper.intercept();
 
             } while (verticesCount >= CHUNK_SIZE);
 
             deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+
+            transactionInterceptHelper.intercept();
 
             return propagatedEntities.stream().map(x -> x.getGuid()).collect(Collectors.toList());
         } catch (Exception e) {
