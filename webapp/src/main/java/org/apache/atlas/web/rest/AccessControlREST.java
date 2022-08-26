@@ -20,11 +20,11 @@
 package org.apache.atlas.web.rest;
 
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.accesscontrol.AtlasAccessControlService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang.StringUtils;
@@ -45,16 +45,13 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getPolicyCategory;
 import static org.apache.atlas.repository.Constants.POLICY_CATEGORY_PERSONA;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.REQUEST_HEADER_REQUEST_TYPE;
+import static org.apache.atlas.repository.Constants.REQUEST_HEADER_REQUEST_TYPE_VALUE_ARGO;
 
 /**
  * REST for a Persona/ Purpose operations
@@ -85,18 +82,8 @@ public class AccessControlREST {
      * @throws AtlasBaseException
      */
     @POST
-    public EntityMutationResponse createOrUpdate(@Context HttpServletRequest httpRequest, AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException, JSONException, IOException {
+    public EntityMutationResponse createOrUpdate(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException, JSONException, IOException {
         AtlasPerfTracer perf = null;
-
-
-        Map<String, List<String>> headersMap = Collections.list(httpRequest.getHeaderNames())
-                .stream()
-                .collect(Collectors.toMap(
-                        Function.identity(),
-                        h -> Collections.list(httpRequest.getHeaders(h))
-                ));
-
-        LOG.info("Headers {}", AtlasType.toJson(headersMap));
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -141,9 +128,11 @@ public class AccessControlREST {
      */
     @POST
     @Path("policy")
-    public EntityMutationResponse createOrUpdatePolicy(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+    public EntityMutationResponse createOrUpdatePolicy(@Context HttpServletRequest request, AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         EntityMutationResponse response;
+
+        setWorkflowFlag(request);
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -187,6 +176,13 @@ public class AccessControlREST {
             accessControlService.deletePolicy(guid);
         } finally {
             AtlasPerfTracer.log(perf);
+        }
+    }
+
+    private void setWorkflowFlag(HttpServletRequest request){
+        String requestType = request.getHeader(REQUEST_HEADER_REQUEST_TYPE);
+        if (StringUtils.isNotEmpty(requestType) && REQUEST_HEADER_REQUEST_TYPE_VALUE_ARGO.equals(requestType)) {
+            RequestContext.get().setWorkflowRunning(true);
         }
     }
 }

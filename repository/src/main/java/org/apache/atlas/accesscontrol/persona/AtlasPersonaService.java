@@ -372,7 +372,6 @@ public class AtlasPersonaService {
         context.setAllowPolicy(getIsAllow(personaPolicy));
         context.setAllowPolicyUpdate();
 
-        //TODO: disabled for testing purpose, enable later
         validateConnectionAdmin(context);
 
         //verify Unique name across current Persona's policies
@@ -412,7 +411,7 @@ public class AtlasPersonaService {
     private void validateConnectionAdmin(PersonaContext context) throws AtlasBaseException {
         AtlasEntity personaPolicy = context.getPersonaPolicy();
 
-        if (isMetadataPolicy(personaPolicy) || isDataPolicy(personaPolicy)) {
+        if (!RequestContext.get().isWorkflowRunning() && (isMetadataPolicy(personaPolicy) || isDataPolicy(personaPolicy))) {
 
             String connectionGuid = getConnectionId(personaPolicy);
             AtlasEntity connection = entityRetriever.toAtlasEntity(connectionGuid);
