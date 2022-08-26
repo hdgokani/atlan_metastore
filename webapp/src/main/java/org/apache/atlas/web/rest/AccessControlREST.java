@@ -24,6 +24,7 @@ import org.apache.atlas.accesscontrol.AtlasAccessControlService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang.StringUtils;
@@ -34,14 +35,21 @@ import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getPolicyCategory;
@@ -77,8 +85,18 @@ public class AccessControlREST {
      * @throws AtlasBaseException
      */
     @POST
-    public EntityMutationResponse createOrUpdate(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException, JSONException, IOException {
+    public EntityMutationResponse createOrUpdate(@Context HttpServletRequest httpRequest, AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException, JSONException, IOException {
         AtlasPerfTracer perf = null;
+
+
+        Map<String, List<String>> headersMap = Collections.list(httpRequest.getHeaderNames())
+                .stream()
+                .collect(Collectors.toMap(
+                        Function.identity(),
+                        h -> Collections.list(httpRequest.getHeaders(h))
+                ));
+
+        LOG.info("Headers {}", AtlasType.toJson(headersMap));
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
