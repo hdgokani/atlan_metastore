@@ -455,11 +455,11 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static List<AtlasEdge> getNPropagatedEdges(AtlasVertex classificationVertex, int N) {
+    public static List<AtlasEdge> getPropagatedEdges(AtlasVertex classificationVertex, int limit) {
         List<AtlasEdge> ret   = new ArrayList<>();
         Iterable        edges = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
                 .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
-                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).edges();
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).edges(limit);
         if (edges != null) {
             Iterator<AtlasEdge> iterator = edges.iterator();
 
@@ -467,10 +467,6 @@ public final class GraphHelper {
                 AtlasEdge edge = iterator.next();
 
                 ret.add(edge);
-
-                if (ret.size() == N) {
-                    break;
-                }
             }
         }
 

@@ -608,7 +608,7 @@ public abstract class DeleteHandlerV1 {
         List<AtlasVertex> ret = new ArrayList<>();
 
         if (classificationVertex != null) {
-            List<AtlasEdge> propagatedEdges = getNPropagatedEdges(classificationVertex, N);
+            List<AtlasEdge> propagatedEdges = getPropagatedEdges(classificationVertex, N);
 
             if (CollectionUtils.isNotEmpty(propagatedEdges)) {
                 AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
