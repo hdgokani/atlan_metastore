@@ -82,7 +82,7 @@ import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 public class AtlasPersonaService {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasPersonaService.class);
 
-    private AtlasRangerService atlasRangerService;
+    private static AtlasRangerService atlasRangerService;
     private final AtlasEntityStore entityStore;
     private final AtlasGraph graph;
     private final ESAliasStore aliasStore;
@@ -452,6 +452,7 @@ public class AtlasPersonaService {
     }
 
     private List<RangerPolicy> createPersonaPolicy(PersonaContext context, List<RangerPolicy> provisionalRangerPolicies) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("createPersonaPolicy");
         List<RangerPolicy> ret = new ArrayList<>();
 
         //verify that this is unique policy for current Persona
@@ -482,12 +483,12 @@ public class AtlasPersonaService {
                 RangerPolicy pol = atlasRangerService.updateRangerPolicy(rangerPolicy);
                 ret.add(pol);
 
-                LOG.info("Updated Ranger Policy with ID {}", pol.getId());
+                //LOG.info("Updated Ranger Policy with ID {}", pol.getId());
             }
         }
+        //ret.forEach(x -> LOG.info("Created \n{}\n", AtlasType.toJson(x)));
 
-        ret.forEach(x -> LOG.info("Created \n{}\n", AtlasType.toJson(x)));
-
+        RequestContext.get().endMetricRecord(recorder);
         return ret;
     }
 
@@ -621,6 +622,7 @@ public class AtlasPersonaService {
 
     private void cleanRoleFromExistingPolicies(AtlasEntity persona, List<RangerPolicy> rangerPolicies,
                                                List<String> removePolicyGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("cleanRoleFromExistingPolicies");
         LOG.info("clean role from existing policies");
 
         for (RangerPolicy policy: rangerPolicies) {
@@ -647,6 +649,7 @@ public class AtlasPersonaService {
                 atlasRangerService.updateRangerPolicy(policy);
             }
         }
+        RequestContext.get().endMetricRecord(recorder);
     }
 
     private boolean cleanRoleFromAccessPolicy(String role, RangerPolicy policy) {
@@ -717,6 +720,7 @@ public class AtlasPersonaService {
     *
     * */
     private void processActionsRemoval(PersonaContext context, List<RangerPolicy> existingRangerPolicies) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processActionsRemoval");
         List<String> existingActions = getActions(context.getExistingPersonaPolicy());
         List<String> updatedActions = getActions(context.getPersonaPolicy());
 
@@ -773,12 +777,12 @@ public class AtlasPersonaService {
                         }
 
                     } else {
-                        //TODO: find Ranger policy by resource search
                         //Rare Case, if label removed from Ranger policy manually
                     }
                 }
             }
         }
+        RequestContext.get().endMetricRecord(recorder);
     }
 
     private List<RangerPolicy> processPolicies(PersonaContext context,
@@ -786,6 +790,7 @@ public class AtlasPersonaService {
         if (MapUtils.isEmpty(provisionalToRangerPoliciesMap)) {
             throw new AtlasBaseException("Policies map is empty");
         }
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processPolicies");
 
         List<RangerPolicy> ret = new ArrayList<>();
 
@@ -861,6 +866,8 @@ public class AtlasPersonaService {
                 }
             }
         }
+
+        RequestContext.get().endMetricRecord(recorder);
         return ret;
     }
 

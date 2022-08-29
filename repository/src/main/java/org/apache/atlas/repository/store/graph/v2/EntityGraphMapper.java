@@ -3281,6 +3281,7 @@ public class EntityGraphMapper {
         }
     }
 
+    @GraphTransaction
     public List<String> deleteClassificationPropagation(String entityGuid, String classificationVertexId) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(classificationVertexId)) {
@@ -3297,32 +3298,18 @@ public class EntityGraphMapper {
             }
 
             AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
-
-            int verticesCount = 0;
-
-            List<AtlasEntity> propagatedEntities = new ArrayList<>();
-
-            do {
-                List<AtlasVertex> entityVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex, CHUNK_SIZE);
-                if (CollectionUtils.isEmpty(entityVertices)) {
-                    continue;
-                }
-                List<String> impactedGuids = entityVertices.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
-                GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
-                List<AtlasEntity>   chunkedPropagatedEntities = updateClassificationText(classification, entityVertices);
-                propagatedEntities.addAll(chunkedPropagatedEntities);
-
-                entityChangeNotifier.onClassificationsDeletedFromEntities(chunkedPropagatedEntities, Collections.singletonList(classification));
-
-                verticesCount = entityVertices.size();
-
-                transactionInterceptHelper.intercept();
-
-            } while (verticesCount >= CHUNK_SIZE);
-
+            List<AtlasVertex> entityVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
             deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+            if (CollectionUtils.isEmpty(entityVertices)) {
+                return null;
+            }
 
-            transactionInterceptHelper.intercept();
+            List<String> impactedGuids = entityVertices.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
+            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
+
+            List<AtlasEntity>   propagatedEntities = updateClassificationText(classification, entityVertices);
+
+            entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification));
 
             return propagatedEntities.stream().map(x -> x.getGuid()).collect(Collectors.toList());
         } catch (Exception e) {
