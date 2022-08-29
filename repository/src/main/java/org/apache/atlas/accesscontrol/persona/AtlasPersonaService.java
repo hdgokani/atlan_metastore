@@ -486,8 +486,7 @@ public class AtlasPersonaService {
                 //LOG.info("Updated Ranger Policy with ID {}", pol.getId());
             }
         }
-
-        ret.forEach(x -> LOG.info("Created \n{}\n", AtlasType.toJson(x)));
+        //ret.forEach(x -> LOG.info("Created \n{}\n", AtlasType.toJson(x)));
 
         RequestContext.get().endMetricRecord(recorder);
         return ret;
