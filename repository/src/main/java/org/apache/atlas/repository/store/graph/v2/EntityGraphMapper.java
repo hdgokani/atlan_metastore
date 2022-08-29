@@ -3311,18 +3311,18 @@ public class EntityGraphMapper {
 
                 List<AtlasEntity>  propagatedEntities = updateClassificationText(classification, entityVertices);
 
-                graph.commit();
-
-                entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification), true);
+                entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification), false  );
 
                 if(! propagatedEntities.isEmpty()) {
                     deletedPropagationsGuid.addAll(propagatedEntities.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
                 }
                 offset += CHUNK_SIZE;
+
+                transactionInterceptHelper.intercept();
             }
             while (offset < propagatedEdgesSize);
 
-//            deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+            deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
 
             return deletedPropagationsGuid;
         } catch (Exception e) {
