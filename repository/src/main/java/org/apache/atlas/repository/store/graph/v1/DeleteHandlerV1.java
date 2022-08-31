@@ -591,8 +591,6 @@ public abstract class DeleteHandlerV1 {
             RequestContext.get().endMetricRecord(metric);
         }
 
-        LOG.info(String.format("Deleted edge ids : %s", Arrays.toString(propagatedEdges.stream().map(AtlasElement::getId).toArray())));
-
         return ret;
     }
 
