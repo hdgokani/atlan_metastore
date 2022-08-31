@@ -3281,7 +3281,7 @@ public class EntityGraphMapper {
             }
 
             AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
-
+          
             List<AtlasEdge> propagatedEdges = getPropagatedEdges(classificationVertex);
             if (propagatedEdges.isEmpty()) {
                 LOG.warn("deleteClassificationPropagation(classificationVertexId={}): classification edges empty", classificationVertexId);
