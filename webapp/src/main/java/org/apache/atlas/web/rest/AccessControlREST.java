@@ -20,7 +20,6 @@
 package org.apache.atlas.web.rest;
 
 
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.accesscontrol.AtlasAccessControlService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -35,7 +34,6 @@ import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
@@ -50,8 +48,6 @@ import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getPolicyCategory;
 import static org.apache.atlas.repository.Constants.POLICY_CATEGORY_PERSONA;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.REQUEST_HEADER_REQUEST_TYPE;
-import static org.apache.atlas.repository.Constants.REQUEST_HEADER_REQUEST_TYPE_VALUE_ARGO;
 
 /**
  * REST for a Persona/ Purpose operations
@@ -128,11 +124,9 @@ public class AccessControlREST {
      */
     @POST
     @Path("policy")
-    public EntityMutationResponse createOrUpdatePolicy(@Context HttpServletRequest request, AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
+    public EntityMutationResponse createOrUpdatePolicy(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         EntityMutationResponse response;
-
-        setWorkflowFlag(request);
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -176,13 +170,6 @@ public class AccessControlREST {
             accessControlService.deletePolicy(guid);
         } finally {
             AtlasPerfTracer.log(perf);
-        }
-    }
-
-    private void setWorkflowFlag(HttpServletRequest request){
-        String requestType = request.getHeader(REQUEST_HEADER_REQUEST_TYPE);
-        if (StringUtils.isNotEmpty(requestType) && REQUEST_HEADER_REQUEST_TYPE_VALUE_ARGO.equals(requestType)) {
-            RequestContext.get().setWorkflowRunning(true);
         }
     }
 }

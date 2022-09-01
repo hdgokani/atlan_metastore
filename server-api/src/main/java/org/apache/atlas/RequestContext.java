@@ -85,7 +85,6 @@ public class RequestContext {
     private boolean     allowDeletedRelationsIndexsearch = false;
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
-    private boolean     isWorkflowRunning;
     private String traceId;
 
     private RequestContext() {
@@ -370,14 +369,6 @@ public class RequestContext {
 
     public AtlasTask getCurrentTask() {
         return currentTask;
-    }
-
-    public boolean isWorkflowRunning() {
-        return isWorkflowRunning;
-    }
-
-    public void setWorkflowRunning(boolean workflowRunning) {
-        isWorkflowRunning = workflowRunning;
     }
 
     public void setCurrentTask(AtlasTask currentTask) {
