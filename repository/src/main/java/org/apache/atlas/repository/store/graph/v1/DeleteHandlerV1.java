@@ -574,7 +574,7 @@ public abstract class DeleteHandlerV1 {
         return ret;
     }
 
-    public List<AtlasVertex> removeTagPropagationInChunk(AtlasClassification classification, List<AtlasEdge> propagatedEdges) throws AtlasBaseException {
+    public List<AtlasVertex> removeTagPropagation(AtlasClassification classification, List<AtlasEdge> propagatedEdges) throws AtlasBaseException {
         List<AtlasVertex> ret = new ArrayList<>();
 
         for (AtlasEdge propagatedEdge : propagatedEdges) {

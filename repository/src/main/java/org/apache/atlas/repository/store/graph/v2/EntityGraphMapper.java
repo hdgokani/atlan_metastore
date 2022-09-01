@@ -3300,7 +3300,7 @@ public class EntityGraphMapper {
             do {
                 toIndex = ((offset + CHUNK_SIZE > propagatedEdgesSize) ? (int) propagatedEdgesSize : (offset + CHUNK_SIZE));
 
-                List<AtlasVertex> entityVertices = deleteDelegate.getHandler().removeTagPropagationInChunk(classification, propagatedEdges.subList(offset, toIndex));
+                List<AtlasVertex> entityVertices = deleteDelegate.getHandler().removeTagPropagation(classification, propagatedEdges.subList(offset, toIndex));
 
                 if (CollectionUtils.isEmpty(entityVertices)) {
                     return null;
