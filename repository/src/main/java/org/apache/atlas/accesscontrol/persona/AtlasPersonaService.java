@@ -70,6 +70,7 @@ import static org.apache.atlas.AtlasErrorCode.ATTRIBUTE_UPDATE_NOT_SUPPORTED;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.AtlasErrorCode.PERSONA_ALREADY_EXISTS;
+import static org.apache.atlas.AtlasErrorCode.UNAUTHORIZED_CONNECTION_ADMIN;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.*;
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.*;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_TYPE;
@@ -411,7 +412,7 @@ public class AtlasPersonaService {
     private void validateConnectionAdmin(PersonaContext context) throws AtlasBaseException {
         AtlasEntity personaPolicy = context.getPersonaPolicy();
 
-        if (!RequestContext.get().isWorkflowRunning() && (isMetadataPolicy(personaPolicy) || isDataPolicy(personaPolicy))) {
+        if (isMetadataPolicy(personaPolicy) || isDataPolicy(personaPolicy)) {
 
             String connectionGuid = getConnectionId(personaPolicy);
             AtlasEntity connection = entityRetriever.toAtlasEntity(connectionGuid);
@@ -428,7 +429,7 @@ public class AtlasPersonaService {
 
             List<String> users = connectionAdminRole.getUsers().stream().map(x -> x.getName()).collect(Collectors.toList());
             if (!users.contains(AtlasAuthorizationUtils.getCurrentUserName())) {
-                throw new AtlasBaseException("User not is not connection admin");
+                throw new AtlasBaseException(UNAUTHORIZED_CONNECTION_ADMIN, AtlasAuthorizationUtils.getCurrentUserName(), connectionGuid);
             }
         }
     }

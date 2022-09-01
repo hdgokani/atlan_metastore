@@ -363,9 +363,6 @@ public final class Constants {
 
     public static final String REQUEST_HEADER_USER_AGENT = "User-Agent";
     public static final String REQUEST_HEADER_HOST = "Host";
-    public static final String REQUEST_HEADER_REQUEST_TYPE = "X-Request-Type";
-
-    public static final String REQUEST_HEADER_REQUEST_TYPE_VALUE_ARGO = "argo";
 
     private Constants() {
     }
