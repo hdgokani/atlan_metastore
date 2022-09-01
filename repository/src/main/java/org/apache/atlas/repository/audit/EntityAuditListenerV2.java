@@ -306,7 +306,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
-    public void onClassificationsDeleted(List<AtlasEntity> entities, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException {
+    public void onClassificationsDeleted(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications) && CollectionUtils.isNotEmpty(entities)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("onClassificationsDeleted");
             FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();

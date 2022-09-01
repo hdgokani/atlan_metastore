@@ -2927,7 +2927,7 @@ public class EntityGraphMapper {
             List<AtlasEntity> propagatedEntities = updateClassificationText(classification, entityVertices);
 
             //Sending audit request for all entities at once
-            entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification), false);
+            entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification));
         }
         AtlasPerfTracer.log(perf);
     }
@@ -3207,7 +3207,7 @@ public class EntityGraphMapper {
                 List<AtlasEntity> propagatedEntities = updateClassificationText(classification, propagatedVertices);
 
                 //Sending audit request for all entities at once
-                entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification), false);
+                entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification));
             }
         }
 
@@ -3313,7 +3313,7 @@ public class EntityGraphMapper {
 
                 List<AtlasEntity>  propagatedEntities = updateClassificationText(classification, entityVertices);
 
-                entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification), false  );
+                entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification));
 
                 if(! propagatedEntities.isEmpty()) {
                     deletedPropagationsGuid.addAll(propagatedEntities.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
@@ -3362,7 +3362,7 @@ public class EntityGraphMapper {
             AtlasClassification classification = entityRetriever.toAtlasClassification(graph.getVertex(classificationVertexId));
             List<AtlasEntity> entities = removedPropagationsMap.get(classificationVertexId).stream().map(this::getEntity).collect(Collectors.toList());
 
-            entityChangeNotifier.onClassificationsDeletedFromEntities(entities, Collections.singletonList(classification), false);
+            entityChangeNotifier.onClassificationsDeletedFromEntities(entities, Collections.singletonList(classification));
         }
     }
 
