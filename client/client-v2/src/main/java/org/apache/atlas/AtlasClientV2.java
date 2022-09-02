@@ -27,44 +27,26 @@ import com.sun.jersey.multipart.FormDataBodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
 import com.sun.jersey.multipart.MultiPart;
 import com.sun.jersey.multipart.file.StreamDataBodyPart;
-
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
 import org.apache.atlas.model.audit.AuditSearchParameters;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
-import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
-import org.apache.atlas.model.discovery.AtlasSuggestionsResult;
-import org.apache.atlas.model.discovery.QuickSearchParameters;
-import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.glossary.AtlasGlossary;
 import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
-import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasClassification.AtlasClassifications;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasEntityHeaders;
-import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
-import org.apache.atlas.model.instance.ClassificationAssociateRequest;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
-import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasEnumDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
@@ -76,12 +58,7 @@ import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -1001,7 +978,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
 
     public void assignTermToEntities(String termGuid, List<AtlasRelatedObjectId> relatedObjectIds) throws AtlasServiceException {
         callAPI(formatPathParameters(API_V2.ASSIGN_TERM_TO_ENTITIES, termGuid), (Class<?>) null, relatedObjectIds);
-
     }
 
     public void disassociateTermFromEntities(String termGuid, List<AtlasRelatedObjectId> relatedObjectIds) throws AtlasServiceException {
