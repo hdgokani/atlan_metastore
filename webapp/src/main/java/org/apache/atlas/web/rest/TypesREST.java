@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -290,6 +290,7 @@ public class TypesREST {
 
         return ret;
     }
+
     /**
      * Get the relationship definition by it's name (unique)
      * @param name relationship name
@@ -428,13 +429,13 @@ public class TypesREST {
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.updateAtlasTypeDefs(" +
-                                                               AtlasTypeUtil.toDebugString(typesDef) + ")");
+                        AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
             for (AtlasBusinessMetadataDef mb : typesDef.getBusinessMetadataDefs()) {
                 AtlasBusinessMetadataDef existingMB;
-                try{
+                try {
                     existingMB = typeDefStore.getBusinessMetadataDefByGuid(mb.getGuid());
-                }catch (AtlasBaseException e){
+                } catch (AtlasBaseException e) {
                     //do nothing -- this BM is ew
                     existingMB = null;
                 }
@@ -442,9 +443,9 @@ public class TypesREST {
             }
             for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
                 AtlasClassificationDef existingClassificationDef;
-                try{
+                try {
                     existingClassificationDef = typeDefStore.getClassificationDefByGuid(classificationDef.getGuid());
-                }catch (AtlasBaseException e){
+                } catch (AtlasBaseException e) {
                     //do nothing -- this classification is ew
                     existingClassificationDef = null;
                 }
@@ -473,9 +474,8 @@ public class TypesREST {
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeDefs(" +
-                                                               AtlasTypeUtil.toDebugString(typesDef) + ")");
+                        AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
-
 
 
             typeDefStore.deleteTypesDef(typesDef);
@@ -513,11 +513,11 @@ public class TypesREST {
      * @return
      */
     private SearchFilter getSearchFilter(HttpServletRequest httpServletRequest) {
-        SearchFilter ret    = new SearchFilter();
-        Set<String>  keySet = httpServletRequest.getParameterMap().keySet();
+        SearchFilter ret = new SearchFilter();
+        Set<String> keySet = httpServletRequest.getParameterMap().keySet();
 
         for (String k : keySet) {
-            String key   = String.valueOf(k);
+            String key = String.valueOf(k);
 
             if (key.equalsIgnoreCase("type")) {
                 String[] values = httpServletRequest.getParameterValues(k);

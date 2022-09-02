@@ -228,10 +228,9 @@ public class AtlasTypesDef {
         }
     }
 
-    public StringBuilder toString(StringBuilder sb) {
-        if (sb == null) {
-            sb = new StringBuilder();
-        }
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
 
         sb.append("AtlasTypesDef{");
         sb.append("enumDefs={");
@@ -252,15 +251,10 @@ public class AtlasTypesDef {
         AtlasBaseTypeDef.dumpObjects(businessMetadataDefs, sb);
         sb.append("}");
 
-        return sb;
+        return sb.toString();
     }
 
-    @Override
-    public String toString() {
-        return toString(new StringBuilder()).toString();
-    }
-
-    public boolean hasIndexSettingsChanged(AtlasTypesDef newTypeDefinitions) {
+    public boolean haveIndexSettingsChanged(AtlasTypesDef newTypeDefinitions) {
         Map<String, AtlasStructDef> existingTypeNameMap = newTypeDefinitions.createNameMapFromStructTypeDefs();
         Map<String, AtlasStructDef> newTypeNameMap = createNameMapFromStructTypeDefs();
         return existingTypeNameMap.entrySet()

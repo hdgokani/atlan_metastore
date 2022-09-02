@@ -32,24 +32,38 @@ public class ElasticInstanceConfigService implements Service {
     public ElasticInstanceConfigService(AtlasTypeDefStore typeDefStore, AtlasEntityStore atlasEntityStore, AtlasTypeRegistry atlasTypeRegistry) {
         this.typeDefStore = typeDefStore;
         this.atlasEntityStore = atlasEntityStore;
-
         this.atlasTypeRegistry = atlasTypeRegistry;
     }
 
-    public void createInstanceConfig() throws AtlasBaseException {
+    @Override
+    public void start() throws AtlasException {
+        try {
+            createInstanceConfig();
+            String currentIndexName = getCurrentIndexName();
+            ActiveIndexNameManager.setCurrentReadVertexIndexName(currentIndexName);
+            ActiveIndexNameManager.setCurrentWriteVertexIndexName(currentIndexName);
+        } catch (AtlasBaseException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
+    public void createInstanceConfig() throws AtlasBaseException {
         try {
             typeDefStore.getEntityDefByName("InstanceConfig");
         } catch (AtlasBaseException e) {
-            AtlasTypesDef typesDef = new AtlasTypesDef();
-            List<AtlasEntityDef> entityDefs = new ArrayList<>();
-            AtlasEntityDef entityDef = createEntityDef();
-            entityDefs.add(entityDef);
-            typesDef.setEntityDefs(entityDefs);
-            typeDefStore.createTypesDef(typesDef);
+            createTypeDef();
         } finally {
-            addInstanceConfigEntity();
+            createInstanceConfigEntity();
         }
+    }
+
+    private void createTypeDef() throws AtlasBaseException {
+        AtlasTypesDef typesDef = new AtlasTypesDef();
+        List<AtlasEntityDef> entityDefs = new ArrayList<>();
+        AtlasEntityDef entityDef = createEntityDef();
+        entityDefs.add(entityDef);
+        typesDef.setEntityDefs(entityDefs);
+        typeDefStore.createTypesDef(typesDef);
     }
 
     private AtlasEntityDef createEntityDef() {
@@ -58,12 +72,13 @@ public class ElasticInstanceConfigService implements Service {
         entityDef.setServiceType("atlas_core");
         entityDef.setVersion(1L);
         AtlasStructDef.AtlasAttributeDef vertexIndexNameAttribute = createVertexIndexNameAttribute();
-        AtlasStructDef.AtlasAttributeDef qualifiedNameAttribute = cureateQualifiedNameAttrubite();
+        AtlasStructDef.AtlasAttributeDef qualifiedNameAttribute = createQualifiedNameAttribute();
+        AtlasStructDef.AtlasAttributeDef isUpdateLockedAttribute = createIsUpdateLockedAttribute();
         entityDef.addAttribute(vertexIndexNameAttribute);
         entityDef.addAttribute(qualifiedNameAttribute);
+        entityDef.addAttribute(isUpdateLockedAttribute);
         return entityDef;
     }
-
 
     private AtlasStructDef.AtlasAttributeDef createVertexIndexNameAttribute() {
         AtlasStructDef.AtlasAttributeDef attributeDef = new AtlasStructDef.AtlasAttributeDef();
@@ -72,18 +87,7 @@ public class ElasticInstanceConfigService implements Service {
         return attributeDef;
     }
 
-    private void setCommonAttributeProperties(AtlasStructDef.AtlasAttributeDef idDef) {
-        idDef.setTypeName("string");
-        idDef.setIndexType(AtlasStructDef.AtlasAttributeDef.IndexType.STRING);
-        idDef.setCardinality(AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
-        idDef.setIsIndexable(true);
-        idDef.setIsOptional(false);
-        idDef.setIsUnique(true);
-        idDef.setSkipScrubbing(true);
-        idDef.setIncludeInNotification(false);
-    }
-
-    private AtlasStructDef.AtlasAttributeDef cureateQualifiedNameAttrubite() {
+    private AtlasStructDef.AtlasAttributeDef createQualifiedNameAttribute() {
         AtlasStructDef.AtlasAttributeDef attributeDef = new AtlasStructDef.AtlasAttributeDef();
         attributeDef.setName("qualifiedName");
         setCommonAttributeProperties(attributeDef);
@@ -91,41 +95,53 @@ public class ElasticInstanceConfigService implements Service {
 
     }
 
+    private void setCommonAttributeProperties(AtlasStructDef.AtlasAttributeDef attributeDef) {
+        attributeDef.setTypeName("string");
+        attributeDef.setIndexType(AtlasStructDef.AtlasAttributeDef.IndexType.STRING);
+        attributeDef.setCardinality(AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        attributeDef.setIsIndexable(true);
+        attributeDef.setIsOptional(false);
+        attributeDef.setIsUnique(true);
+        attributeDef.setSkipScrubbing(true);
+        attributeDef.setIncludeInNotification(false);
+    }
 
-    public void addInstanceConfigEntity() throws AtlasBaseException {
+    private AtlasStructDef.AtlasAttributeDef createIsUpdateLockedAttribute() {
 
-        try {
-            if (!getInstanceConfigEntity().isPresent()) {
-                typeDefStore.getEntityDefByName("InstanceConfig");
-                getInstanceConfigEntity();
-                AtlasEntity instanceConfig = new AtlasEntity();
-                instanceConfig.setTypeName("InstanceConfig");
-                instanceConfig.setStatus(AtlasEntity.Status.ACTIVE);
-                instanceConfig.setAttribute("qualifiedName", ELASTIC_INSTANCE_CONFIGURATION);
-                instanceConfig.setAttribute("vertexIndexName", "vertex_index");
-                instanceConfig.setVersion(0L);
-                atlasEntityStore.createOrUpdate(new AtlasEntityStream(instanceConfig), false);
-            }
+        AtlasStructDef.AtlasAttributeDef attributeDef = new AtlasStructDef.AtlasAttributeDef();
+        attributeDef.setName("isUpdateLocked");
+        attributeDef.setTypeName("boolean");
+        attributeDef.setCardinality(AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        attributeDef.setIsIndexable(true);
+        attributeDef.setIsOptional(false);
+        attributeDef.setIsUnique(false);
+        attributeDef.setSkipScrubbing(true);
+        attributeDef.setIncludeInNotification(false);
+        return attributeDef;
+    }
 
-        } catch (AtlasBaseException e) {
-            if (e.getMessage().equals("Given typename InstanceConfig was invalid")) {
-                return;
-            }
-            throw e;
+    public void createInstanceConfigEntity() throws AtlasBaseException {
+        if (!getInstanceConfigEntity().isPresent()) {
+            typeDefStore.getEntityDefByName("InstanceConfig");
+            AtlasEntity instanceConfig = new AtlasEntity();
+            instanceConfig.setTypeName("InstanceConfig");
+            instanceConfig.setStatus(AtlasEntity.Status.ACTIVE);
+            instanceConfig.setAttribute("qualifiedName", ELASTIC_INSTANCE_CONFIGURATION);
+            instanceConfig.setAttribute("vertexIndexName", "vertex_index");
+            instanceConfig.setAttribute("isUpdateLocked", false);
+            instanceConfig.setVersion(0L);
+            atlasEntityStore.createOrUpdate(new AtlasEntityStream(instanceConfig), false);
         }
     }
 
     public String getCurrentIndexName() {
-        Optional<AtlasEntityWithExtInfo> instanceConfig = getInstanceConfigEntity();
-        if (instanceConfig.isPresent()) {
-            return (String) instanceConfig.get().getEntity().getAttribute("vertexIndexName");
-        } else {
-            return "vertex_index";
-        }
+        return getInstanceConfigEntity()
+                .map(config -> (String) config.getEntity().getAttribute("vertexIndexName"))
+                .orElse("vertex_index");
     }
 
     public String updateCurrentIndexName() throws AtlasBaseException {
-        AtlasEntityWithExtInfo instanceConfig = getInstanceConfigEntity().orElseThrow(() -> new AtlasBaseException(""));
+        AtlasEntityWithExtInfo instanceConfig = getInstanceConfigEntity().orElseThrow(() -> new AtlasBaseException("The instance config doesn't exist"));
         String newIndexName = "vertex_index_" + System.currentTimeMillis();
         instanceConfig.getEntity().setAttribute("vertexIndexName", newIndexName);
 
@@ -141,21 +157,8 @@ public class ElasticInstanceConfigService implements Service {
         try {
             instanceConfigType = (AtlasEntityType) atlasTypeRegistry.getType("InstanceConfig");
             return Optional.of(atlasEntityStore.getByUniqueAttributes(instanceConfigType, idAttribute));
-
         } catch (AtlasBaseException e) {
             return Optional.empty();
-        }
-    }
-
-    @Override
-    public void start() throws AtlasException {
-        try {
-            createInstanceConfig();
-            String currentIndexName = getCurrentIndexName();
-            ActiveIndexNameManager.setCurrentReadVertexIndexName(currentIndexName);
-            ActiveIndexNameManager.setCurrentWriteVertexIndexName(currentIndexName);
-        } catch (AtlasBaseException e) {
-            throw new RuntimeException(e);
         }
     }
 
