@@ -322,7 +322,7 @@ public class AtlasClassificationDef extends AtlasStructDef implements AtlasNamed
         getAttributeDefs().forEach(attribute -> {
             AtlasAttributeDef atlasAttributeDef = existingClassificationDef.getAttributeDefs()
                     .stream()
-                    .filter(givenAttribute -> givenAttribute.getName().equals(attribute.getName()))
+                    .filter(givenAttribute -> givenAttribute.getDisplayName().equals(attribute.getDisplayName()))
                     .findFirst()
                     .orElseThrow(IllegalArgumentException::new);
             attribute.setName(atlasAttributeDef.getName());

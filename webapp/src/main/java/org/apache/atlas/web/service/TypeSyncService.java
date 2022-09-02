@@ -11,6 +11,11 @@ import org.apache.atlas.repository.graphdb.AtlasMixedBackendIndexManager;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.web.dto.TypeSyncResponse;
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.core.schema.SchemaAction;
+import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.graphdb.database.management.GraphIndexStatusReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -20,6 +25,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import static org.apache.atlas.service.ActiveIndexNameManager.*;
+import static org.janusgraph.graphdb.database.management.ManagementSystem.awaitGraphIndexStatus;
 
 @Component
 public class TypeSyncService {
@@ -88,21 +94,22 @@ public class TypeSyncService {
     }
 
     private void disableJanusgraphIndex(String oldIndexName) throws InterruptedException, ExecutionException {
-//        JanusGraphManagement janusGraphManagement = atlasGraph.getGraph().openManagement();
-//
-//        JanusGraphIndex graphIndex = janusGraphManagement.getGraphIndex(oldIndexName);
-//        janusGraphManagement.updateIndex(graphIndex, SchemaAction.DISABLE_INDEX).get();
-//        janusGraphManagement.commit();
-//        atlasGraph.getGraph().tx().commit();
-//        GraphIndexStatusReport report = awaitGraphIndexStatus(atlasGraph.getGraph(), oldIndexName).status(SchemaStatus.DISABLED).call();
+        JanusGraphManagement janusGraphManagement = atlasGraph.getGraph().openManagement();
+
+        JanusGraphIndex graphIndex = janusGraphManagement.getGraphIndex(oldIndexName);
+        janusGraphManagement.updateIndex(graphIndex, SchemaAction.DISABLE_INDEX).get();
+        janusGraphManagement.commit();
+        atlasGraph.getGraph().tx().commit();
+        GraphIndexStatusReport report = awaitGraphIndexStatus(atlasGraph.getGraph(), oldIndexName).status(SchemaStatus.DISABLED).call();
+        System.out.println(report);
     }
 
     private void deleteJanusgraphIndex(String oldIndexName) throws InterruptedException, ExecutionException {
-//        JanusGraphManagement janusGraphManagement = atlasGraph.getGraph().openManagement();
-//        JanusGraphIndex graphIndex = janusGraphManagement.getGraphIndex(oldIndexName);
-//        JanusGraphManagement.IndexJobFuture indexJobFuture = janusGraphManagement.updateIndex(graphIndex, SchemaAction.REMOVE_INDEX);
-//        janusGraphManagement.commit();
-//        atlasGraph.getGraph().tx().commit();
-//        indexJobFuture.get();
+        JanusGraphManagement janusGraphManagement = atlasGraph.getGraph().openManagement();
+        JanusGraphIndex graphIndex = janusGraphManagement.getGraphIndex(oldIndexName);
+        JanusGraphManagement.IndexJobFuture indexJobFuture = janusGraphManagement.updateIndex(graphIndex, SchemaAction.REMOVE_INDEX);
+        janusGraphManagement.commit();
+        atlasGraph.getGraph().tx().commit();
+        indexJobFuture.get();
     }
 }
