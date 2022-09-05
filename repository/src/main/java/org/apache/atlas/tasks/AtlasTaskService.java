@@ -5,7 +5,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.tasks.TaskSearchParams;
 import org.apache.atlas.model.tasks.TaskSearchResult;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -19,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 import static org.apache.atlas.tasks.TaskRegistry.toAtlasTask;
 
 @Component
@@ -40,7 +40,7 @@ public class AtlasTaskService implements TaskService {
         DirectIndexQueryResult indexQueryResult;
 
         try {
-            indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
+            indexQuery = graph.elasticsearchQuery(getCurrentReadVertexIndexName(), searchParams);
             indexQueryResult = indexQuery.vertices(searchParams);
 
             if (indexQueryResult != null) {

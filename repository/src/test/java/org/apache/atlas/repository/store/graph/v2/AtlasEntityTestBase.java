@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,33 +22,24 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.graph.indexmanager.*;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasMixedBackendIndexManager;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
-import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.type.AtlasArrayType;
-import org.apache.atlas.type.AtlasMapType;
-import org.apache.atlas.type.AtlasStructType;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.type.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.testng.Assert;
@@ -90,6 +81,24 @@ public class AtlasEntityTestBase extends AtlasTestBase {
     @Inject
     protected AtlasGraph graph;
 
+    @Inject
+    TypedefIndexCreator typedefIndexCreator;
+
+    @Inject
+    VertexIndexCreator vertexIndexCreator;
+
+    @Inject
+    EdgeIndexCreator edgeIndexCreator;
+
+    @Inject
+    IndexFieldNameResolver indexFieldNameResolver;
+
+    @Inject
+    IndexChangeListenerManager indexChangeListenerManager;
+
+    @Inject
+    AtlasMixedBackendIndexManager atlasMixedBackendIndexManager;
+
     AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
 
     @BeforeClass
@@ -99,7 +108,7 @@ public class AtlasEntityTestBase extends AtlasTestBase {
 
         super.initialize();
 
-        new GraphBackedSearchIndexer(typeRegistry);
+        new GraphBackedSearchIndexer(typeRegistry, new DefaultIndexCreator(typeRegistry, vertexIndexCreator, edgeIndexCreator, atlasMixedBackendIndexManager), typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator, indexChangeListenerManager);
     }
 
     @AfterClass
@@ -164,7 +173,7 @@ public class AtlasEntityTestBase extends AtlasTestBase {
         AtlasStructType entityType = (AtlasStructType) typeRegistry.getType(actual.getTypeName());
         for (String attrName : expected.getAttributes().keySet()) {
             Object expectedVal = expected.getAttribute(attrName);
-            Object actualVal   = actual.getAttribute(attrName);
+            Object actualVal = actual.getAttribute(attrName);
 
             AtlasType attrType = entityType.getAttributeType(attrName);
             validateAttribute(entityExtInfo, actualVal, expectedVal, attrType, attrName);
@@ -172,7 +181,7 @@ public class AtlasEntityTestBase extends AtlasTestBase {
     }
 
     protected void validateAttribute(AtlasEntityExtInfo entityExtInfo, Object actual, Object expected, AtlasType attributeType, String attrName) throws AtlasBaseException, AtlasException {
-        switch(attributeType.getTypeCategory()) {
+        switch (attributeType.getTypeCategory()) {
             case OBJECT_ID_TYPE:
                 Assert.assertTrue(actual instanceof AtlasObjectId);
                 String guid = ((AtlasObjectId) actual).getGuid();
@@ -185,10 +194,10 @@ public class AtlasEntityTestBase extends AtlasTestBase {
                 break;
 
             case MAP:
-                AtlasMapType mapType     = (AtlasMapType) attributeType;
-                AtlasType    valueType   = mapType.getValueType();
-                Map          actualMap   = (Map) actual;
-                Map          expectedMap = (Map) expected;
+                AtlasMapType mapType = (AtlasMapType) attributeType;
+                AtlasType valueType = mapType.getValueType();
+                Map actualMap = (Map) actual;
+                Map expectedMap = (Map) expected;
 
                 if (MapUtils.isNotEmpty(expectedMap)) {
                     Assert.assertTrue(MapUtils.isNotEmpty(actualMap));
@@ -203,10 +212,10 @@ public class AtlasEntityTestBase extends AtlasTestBase {
                 break;
 
             case ARRAY:
-                AtlasArrayType arrType      = (AtlasArrayType) attributeType;
-                AtlasType      elemType     = arrType.getElementType();
-                List           actualList   = (List) actual;
-                List           expectedList = (List) expected;
+                AtlasArrayType arrType = (AtlasArrayType) attributeType;
+                AtlasType elemType = arrType.getElementType();
+                List actualList = (List) actual;
+                List expectedList = (List) expected;
 
                 if (CollectionUtils.isNotEmpty(expectedList)) {
                     Assert.assertTrue(CollectionUtils.isNotEmpty(actualList));
@@ -221,7 +230,7 @@ public class AtlasEntityTestBase extends AtlasTestBase {
                 break;
             case STRUCT:
                 AtlasStruct expectedStruct = (AtlasStruct) expected;
-                AtlasStruct actualStruct   = (AtlasStruct) actual;
+                AtlasStruct actualStruct = (AtlasStruct) actual;
 
                 validateEntity(entityExtInfo, actualStruct, expectedStruct);
                 break;

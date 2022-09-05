@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.graph.indexmanager.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.apache.atlas.repository.impexp.ImportService;
 import org.apache.atlas.repository.impexp.ImportTypeDefProcessor;
@@ -51,11 +51,11 @@ public class DataMigrationService implements Service {
 
     private static final String FILE_EXTENSION_ZIP = ".zip";
 
-    private static String ATLAS_MIGRATION_DATA_NAME     = "atlas-migration-data.json";
+    private static String ATLAS_MIGRATION_DATA_NAME = "atlas-migration-data.json";
     private static String ATLAS_MIGRATION_TYPESDEF_NAME = "atlas-migration-typesdef.json";
 
     private final Configuration configuration;
-    private final Thread        thread;
+    private final Thread thread;
 
     @Inject
     public DataMigrationService(GraphDBMigrator migrator, AtlasTypeDefStore typeDefStore, Configuration configuration,
@@ -66,9 +66,9 @@ public class DataMigrationService implements Service {
 
         String fileName = getFileName();
         boolean zipFileBasedMigrationImport = StringUtils.endsWithIgnoreCase(fileName, FILE_EXTENSION_ZIP);
-        this.thread        = (zipFileBasedMigrationImport)
-            ?  new Thread(new ZipFileMigrationImporter(importService, fileName), "zipFileBasedMigrationImporter")
-            :  new Thread(new FileImporter(migrator, typeDefStore, typeRegistry, storeInitializer, fileName, indexer));
+        this.thread = (zipFileBasedMigrationImport)
+                ? new Thread(new ZipFileMigrationImporter(importService, fileName), "zipFileBasedMigrationImporter")
+                : new Thread(new FileImporter(migrator, typeDefStore, typeRegistry, storeInitializer, fileName, indexer));
     }
 
     @Override
@@ -91,22 +91,22 @@ public class DataMigrationService implements Service {
     }
 
     public static class FileImporter implements Runnable {
-        private final GraphDBMigrator              migrator;
-        private final AtlasTypeDefStore            typeDefStore;
-        private final String                       importDirectory;
-        private final GraphBackedSearchIndexer     indexer;
-        private final AtlasTypeRegistry            typeRegistry;
+        private final GraphDBMigrator migrator;
+        private final AtlasTypeDefStore typeDefStore;
+        private final String importDirectory;
+        private final GraphBackedSearchIndexer indexer;
+        private final AtlasTypeRegistry typeRegistry;
         private final AtlasTypeDefStoreInitializer storeInitializer;
 
         public FileImporter(GraphDBMigrator migrator, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
                             AtlasTypeDefStoreInitializer storeInitializer,
                             String directoryName, GraphBackedSearchIndexer indexer) {
-            this.migrator         = migrator;
-            this.typeDefStore     = typeDefStore;
-            this.typeRegistry     = typeRegistry;
+            this.migrator = migrator;
+            this.typeDefStore = typeDefStore;
+            this.typeRegistry = typeRegistry;
             this.storeInitializer = storeInitializer;
-            this.importDirectory  = directoryName;
-            this.indexer          = indexer;
+            this.importDirectory = directoryName;
+            this.indexer = indexer;
         }
 
         @Override
@@ -120,7 +120,7 @@ public class DataMigrationService implements Service {
 
         private void performImport() throws AtlasBaseException {
             try {
-                if(!performAccessChecks(importDirectory)) {
+                if (!performAccessChecks(importDirectory)) {
                     return;
                 }
 
@@ -138,7 +138,7 @@ public class DataMigrationService implements Service {
         private boolean performAccessChecks(String path) {
             final boolean ret;
 
-            if(StringUtils.isEmpty(path)) {
+            if (StringUtils.isEmpty(path)) {
                 ret = false;
             } else {
                 File f = new File(path);
@@ -164,9 +164,9 @@ public class DataMigrationService implements Service {
 
         private void processIncomingTypesDef(File typesDefFile) throws AtlasBaseException {
             try {
-                AtlasImportResult      result    = new AtlasImportResult();
-                String                 jsonStr   = FileUtils.readFileToString(typesDefFile);
-                AtlasTypesDef          typesDef  = migrator.getScrubbedTypesDef(jsonStr);
+                AtlasImportResult result = new AtlasImportResult();
+                String jsonStr = FileUtils.readFileToString(typesDefFile);
+                AtlasTypesDef typesDef = migrator.getScrubbedTypesDef(jsonStr);
                 ImportTypeDefProcessor processor = new ImportTypeDefProcessor(typeDefStore, typeRegistry);
 
                 processor.processTypes(typesDef, result);

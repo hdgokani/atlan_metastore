@@ -29,11 +29,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -54,17 +50,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 
 public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasJanusGraphIndexClient.class);
@@ -255,8 +244,8 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
 
             solrQuery.setFacetMinCount(MIN_FACET_COUNT_REQUIRED);
 
-            QueryResponse    queryResponse = solrClient.query(VERTEX_INDEX, solrQuery, SolrRequest.METHOD.POST);
-            List<FacetField> facetFields   = queryResponse == null ? null : queryResponse.getFacetFields();
+            QueryResponse queryResponse = solrClient.query(getCurrentReadVertexIndexName(), solrQuery, SolrRequest.METHOD.POST);
+            List<FacetField> facetFields = queryResponse == null ? null : queryResponse.getFacetFields();
 
             if (CollectionUtils.isNotEmpty(facetFields)) {
                 Map<String, List<AtlasAggregationEntry>> ret = new HashMap<>();
@@ -341,8 +330,8 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
                 solrQuery.setParam(TERMS_FIELD, indexFieldName);
             }
 
-            QueryResponse queryResponse = solrClient.query(VERTEX_INDEX, solrQuery);
-            TermsResponse termsResponse = queryResponse == null? null: queryResponse.getTermsResponse();
+            QueryResponse queryResponse = solrClient.query(getCurrentReadVertexIndexName(), solrQuery);
+            TermsResponse termsResponse = queryResponse == null ? null : queryResponse.getTermsResponse();
 
             if(termsResponse == null) {
                 LOG.info("Received null for terms response. Will return no suggestions.");
@@ -381,12 +370,12 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     private boolean isSolrHealthy() throws SolrServerException, IOException {
         SolrClient client = Solr6Index.getSolrClient();
 
-        return client != null && client.ping(Constants.VERTEX_INDEX).getStatus() == SOLR_HEALTHY_STATUS;
+        return client != null && client.ping(getCurrentReadVertexIndexName()).getStatus() == SOLR_HEALTHY_STATUS;
     }
 
     private boolean isElasticsearchHealthy() throws ElasticsearchException, IOException {
         RestHighLevelClient client = AtlasElasticsearchDatabase.getClient();
-        ClusterHealthRequest request = new ClusterHealthRequest(Constants.INDEX_PREFIX + Constants.VERTEX_INDEX);
+        ClusterHealthRequest request = new ClusterHealthRequest(Constants.INDEX_PREFIX + getCurrentReadVertexIndexName());
         ClusterHealthResponse response = client.cluster().health(request, RequestOptions.DEFAULT);
         RestStatus restStatus = response.status();
         if (restStatus.toString().equals(ELASTICSEARCH_REST_STATUS_OK)){

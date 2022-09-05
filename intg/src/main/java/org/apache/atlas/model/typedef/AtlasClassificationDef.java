@@ -21,7 +21,6 @@ package org.apache.atlas.model.typedef;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
@@ -306,19 +305,37 @@ public class AtlasClassificationDef extends AtlasStructDef implements AtlasNamed
                 oldNames.add(attr.getName());
             }
         }
-        for (AtlasAttributeDef attr : this.getAttributeDefs()){
-            if (!oldNames.contains(attr.getName())){
+        for (AtlasAttributeDef attr : this.getAttributeDefs()) {
+            if (!oldNames.contains(attr.getName())) {
                 attr.setName(generateRandomName());
             }
         }
     }
 
+    public void setFieldsForExistingClassification(AtlasClassificationDef existingClassification) {
+        setGuid(existingClassification.getGuid());
+        setName(existingClassification.getName());
+        setAttributeNames(existingClassification);
+    }
+
+    public void setAttributeNames(AtlasClassificationDef existingClassificationDef) {
+        getAttributeDefs().forEach(attribute -> {
+            AtlasAttributeDef atlasAttributeDef = existingClassificationDef.getAttributeDefs()
+                    .stream()
+                    .filter(givenAttribute -> givenAttribute.getDisplayName().equals(attribute.getDisplayName()))
+                    .findFirst()
+                    .orElseThrow(IllegalArgumentException::new);
+            attribute.setName(atlasAttributeDef.getName());
+        });
+    }
+
+
     /**
      * REST serialization friendly list.
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     @XmlSeeAlso(AtlasClassificationDef.class)

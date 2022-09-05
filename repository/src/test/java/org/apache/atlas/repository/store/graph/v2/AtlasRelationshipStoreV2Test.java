@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,57 +18,39 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.graph.indexmanager.*;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasMixedBackendIndexManager;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.DeleteType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Guice;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static org.apache.atlas.TestRelationshipUtilsV2.EMPLOYEE_TYPE;
-import static org.apache.atlas.TestRelationshipUtilsV2.getDepartmentEmployeeInstances;
-import static org.apache.atlas.TestRelationshipUtilsV2.getDepartmentEmployeeTypes;
-import static org.apache.atlas.TestRelationshipUtilsV2.getInverseReferenceTestTypes;
+import static org.apache.atlas.TestRelationshipUtilsV2.*;
 import static org.apache.atlas.TestUtilsV2.NAME;
 import static org.apache.atlas.type.AtlasTypeUtil.getAtlasObjectId;
 import static org.mockito.Mockito.mock;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.*;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
@@ -94,10 +76,28 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
     @Inject
     AtlasGraph atlasGraph;
 
-    AtlasEntityStore          entityStore;
-    AtlasRelationshipStore    relationshipStore;
+    @Inject
+    TypedefIndexCreator typedefIndexCreator;
+
+    @Inject
+    VertexIndexCreator vertexIndexCreator;
+
+    @Inject
+    EdgeIndexCreator edgeIndexCreator;
+
+    @Inject
+    IndexFieldNameResolver indexFieldNameResolver;
+
+    @Inject
+    IndexChangeListenerManager indexChangeListenerManager;
+
+    @Inject
+    AtlasMixedBackendIndexManager atlasMixedBackendIndexManager;
+
+    AtlasEntityStore entityStore;
+    AtlasRelationshipStore relationshipStore;
     AtlasEntityChangeNotifier mockChangeNotifier = mock(AtlasEntityChangeNotifier.class);
-    private final DeleteType  deleteType;
+    private final DeleteType deleteType;
 
     protected Map<String, AtlasObjectId> employeeNameIdMap = new HashMap<>();
 
@@ -109,7 +109,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
     public void setUp() throws Exception {
         super.initialize();
 
-        new GraphBackedSearchIndexer(typeRegistry);
+        new GraphBackedSearchIndexer(typeRegistry, new DefaultIndexCreator(typeRegistry, vertexIndexCreator, edgeIndexCreator, atlasMixedBackendIndexManager), typedefIndexCreator, indexFieldNameResolver, vertexIndexCreator, indexChangeListenerManager);
 
         // create employee relationship types
         AtlasTypesDef employeeTypes = getDepartmentEmployeeTypes();
@@ -134,7 +134,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
 
     @BeforeTest
     public void init() throws Exception {
-        entityStore       = new AtlasEntityStoreV2(atlasGraph, deleteDelegate, restoreHandlerV1, typeRegistry, mockChangeNotifier, graphMapper, null);
+        entityStore = new AtlasEntityStoreV2(atlasGraph, deleteDelegate, restoreHandlerV1, typeRegistry, mockChangeNotifier, graphMapper, null);
         relationshipStore = new AtlasRelationshipStoreV2(atlasGraph, typeRegistry, deleteDelegate, entityNotifier);
 
         RequestContext.clear();
@@ -150,20 +150,20 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
     }
 
     @Test
-    public void testDepartmentEmployeeEntitiesUsingRelationship() throws Exception  {
-        AtlasObjectId hrId     = employeeNameIdMap.get("hr");
-        AtlasObjectId maxId    = employeeNameIdMap.get("Max");
-        AtlasObjectId johnId   = employeeNameIdMap.get("John");
+    public void testDepartmentEmployeeEntitiesUsingRelationship() throws Exception {
+        AtlasObjectId hrId = employeeNameIdMap.get("hr");
+        AtlasObjectId maxId = employeeNameIdMap.get("Max");
+        AtlasObjectId johnId = employeeNameIdMap.get("John");
         AtlasObjectId juliusId = employeeNameIdMap.get("Julius");
-        AtlasObjectId janeId   = employeeNameIdMap.get("Jane");
-        AtlasObjectId mikeId   = employeeNameIdMap.get("Mike");
+        AtlasObjectId janeId = employeeNameIdMap.get("Jane");
+        AtlasObjectId mikeId = employeeNameIdMap.get("Mike");
 
         AtlasEntity hrDept = getEntityFromStore(hrId.getGuid());
-        AtlasEntity max    = getEntityFromStore(maxId.getGuid());
-        AtlasEntity john   = getEntityFromStore(johnId.getGuid());
+        AtlasEntity max = getEntityFromStore(maxId.getGuid());
+        AtlasEntity john = getEntityFromStore(johnId.getGuid());
         AtlasEntity julius = getEntityFromStore(juliusId.getGuid());
-        AtlasEntity jane   = getEntityFromStore(janeId.getGuid());
-        AtlasEntity mike   = getEntityFromStore(mikeId.getGuid());
+        AtlasEntity jane = getEntityFromStore(janeId.getGuid());
+        AtlasEntity mike = getEntityFromStore(mikeId.getGuid());
 
         // Department relationship attributes
         List<AtlasObjectId> deptEmployees = toAtlasObjectIds(hrDept.getRelationshipAttribute("employees"));
@@ -305,20 +305,20 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
     // Seeing intermittent failures with janus profile, disabling it until its fixed.
     @Test(enabled = false)
     public void testRelationshipAttributeUpdate_NonComposite_OneToMany() throws Exception {
-        AtlasObjectId maxId    = employeeNameIdMap.get("Max");
+        AtlasObjectId maxId = employeeNameIdMap.get("Max");
         AtlasObjectId juliusId = employeeNameIdMap.get("Julius");
-        AtlasObjectId janeId   = employeeNameIdMap.get("Jane");
-        AtlasObjectId mikeId   = employeeNameIdMap.get("Mike");
-        AtlasObjectId johnId   = employeeNameIdMap.get("John");
+        AtlasObjectId janeId = employeeNameIdMap.get("Jane");
+        AtlasObjectId mikeId = employeeNameIdMap.get("Mike");
+        AtlasObjectId johnId = employeeNameIdMap.get("John");
 
         // Change Max's Employee.manager reference to Julius and apply the change as a partial update.
         // This should also update Julius to add Max to the inverse Manager.subordinates reference.
         AtlasEntity maxEntityForUpdate = new AtlasEntity(EMPLOYEE_TYPE);
         maxEntityForUpdate.setRelationshipAttribute("manager", juliusId);
 
-        AtlasEntityType        employeeType   = typeRegistry.getEntityTypeByName(EMPLOYEE_TYPE);
-        Map<String, Object>    uniqAttributes = Collections.<String, Object>singletonMap("name", "Max");
-        EntityMutationResponse updateResponse = entityStore.updateByUniqueAttributes(employeeType, uniqAttributes , new AtlasEntityWithExtInfo(maxEntityForUpdate));
+        AtlasEntityType employeeType = typeRegistry.getEntityTypeByName(EMPLOYEE_TYPE);
+        Map<String, Object> uniqAttributes = Collections.<String, Object>singletonMap("name", "Max");
+        EntityMutationResponse updateResponse = entityStore.updateByUniqueAttributes(employeeType, uniqAttributes, new AtlasEntityWithExtInfo(maxEntityForUpdate));
 
         List<AtlasEntityHeader> partialUpdatedEntities = updateResponse.getPartialUpdatedEntities();
         assertEquals(partialUpdatedEntities.size(), 3);
@@ -351,7 +351,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
         maxEntityForUpdate.setRelationshipAttribute("friends", ImmutableList.of(johnId, juliusId));
 
         init();
-        updateResponse = entityStore.updateByUniqueAttributes(employeeType, uniqAttributes , new AtlasEntityWithExtInfo(maxEntityForUpdate));
+        updateResponse = entityStore.updateByUniqueAttributes(employeeType, uniqAttributes, new AtlasEntityWithExtInfo(maxEntityForUpdate));
 
         partialUpdatedEntities = updateResponse.getPartialUpdatedEntities();
         assertEquals(partialUpdatedEntities.size(), 3);
@@ -362,7 +362,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
 
         updatedEntities = entityStore.getByIds(ImmutableList.of(maxId.getGuid(), mikeId.getGuid(), johnId.getGuid(), juliusId.getGuid()));
 
-        maxEntity    = updatedEntities.getEntity(maxId.getGuid());
+        maxEntity = updatedEntities.getEntity(maxId.getGuid());
         juliusEntity = updatedEntities.getEntity(juliusId.getGuid());
         AtlasEntity mikeEntity = updatedEntities.getEntity(mikeId.getGuid());
         AtlasEntity johnEntity = updatedEntities.getEntity(johnId.getGuid());
@@ -374,15 +374,15 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
         juliusEntityForUpdate.setRelationshipAttribute("sibling", mikeId);
 
         init();
-        updateResponse = entityStore.updateByUniqueAttributes(employeeType, Collections.<String, Object>singletonMap("name", "Julius") , new AtlasEntityWithExtInfo(juliusEntityForUpdate));
+        updateResponse = entityStore.updateByUniqueAttributes(employeeType, Collections.<String, Object>singletonMap("name", "Julius"), new AtlasEntityWithExtInfo(juliusEntityForUpdate));
         partialUpdatedEntities = updateResponse.getPartialUpdatedEntities();
         assertEquals(partialUpdatedEntities.size(), 3);
 
         updatedEntities = entityStore.getByIds(ImmutableList.of(juliusId.getGuid(), janeId.getGuid(), mikeId.getGuid()));
 
         juliusEntity = updatedEntities.getEntity(juliusId.getGuid());
-        janeEntity   = updatedEntities.getEntity(janeId.getGuid());
-        mikeEntity   = updatedEntities.getEntity(mikeId.getGuid());
+        janeEntity = updatedEntities.getEntity(janeId.getGuid());
+        mikeEntity = updatedEntities.getEntity(mikeId.getGuid());
 
         verifyRelationshipAttributeUpdate_OneToOne_Sibling(juliusEntity, janeEntity, mikeEntity);
     }
@@ -406,7 +406,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
         entitiesWithExtInfo.addEntity(a2);
         entitiesWithExtInfo.addEntity(a3);
         entitiesWithExtInfo.addEntity(b);
-        entityStore.createOrUpdate(new AtlasEntityStream(entitiesWithExtInfo) , false);
+        entityStore.createOrUpdate(new AtlasEntityStream(entitiesWithExtInfo), false);
 
         AtlasEntity bPartialUpdate = new AtlasEntity("B");
         bPartialUpdate.setRelationshipAttribute("manyA", ImmutableList.of(getAtlasObjectId(a1), getAtlasObjectId(a2)));
@@ -446,9 +446,9 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
         init();
 
         updatedEntities = entityStore.getByIds(ImmutableList.of(a1.getGuid(), a2.getGuid(), a3.getGuid(), b.getGuid()));
-        a1Entity        = updatedEntities.getEntity(a1.getGuid());
-        a2Entity        = updatedEntities.getEntity(a2.getGuid());
-        bEntity         = updatedEntities.getEntity(b.getGuid());
+        a1Entity = updatedEntities.getEntity(a1.getGuid());
+        a2Entity = updatedEntities.getEntity(a2.getGuid());
+        bEntity = updatedEntities.getEntity(b.getGuid());
 
         AtlasEntity a3Entity = updatedEntities.getEntity(a3.getGuid());
         verifyRelationshipAttributeValue(a3Entity, "oneB", b.getGuid());
@@ -472,7 +472,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
         entitiesWithExtInfo.addEntity(a2);
         entitiesWithExtInfo.addEntity(b);
 
-        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesWithExtInfo) , false);
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entitiesWithExtInfo), false);
 
         AtlasEntity partialUpdateB = new AtlasEntity("B");
         partialUpdateB.setRelationshipAttribute("a", getAtlasObjectId(a1));
@@ -540,7 +540,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
         entitiesWithExtInfo.addEntity(a3);
         entitiesWithExtInfo.addEntity(b1);
         entitiesWithExtInfo.addEntity(b2);
-        entityStore.createOrUpdate(new AtlasEntityStream(entitiesWithExtInfo) , false);
+        entityStore.createOrUpdate(new AtlasEntityStream(entitiesWithExtInfo), false);
 
         AtlasEntity b1PartialUpdate = new AtlasEntity("B");
         b1PartialUpdate.setRelationshipAttribute("manyToManyA", ImmutableList.of(getAtlasObjectId(a1), getAtlasObjectId(a2)));
@@ -670,8 +670,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
         Object refValue = entity.getRelationshipAttribute(relationshipAttrName);
         if (expectedGuid == null) {
             assertNull(refValue);
-        }
-        else {
+        } else {
             assertTrue(refValue instanceof AtlasObjectId);
             AtlasObjectId referencedObjectId = (AtlasObjectId) refValue;
             assertEquals(referencedObjectId.getGuid(), expectedGuid);

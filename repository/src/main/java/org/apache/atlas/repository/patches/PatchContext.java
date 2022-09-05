@@ -18,7 +18,7 @@
 
 package org.apache.atlas.repository.patches;
 
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.graph.indexmanager.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.type.AtlasTypeRegistry;

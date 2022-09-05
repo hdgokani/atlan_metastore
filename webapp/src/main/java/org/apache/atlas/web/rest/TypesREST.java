@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,12 +23,16 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.*;
+import org.apache.atlas.repository.IndexException;
+import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.TypeCacheRefresher;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.apache.atlas.web.dto.TypeSyncResponse;
 import org.apache.atlas.web.service.CuratorFactory;
+import org.apache.atlas.web.service.TypeSyncService;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
@@ -43,9 +47,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -67,10 +73,12 @@ public class TypesREST {
     private final CuratorFactory curatorFactory;
     private final TypeCacheRefresher typeCacheRefresher;
     private final boolean isActiveActiveHAEnabled;
+    private final TypeSyncService typeSyncService;
 
     @Inject
-    public TypesREST(AtlasTypeDefStore typeDefStore, CuratorFactory curatorFactory, Configuration configuration, TypeCacheRefresher typeCacheRefresher) {
+    public TypesREST(AtlasTypeDefStore typeDefStore, CuratorFactory curatorFactory, Configuration configuration, TypeCacheRefresher typeCacheRefresher, TypeSyncService typeSyncService) {
         this.typeDefStore = typeDefStore;
+        this.typeSyncService = typeSyncService;
         this.curatorFactory = curatorFactory;
         this.typeCacheRefresher = typeCacheRefresher;
         this.zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
@@ -301,6 +309,7 @@ public class TypesREST {
 
         return ret;
     }
+
     /**
      * Get the relationship definition by it's name (unique)
      * @param name relationship name
@@ -433,7 +442,7 @@ public class TypesREST {
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.createAtlasTypeDefs(" +
-                                                               AtlasTypeUtil.toDebugString(typesDef) + ")");
+                        AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
             lock = attemptAcquiringLock();
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
@@ -447,8 +456,21 @@ public class TypesREST {
         }
     }
 
+    @POST
+    @Path("/syncTypeDefs")
+    public TypeSyncResponse syncTypeDefs(final AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException, ExecutionException, InterruptedException {
+        return typeSyncService.syncTypes(newTypeDefinitions);
+    }
+
+    @DELETE
+    @Path("/cleanupTypeSync")
+    public void cleanupTypeSync() {
+        typeSyncService.cleanupTypeSync();
+    }
+
     /**
      * Bulk update API for all types, changes detected in the type definitions would be persisted
+     *
      * @param typesDef A composite object that captures all type definition changes
      * @return A composite object with lists of type definitions that were updated
      * @throws Exception
@@ -466,15 +488,15 @@ public class TypesREST {
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.updateAtlasTypeDefs(" +
-                                                               AtlasTypeUtil.toDebugString(typesDef) + ")");
+                        AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
             lock = attemptAcquiringLock();
 
             for (AtlasBusinessMetadataDef mb : typesDef.getBusinessMetadataDefs()) {
                 AtlasBusinessMetadataDef existingMB;
-                try{
+                try {
                     existingMB = typeDefStore.getBusinessMetadataDefByGuid(mb.getGuid());
-                }catch (AtlasBaseException e){
+                } catch (AtlasBaseException e) {
                     //do nothing -- this BM is ew
                     existingMB = null;
                 }
@@ -482,9 +504,9 @@ public class TypesREST {
             }
             for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
                 AtlasClassificationDef existingClassificationDef;
-                try{
+                try {
                     existingClassificationDef = typeDefStore.getClassificationDefByGuid(classificationDef.getGuid());
-                }catch (AtlasBaseException e){
+                } catch (AtlasBaseException e) {
                     //do nothing -- this classification is ew
                     existingClassificationDef = null;
                 }
@@ -517,7 +539,7 @@ public class TypesREST {
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeDefs(" +
-                                                               AtlasTypeUtil.toDebugString(typesDef) + ")");
+                        AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
             lock = attemptAcquiringLock();
             typeDefStore.deleteTypesDef(typesDef);
@@ -560,11 +582,11 @@ public class TypesREST {
      * @return
      */
     private SearchFilter getSearchFilter(HttpServletRequest httpServletRequest) {
-        SearchFilter ret    = new SearchFilter();
-        Set<String>  keySet = httpServletRequest.getParameterMap().keySet();
+        SearchFilter ret = new SearchFilter();
+        Set<String> keySet = httpServletRequest.getParameterMap().keySet();
 
         for (String k : keySet) {
-            String key   = String.valueOf(k);
+            String key = String.valueOf(k);
 
             if (key.equalsIgnoreCase("type")) {
                 String[] values = httpServletRequest.getParameterValues(k);

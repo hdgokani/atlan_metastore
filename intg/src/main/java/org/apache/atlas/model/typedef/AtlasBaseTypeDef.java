@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,12 +30,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TimeZone;
+import java.util.*;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -44,58 +39,54 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 /**
  * Base class that captures common-attributes for all Atlas types.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public abstract class AtlasBaseTypeDef implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
 
-    public static final String ATLAS_TYPE_BOOLEAN        = "boolean";
-    public static final String ATLAS_TYPE_BYTE           = "byte";
-    public static final String ATLAS_TYPE_SHORT          = "short";
-    public static final String ATLAS_TYPE_INT            = "int";
-    public static final String ATLAS_TYPE_LONG           = "long";
-    public static final String ATLAS_TYPE_FLOAT          = "float";
-    public static final String ATLAS_TYPE_DOUBLE         = "double";
-    public static final String ATLAS_TYPE_BIGINTEGER     = "biginteger";
-    public static final String ATLAS_TYPE_BIGDECIMAL     = "bigdecimal";
-    public static final String ATLAS_TYPE_STRING         = "string";
-    public static final String ATLAS_TYPE_DATE           = "date";
-    public static final String ATLAS_TYPE_OBJECT_ID      = "objectid";
+    public static final String ATLAS_TYPE_BOOLEAN = "boolean";
+    public static final String ATLAS_TYPE_BYTE = "byte";
+    public static final String ATLAS_TYPE_SHORT = "short";
+    public static final String ATLAS_TYPE_INT = "int";
+    public static final String ATLAS_TYPE_LONG = "long";
+    public static final String ATLAS_TYPE_FLOAT = "float";
+    public static final String ATLAS_TYPE_DOUBLE = "double";
+    public static final String ATLAS_TYPE_BIGINTEGER = "biginteger";
+    public static final String ATLAS_TYPE_BIGDECIMAL = "bigdecimal";
+    public static final String ATLAS_TYPE_STRING = "string";
+    public static final String ATLAS_TYPE_DATE = "date";
+    public static final String ATLAS_TYPE_OBJECT_ID = "objectid";
 
-    public static final String ATLAS_TYPE_ARRAY_PREFIX    = "array<";
-    public static final String ATLAS_TYPE_ARRAY_SUFFIX    = ">";
-    public static final String ATLAS_TYPE_MAP_PREFIX      = "map<";
+    public static final String ATLAS_TYPE_ARRAY_PREFIX = "array<";
+    public static final String ATLAS_TYPE_ARRAY_SUFFIX = ">";
+    public static final String ATLAS_TYPE_MAP_PREFIX = "map<";
     public static final String ATLAS_TYPE_MAP_KEY_VAL_SEP = ",";
-    public static final String ATLAS_TYPE_MAP_SUFFIX      = ">";
+    public static final String ATLAS_TYPE_MAP_SUFFIX = ">";
 
-    public static final String ATLAS_TYPE_PROCESS        = "Process";
-    public static final String ATLAS_TYPE_DATASET        = "DataSet";
-    public static final String ATLAS_TYPE_ASSET          = "Asset";
-    public static final String ATLAS_TYPE_INFRASTRUCTURE = "Infrastructure";
-
-    public static final String TYPEDEF_OPTION_SUPPORTS_SCHEMA  = "supportsSchema";
-    public static final String TYPEDEF_OPTION_SUPPORTS_PROFILE = "supportsProfile";
+    public static final String ATLAS_TYPE_PROCESS = "Process";
+    public static final String ATLAS_TYPE_DATASET = "DataSet";
+    public static final String ATLAS_TYPE_ASSET = "Asset";
 
     public static final String[] ATLAS_PRIMITIVE_TYPES = {
-        ATLAS_TYPE_BOOLEAN,
-        ATLAS_TYPE_BYTE,
-        ATLAS_TYPE_SHORT,
-        ATLAS_TYPE_INT,
-        ATLAS_TYPE_LONG,
-        ATLAS_TYPE_FLOAT,
-        ATLAS_TYPE_DOUBLE,
-        ATLAS_TYPE_BIGINTEGER,
-        ATLAS_TYPE_BIGDECIMAL,
-        ATLAS_TYPE_STRING,
+            ATLAS_TYPE_BOOLEAN,
+            ATLAS_TYPE_BYTE,
+            ATLAS_TYPE_SHORT,
+            ATLAS_TYPE_INT,
+            ATLAS_TYPE_LONG,
+            ATLAS_TYPE_FLOAT,
+            ATLAS_TYPE_DOUBLE,
+            ATLAS_TYPE_BIGINTEGER,
+            ATLAS_TYPE_BIGDECIMAL,
+            ATLAS_TYPE_STRING,
     };
     /**
      * The list of types that are valid for relationships. These are the
      * primitive attributes and date.
      */
-    public static final String[] ATLAS_RELATIONSHIP_ATTRIBUTE_TYPES = { ATLAS_TYPE_BOOLEAN,
+    public static final String[] ATLAS_RELATIONSHIP_ATTRIBUTE_TYPES = {ATLAS_TYPE_BOOLEAN,
             ATLAS_TYPE_BYTE,
             ATLAS_TYPE_SHORT,
             ATLAS_TYPE_INT,
@@ -109,26 +100,26 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
     };
 
     public static final String[] ATLAS_BUILTIN_TYPES = {
-        ATLAS_TYPE_BOOLEAN,
-        ATLAS_TYPE_BYTE,
-        ATLAS_TYPE_SHORT,
-        ATLAS_TYPE_INT,
-        ATLAS_TYPE_LONG,
-        ATLAS_TYPE_FLOAT,
-        ATLAS_TYPE_DOUBLE,
-        ATLAS_TYPE_BIGINTEGER,
-        ATLAS_TYPE_BIGDECIMAL,
-        ATLAS_TYPE_STRING,
+            ATLAS_TYPE_BOOLEAN,
+            ATLAS_TYPE_BYTE,
+            ATLAS_TYPE_SHORT,
+            ATLAS_TYPE_INT,
+            ATLAS_TYPE_LONG,
+            ATLAS_TYPE_FLOAT,
+            ATLAS_TYPE_DOUBLE,
+            ATLAS_TYPE_BIGINTEGER,
+            ATLAS_TYPE_BIGDECIMAL,
+            ATLAS_TYPE_STRING,
 
-        ATLAS_TYPE_DATE,
-        ATLAS_TYPE_OBJECT_ID,
+            ATLAS_TYPE_DATE,
+            ATLAS_TYPE_OBJECT_ID,
     };
 
-    public static final String     SERVICE_TYPE_ATLAS_CORE    = "atlas_core";
-    public static final String     SERIALIZED_DATE_FORMAT_STR = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    public static final String SERVICE_TYPE_ATLAS_CORE = "atlas_core";
+    public static final String SERIALIZED_DATE_FORMAT_STR = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 
     @Deprecated
-    public static final DateFormat DATE_FORMATTER             = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
+    public static final DateFormat DATE_FORMATTER = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
 
     static {
         DATE_FORMATTER.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -138,28 +129,25 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         return THREAD_LOCAL_DATE_FORMAT.get();
     }
 
-    private static final ThreadLocal<DateFormat> THREAD_LOCAL_DATE_FORMAT = new ThreadLocal<DateFormat>() {
-        @Override
-        public DateFormat initialValue() {
-            DateFormat ret = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
+    private static final ThreadLocal<DateFormat> THREAD_LOCAL_DATE_FORMAT = ThreadLocal.withInitial(() -> {
+        DateFormat ret = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
 
-            ret.setTimeZone(TimeZone.getTimeZone("UTC"));
+        ret.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-            return ret;
-        }
-    };
+        return ret;
+    });
 
     private final TypeCategory category;
-    private String  guid       = null;
-    private String  createdBy  = null;
-    private String  updatedBy  = null;
-    private Date    createTime = null;
-    private Date    updateTime = null;
-    private Long    version    = null;
-    private String  name;
-    private String  description;
-    private String  typeVersion;
-    private String  serviceType;
+    private String guid = null;
+    private String createdBy = null;
+    private String updatedBy = null;
+    private Date createTime = null;
+    private Date updateTime = null;
+    private Long version = null;
+    private String name;
+    private String description;
+    private String typeVersion;
+    private String serviceType;
     private Map<String, String> options;
 
     protected AtlasBaseTypeDef(TypeCategory category, String name, String description, String typeVersion,
@@ -213,7 +201,9 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         }
     }
 
-    public TypeCategory getCategory() { return category; }
+    public TypeCategory getCategory() {
+        return category;
+    }
 
     public String getGuid() {
         return guid;
@@ -392,7 +382,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
     }
 
     public static String getArrayTypeName(String elemTypeName) {
-        return  ATLAS_TYPE_ARRAY_PREFIX + elemTypeName + ATLAS_TYPE_ARRAY_SUFFIX;
+        return ATLAS_TYPE_ARRAY_PREFIX + elemTypeName + ATLAS_TYPE_ARRAY_SUFFIX;
     }
 
     public static String getMapTypeName(String keyTypeName, String valueTypeName) {

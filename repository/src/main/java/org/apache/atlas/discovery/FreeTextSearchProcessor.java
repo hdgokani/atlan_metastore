@@ -20,9 +20,11 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.discovery.SearchParameters;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
+import org.apache.atlas.repository.graphdb.AtlasIndexQueryParameter;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.GraphIndexQueryParameters;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -35,15 +37,17 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
+
 
 /**
  * This class is equivalent to legacy FullTextSearchProcessor--except that it uses a better search techniques using SOLR
  * than going through Janus Graph index apis.
  */
 public class FreeTextSearchProcessor extends SearchProcessor {
-    private static final Logger LOG                         = LoggerFactory.getLogger(FreeTextSearchProcessor.class);
-    private static final Logger PERF_LOG                    = AtlasPerfTracer.getPerfLogger("FreeTextSearchProcessor");
-    public  static final String SOLR_QT_PARAMETER           = "qt"; // org.apache.solr.common.params.CommonParams.QT;
+    private static final Logger LOG = LoggerFactory.getLogger(FreeTextSearchProcessor.class);
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("FreeTextSearchProcessor");
+    public static final String SOLR_QT_PARAMETER = "qt"; // org.apache.solr.common.params.CommonParams.QT;
     public  static final String SOLR_REQUEST_HANDLER_NAME   = "/freetext";
 
     private static final boolean IS_SOLR_INDEX_BACKEND = isSolrIndexBackend();
@@ -86,7 +90,7 @@ public class FreeTextSearchProcessor extends SearchProcessor {
         ElasticsearchQueryBuilder elasticsearchQueryBuilder = new ElasticsearchQueryBuilder();
         QueryBuilder queryBuilder = elasticsearchQueryBuilder.getMatchAllQueryBuilder(searchText, fieldsWithBoostValue);
         SearchSourceBuilder searchSourceBuilder = elasticsearchQueryBuilder.getSourceBuilder(queryBuilder);
-        indexQuery = context.getGraph().elasticsearchQuery(Constants.VERTEX_INDEX, searchSourceBuilder);
+        indexQuery = context.getGraph().elasticsearchQuery(getCurrentReadVertexIndexName(), searchSourceBuilder);
     }
 
     private GraphIndexQueryParameters prepareGraphIndexQueryParameters(SearchContext context, StringBuilder queryString) {
@@ -96,7 +100,7 @@ public class FreeTextSearchProcessor extends SearchProcessor {
             parameters.add(context.getGraph().indexQueryParameter(SOLR_QT_PARAMETER, SOLR_REQUEST_HANDLER_NAME));
         }
 
-        return new GraphIndexQueryParameters(Constants.VERTEX_INDEX, queryString.toString(), 0, parameters);
+        return new GraphIndexQueryParameters(getCurrentReadVertexIndexName(), queryString.toString(), 0, parameters);
     }
 
     @Override

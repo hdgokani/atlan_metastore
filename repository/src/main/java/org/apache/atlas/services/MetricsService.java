@@ -23,13 +23,13 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.metrics.AtlasMetrics;
-import org.apache.atlas.stats.StatsClient;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.stats.StatsClient;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasMetricJVMUtil;
@@ -49,6 +49,7 @@ import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.metrics.AtlasMetrics.*;
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 
 @AtlasService
 public class MetricsService {
@@ -258,7 +259,7 @@ public class MetricsService {
         indexQuery = String.format(indexQuery, typeName, status.name());
 
         try {
-            ret = atlasGraph.indexQuery(VERTEX_INDEX, indexQuery).vertexTotals();
+            ret = atlasGraph.indexQuery(getCurrentReadVertexIndexName(), indexQuery).vertexTotals();
         }catch (Exception e){
             LOG.error("Failed fetching using indexQuery: " + e.getMessage());
         }
@@ -274,7 +275,7 @@ public class MetricsService {
         indexQuery = String.format(indexQuery, typeName);
 
         try {
-            ret = atlasGraph.indexQuery(VERTEX_INDEX, indexQuery).vertexTotals();
+            ret = atlasGraph.indexQuery(getCurrentReadVertexIndexName(), indexQuery).vertexTotals();
         }catch (Exception e){
             LOG.error("Failed fetching using indexQuery: " + e.getMessage());
         }

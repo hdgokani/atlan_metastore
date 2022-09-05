@@ -30,25 +30,17 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
-import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.graph.indexmanager.IndexManagerUtilFunctions;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.patches.AddMandatoryAttributesPatch;
-import org.apache.atlas.repository.patches.SuperTypesUpdatePatch;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.patches.AtlasPatchRegistry;
+import org.apache.atlas.repository.patches.SuperTypesUpdatePatch;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -77,10 +69,7 @@ import java.util.*;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
-import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.FAILED;
-import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.SKIPPED;
-import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
+import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.*;
 
 /**
  * Class that handles initial loading of models and patches into typedef store
@@ -1226,7 +1215,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                         if (AtlasAttributeDef.SEARCH_WEIGHT_ATTR_NAME.equalsIgnoreCase(entry.getKey())) {
                             Number number = (Number) entry.getValue();
                             int searchWeight = number.intValue();
-                            if(!GraphBackedSearchIndexer.isValidSearchWeight(number.intValue())) {
+                            if (!IndexManagerUtilFunctions.isValidSearchWeight(number.intValue())) {
                                 String msg = String.format("Invalid search weight '%d' was provided for property %s.", searchWeight, atlasAttributeDef.getName());
                                 LOG.error(msg);
                                 throw new RuntimeException(msg);
