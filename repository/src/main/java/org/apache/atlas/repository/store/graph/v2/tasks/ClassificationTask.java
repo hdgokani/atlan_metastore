@@ -154,6 +154,7 @@ public abstract class ClassificationTask extends AbstractTask {
         } catch (EntityNotFoundException | AtlasBaseException e) {
             LOG.error("Error updating associated element for: {}", getTaskGuid(), e);
         }
+        graph.commit();
     }
 
     protected abstract void run(Map<String, Object> parameters) throws AtlasBaseException;
