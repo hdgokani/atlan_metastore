@@ -18,7 +18,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 
 import static org.apache.atlas.AtlasErrorCode.FAILED_TO_REFRESH_TYPE_DEF_CACHE;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 
 
 @Path("admin/types")
@@ -65,7 +65,7 @@ public class TypeCacheRefreshREST {
 
     private void refreshTypeDef(int expectedFieldKeys) throws RepositoryException, InterruptedException, AtlasBaseException {
         LOG.info("Initiating type-def cache refresh with expectedFieldKeys = {}", expectedFieldKeys);
-        int currentSize = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
+        int currentSize = provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
         LOG.info("Size of field keys before refresh = {}", currentSize);
 
         long totalWaitTimeInMillis = 15 * 1000;//15 seconds
@@ -74,7 +74,7 @@ public class TypeCacheRefreshREST {
         int counter = 0;
 
         while (currentSize != expectedFieldKeys && counter++ < totalIterationsAllowed) {
-            currentSize = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
+            currentSize = provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
             LOG.info("field keys size found = {} at iteration {}", currentSize, counter);
             Thread.sleep(sleepTimeInMillis);
         }
@@ -88,7 +88,7 @@ public class TypeCacheRefreshREST {
         //Reload in-memory cache of type-registry
         typeDefStore.init();
 
-        LOG.info("Size of field keys after refresh = {}", provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size());
+        LOG.info("Size of field keys after refresh = {}", provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size());
         LOG.info("Completed type-def cache refresh");
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,8 +21,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -35,17 +33,17 @@ import java.util.Map;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasBusinessMetadataDef extends AtlasStructDef implements AtlasNamedTypeDef, Serializable {
     private static final long serialVersionUID = 1L;
 
     public static final String ATTR_OPTION_APPLICABLE_ENTITY_TYPES = "applicableEntityTypes";
-    public static final String ATTR_MAX_STRING_LENGTH              = "maxStrLength";
-    public static final String ATTR_VALID_PATTERN                  = "validPattern";
+    public static final String ATTR_MAX_STRING_LENGTH = "maxStrLength";
+    public static final String ATTR_VALID_PATTERN = "validPattern";
 
     private String displayName;
 
@@ -68,10 +66,12 @@ public class AtlasBusinessMetadataDef extends AtlasStructDef implements AtlasNam
     public AtlasBusinessMetadataDef(String displayName, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Map<String, String> options) {
         this(generateRandomName(), displayName, description, typeVersion, attributeDefs, options);
     }
+
     public AtlasBusinessMetadataDef(String name, String displayName, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Map<String, String> options) {
         super(TypeCategory.BUSINESS_METADATA, name, description, typeVersion, attributeDefs, options);
         this.displayName = displayName;
     }
+
     public AtlasBusinessMetadataDef(AtlasBusinessMetadataDef other) {
         super(other);
     }
@@ -117,13 +117,13 @@ public class AtlasBusinessMetadataDef extends AtlasStructDef implements AtlasNam
 
     public void setRandomNameForNewAttributeDefs(AtlasBusinessMetadataDef oldBusinessMetadataDef) {
         List<String> oldNames = new ArrayList<>();
-        if (oldBusinessMetadataDef !=  null) {
+        if (oldBusinessMetadataDef != null) {
             for (AtlasAttributeDef attr : oldBusinessMetadataDef.getAttributeDefs()) {
                 oldNames.add(attr.getName());
             }
         }
-        for (AtlasAttributeDef attr : this.getAttributeDefs()){
-            if (!oldNames.contains(attr.getName())){
+        for (AtlasAttributeDef attr : this.getAttributeDefs()) {
+            if (!oldNames.contains(attr.getName())) {
                 attr.setName(generateRandomName());
             }
         }
