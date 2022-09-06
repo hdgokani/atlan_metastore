@@ -17,21 +17,28 @@
  */
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.repository.graph.TypeCacheRefresher;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.dto.TypeSyncResponse;
+import org.apache.atlas.web.service.CuratorFactory;
 import org.apache.atlas.web.service.TypeSyncService;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.configuration.Configuration;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.http.annotation.Experimental;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
@@ -45,6 +52,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * REST interface for CRUD operations on type definitions
@@ -56,18 +64,30 @@ import java.util.concurrent.ExecutionException;
 @Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class TypesREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TypesREST");
+    private static final Logger LOG = LoggerFactory.getLogger(TypesREST.class);
+    private static final String TYPE_DEF_LOCK = "/type-def-lock";
+    private final String zkRoot;
+
 
     private final AtlasTypeDefStore typeDefStore;
     private final TypeSyncService typeSyncService;
+    private final CuratorFactory curatorFactory;
+    private final TypeCacheRefresher typeCacheRefresher;
+    private final boolean isActiveActiveHAEnabled;
 
     @Inject
-    public TypesREST(AtlasTypeDefStore typeDefStore, TypeSyncService typeSyncService) {
+    public TypesREST(AtlasTypeDefStore typeDefStore, CuratorFactory curatorFactory, Configuration configuration, TypeCacheRefresher typeCacheRefresher, TypeSyncService typeSyncService) {
         this.typeDefStore = typeDefStore;
+        this.curatorFactory = curatorFactory;
+        this.typeCacheRefresher = typeCacheRefresher;
+        this.zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
+        this.isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
         this.typeSyncService = typeSyncService;
     }
 
     /**
      * Get type definition by it's name
+     *
      * @param name Type name
      * @return Type definition
      * @throws AtlasBaseException
@@ -105,6 +125,7 @@ public class TypesREST {
 
     /**
      * Bulk retrieval API for all type definitions returned as a list of minimal information header
+     *
      * @return List of AtlasTypeDefHeader {@link AtlasTypeDefHeader}
      * @throws AtlasBaseException
      * @HTTP 200 Returns a list of {@link AtlasTypeDefHeader} matching the search criteria
@@ -123,6 +144,7 @@ public class TypesREST {
 
     /**
      * Bulk retrieval API for retrieving all type definitions in Atlas
+     *
      * @return A composite wrapper object with lists of all type definitions
      * @throws Exception
      * @HTTP 200 {@link AtlasTypesDef} with type definitions matching the search criteria or else returns empty list of type definitions
@@ -140,6 +162,7 @@ public class TypesREST {
 
     /**
      * Get the enum definition by it's name (unique)
+     *
      * @param name enum name
      * @return enum definition
      * @throws AtlasBaseException
@@ -159,6 +182,7 @@ public class TypesREST {
 
     /**
      * Get the enum definition for the given guid
+     *
      * @param guid enum guid
      * @return enum definition
      * @throws AtlasBaseException
@@ -179,6 +203,7 @@ public class TypesREST {
 
     /**
      * Get the struct definition by it's name (unique)
+     *
      * @param name struct name
      * @return struct definition
      * @throws AtlasBaseException
@@ -198,6 +223,7 @@ public class TypesREST {
 
     /**
      * Get the struct definition for the given guid
+     *
      * @param guid struct guid
      * @return struct definition
      * @throws AtlasBaseException
@@ -217,6 +243,7 @@ public class TypesREST {
 
     /**
      * Get the classification definition by it's name (unique)
+     *
      * @param name classification name
      * @return classification definition
      * @throws AtlasBaseException
@@ -236,6 +263,7 @@ public class TypesREST {
 
     /**
      * Get the classification definition for the given guid
+     *
      * @param guid classification guid
      * @return classification definition
      * @throws AtlasBaseException
@@ -255,6 +283,7 @@ public class TypesREST {
 
     /**
      * Get the entity definition by it's name (unique)
+     *
      * @param name entity name
      * @return Entity definition
      * @throws AtlasBaseException
@@ -274,6 +303,7 @@ public class TypesREST {
 
     /**
      * Get the Entity definition for the given guid
+     *
      * @param guid entity guid
      * @return Entity definition
      * @throws AtlasBaseException
@@ -293,6 +323,7 @@ public class TypesREST {
 
     /**
      * Get the relationship definition by it's name (unique)
+     *
      * @param name relationship name
      * @return relationship definition
      * @throws AtlasBaseException
@@ -312,6 +343,7 @@ public class TypesREST {
 
     /**
      * Get the relationship definition for the given guid
+     *
      * @param guid relationship guid
      * @return relationship definition
      * @throws AtlasBaseException
@@ -331,6 +363,7 @@ public class TypesREST {
 
     /**
      * Get the businessMetadata definition for the given guid
+     *
      * @param guid businessMetadata guid
      * @return businessMetadata definition
      * @throws AtlasBaseException
@@ -350,6 +383,7 @@ public class TypesREST {
 
     /**
      * Get the businessMetadata definition by it's name (unique)
+     *
      * @param name businessMetadata name
      * @return businessMetadata definition
      * @throws AtlasBaseException
@@ -367,11 +401,46 @@ public class TypesREST {
         return ret;
     }
 
+    private InterProcessMutex attemptAcquiringLock() throws AtlasBaseException {
+        if (!isActiveActiveHAEnabled)
+            return null;
+
+        final InterProcessMutex lock = curatorFactory.lockInstance(zkRoot, TYPE_DEF_LOCK);
+        try {
+            if (!lock.acquire(1, TimeUnit.MILLISECONDS)) {
+                LOG.info("Lock is already acquired. Returning now");
+                throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK);
+            }
+            LOG.info("successfully acquired lock");
+        } catch (AtlasBaseException e) {
+            throw e;
+        } catch (Exception e) {
+            LOG.error("Error while acquiring lock on type-defs " + e.getMessage(), e);
+            throw new AtlasBaseException("Error while acquiring a lock on type-defs");
+        }
+        return lock;
+    }
+
+    private void releaseLock(InterProcessMutex lock) throws AtlasBaseException {
+        if (lock == null)
+            return;
+        try {
+            if (lock.isOwnedByCurrentThread()) {
+                LOG.info("About to release type-def lock");
+                lock.release();
+                LOG.info("successfully released type-def lock");
+            }
+        } catch (Exception e) {
+            throw new AtlasBaseException(e.getMessage(), e);
+        }
+    }
+
     /* Bulk API operation */
 
     /**
      * Bulk create APIs for all atlas type definitions, only new definitions will be created.
      * Any changes to the existing definitions will be discarded
+     *
      * @param typesDef A composite wrapper object with corresponding lists of the type definition
      * @return A composite wrapper object with lists of type definitions that were successfully
      * created
@@ -384,16 +453,21 @@ public class TypesREST {
     @Timed
     public AtlasTypesDef createAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-
+        typeCacheRefresher.verifyCacheRefresherHealth();
+        InterProcessMutex lock = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.createAtlasTypeDefs(" +
                         AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
+            lock = attemptAcquiringLock();
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
-            return typeDefStore.createTypesDef(typesDef);
+            AtlasTypesDef atlasTypesDef = typeDefStore.createTypesDef(typesDef);
+            typeCacheRefresher.refreshAllHostCache();
+            return atlasTypesDef;
         } finally {
+            releaseLock(lock);
             AtlasPerfTracer.log(perf);
         }
     }
@@ -425,12 +499,15 @@ public class TypesREST {
     @Timed
     public AtlasTypesDef updateAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-
+        typeCacheRefresher.verifyCacheRefresherHealth();
+        InterProcessMutex lock = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.updateAtlasTypeDefs(" +
                         AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
+            lock = attemptAcquiringLock();
+
             for (AtlasBusinessMetadataDef mb : typesDef.getBusinessMetadataDefs()) {
                 AtlasBusinessMetadataDef existingMB;
                 try {
@@ -451,14 +528,18 @@ public class TypesREST {
                 }
                 classificationDef.setRandomNameForNewAttributeDefs(existingClassificationDef);
             }
-            return typeDefStore.updateTypesDef(typesDef);
+            AtlasTypesDef atlasTypesDef = typeDefStore.updateTypesDef(typesDef);
+            typeCacheRefresher.refreshAllHostCache();
+            return atlasTypesDef;
         } finally {
+            releaseLock(lock);
             AtlasPerfTracer.log(perf);
         }
     }
 
     /**
      * Bulk delete API for all types
+     *
      * @param typesDef A composite object that captures all types to be deleted
      * @throws Exception
      * @HTTP 204 On successful deletion of the requested type definitions
@@ -470,22 +551,26 @@ public class TypesREST {
     @Timed
     public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-
+        typeCacheRefresher.verifyCacheRefresherHealth();
+        InterProcessMutex lock = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeDefs(" +
                         AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
 
-
+            lock = attemptAcquiringLock();
             typeDefStore.deleteTypesDef(typesDef);
+            typeCacheRefresher.refreshAllHostCache();
         } finally {
+            releaseLock(lock);
             AtlasPerfTracer.log(perf);
         }
     }
 
     /**
      * Delete API for type identified by its name.
+     *
      * @param typeName Name of the type to be deleted.
      * @throws AtlasBaseException
      * @HTTP 204 On successful deletion of the requested type definitions
@@ -496,20 +581,24 @@ public class TypesREST {
     @Timed
     public void deleteAtlasTypeByName(@PathParam("typeName") final String typeName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-
+        typeCacheRefresher.verifyCacheRefresherHealth();
+        InterProcessMutex lock = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeByName(" + typeName + ")");
             }
-
+            lock = attemptAcquiringLock();
             typeDefStore.deleteTypeByName(typeName);
+            typeCacheRefresher.refreshAllHostCache();
         } finally {
+            releaseLock(lock);
             AtlasPerfTracer.log(perf);
         }
     }
 
     /**
      * Populate a SearchFilter on the basis of the Query Parameters
+     *
      * @return
      */
     private SearchFilter getSearchFilter(HttpServletRequest httpServletRequest) {
