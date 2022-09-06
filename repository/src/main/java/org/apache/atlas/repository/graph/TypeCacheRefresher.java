@@ -25,10 +25,11 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 import static org.apache.atlas.AtlasErrorCode.CINV_UNHEALTHY;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 
 @Component
 public class TypeCacheRefresher {
@@ -90,7 +91,7 @@ public class TypeCacheRefresher {
         }
 
         try {
-            int totalFieldKeys = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
+            int totalFieldKeys = provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
             LOG.info("Found {} totalFieldKeys to be expected in other nodes",totalFieldKeys);
             refreshCache(cacheRefresherEndpoint,totalFieldKeys);
         }

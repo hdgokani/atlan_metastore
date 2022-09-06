@@ -122,7 +122,6 @@ public class ElasticInstanceConfigService implements Service {
 
     public void createInstanceConfigEntity() throws AtlasBaseException {
         if (!getInstanceConfigEntity().isPresent()) {
-            typeDefStore.getEntityDefByName("InstanceConfig");
             AtlasEntity instanceConfig = new AtlasEntity();
             instanceConfig.setTypeName("InstanceConfig");
             instanceConfig.setStatus(AtlasEntity.Status.ACTIVE);
