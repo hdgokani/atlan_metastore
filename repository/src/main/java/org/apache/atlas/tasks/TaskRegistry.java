@@ -98,8 +98,6 @@ public class TaskRegistry {
             }
         } catch (Exception exception) {
             LOG.error("Error fetching pending tasks!", exception);
-        } finally {
-            graph.commit();
         }
 
         return ret;
@@ -124,8 +122,6 @@ public class TaskRegistry {
             }
         } catch (Exception exception) {
             LOG.error("Error fetching in progress tasks!", exception);
-        } finally {
-            graph.commit();
         }
 
         return ret;
