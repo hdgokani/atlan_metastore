@@ -2861,7 +2861,7 @@ public class EntityGraphMapper {
         // Get in progress task to see if there already is a propagation for this particular vertex
         List<AtlasTask> inProgressTasks = taskManagement.getInProgressTasks();
         for (AtlasTask task : inProgressTasks) {
-            if (taskMatchingWithVertexIdAndEntityGuid(task, classificationVertex.getIdForDisplay(), entityGuid)) {
+            if (isTaskMatchingWithVertexIdAndEntityGuid(task, classificationVertex.getIdForDisplay(), entityGuid)) {
                 throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_CURRENTLY_BEING_PROPAGATED, classificationName);
             }
         }
@@ -2886,7 +2886,7 @@ public class EntityGraphMapper {
                     List<AtlasTask> entityPendingTasks = taskManagement.getByGuidsES(entityTaskGuids);
 
                     boolean pendingTaskExists  = entityPendingTasks.stream()
-                            .anyMatch(x -> taskMatchingWithVertexIdAndEntityGuid(x, classificationVertexId, entityGuid));
+                            .anyMatch(x -> isTaskMatchingWithVertexIdAndEntityGuid(x, classificationVertexId, entityGuid));
 
                     if (pendingTaskExists) {
                         List<AtlasTask> entityClassificationPendingTasks = entityPendingTasks.stream()
@@ -2957,7 +2957,7 @@ public class EntityGraphMapper {
         AtlasPerfTracer.log(perf);
     }
 
-    private boolean taskMatchingWithVertexIdAndEntityGuid(AtlasTask task, String classificationVertexId, String entityGuid) {
+    private boolean isTaskMatchingWithVertexIdAndEntityGuid(AtlasTask task, String classificationVertexId, String entityGuid) {
         try {
             if (CLASSIFICATION_PROPAGATION_ADD.equals(task.getType())) {
                 return task.getParameters().get(ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID).equals(classificationVertexId)
