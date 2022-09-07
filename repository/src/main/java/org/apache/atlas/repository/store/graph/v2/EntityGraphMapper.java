@@ -121,7 +121,25 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PA
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.graph.GraphHelper.*;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
+import static org.apache.atlas.repository.graph.GraphHelper.getCollectionElementsUsingRelationship;
+import static org.apache.atlas.repository.graph.GraphHelper.getDelimitedClassificationNames;
+import static org.apache.atlas.repository.graph.GraphHelper.getLabels;
+import static org.apache.atlas.repository.graph.GraphHelper.getMapElementsProperty;
+import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
+import static org.apache.atlas.repository.graph.GraphHelper.getTraitLabel;
+import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
+import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
+import static org.apache.atlas.repository.graph.GraphHelper.getTypeNames;
+import static org.apache.atlas.repository.graph.GraphHelper.isActive;
+import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled;
+import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
+import static org.apache.atlas.repository.graph.GraphHelper.string;
+import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
+import static org.apache.atlas.repository.graph.GraphHelper.getEntityHasLineage;
+import static org.apache.atlas.repository.graph.GraphHelper.isTermEntityEdge;
+import static org.apache.atlas.repository.graph.GraphHelper.getRemovePropagations;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
@@ -3346,36 +3364,17 @@ public class EntityGraphMapper {
         RequestContext.get().getDeletedEdgesIds().addAll(deletedEdgeIds);
 
         for (AtlasEdge edge : deletedEdgeIds.stream().map(x -> graph.getEdge(x)).collect(Collectors.toList())) {
-            if (edge == null || !deleteDelegate.getHandler().isRelationshipEdge(edge)) {
+            Map<AtlasVertex, List<AtlasVertex>> removePropagationsMap  = deleteDelegate.getHandler().getRemovePropagationMap(edge);
+
+            if (removePropagationsMap == null) {
                 continue;
             }
-            List<AtlasVertex> currentClassificationVertices = getPropagatableClassifications(edge);
-
-            Map<AtlasVertex, List<AtlasVertex>> currentClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices);
-            Map<AtlasVertex, List<AtlasVertex>> updatedClassificationsMap     = entityRetriever.getClassificationPropagatedEntitiesMapping(currentClassificationVertices,GraphHelper.getRelationshipGuid(edge));
-            Map<AtlasVertex, List<AtlasVertex>> removePropagationsMap         = new HashMap<>();
-
-            if (MapUtils.isNotEmpty(currentClassificationsMap) && MapUtils.isEmpty(updatedClassificationsMap)) {
-                removePropagationsMap.putAll(currentClassificationsMap);
-            } else {
-                for (AtlasVertex classificationVertex : updatedClassificationsMap.keySet()) {
-                    List<AtlasVertex> currentPropagatingEntities = currentClassificationsMap.containsKey(classificationVertex) ? currentClassificationsMap.get(classificationVertex) : Collections.emptyList();
-                    List<AtlasVertex> updatedPropagatingEntities = updatedClassificationsMap.containsKey(classificationVertex) ? updatedClassificationsMap.get(classificationVertex) : Collections.emptyList();
-                    List<AtlasVertex> entitiesRemoved            = (List<AtlasVertex>) CollectionUtils.subtract(currentPropagatingEntities, updatedPropagatingEntities);
-
-                    if (CollectionUtils.isNotEmpty(entitiesRemoved)) {
-                        removePropagationsMap.put(classificationVertex, entitiesRemoved);
-                    }
-                }
-            }
-            currentClassificationsMap.clear();
-            updatedClassificationsMap.clear();
-
 
             boolean isTermEntityEdge = isTermEntityEdge(edge);
 
             for (AtlasVertex classificationVertex : removePropagationsMap.keySet()) {
                 AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
+
                 boolean removePropagations = getRemovePropagations(classificationVertex);
 
                 if (isTermEntityEdge || removePropagations) {
