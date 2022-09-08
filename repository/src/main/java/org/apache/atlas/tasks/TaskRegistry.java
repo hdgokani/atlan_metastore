@@ -118,7 +118,9 @@ public class TaskRegistry {
             while (results.hasNext()) {
                 AtlasVertex vertex = results.next();
 
-                ret.add(toAtlasTask(vertex));
+                if(vertex != null) {
+                    ret.add(toAtlasTask(vertex));
+                }
             }
         } catch (Exception exception) {
             LOG.error("Error fetching in progress tasks!", exception);
