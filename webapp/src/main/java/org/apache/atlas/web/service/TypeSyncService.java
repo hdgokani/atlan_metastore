@@ -10,6 +10,8 @@ import org.apache.atlas.repository.graph.indexmanager.DefaultIndexCreator;
 import org.apache.atlas.repository.graphdb.AtlasMixedBackendIndexManager;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.apache.atlas.web.dto.TypeSyncResponse;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
@@ -37,24 +39,26 @@ public class TypeSyncService {
     private final AtlasMixedBackendIndexManager atlasMixedBackendIndexManager;
     private final DefaultIndexCreator defaultIndexCreator;
     private final ElasticInstanceConfigService elasticInstanceConfigService;
-    private final AtlasTypeDefStore atlasTypeDefStore;
+    private final AtlasTypeRegistry typeRegistry;
 
     @Inject
     public TypeSyncService(AtlasTypeDefStore typeDefStore,
                            AtlasJanusGraph atlasGraph,
                            AtlasMixedBackendIndexManager atlasMixedBackendIndexManager,
                            DefaultIndexCreator defaultIndexCreator,
-                           ElasticInstanceConfigService elasticInstanceConfigService, AtlasTypeDefStore atlasTypeDefStore) {
+                           ElasticInstanceConfigService elasticInstanceConfigService,
+                           AtlasTypeRegistry typeRegistry) {
         this.typeDefStore = typeDefStore;
         this.atlasGraph = atlasGraph;
         this.atlasMixedBackendIndexManager = atlasMixedBackendIndexManager;
         this.defaultIndexCreator = defaultIndexCreator;
         this.elasticInstanceConfigService = elasticInstanceConfigService;
-        this.atlasTypeDefStore = atlasTypeDefStore;
+        this.typeRegistry = typeRegistry;
     }
 
     @GraphTransaction
-    public TypeSyncResponse syncTypes(AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException, ExecutionException, InterruptedException {
+    public TypeSyncResponse syncTypes(AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException {
+        AtlasTransientTypeRegistry atlasTransientTypeRegistry = typeRegistry.lockTypeRegistryForUpdate();
         AtlasTypesDef existingTypeDefinitions = typeDefStore.searchTypesDef(new SearchFilter());
         boolean haveIndexSettingsChanged = existingTypeDefinitions.haveIndexSettingsChanged(newTypeDefinitions);
         String newIndexName = null;
@@ -64,9 +68,11 @@ public class TypeSyncService {
             setCurrentWriteVertexIndexName(newIndexName);
             defaultIndexCreator.createDefaultIndexes(atlasGraph);
         }
-        atlasTypeDefStore.updateTypesDef(newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions));
-        atlasTypeDefStore.createTypesDef(newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions));
-//        atlasTypeDefStore.deleteTypesDef(existingTypeDefinitions.getCreatedOrDeletedTypesDef(newTypeDefinitions));
+        typeDefStore.updateTypesDef(newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions));
+        typeDefStore.createTypesDef(newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions));
+//        typeDefStore.deleteTypesDef(existingTypeDefinitions.getCreatedOrDeletedTypesDef(newTypeDefinitions));
+
+        typeRegistry.releaseTypeRegistryForUpdate(atlasTransientTypeRegistry, true);
 
         return new TypeSyncResponse(
                 haveIndexSettingsChanged,
