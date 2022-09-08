@@ -212,6 +212,7 @@ public enum AtlasErrorCode {
     // All data conflict errors go here
     TYPE_ALREADY_EXISTS(409, "ATLAS-409-00-001", "Given type {0} already exists"),
     TYPE_HAS_REFERENCES(409, "ATLAS-409-00-002", "Given type {0} has references"),
+    CLASSIFICATION_TYPE_HAS_REFERENCES(409, "ATLAS-409-00-002", "Given classification {0} [{1}] has references"),
     INSTANCE_ALREADY_EXISTS(409, "ATLAS-409-00-003", "failed to update entity: {0}"),
     RELATIONSHIP_ALREADY_EXISTS(409, "ATLAS-409-00-004", "relationship {0} already exists between entities {1} and {2}"),
     TYPE_HAS_RELATIONSHIPS(409, "ATLAS-409-00-005", "Given type {0} has associated relationshipDefs"),
@@ -257,7 +258,8 @@ public enum AtlasErrorCode {
     HAS_LINEAGE_GET_EDGE_FAILED(500, "ATLAS-500-00-019", "Error occurred while getting edge between vertices for hasLineage migration: {0}"),
     FAILED_TO_REFRESH_TYPE_DEF_CACHE(500, "ATLAS-500-00-20", "Failed to refresh type-def cache"),
     CINV_UNHEALTHY(500, "ATLAS-500-00-21", "Unable to process type-definition operations"),
-    RUNTIME_EXCEPTION(500, "ATLAS-500-00-020", "Runtime exception {0}");
+    RUNTIME_EXCEPTION(500, "ATLAS-500-00-020", "Runtime exception {0}"),
+    CLASSIFICATION_CURRENTLY_BEING_PROPAGATED(400, "ATLAS-400-00-105", "Classification {0} is currently being propagated.");
 
     private String errorCode;
     private String errorMessage;
