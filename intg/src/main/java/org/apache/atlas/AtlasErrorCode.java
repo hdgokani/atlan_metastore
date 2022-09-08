@@ -174,11 +174,15 @@ public enum AtlasErrorCode {
     NOT_VALID_FILE(400, "ATLAS-400-00-09C", "Invalid {0} file"),
     ATTRIBUTE_NAME_ALREADY_EXISTS_IN_PARENT_TYPE(400, "ATLAS-400-00-09D", "Invalid attribute name: {0}.{1}. Attribute already exists in parent type: {2}"),
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
+    UNAUTHORIZED_CONNECTION_ADMIN(403, "ATLAS-403-00-002", "{0} is not admin for connection {1}"),
     MISSING_CLASSIFICATION_DISPLAY_NAME(400, "ATLAS-400-00-09E", "Classification displayName is empty/null"),
     TYPEDEF_ATTR_DISPLAY_NAME_IS_REQUIRED(400, "ATLAS-400-00-09F", "displayName is required for typedef \"{0}\" attribute"),
     EMPTY_REQUEST(400, "ATLAS-400-00-100", "Empty Request or null, expects Map of List of RelatedObjects with term-id as key"),
     TYPEDEF_DISPLAY_NAME_IS_REQUIRED(400, "ATLAS-400-00-101", "displayName is required for typedef"),
     IMPORT_INVALID_ZIP_ENTRY(400, "ATLAS-400-00-10F", "{0}: invalid zip entry. Reason: {1}"),
+    INVALID_PAGINATION_STATE(400, "ATLAS-400-00-102", "Invalid pagination state"),
+    PAGINATION_CAN_ONLY_BE_USED_WITH_DEPTH_ONE(400, "ATLAS-400-00-103", "Pagination can be used only when depth is 1"),
+    CANT_CALCULATE_VERTEX_COUNTS_WITHOUT_PAGINATION(400, "ATLAS-400-00-104", "Vertex counts can't be calculated without pagination"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
@@ -224,8 +228,14 @@ public enum AtlasErrorCode {
     TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS(409, "ATLAS-409-00-012", "Given type {0} already exists"),
     TYPE_ATTR_WITH_DISPLAY_NAME_ALREADY_EXISTS(409, "ATLAS-409-00-013", "Given attributeDef {0} for type {1} already exists"),
     RELATIONSHIP_CREATE_INVALID_PARAMS(409, "ATLAS-409-00-014", "Relationship create between same vertex not allowed, vertex guid: {0}"),
+    OPERATION_NOT_SUPPORTED(409, "ATLAS-409-00-015", "Operation not supported: {0}"),
+
+    PERSONA_ALREADY_EXISTS(409, "ATLAS-409-00-016", "Persona with name {0} already exists"),
+    PURPOSE_ALREADY_EXISTS(409, "ATLAS-409-00-017", "Purpose with name {0} already exists"),
+    ACCESS_CONTROL_MUTATIONS_NOT_ALLOWED(409, "ATLAS-409-00-018", "Please use accessControl APIs"),
 
     CATEGORY_PARENT_FROM_OTHER_GLOSSARY(409, "ATLAS-400-00-0015", "Parent category from another Anchor(glossary) not supported"),
+    CLASSIFICATION_TYPE_HAS_REFERENCES(409, "ATLAS-400-00-0016", "Given classification {0} [{1}] has references"),
 
     // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),
@@ -254,10 +264,16 @@ public enum AtlasErrorCode {
     INDEX_SEARCH_FAILED(400, "ATLAS-400-00-102", "Error occurred while running direct index query on ES: {0}"),
     DEPRECATED_API(400, "ATLAS-400-00-103", "Deprecated API. Use {0} instead"),
     DISABLED_API(400, "ATLAS-400-00-104", "API temporarily disabled. Reason: {0}"),
+
+    INDEX_ALIAS_FAILED(400, "ATLAS-400-00-105", "Error occurred while {0} ES alias: {1}"),
+    JSON_ERROR(400, "ATLAS-400-00-106", "Error occurred putting object into JSONObject: {0}"),
+
+
     HAS_LINEAGE_GET_EDGE_FAILED(500, "ATLAS-500-00-019", "Error occurred while getting edge between vertices for hasLineage migration: {0}"),
     FAILED_TO_REFRESH_TYPE_DEF_CACHE(500, "ATLAS-500-00-20", "Failed to refresh type-def cache"),
     CINV_UNHEALTHY(500, "ATLAS-500-00-21", "Unable to process type-definition operations"),
-    RUNTIME_EXCEPTION(500, "ATLAS-500-00-020", "Runtime exception {0}");
+    RUNTIME_EXCEPTION(500, "ATLAS-500-00-020", "Runtime exception {0}"),
+    CLASSIFICATION_CURRENTLY_BEING_PROPAGATED(400, "ATLAS-400-00-105", "Classification {0} is currently being propagated.");
 
     private String errorCode;
     private String errorMessage;
