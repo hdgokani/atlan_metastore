@@ -3329,10 +3329,6 @@ public class EntityGraphMapper {
 
                 List<AtlasVertex> entityVertices = deleteDelegate.getHandler().removeTagPropagation(classification, propagatedEdges.subList(offset, toIndex));
 
-                if (CollectionUtils.isEmpty(entityVertices)) {
-                    return null;
-                }
-
                 List<String> impactedGuids = entityVertices.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
                 GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
 
@@ -3343,11 +3339,12 @@ public class EntityGraphMapper {
                 if(! propagatedEntities.isEmpty()) {
                     deletedPropagationsGuid.addAll(propagatedEntities.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
                 }
+
                 offset += CHUNK_SIZE;
 
                 transactionInterceptHelper.intercept();
-            }
-            while (offset < propagatedEdgesSize);
+
+            } while (offset < propagatedEdgesSize);
 
             deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
 
@@ -3355,6 +3352,7 @@ public class EntityGraphMapper {
 
             return deletedPropagationsGuid;
         } catch (Exception e) {
+            LOG.error("Error while removing classification id {} with error {} ", classificationVertexId, e.getMessage());
             throw new AtlasBaseException(e);
         }
     }
