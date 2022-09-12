@@ -17,7 +17,9 @@ import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.SchemaAction;
 import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.management.GraphIndexStatusReport;
+import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -88,7 +90,7 @@ public class TypeSyncService {
         if (!oldIndexName.equals(newIndexName)) {
             try {
                 disableJanusgraphIndex(oldIndexName);
-                deleteJanusgraphIndex(oldIndexName);
+//                deleteJanusgraphIndex(oldIndexName);
 
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
             } catch (InterruptedException | ExecutionException | IOException e) {
@@ -100,13 +102,21 @@ public class TypeSyncService {
     }
 
     private void disableJanusgraphIndex(String oldIndexName) throws InterruptedException, ExecutionException {
-        JanusGraphManagement janusGraphManagement = atlasGraph.getGraph().openManagement();
+        StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
+        ManagementSystem janusGraphManagement = (ManagementSystem) graph.openManagement();
+
+//        List<JanusGraphTransaction> openTransactions = graph.getOpenTransactions()
+//                .stream()
+//                .filter(tx -> !tx.toString().equals(janusGraphManagement.getWrappedTx().toString()))
+//                .collect(Collectors.toList());
+//
+//        openTransactions.forEach(tx -> tx.rollback());
+//        openTransactions.forEach(tx -> tx.close());
 
         JanusGraphIndex graphIndex = janusGraphManagement.getGraphIndex(oldIndexName);
         janusGraphManagement.updateIndex(graphIndex, SchemaAction.DISABLE_INDEX).get();
         janusGraphManagement.commit();
-        atlasGraph.getGraph().tx().commit();
-        GraphIndexStatusReport report = awaitGraphIndexStatus(atlasGraph.getGraph(), oldIndexName).status(SchemaStatus.DISABLED).call();
+        GraphIndexStatusReport report = awaitGraphIndexStatus(graph, oldIndexName).status(SchemaStatus.DISABLED).call();
         System.out.println(report);
     }
 

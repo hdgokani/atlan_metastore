@@ -24,6 +24,7 @@ import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.service.Service;
@@ -42,9 +43,7 @@ import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.atlas.ApplicationProperties.DEFAULT_INDEX_RECOVERY;
-import static org.apache.atlas.repository.Constants.PROPERTY_KEY_INDEX_RECOVERY_NAME;
-import static org.apache.atlas.repository.Constants.PROPERTY_KEY_INDEX_RECOVERY_PREV_TIME;
-import static org.apache.atlas.repository.Constants.PROPERTY_KEY_INDEX_RECOVERY_START_TIME;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
 @Component
@@ -233,12 +232,14 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             Long startTime = null;
 
             try {
-                startTime        = recoveryInfoManagement.getStartTime();
+                startTime = recoveryInfoManagement.getStartTime();
                 Instant newStartTime = Instant.now();
-                txRecoveryObject = this.graph.getManagementSystem().startIndexRecovery(startTime);
+                AtlasGraphManagement managementSystem = this.graph.getManagementSystem();
+                txRecoveryObject = managementSystem.startIndexRecovery(startTime);
                 recoveryInfoManagement.updateStartTime(newStartTime.toEpochMilli());
 
                 printIndexRecoveryStats();
+                managementSystem.commit();
             } catch (Exception e) {
                 LOG.error("Index Recovery: Start: Error!", e);
             } finally {
@@ -250,9 +251,11 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             Instant newStartTime = Instant.now().minusMillis(indexStatusCheckRetryMillis);
 
             try {
-                this.graph.getManagementSystem().stopIndexRecovery(txRecoveryObject);
+                AtlasGraphManagement managementSystem = this.graph.getManagementSystem();
+                managementSystem.stopIndexRecovery(txRecoveryObject);
 
                 printIndexRecoveryStats();
+                managementSystem.commit();
             } catch (Exception e) {
                 LOG.info("Index Recovery: Stopped! Error!", e);
             } finally {
@@ -263,7 +266,9 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         }
 
         private void printIndexRecoveryStats() {
-            this.graph.getManagementSystem().printIndexRecoveryStats(txRecoveryObject);
+            AtlasGraphManagement managementSystem = this.graph.getManagementSystem();
+            managementSystem.printIndexRecoveryStats(txRecoveryObject);
+            managementSystem.commit();
         }
 
         private InterProcessMutex acquireDistributedLock() throws Exception {

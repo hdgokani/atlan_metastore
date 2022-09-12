@@ -194,6 +194,7 @@ public class RepairIndex {
             }
         }
         mutator.getIndexTransaction(indexType.getBackingIndexName()).restore(documentsPerStore);
+        mgmt.commit();
     }
 
     private static Set<String> getEntityAndReferenceGuids(String guid) throws Exception {
