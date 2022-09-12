@@ -205,6 +205,7 @@ public enum AtlasErrorCode {
     NO_TYPE_NAME_ON_VERTEX(404, "ATLAS-404-00-015", "No typename found for given entity with guid: {0}"),
     RELATIONSHIP_LABEL_NOT_FOUND(404, "ATLAS-404-00-016", "Given relationshipLabel {0} was invalid"),
     INVALID_LINEAGE_ENTITY_TYPE_HIDE_PROCESS(404, "ATLAS-404-00-017", "Given instance guid {0} with type {1} is not a valid lineage entity type with hideProcess as true."),
+    TASK_NOT_FOUND(404, "ATLAS-404-00-018", "Given task guid {0} is invalid/not found"),
 
     METHOD_NOT_ALLOWED(405, "ATLAS-405-00-001", "Error 405 - The request method {0} is inappropriate for the URL: {1}"),
     DELETE_TAG_PROPAGATION_NOT_ALLOWED(406, "ATLAS-406-00-001", "Classification delete is not allowed; Add/Update classification propagation is in queue for classification: {0} and entity: {1}. Please try again"),
