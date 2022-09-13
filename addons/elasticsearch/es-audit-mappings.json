@@ -28,6 +28,8 @@
       "eventKey": {
         "type": "keyword"
       }
-    }
+    },
+    "date_detection": false,
+    "numeric_detection": false
   }
 }
