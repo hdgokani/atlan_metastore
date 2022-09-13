@@ -82,6 +82,8 @@ public class AtlasTaskService implements TaskService {
         if (results.hasNext()) {
             AtlasVertex atlasVertex = results.next();
             setEncodedProperty(atlasVertex, Constants.TASK_STATUS, AtlasTask.Status.PENDING);
+            int attemptCount = atlasVertex.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
+            setEncodedProperty(atlasVertex, Constants.TASK_ATTEMPT_COUNT, ++attemptCount);
             graph.commit();
         } else {
             throw new AtlasBaseException(AtlasErrorCode.TASK_NOT_FOUND, taskGuid);
