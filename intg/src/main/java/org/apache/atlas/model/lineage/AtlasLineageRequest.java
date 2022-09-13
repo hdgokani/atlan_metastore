@@ -41,6 +41,7 @@ public class AtlasLineageRequest {
     private int depth;
     private int offset = -1;
     private int limit = -1;
+    private boolean calculateRemainingVertexCounts;
     private boolean hideProcess;
     private boolean allowDeletedProcess;
     private LineageDirection direction = BOTH;
@@ -51,13 +52,14 @@ public class AtlasLineageRequest {
     public AtlasLineageRequest() {
     }
 
-    public AtlasLineageRequest(String guid, int depth, LineageDirection direction, boolean hideProcess, int offset, int limit) throws AtlasBaseException {
+    public AtlasLineageRequest(String guid, int depth, LineageDirection direction, boolean hideProcess, int offset, int limit, boolean calculateRemainingVertexCounts) throws AtlasBaseException {
         this.guid = guid;
         this.depth = depth;
         this.direction = direction;
         this.hideProcess = hideProcess;
         this.offset = offset;
         this.limit = limit;
+        this.calculateRemainingVertexCounts = calculateRemainingVertexCounts;
         this.attributes = new HashSet<>();
         performValidation();
     }
@@ -69,6 +71,8 @@ public class AtlasLineageRequest {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PAGINATION_STATE);
         } else if (depth != 1 && offset != -1) {
             throw new AtlasBaseException(AtlasErrorCode.PAGINATION_CAN_ONLY_BE_USED_WITH_DEPTH_ONE);
+        } else if (offset == -1 && calculateRemainingVertexCounts) {
+            throw new AtlasBaseException(AtlasErrorCode.CANT_CALCULATE_VERTEX_COUNTS_WITHOUT_PAGINATION);
         }
     }
 
@@ -142,5 +146,13 @@ public class AtlasLineageRequest {
 
     public void setOffset(int offset) {
         this.offset = offset;
+    }
+
+    public boolean getCalculateRemainingVertexCounts() {
+        return calculateRemainingVertexCounts;
+    }
+
+    public void setCalculateRemainingVertexCounts(boolean calculateRemainingVertexCounts) {
+        this.calculateRemainingVertexCounts = calculateRemainingVertexCounts;
     }
 }
