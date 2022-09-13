@@ -196,6 +196,10 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         return registry.getByIdsES(guids);
     }
 
+    public List<AtlasTask> getInProgressTasks() {
+        return registry.getInProgressTasks();
+    }
+
     public void deleteByGuid(String guid) throws AtlasBaseException {
         try {
             this.registry.deleteByGuid(guid);
@@ -231,7 +235,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
         if (this.taskExecutor == null) {
             final boolean isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
-            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics, curatorFactory, isActiveActiveHAEnabled);
+            final String zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
+            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics, curatorFactory, zkRoot,isActiveActiveHAEnabled);
         }
 
         if (watcherThread == null) {

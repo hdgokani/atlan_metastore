@@ -46,11 +46,13 @@ public class AtlasLineageInfo implements Serializable {
     private int lineageDepth;
     private int limit;
     private int offset;
-    private long remainingUpstreamVertexCount;
-    private long remainingDownstreamVertexCount;
+    private Long remainingUpstreamVertexCount;
+    private Long remainingDownstreamVertexCount;
+    private boolean hasMoreUpstreamVertices = false;
+    private boolean hasMoreDownstreamVertices = false;
     private Map<String, AtlasEntityHeader> guidEntityMap;
     private Set<LineageRelation> relations;
-    private Map<String, Map<LineageDirection, Integer>> childrenCounts = new HashMap<>();
+    private final Map<String, Map<LineageDirection, Boolean>> vertexChildrenInfo = new HashMap<>();
 
     public AtlasLineageInfo() {
     }
@@ -85,6 +87,30 @@ public class AtlasLineageInfo implements Serializable {
 
     public void calculateRemainingDownstreamVertexCount(Long totalUpstreamVertexCount) {
         remainingDownstreamVertexCount = Math.max(totalUpstreamVertexCount - offset - limit, 0);
+    }
+
+    public void setRemainingUpstreamVertexCount(long remainingUpstreamVertexCount) {
+        this.remainingUpstreamVertexCount = remainingUpstreamVertexCount;
+    }
+
+    public void setRemainingDownstreamVertexCount(long remainingDownstreamVertexCount) {
+        this.remainingDownstreamVertexCount = remainingDownstreamVertexCount;
+    }
+
+    public boolean getHasMoreUpstreamVertices() {
+        return hasMoreUpstreamVertices;
+    }
+
+    public void setHasMoreUpstreamVertices(boolean hasMoreUpstreamVertices) {
+        this.hasMoreUpstreamVertices = hasMoreUpstreamVertices;
+    }
+
+    public boolean getHasMoreDownstreamVertices() {
+        return hasMoreDownstreamVertices;
+    }
+
+    public void setHasMoreDownstreamVertices(boolean hasMoreDownstreamVertices) {
+        this.hasMoreDownstreamVertices = hasMoreDownstreamVertices;
     }
 
     public String getBaseEntityGuid() {
@@ -143,29 +169,26 @@ public class AtlasLineageInfo implements Serializable {
         this.offset = offset;
     }
 
-    public long getRemainingUpstreamVertexCount() {
+    public Long getRemainingUpstreamVertexCount() {
         return remainingUpstreamVertexCount;
     }
 
-    public long getRemainingDownstreamVertexCount() {
+    public Long getRemainingDownstreamVertexCount() {
         return remainingDownstreamVertexCount;
     }
 
-    public Map<String, Map<LineageDirection, Integer>> getChildrenCounts() {
-        return childrenCounts;
+    public Map<String, Map<LineageDirection, Boolean>> getVertexChildrenInfo() {
+        return vertexChildrenInfo;
     }
 
-    public void addChildrenCount(String guid, LineageDirection direction, int count) {
-        Map<LineageDirection, Integer> entityChildrenCountMap = childrenCounts.get(guid);
-        if (entityChildrenCountMap == null) {
-            entityChildrenCountMap = new HashMap<>();
+    public void setHasChildrenForDirection(String guid, LineageChildrenInfo lineageChildrenInfo) {
+        Map<LineageDirection, Boolean> entityChildrenMap = vertexChildrenInfo.get(guid);
+        if (entityChildrenMap == null) {
+            entityChildrenMap = new HashMap<>();
         }
-        entityChildrenCountMap.put(direction, count);
-        childrenCounts.put(guid, entityChildrenCountMap);
-    }
+        entityChildrenMap.put(lineageChildrenInfo.getDirection(), lineageChildrenInfo.getHasMoreChildren());
 
-    public void mergeChildrenCounts(String guid, LineageDirection direction) {
-        childrenCounts.get(guid).merge(direction, 1, Integer::sum);
+        vertexChildrenInfo.put(guid, entityChildrenMap);
     }
 
     @Override
