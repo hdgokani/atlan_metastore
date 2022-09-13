@@ -156,7 +156,7 @@ public class AtlasRangerService {
     public RangerPolicy updateRangerPolicy(RangerPolicy rangerPolicy) throws AtlasBaseException {
         RangerPolicy ret = null;
         try {
-            LOG.info("updating on Ranger \n{}\n", AtlasType.toJson(rangerPolicy));
+            LOG.info("updating on Ranger {}", AtlasType.toJson(rangerPolicy));
             ret = RangerClientHelper.updatePolicy(rangerPolicy);
 
             LOG.info("Updated: Ranger Policy {}", ret.getId());

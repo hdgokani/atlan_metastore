@@ -1,6 +1,8 @@
 package org.apache.atlas.accesscontrol;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.accesscontrol.persona.AtlasPersonaService;
 import org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
@@ -26,6 +28,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
@@ -356,5 +362,31 @@ public class AccessControlUtil {
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    public static ExecutorService getExecutorService(int numThreads, String threadNamePattern) {
+        ExecutorService service = Executors.newFixedThreadPool(numThreads, new ThreadFactoryBuilder().setNameFormat(threadNamePattern + Thread.currentThread().getName()).build());
+        return service;
+    }
+
+    public static <T> void submitCallablesAndWaitToFinish(String threadName, List<Callable<T>> callables) throws AtlasBaseException {
+        ExecutorService service = getExecutorService(callables.size(), threadName + "-%d-");
+        try {
+
+            LOG.info("Submitting callables: {}", threadName);
+            callables.forEach(service::submit);
+
+            LOG.info("Shutting down executor: {}", threadName);
+            service.shutdown();
+            LOG.info("Shut down executor: {}", threadName);
+            boolean terminated = service.awaitTermination(60, TimeUnit.SECONDS);
+            LOG.info("awaitTermination done: {}", threadName);
+
+            if (!terminated) {
+                LOG.warn("Time out occurred while waiting to complete {}", threadName);
+            }
+        } catch (InterruptedException e) {
+            throw new AtlasBaseException();
+        }
     }
 }
