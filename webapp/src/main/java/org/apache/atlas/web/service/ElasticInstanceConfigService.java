@@ -14,6 +14,8 @@ import org.apache.atlas.service.Service;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +24,9 @@ import java.util.*;
 @Component
 @Order
 public class ElasticInstanceConfigService implements Service {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ElasticInstanceConfigService.class);
+
 
     private static final String ELASTIC_INSTANCE_CONFIGURATION = "elastic_instance_configurations";
 
@@ -157,6 +162,7 @@ public class ElasticInstanceConfigService implements Service {
             instanceConfigType = (AtlasEntityType) atlasTypeRegistry.getType("InstanceConfig");
             return Optional.of(atlasEntityStore.getByUniqueAttributes(instanceConfigType, idAttribute));
         } catch (AtlasBaseException e) {
+            LOG.error("Error while fetching the InstanceConfig entity:", e);
             return Optional.empty();
         }
     }
