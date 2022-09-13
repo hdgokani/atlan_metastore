@@ -31,15 +31,13 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.util.Map;
 
-@Component
 public class RangerClientHelper {
     private static final Logger LOG = LoggerFactory.getLogger(RangerClientHelper.class);
 
     private static RangerClient client;
 
-    @Inject
-    public RangerClientHelper(RangerClient client) {
-        this.client = client;
+    static {
+        client = new RangerClient();
     }
 
     public static RangerRole createRole(RangerRole rangerRole) throws AtlasServiceException {

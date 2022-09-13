@@ -180,8 +180,16 @@ public enum AtlasErrorCode {
     EMPTY_REQUEST(400, "ATLAS-400-00-100", "Empty Request or null, expects Map of List of RelatedObjects with term-id as key"),
     TYPEDEF_DISPLAY_NAME_IS_REQUIRED(400, "ATLAS-400-00-101", "displayName is required for typedef"),
     IMPORT_INVALID_ZIP_ENTRY(400, "ATLAS-400-00-10F", "{0}: invalid zip entry. Reason: {1}"),
-    INVALID_PAGINATION_STATE(400, "ATLAS-400-00-102", "Invalid pagination state"),
-    PAGINATION_CAN_ONLY_BE_USED_WITH_DEPTH_ONE(400, "ATLAS-400-00-103", "Pagination can be used only when depth is 1"),
+    INDEX_SEARCH_FAILED(400, "ATLAS-400-00-102", "Error occurred while running direct index query on ES: {0}"),
+    DEPRECATED_API(400, "ATLAS-400-00-103", "Deprecated API. Use {0} instead"),
+    DISABLED_API(400, "ATLAS-400-00-104", "API temporarily disabled. Reason: {0}"),
+    INVALID_PAGINATION_STATE(400, "ATLAS-400-00-105", "Invalid pagination state"),
+    PAGINATION_CAN_ONLY_BE_USED_WITH_DEPTH_ONE(400, "ATLAS-400-00-106", "Pagination can be used only when depth is 1"),
+    INDEX_ALIAS_FAILED(400, "ATLAS-400-00-107", "Error occurred while {0} ES alias: {1}"),
+    JSON_ERROR(400, "ATLAS-400-00-108", "Error occurred putting object into JSONObject: {0}"),
+    RANGER_ROLE_MUTATION_FAILED(400, "ATLAS-400-00-109", "Failed to {0} Ranger role {1}: {2}"),
+    RANGER_POLICY_MUTATION_FAILED(400, "ATLAS-400-00-110", "Failed to {0} Ranger policy: {1}"),
+    RANGER_POLICY_FIND_FAILED(400, "ATLAS-400-00-111", "Failed to find Ranger policy by {0}: {1}"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
@@ -208,6 +216,7 @@ public enum AtlasErrorCode {
     NO_TYPE_NAME_ON_VERTEX(404, "ATLAS-404-00-015", "No typename found for given entity with guid: {0}"),
     RELATIONSHIP_LABEL_NOT_FOUND(404, "ATLAS-404-00-016", "Given relationshipLabel {0} was invalid"),
     INVALID_LINEAGE_ENTITY_TYPE_HIDE_PROCESS(404, "ATLAS-404-00-017", "Given instance guid {0} with type {1} is not a valid lineage entity type with hideProcess as true."),
+    RANGER_ROLE_NOT_FOUND(404, "ATLAS-404-00-018", "Ranger role {0} not found: {1}"),
 
     METHOD_NOT_ALLOWED(405, "ATLAS-405-00-001", "Error 405 - The request method {0} is inappropriate for the URL: {1}"),
     DELETE_TAG_PROPAGATION_NOT_ALLOWED(406, "ATLAS-406-00-001", "Classification delete is not allowed; Add/Update classification propagation is in queue for classification: {0} and entity: {1}. Please try again"),
@@ -231,9 +240,9 @@ public enum AtlasErrorCode {
 
     PERSONA_ALREADY_EXISTS(409, "ATLAS-409-00-016", "Persona with name {0} already exists"),
     PURPOSE_ALREADY_EXISTS(409, "ATLAS-409-00-017", "Purpose with name {0} already exists"),
-    ACCESS_CONTROL_MUTATIONS_NOT_ALLOWED(409, "ATLAS-409-00-018", "Please use accessControl APIs"),
 
     CATEGORY_PARENT_FROM_OTHER_GLOSSARY(409, "ATLAS-400-00-0015", "Parent category from another Anchor(glossary) not supported"),
+    RANGER_DUPLICATE_POLICY(409, "ATLAS-409-00-019", "Not allowed to create duplicate policy for same set of assets, duplicate policy: {0}:{1}"),
 
     // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),
@@ -259,13 +268,6 @@ public enum AtlasErrorCode {
     FAILED_TO_CREATE_GLOSSARY_TERM(500, "ATLAS-500-00-016", "Error occurred while creating glossary term: {0}"),
     FAILED_TO_UPDATE_GLOSSARY_TERM(500, "ATLAS-500-00-017", "Error occurred while updating glossary term: {0}"),
     REPAIR_INDEX_FAILED(500, "ATLAS-500-00-018", "Error occurred while repairing indices: {0}"),
-    INDEX_SEARCH_FAILED(400, "ATLAS-400-00-102", "Error occurred while running direct index query on ES: {0}"),
-    DEPRECATED_API(400, "ATLAS-400-00-103", "Deprecated API. Use {0} instead"),
-    DISABLED_API(400, "ATLAS-400-00-104", "API temporarily disabled. Reason: {0}"),
-
-    INDEX_ALIAS_FAILED(400, "ATLAS-400-00-105", "Error occurred while {0} ES alias: {1}"),
-    JSON_ERROR(400, "ATLAS-400-00-106", "Error occurred putting object into JSONObject: {0}"),
-
 
     HAS_LINEAGE_GET_EDGE_FAILED(500, "ATLAS-500-00-019", "Error occurred while getting edge between vertices for hasLineage migration: {0}"),
     FAILED_TO_REFRESH_TYPE_DEF_CACHE(500, "ATLAS-500-00-20", "Failed to refresh type-def cache"),

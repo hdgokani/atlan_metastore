@@ -17,8 +17,14 @@
  */
 package org.apache.atlas.ranger.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.GenericType;
+import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 import com.sun.jersey.api.json.JSONConfiguration;
@@ -31,6 +37,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.ranger.RangerPolicyList;
 import org.apache.atlas.ranger.RangerRoleList;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -40,10 +47,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static javax.ws.rs.HttpMethod.DELETE;
@@ -56,20 +66,11 @@ import static org.apache.atlas.accesscontrol.AccessControlUtil.RESOURCE_PREFIX;
 public class RangerClient {
     private static final Logger LOG = LoggerFactory.getLogger(RangerClient.class);
 
-
-    protected Configuration configuration;
-    private String basicAuthUser;
-    private String basicAuthPassword;
-
-
     private static final String PROP_RANGER_BASE_URL = "atlas.ranger.base.url";
     private static final String PROP_RANGER_USERNAME = "atlas.ranger.username";
     private static final String PROP_RANGER_PASSWORD = "atlas.ranger.password";
 
     private static final String BASE_URI_DEFAULT = "http://localhost:8080/api/policy/";
-
-
-    private static String BASE_URL;
 
     public static final  String POLICY_GET_BY_NAME = "public/v2/api/service/%s/policy/%s";
     public static final  String POLICY_GET_BY_ID = "service/plugins/policies/%s";
@@ -85,39 +86,34 @@ public class RangerClient {
     public static final  String SEARCH_BY_RESOURCES = "service/plugins/policies";
     public static final  String SEARCH_BY_LABELS = "service/plugins/policies";
 
+    protected static WebResource service;
 
-    public RangerClient() throws AtlasException {
-
-        BASE_URL = ApplicationProperties.get().getString(PROP_RANGER_BASE_URL, BASE_URI_DEFAULT);
-
-        this.basicAuthUser = ApplicationProperties.get().getString(PROP_RANGER_USERNAME, "admin");
-        this.basicAuthPassword = ApplicationProperties.get().getString(PROP_RANGER_PASSWORD);
-
-        String[] basicAuthUserNamePassword = new String[2];
-        basicAuthUserNamePassword[0] = basicAuthUser;
-        basicAuthUserNamePassword[1] = basicAuthPassword;
-
+    public RangerClient() {
         try {
-            init();
+            if (service == null) {
+                LOG.info("Initializing Ranger client");
+                String BASE_URL = ApplicationProperties.get().getString(PROP_RANGER_BASE_URL, BASE_URI_DEFAULT);
+
+                String basicAuthUser = ApplicationProperties.get().getString(PROP_RANGER_USERNAME, "admin");
+                String basicAuthPassword = ApplicationProperties.get().getString(PROP_RANGER_PASSWORD);
+
+                Configuration configuration = getClientProperties();
+                Client client = getClient(configuration);
+
+                if (StringUtils.isNotEmpty(basicAuthUser) && StringUtils.isNotEmpty(basicAuthPassword)) {
+                    final HTTPBasicAuthFilter authFilter = new HTTPBasicAuthFilter(basicAuthUser, basicAuthPassword);
+                    client.addFilter(authFilter);
+                }
+
+                service = client.resource(UriBuilder.fromUri(BASE_URL).build());
+            }
         } catch (AtlasException e) {
             e.printStackTrace();
+            LOG.error("Failed to initialize Ranger client: {}", e.getMessage());
         }
     }
 
-    private void init() throws AtlasException {
-        this.configuration = getClientProperties();
-        Client client = getClient(configuration);
-
-        if (StringUtils.isNotEmpty(basicAuthUser) && StringUtils.isNotEmpty(basicAuthPassword)) {
-            final HTTPBasicAuthFilter authFilter = new HTTPBasicAuthFilter(basicAuthUser, basicAuthPassword);
-            client.addFilter(authFilter);
-
-        }
-
-        RangerClientCaller.service = client.resource(UriBuilder.fromUri(BASE_URL).build());
-    }
-
-    protected Client getClient(Configuration configuration) {
+    private static Client getClient(Configuration configuration) {
         DefaultClientConfig config = new DefaultClientConfig();
         // Enable POJO mapping feature
         config.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
@@ -135,7 +131,7 @@ public class RangerClient {
         return client;
     }
 
-    protected Configuration getClientProperties() throws AtlasException {
+    protected static Configuration getClientProperties() throws AtlasException {
         return ApplicationProperties.get();
     }
 
@@ -143,7 +139,7 @@ public class RangerClient {
 
         AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(POLICY_GET_BY_ID, policyId), GET, Response.Status.OK);
 
-        return RangerClientCaller.callAPI(api, RangerPolicy.class, null);
+        return callAPI(api, RangerPolicy.class, null);
     }
 
 
@@ -151,14 +147,14 @@ public class RangerClient {
 
         AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(POLICY_GET_BY_NAME, serviceName, policyName), GET, Response.Status.OK);
 
-        return RangerClientCaller.callAPI(api, String.class, null);
+        return callAPI(api, String.class, null);
     }
 
     public RangerRole createRole(RangerRole rangerRole) throws AtlasServiceException {
 
         AtlasBaseClient.API api = new AtlasBaseClient.API(CREATE_ROLE, POST, Response.Status.OK);
 
-        return RangerClientCaller.callAPI(api, RangerRole.class, rangerRole);
+        return callAPI(api, RangerRole.class, rangerRole);
     }
 
     public RangerRoleList getRole(String roleName) throws AtlasServiceException {
@@ -169,35 +165,35 @@ public class RangerClient {
 
         AtlasBaseClient.API api = new AtlasBaseClient.API(GET_ROLE_BY_NAME, GET, Response.Status.OK);
 
-        return RangerClientCaller.callAPI(api, RangerRoleList.class, queryParams);
+        return callAPI(api, RangerRoleList.class, queryParams);
     }
 
     public RangerRole updateRole(RangerRole rangerRole) throws AtlasServiceException {
 
         AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(UPDATE_ROLE, rangerRole.getId()), PUT, Response.Status.OK);
 
-        return RangerClientCaller.callAPI(api, RangerRole.class, rangerRole);
+        return callAPI(api, RangerRole.class, rangerRole);
     }
 
     public void deleteRole(long roleId) throws AtlasServiceException {
 
         AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(DELETE_ROLE, roleId), DELETE, Response.Status.NO_CONTENT);
 
-        RangerClientCaller.callAPI(api, (Class<?>)null, null);
+        callAPI(api, (Class<?>)null, null);
     }
 
     public RangerPolicy createPolicy(RangerPolicy rangerPolicy) throws AtlasServiceException {
 
         AtlasBaseClient.API api = new AtlasBaseClient.API(CREATE_POLICY, POST, Response.Status.OK);
 
-        return RangerClientCaller.callAPI(api, RangerPolicy.class, rangerPolicy);
+        return callAPI(api, RangerPolicy.class, rangerPolicy);
     }
 
     public RangerPolicy updatePolicy(RangerPolicy rangerPolicy) throws AtlasServiceException {
 
         AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(UPDATE_POLICY, rangerPolicy.getId()), PUT, Response.Status.OK);
 
-        return RangerClientCaller.callAPI(api, RangerPolicy.class, rangerPolicy);
+        return callAPI(api, RangerPolicy.class, rangerPolicy);
     }
 
     public RangerPolicyList searchPoliciesByResources(Map<String, String> resources, Map<String, String> attributes) throws AtlasServiceException {
@@ -206,7 +202,7 @@ public class RangerClient {
 
         AtlasBaseClient.API api = new AtlasBaseClient.API(SEARCH_BY_RESOURCES, GET, Response.Status.OK);
 
-        return RangerClientCaller.callAPI(api, RangerPolicyList.class, queryParams);
+        return callAPI(api, RangerPolicyList.class, queryParams);
     }
 
     public RangerPolicyList getPoliciesByLabels(Map<String, String> attributes) throws AtlasServiceException {
@@ -214,13 +210,13 @@ public class RangerClient {
 
         AtlasBaseClient.API api = new AtlasBaseClient.API(SEARCH_BY_LABELS, GET, Response.Status.OK);
 
-        return RangerClientCaller.callAPI(api, RangerPolicyList.class, queryParams);
+        return callAPI(api, RangerPolicyList.class, queryParams);
     }
 
     public void deletePolicyById(Long policyId) throws AtlasServiceException {
         AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(POLICY_DELETE_BY_ID, policyId), DELETE, Response.Status.NO_CONTENT);
 
-        RangerClientCaller.callAPI(api, (Class<?>)null, null);
+        callAPI(api, (Class<?>)null, null);
     }
 
     private MultivaluedMap<String, String> resourcesToQueryParams(Map<String, String> attributes) {
@@ -248,6 +244,155 @@ public class RangerClient {
         }
 
         return queryParams;
+    }
+
+    public static <T> T callAPI(AtlasBaseClient.API api, Class<T> responseType, MultivaluedMap<String, String> queryParams)
+            throws AtlasServiceException {
+        return callAPIWithResource(api, getResource(api, queryParams), null, responseType);
+    }
+
+    public static <T> T callAPI(AtlasBaseClient.API api, Class<T> responseType, Object requestObject, String... params)
+            throws AtlasServiceException {
+        return callAPIWithResource(api, getResource(api, params), requestObject, responseType);
+    }
+
+    protected static <T> T callAPIWithResource(AtlasBaseClient.API api, WebResource resource, Object requestObject, Class<T> responseType) throws AtlasServiceException {
+        GenericType<T> genericType = null;
+        if (responseType != null) {
+            genericType = new GenericType<>(responseType);
+        }
+        return callAPIWithResource(api, resource, requestObject, genericType);
+    }
+
+    protected static <T> T callAPIWithResource(AtlasBaseClient.API api, WebResource resource, Object requestObject, GenericType<T> responseType) throws AtlasServiceException {
+        ClientResponse clientResponse = null;
+        int i = 0;
+        do {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("------------------------------------------------------");
+                LOG.debug("Call         : {} {}", api.getMethod(), api.getNormalizedPath());
+                LOG.debug("Content-type : {} ", api.getConsumes());
+                LOG.debug("Accept       : {} ", api.getProduces());
+                if (requestObject != null) {
+                    LOG.debug("Request      : {}", requestObject);
+                }
+            }
+
+            WebResource.Builder requestBuilder = resource.getRequestBuilder();
+
+            // Set content headers
+            requestBuilder
+                    .accept(api.getProduces())
+                    .type(api.getConsumes())
+                    .header("Expect", "100-continue");
+
+            clientResponse = requestBuilder.method(api.getMethod(), ClientResponse.class, requestObject);
+
+            LOG.debug("HTTP Status  : {}", clientResponse.getStatus());
+
+            if (!LOG.isDebugEnabled()) {
+                LOG.info("method={} path={} contentType={} accept={} status={}", api.getMethod(),
+                        api.getNormalizedPath(), api.getConsumes(), api.getProduces(), clientResponse.getStatus());
+            }
+
+            if (clientResponse.getStatus() == api.getExpectedStatus().getStatusCode()) {
+                if (responseType == null) {
+                    return null;
+                }
+                try {
+                    if(api.getProduces().equals(MediaType.APPLICATION_OCTET_STREAM)) {
+                        return (T) clientResponse.getEntityInputStream();
+                    } else if (responseType.getRawClass().equals(ObjectNode.class)) {
+                        String stringEntity = clientResponse.getEntity(String.class);
+                        try {
+                            JsonNode jsonObject = AtlasJson.parseToV1JsonNode(stringEntity);
+                            LOG.debug("Response     : {}", jsonObject);
+                            LOG.debug("------------------------------------------------------");
+                            return (T) jsonObject;
+                        } catch (IOException e) {
+                            throw new AtlasServiceException(api, e);
+                        }
+                    } else {
+                        T entity = clientResponse.getEntity(responseType);
+                        LOG.debug("Response     : {}", entity);
+                        LOG.debug("------------------------------------------------------");
+                        return entity;
+                    }
+                } catch (ClientHandlerException e) {
+                    throw new AtlasServiceException(api, e);
+                }
+            } else if (clientResponse.getStatus() != ClientResponse.Status.SERVICE_UNAVAILABLE.getStatusCode()) {
+                break;
+            } else {
+                LOG.error("Got a service unavailable when calling: {}, will retry..", resource);
+                sleepBetweenRetries();
+            }
+
+            i++;
+        } while (i < getNumberOfRetries());
+
+        throw new AtlasServiceException(api, clientResponse);
+    }
+
+
+    protected static WebResource getResource(AtlasBaseClient.API api, String... pathParams) {
+        return getResource(service, api, pathParams);
+    }
+
+    // Modify URL to include the query params
+    private static WebResource getResource(AtlasBaseClient.API api, MultivaluedMap<String, String> queryParams) {
+        WebResource resource = service.path(api.getNormalizedPath());
+        resource = appendQueryParams(queryParams, resource);
+        return resource;
+    }
+
+    // Modify URL to include the path params
+    private static WebResource getResource(WebResource service, AtlasBaseClient.API api, String... pathParams) {
+        WebResource resource = service.path(api.getNormalizedPath());
+        resource = appendPathParams(resource, pathParams);
+        return resource;
+    }
+
+    private static WebResource appendQueryParams(MultivaluedMap<String, String> queryParams, WebResource resource) {
+        if (null != queryParams && !queryParams.isEmpty()) {
+            for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
+                for (String value : entry.getValue()) {
+                    if (StringUtils.isNotBlank(value)) {
+                        resource = resource.queryParam(entry.getKey(), value);
+                    }
+                }
+            }
+        }
+        return resource;
+    }
+
+    private static WebResource appendPathParams(WebResource resource, String[] pathParams) {
+        if (pathParams != null) {
+            for (String pathParam : pathParams) {
+                resource = resource.path(pathParam);
+            }
+        }
+        return resource;
+    }
+
+    private static int getNumberOfRetries() {
+        //TODO: read from properties
+        //return configuration.getInt(AtlasBaseClient.ATLAS_CLIENT_HA_RETRIES_KEY, AtlasBaseClient.DEFAULT_NUM_RETRIES);
+        return 3;
+    }
+
+    private static int getSleepBetweenRetriesMs() {
+        //TODO: read from properties
+        //return configuration.getInt(AtlasBaseClient.ATLAS_CLIENT_HA_SLEEP_INTERVAL_MS_KEY, AtlasBaseClient.DEFAULT_SLEEP_BETWEEN_RETRIES_MS);
+        return 5000;
+    }
+
+    static void sleepBetweenRetries() {
+        try {
+            Thread.sleep(getSleepBetweenRetriesMs());
+        } catch (InterruptedException e) {
+            LOG.error("Interrupted from sleeping between retries.", e);
+        }
     }
 }
 
