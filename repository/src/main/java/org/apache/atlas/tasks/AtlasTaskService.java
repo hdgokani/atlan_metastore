@@ -81,6 +81,13 @@ public class AtlasTaskService implements TaskService {
 
         if (results.hasNext()) {
             AtlasVertex atlasVertex = results.next();
+
+            String status = atlasVertex.getProperty(Constants.TASK_STATUS, String.class);
+
+            if (status.equals(AtlasTask.Status.PENDING.toString()) || status.equals(AtlasTask.Status.IN_PROGRESS.toString())) {
+                throw new AtlasBaseException(AtlasErrorCode.TASK_STATUS_NOT_APPROPRIATE, taskGuid, status);
+            }
+
             setEncodedProperty(atlasVertex, Constants.TASK_STATUS, AtlasTask.Status.PENDING);
             int attemptCount = atlasVertex.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
             setEncodedProperty(atlasVertex, Constants.TASK_ATTEMPT_COUNT, ++attemptCount);
