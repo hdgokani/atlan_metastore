@@ -26,11 +26,7 @@ import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.tasks.TaskSearchParams;
 import org.apache.atlas.model.tasks.TaskSearchResult;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
-import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
+import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
@@ -40,14 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -79,7 +68,6 @@ public class TaskRegistry {
         return toAtlasTask(vertex);
     }
 
-    @GraphTransaction
     public List<AtlasTask> getPendingTasks() {
         List<AtlasTask> ret = new ArrayList<>();
 
@@ -94,18 +82,17 @@ public class TaskRegistry {
             while (results.hasNext()) {
                 AtlasVertex vertex = results.next();
 
-                ret.add(toAtlasTask(vertex));
+                if(vertex != null) {
+                    ret.add(toAtlasTask(vertex));
+                }
             }
         } catch (Exception exception) {
             LOG.error("Error fetching pending tasks!", exception);
-        } finally {
-            graph.commit();
         }
 
         return ret;
     }
 
-    @GraphTransaction
     public List<AtlasTask> getInProgressTasks() {
         List<AtlasTask> ret = new ArrayList<>();
 
@@ -120,12 +107,12 @@ public class TaskRegistry {
             while (results.hasNext()) {
                 AtlasVertex vertex = results.next();
 
-                ret.add(toAtlasTask(vertex));
+                if(vertex != null) {
+                    ret.add(toAtlasTask(vertex));
+                }
             }
         } catch (Exception exception) {
             LOG.error("Error fetching in progress tasks!", exception);
-        } finally {
-            graph.commit();
         }
 
         return ret;

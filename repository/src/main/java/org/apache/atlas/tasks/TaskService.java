@@ -32,4 +32,6 @@ public interface TaskService {
      * @throws AtlasBaseException
      */
     TaskSearchResult getTasks(TaskSearchParams searchParams) throws AtlasBaseException;
+
+    void retryTask(String taskGuid) throws AtlasBaseException;
 }

@@ -143,6 +143,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.getEntityHasLineage;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.isTermEntityEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getRemovePropagations;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
@@ -443,7 +444,7 @@ public class EntityGraphMapper {
                             setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
                         }
                     }
-                    
+
                     setSystemAttributesToEntity(vertex,updatedEntity);
                     resp.addEntity(updateType, constructHeader(updatedEntity, vertex, entityType.getAllAttributes()));
 
@@ -2878,7 +2879,7 @@ public class EntityGraphMapper {
         // Get in progress task to see if there already is a propagation for this particular vertex
         List<AtlasTask> inProgressTasks = taskManagement.getInProgressTasks();
         for (AtlasTask task : inProgressTasks) {
-            if (taskMatchingWithVertexIdAndEntityGuid(task, classificationVertex.getIdForDisplay(), entityGuid)) {
+            if (isTaskMatchingWithVertexIdAndEntityGuid(task, classificationVertex.getIdForDisplay(), entityGuid)) {
                 throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_CURRENTLY_BEING_PROPAGATED, classificationName);
             }
         }
@@ -2903,7 +2904,7 @@ public class EntityGraphMapper {
                     List<AtlasTask> entityPendingTasks = taskManagement.getByGuidsES(entityTaskGuids);
 
                     boolean pendingTaskExists  = entityPendingTasks.stream()
-                            .anyMatch(x -> taskMatchingWithVertexIdAndEntityGuid(x, classificationVertexId, entityGuid));
+                            .anyMatch(x -> isTaskMatchingWithVertexIdAndEntityGuid(x, classificationVertexId, entityGuid));
 
                     if (pendingTaskExists) {
                         List<AtlasTask> entityClassificationPendingTasks = entityPendingTasks.stream()
@@ -2974,7 +2975,7 @@ public class EntityGraphMapper {
         AtlasPerfTracer.log(perf);
     }
 
-    private boolean taskMatchingWithVertexIdAndEntityGuid(AtlasTask task, String classificationVertexId, String entityGuid) {
+    private boolean isTaskMatchingWithVertexIdAndEntityGuid(AtlasTask task, String classificationVertexId, String entityGuid) {
         try {
             if (CLASSIFICATION_PROPAGATION_ADD.equals(task.getType())) {
                 return task.getParameters().get(ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID).equals(classificationVertexId)
@@ -3332,14 +3333,14 @@ public class EntityGraphMapper {
             }
 
             List<String> deletedPropagationsGuid = new ArrayList<>();
-            long propagatedEdgesSize = propagatedEdges.size();
+            int propagatedEdgesSize = propagatedEdges.size();
             int toIndex;
             int offset = 0;
 
             LOG.info(String.format("Number of edges to be deleted : %s for classification vertex with id : %s", propagatedEdgesSize, classificationVertexId));
 
             do {
-                toIndex = ((offset + CHUNK_SIZE > propagatedEdgesSize) ? (int) propagatedEdgesSize : (offset + CHUNK_SIZE));
+                toIndex = ((offset + CHUNK_SIZE > propagatedEdgesSize) ? propagatedEdgesSize : (offset + CHUNK_SIZE));
 
                 List<AtlasVertex> entityVertices = deleteDelegate.getHandler().removeTagPropagation(classification, propagatedEdges.subList(offset, toIndex));
 
