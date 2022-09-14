@@ -2,14 +2,14 @@ package org.apache.atlas.accesscontrol.purpose;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.accesscontrol.AccessControlUtil;
-import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.ranger.AtlasRangerService;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.ranger.plugin.model.RangerPolicy;
 
@@ -73,30 +73,27 @@ public class AtlasPurposeUtil extends AccessControlUtil {
         return null;
     }
 
-    public static void validateUniquenessByTags(EntityDiscoveryService entityDiscoveryService, List<String> tags, String typeName) throws AtlasBaseException {
+    public static void validateUniquenessByTags(AtlasGraph graph, List<String> tags, String typeName) throws AtlasBaseException {
         IndexSearchParams indexSearchParams = new IndexSearchParams();
         Map<String, Object> dsl = mapOf("size", 1);
 
         List mustClauseList = new ArrayList();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
         mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
-        tags.forEach(x -> mustClauseList.add(mapOf("term", mapOf("purposeClassifications", x))));
+        mustClauseList.add(mapOf("terms", mapOf("purposeClassifications", tags)));
 
+        Map<String, Object> scriptMap = mapOf("inline", "doc['purposeClassifications'].length == params.list_length");
+        scriptMap.put("lang", "painless");
+        scriptMap.put("params", mapOf("list_length", tags.size()));
+
+        mustClauseList.add(mapOf("script", mapOf("script", scriptMap)));
 
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
 
         indexSearchParams.setDsl(dsl);
 
-        AtlasSearchResult atlasSearchResult = entityDiscoveryService.directIndexSearch(indexSearchParams);
-
-        if (CollectionUtils.isNotEmpty(atlasSearchResult.getEntities())){
-
-            for (AtlasEntityHeader header : atlasSearchResult.getEntities()) {
-                //TODO: handle via ES query if possible -> match exact tags list
-                if (CollectionUtils.isEqualCollection(getTags(header), tags)) {
-                    throw new AtlasBaseException(String.format("Entity already exists, typeName:tags, %s:%s", typeName, tags));
-                }
-            }
+        if (hasMatchingVertex(graph, tags, indexSearchParams)){
+            throw new AtlasBaseException(String.format("Entity already exists, typeName:tags, %s:%s", typeName, tags));
         }
     }
 

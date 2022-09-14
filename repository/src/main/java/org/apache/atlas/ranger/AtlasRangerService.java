@@ -22,41 +22,32 @@ import org.apache.atlas.accesscontrol.persona.PersonaContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.ranger.client.RangerClientHelper;
-import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ranger.plugin.model.RangerPolicy;
 import org.apache.ranger.plugin.model.RangerRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.apache.atlas.AtlasErrorCode.RANGER_POLICY_FIND_FAILED;
+import static org.apache.atlas.AtlasErrorCode.RANGER_POLICY_MUTATION_FAILED;
+import static org.apache.atlas.AtlasErrorCode.RANGER_ROLE_MUTATION_FAILED;
+import static org.apache.atlas.AtlasErrorCode.RANGER_ROLE_NOT_FOUND;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getDescription;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getName;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getQualifiedName;
-import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.*;
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getGroupsAsRangerRole;
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getPersonaRoleId;
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getUsersAsRangerRole;
 
 
-@Component
 public class AtlasRangerService {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasRangerService.class);
 
-    private final AtlasEntityStore entityStore;
-    private final RangerClientHelper rangerClientHelper;
-
-    @Inject
-    public AtlasRangerService(AtlasEntityStore entityStore, RangerClientHelper rangerClientHelper) {
-        this.entityStore = entityStore;
-        this.rangerClientHelper = rangerClientHelper;
-    }
 
     public RangerRole createRangerRole(PersonaContext context) throws AtlasBaseException {
         RangerRole ret;
@@ -78,12 +69,9 @@ public class AtlasRangerService {
 
             LOG.info("Created: Ranger Role");
 
-        } catch (AtlasServiceException e) {
-            e.printStackTrace();
-            throw new AtlasBaseException("Failed to create Ranger role due to Ranger issue: " + e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            throw new AtlasBaseException("Failed to create Ranger role: " + e.getMessage());
+            throw new AtlasBaseException(RANGER_ROLE_MUTATION_FAILED, "create", getQualifiedName(context.getPersona()), e.getMessage());
         }
         return ret;
     }
@@ -100,15 +88,12 @@ public class AtlasRangerService {
             if (opt.isPresent()) {
                 ret = opt.get();
             } else {
-                throw new AtlasBaseException("Role for connection not found");
+                throw new AtlasBaseException(RANGER_ROLE_NOT_FOUND, roleName, String.format("Role with name %s not present", roleName));
             }
 
-        } catch (AtlasServiceException e) {
-            e.printStackTrace();
-            throw new AtlasBaseException("Failed to get Ranger role due to Ranger issue: " + e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            throw new AtlasBaseException("Failed to get Ranger role: " + e.getMessage());
+            throw new AtlasBaseException(RANGER_ROLE_NOT_FOUND, roleName, e.getMessage());
         }
         return ret;
     }
@@ -131,12 +116,9 @@ public class AtlasRangerService {
 
             LOG.info("Updated: Ranger Role");
 
-        } catch (AtlasServiceException e) {
-            e.printStackTrace();
-            throw new AtlasBaseException("Failed to update Ranger role due to Ranger issue: " + e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            throw new AtlasBaseException("Failed to update Ranger role: " + e.getMessage());
+            throw new AtlasBaseException(RANGER_ROLE_MUTATION_FAILED, "update", getQualifiedName(context.getPersona()), e.getMessage());
         }
 
         return ret;
@@ -148,12 +130,9 @@ public class AtlasRangerService {
 
             LOG.info("Deleted: Ranger Role {}", roleId);
 
-        } catch (AtlasServiceException e) {
-            e.printStackTrace();
-            throw new AtlasBaseException("Failed to delete Ranger role due to Ranger issue: " + e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            throw new AtlasBaseException("Failed to delete Ranger role: " + e.getMessage());
+            throw new AtlasBaseException(RANGER_ROLE_MUTATION_FAILED, "delete", "roleId " + roleId, e.getMessage());
         }
     }
 
@@ -166,12 +145,9 @@ public class AtlasRangerService {
 
             LOG.info("Created: Ranger Policy {}", ret.getId());
 
-        } catch (AtlasServiceException e) {
-            e.printStackTrace();
-            throw new AtlasBaseException("Failed to create Ranger policy due to Ranger issue: " + e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            throw new AtlasBaseException("Failed to create Ranger policy: " + e.getMessage());
+            throw new AtlasBaseException(RANGER_POLICY_MUTATION_FAILED, "create", e.getMessage());
         }
 
         return ret;
@@ -180,20 +156,29 @@ public class AtlasRangerService {
     public RangerPolicy updateRangerPolicy(RangerPolicy rangerPolicy) throws AtlasBaseException {
         RangerPolicy ret = null;
         try {
-            LOG.info("updating on Ranger \n{}\n", AtlasType.toJson(rangerPolicy));
+            LOG.info("updating on Ranger {}", AtlasType.toJson(rangerPolicy));
             ret = RangerClientHelper.updatePolicy(rangerPolicy);
 
             LOG.info("Updated: Ranger Policy {}", ret.getId());
 
-        } catch (AtlasServiceException e) {
-            e.printStackTrace();
-            throw new AtlasBaseException("Failed to update Ranger policy due to Ranger issue: " + e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            throw new AtlasBaseException("Failed to update Ranger policy: " + e.getMessage());
+            throw new AtlasBaseException(RANGER_POLICY_MUTATION_FAILED, "update", e.getMessage());
         }
 
         return ret;
+    }
+
+    public void deleteRangerPolicy(RangerPolicy rangerPolicy) throws AtlasBaseException {
+        try {
+            RangerClientHelper.deletePolicy(rangerPolicy.getId());
+
+            LOG.info("Deleted: Ranger Policy {}", rangerPolicy.getId());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new AtlasBaseException(RANGER_POLICY_MUTATION_FAILED, "delete", e.getMessage());
+        }
     }
 
     public List<RangerPolicy> getPoliciesByResources(Map<String, String> resources,
@@ -207,12 +192,9 @@ public class AtlasRangerService {
                 ret = list.getPolicies();
             }
 
-        } catch (AtlasServiceException e) {
-            e.printStackTrace();
-            throw new AtlasBaseException("Failed to searchPoliciesByResources due to Ranger issue: " + e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            throw new AtlasBaseException("Failed to searchPoliciesByResources: " + e.getMessage());
+            throw new AtlasBaseException(RANGER_POLICY_FIND_FAILED, "resources:" + resources, e.getMessage());
         }
 
         return ret;
@@ -227,29 +209,11 @@ public class AtlasRangerService {
             if (list != null) {
                 ret = list.getPolicies();
             }
-        } catch (AtlasServiceException e) {
-            e.printStackTrace();
-            throw new AtlasBaseException("Failed to getPoliciesByLabel due to Ranger issue: " + e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            throw new AtlasBaseException("Failed to getPoliciesByLabel: " + e.getMessage());
+            throw new AtlasBaseException(RANGER_POLICY_FIND_FAILED, "labels:" + attributes, e.getMessage());
         }
 
         return ret;
-    }
-
-    public void deleteRangerPolicy(RangerPolicy rangerPolicy) throws AtlasBaseException {
-        try {
-            RangerClientHelper.deletePolicy(rangerPolicy.getId());
-
-            LOG.info("Deleted: Ranger Policy {}", rangerPolicy.getId());
-
-        } catch (AtlasServiceException e) {
-            e.printStackTrace();
-            throw new AtlasBaseException("Failed to delete Ranger policy due to Ranger issue: " + e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new AtlasBaseException("Failed to delete Ranger policy: " + e.getMessage());
-        }
     }
 }

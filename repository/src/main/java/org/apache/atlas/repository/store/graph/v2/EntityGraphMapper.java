@@ -55,6 +55,8 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.AccessControlPolicyPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.AccessControlPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
@@ -532,7 +534,7 @@ public class EntityGraphMapper {
         exception.setEntityGuid(guid);
     }
 
-    private PreProcessor getPreProcessor(String typeName) throws AtlasBaseException {
+    public PreProcessor getPreProcessor(String typeName) throws AtlasBaseException {
         PreProcessor preProcessor = null;
 
         switch (typeName) {
@@ -559,6 +561,17 @@ public class EntityGraphMapper {
             case QUERY_COLLECTION_ENTITY_TYPE:
                 preProcessor = new QueryCollectionPreProcessor(typeRegistry, entityRetriever);
                 break;
+
+            case PERSONA_ENTITY_TYPE:
+            case PURPOSE_ENTITY_TYPE:
+                preProcessor = new AccessControlPreProcessor(typeRegistry, graph, entityRetriever);
+                break;
+
+            case POLICY_ENTITY_TYPE:
+                preProcessor = new AccessControlPolicyPreProcessor(typeRegistry, graph, entityRetriever);
+                break;
+
+            //TODO: Purpose
 
         }
 

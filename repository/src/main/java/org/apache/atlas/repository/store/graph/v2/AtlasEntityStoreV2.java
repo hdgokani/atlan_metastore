@@ -513,7 +513,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         AtlasEntityHeader entity     = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
         AtlasEntityType   entityType = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
-        ensureNonAccessControlEntityType(Collections.singletonList(entityType.getTypeName()));
         AtlasAttribute    attr       = entityType.getAttribute(attrName);
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entity), "update entity ByUniqueAttributes : guid=", guid );
@@ -559,40 +558,26 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     @Override
+    @GraphTransaction
     public EntityMutationResponse deleteById(final String guid) throws AtlasBaseException {
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
-        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
-        if (vertex != null) {
-            ensureNonAccessControlEntityType(Collections.singletonList(getTypeName(vertex)));
-        } else {
-            if (LOG.isDebugEnabled()) {
-                // Entity does not exist - treat as non-error, since the caller
-                // wanted to delete the entity and it's already gone.
-                LOG.debug("Deletion request ignored for non-existent entity with guid " + guid);
-            }
-        }
-
-        return deleteById(vertex);
-    }
-
-    @GraphTransaction
-    public EntityMutationResponse deleteById(final AtlasVertex vertex) throws AtlasBaseException {
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
+        AtlasVertex             vertex             = AtlasGraphUtilsV2.findByGuid(graph, guid);
 
         if (vertex != null) {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", entityHeader.getGuid());
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
 
             deletionCandidates.add(vertex);
         } else {
             if (LOG.isDebugEnabled()) {
                 // Entity does not exist - treat as non-error, since the caller
                 // wanted to delete the entity and it's already gone.
-                LOG.debug("Deletion request ignored for non-existent entity with guid " + getGuid(vertex));
+                LOG.debug("Deletion request ignored for non-existent entity with guid " + guid);
             }
         }
 
@@ -787,7 +772,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (entityType == null) {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), objectId.getTypeName());
             }
-            ensureNonAccessControlEntityType(Collections.singletonList(entityType.getTypeName()));
 
             AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(graph, entityType, objectId.getUniqueAttributes());
 
@@ -1748,12 +1732,18 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         EntityMutationResponse response = new EntityMutationResponse();
         RequestContext         req      = RequestContext.get();
 
-        Collection<AtlasVertex> categories = new ArrayList<>();
+        Collection<AtlasVertex> categories = new ArrayList<>(); // for force HARD delete
         Collection<AtlasVertex> others = new ArrayList<>();
 
         MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
         for (AtlasVertex vertex : deletionCandidates) {
             String typeName = getTypeName(vertex);
+
+            PreProcessor preProcessor = entityGraphMapper.getPreProcessor(typeName);
+            if (preProcessor != null) {
+                preProcessor.processDelete(vertex);
+            }
+
             if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.equals(typeName)) {
                 categories.add(vertex);
             } else {
@@ -1768,7 +1758,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         if (CollectionUtils.isNotEmpty(others)) {
-
             deleteDelegate.getHandler().removeHasLineageOnDelete(others);
             deleteDelegate.getHandler().deleteEntities(others);
         }

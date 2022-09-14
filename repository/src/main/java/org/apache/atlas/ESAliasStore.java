@@ -53,6 +53,7 @@ import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPE
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
+import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
 
 ;
 
@@ -75,7 +76,7 @@ public class ESAliasStore implements IndexAliasStore {
         String aliasName = getAliasName(personaContext.getPersona());
 
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
-        requestBuilder.addAction(ADD, new AliasAction(INDEX_PREFIX + VERTEX_INDEX, aliasName));
+        requestBuilder.addAction(ADD, new AliasAction(VERTEX_INDEX_NAME, aliasName));
 
         graph.createOrUpdateESAlias(requestBuilder);
         return true;
@@ -88,7 +89,7 @@ public class ESAliasStore implements IndexAliasStore {
         Map<String, Object> filter = getFilter(personaContext);
 
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
-        requestBuilder.addAction(ADD, new AliasAction(INDEX_PREFIX + VERTEX_INDEX, aliasName, filter));
+        requestBuilder.addAction(ADD, new AliasAction(VERTEX_INDEX_NAME, aliasName, filter));
 
         graph.createOrUpdateESAlias(requestBuilder);
 
@@ -100,7 +101,7 @@ public class ESAliasStore implements IndexAliasStore {
         String aliasName = getAliasName(purposeContext.getPurpose());
 
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
-        requestBuilder.addAction(ADD, new AliasAction(INDEX_PREFIX + VERTEX_INDEX, aliasName));
+        requestBuilder.addAction(ADD, new AliasAction(VERTEX_INDEX_NAME, aliasName));
 
         graph.createOrUpdateESAlias(requestBuilder);
         return true;
@@ -113,7 +114,7 @@ public class ESAliasStore implements IndexAliasStore {
         Map<String, Object> filter = getFilter(purposeContext);
 
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
-        requestBuilder.addAction(ADD, new AliasAction(INDEX_PREFIX + VERTEX_INDEX, aliasName, filter));
+        requestBuilder.addAction(ADD, new AliasAction(VERTEX_INDEX_NAME, aliasName, filter));
 
         graph.createOrUpdateESAlias(requestBuilder);
 
@@ -122,7 +123,7 @@ public class ESAliasStore implements IndexAliasStore {
 
     @Override
     public boolean deleteAlias(String aliasName) throws AtlasBaseException {
-        graph.deleteESAlias(INDEX_PREFIX + VERTEX_INDEX, aliasName);
+        graph.deleteESAlias(VERTEX_INDEX_NAME, aliasName);
         return true;
     }
 

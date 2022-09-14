@@ -1,14 +1,18 @@
 package org.apache.atlas.accesscontrol;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.accesscontrol.persona.AtlasPersonaService;
 import org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil;
-import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.ranger.AtlasRangerService;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -21,23 +25,31 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.AtlasErrorCode.ACCESS_CONTROL_MUTATIONS_NOT_ALLOWED;
+import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.repository.Constants.ACCESS_CONTROL_ENTITY_TYPES;
 import static org.apache.atlas.repository.Constants.ACCESS_CONTROL_RELATION_TYPE;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.POLICY_TYPE_DATA;
 import static org.apache.atlas.repository.Constants.POLICY_TYPE_METADATA;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
 
 
 public class AccessControlUtil {
     private static final Logger LOG = LoggerFactory.getLogger(AccessControlUtil.class);
 
     public static final String RESOURCE_PREFIX = "resource:";
+
+    public static final String POLICY_QN_FORMAT = "%s/%s";
 
     public static final String RANGER_POLICY_TYPE_ACCESS    = "0";
     public static final String RANGER_POLICY_TYPE_DATA_MASK = "1";
@@ -163,7 +175,7 @@ public class AccessControlUtil {
         if (policies != null) {
             ret = policies.stream()
                     .map(x -> entityWithExtInfo.getReferredEntity(x.getGuid()))
-                    .filter(x -> x.getStatus() == AtlasEntity.Status.ACTIVE)
+                    .filter(x -> x.getStatus() == null || x.getStatus() == AtlasEntity.Status.ACTIVE)
                     .collect(Collectors.toList());
         }
 
@@ -178,7 +190,7 @@ public class AccessControlUtil {
         return (String) dataPolicy.getAttribute("dataMaskingOption");
     }
 
-    public static void validateUniquenessByName(EntityDiscoveryService entityDiscoveryService, String name, String typeName) throws AtlasBaseException {
+    public static void validateUniquenessByName(AtlasGraph graph, String name, String typeName) throws AtlasBaseException {
         IndexSearchParams indexSearchParams = new IndexSearchParams();
         Map<String, Object> dsl = mapOf("size", 1);
 
@@ -191,11 +203,47 @@ public class AccessControlUtil {
 
         indexSearchParams.setDsl(dsl);
 
-        AtlasSearchResult atlasSearchResult = entityDiscoveryService.directIndexSearch(indexSearchParams);
-
-        if (CollectionUtils.isNotEmpty(atlasSearchResult.getEntities())){
+        if (checkEntityExists(graph, indexSearchParams)){
             throw new AtlasBaseException(String.format("Entity already exists, typeName:name, %s:%s", typeName, name));
         }
+    }
+
+    protected static boolean hasMatchingVertex(AtlasGraph graph, List<String> newTags,
+                                               IndexSearchParams indexSearchParams) throws AtlasBaseException {
+        AtlasIndexQuery indexQuery = graph.elasticsearchQuery(VERTEX_INDEX_NAME);
+
+        DirectIndexQueryResult indexQueryResult = indexQuery.vertices(indexSearchParams);
+        Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
+
+        while (iterator.hasNext()) {
+            AtlasVertex vertex = iterator.next().getVertex();
+            if (vertex != null) {
+                List<String> tags = (List<String>) vertex.getPropertyValues("purposeClassifications", String.class);
+
+                //TODO: handle via ES query if possible -> match exact tags list
+                if (CollectionUtils.isEqualCollection(tags, newTags)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    protected static boolean checkEntityExists(AtlasGraph graph, IndexSearchParams indexSearchParams) throws AtlasBaseException {
+        AtlasIndexQuery indexQuery = graph.elasticsearchQuery(VERTEX_INDEX_NAME);
+
+        DirectIndexQueryResult indexQueryResult = indexQuery.vertices(indexSearchParams);
+        Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
+
+        while (iterator.hasNext()) {
+            AtlasVertex vertex = iterator.next().getVertex();
+            if (vertex != null) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static RangerPolicy fetchRangerPolicyByResources(AtlasRangerService atlasRangerService,
@@ -301,7 +349,7 @@ public class AccessControlUtil {
         long accessControlEntityCount = types.stream().filter(ACCESS_CONTROL_ENTITY_TYPES::contains).count();
 
         if (accessControlEntityCount > 0) {
-            throw new AtlasBaseException(ACCESS_CONTROL_MUTATIONS_NOT_ALLOWED);
+            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED);
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -310,9 +358,35 @@ public class AccessControlUtil {
     public static void ensureNonAccessControlRelType(String type) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("ensureNonAccessControlRelType");
         if (ACCESS_CONTROL_RELATION_TYPE.equals(type)) {
-            throw new AtlasBaseException(ACCESS_CONTROL_MUTATIONS_NOT_ALLOWED);
+            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED);
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    public static ExecutorService getExecutorService(int numThreads, String threadNamePattern) {
+        ExecutorService service = Executors.newFixedThreadPool(numThreads, new ThreadFactoryBuilder().setNameFormat(threadNamePattern + Thread.currentThread().getName()).build());
+        return service;
+    }
+
+    public static <T> void submitCallablesAndWaitToFinish(String threadName, List<Callable<T>> callables) throws AtlasBaseException {
+        ExecutorService service = getExecutorService(callables.size(), threadName + "-%d-");
+        try {
+
+            LOG.info("Submitting callables: {}", threadName);
+            callables.forEach(service::submit);
+
+            LOG.info("Shutting down executor: {}", threadName);
+            service.shutdown();
+            LOG.info("Shut down executor: {}", threadName);
+            boolean terminated = service.awaitTermination(60, TimeUnit.SECONDS);
+            LOG.info("awaitTermination done: {}", threadName);
+
+            if (!terminated) {
+                LOG.warn("Time out occurred while waiting to complete {}", threadName);
+            }
+        } catch (InterruptedException e) {
+            throw new AtlasBaseException();
+        }
     }
 }
