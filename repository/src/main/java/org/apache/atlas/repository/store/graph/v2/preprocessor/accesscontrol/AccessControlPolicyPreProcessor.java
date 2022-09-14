@@ -114,8 +114,6 @@ public class AccessControlPolicyPreProcessor implements PreProcessor {
 
             purposeService.updatePurposePolicy(context);
         }
-
-
     }
 
     private AtlasEntityWithExtInfo getAccessControl(AtlasEntity entity, EntityMutations.EntityOperation op) throws AtlasBaseException {
