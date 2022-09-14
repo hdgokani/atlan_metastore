@@ -79,7 +79,6 @@ public class TaskRegistry {
         return toAtlasTask(vertex);
     }
 
-    @GraphTransaction
     public List<AtlasTask> getPendingTasks() {
         List<AtlasTask> ret = new ArrayList<>();
 
@@ -94,7 +93,9 @@ public class TaskRegistry {
             while (results.hasNext()) {
                 AtlasVertex vertex = results.next();
 
-                ret.add(toAtlasTask(vertex));
+                if(vertex != null) {
+                    ret.add(toAtlasTask(vertex));
+                }
             }
         } catch (Exception exception) {
             LOG.error("Error fetching pending tasks!", exception);
@@ -103,7 +104,6 @@ public class TaskRegistry {
         return ret;
     }
 
-    @GraphTransaction
     public List<AtlasTask> getInProgressTasks() {
         List<AtlasTask> ret = new ArrayList<>();
 
@@ -118,7 +118,9 @@ public class TaskRegistry {
             while (results.hasNext()) {
                 AtlasVertex vertex = results.next();
 
-                ret.add(toAtlasTask(vertex));
+                if(vertex != null) {
+                    ret.add(toAtlasTask(vertex));
+                }
             }
         } catch (Exception exception) {
             LOG.error("Error fetching in progress tasks!", exception);
