@@ -52,6 +52,8 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,6 +89,9 @@ public class RangerClient {
     public static final  String SEARCH_BY_LABELS = "service/plugins/policies";
 
     protected static WebResource service;
+
+    private static List<Integer> skipRetryCode = Arrays.asList(ClientResponse.Status.SERVICE_UNAVAILABLE.getStatusCode(),
+                                                ClientResponse.Status.BAD_REQUEST.getStatusCode());
 
     public RangerClient() {
         try {
@@ -268,6 +273,10 @@ public class RangerClient {
         ClientResponse clientResponse = null;
         int i = 0;
         do {
+            if (i > 0) {
+                LOG.info("Retry attemp {}", i);
+            }
+
             if (LOG.isDebugEnabled()) {
                 LOG.debug("------------------------------------------------------");
                 LOG.debug("Call         : {} {}", api.getMethod(), api.getNormalizedPath());
@@ -289,6 +298,9 @@ public class RangerClient {
             clientResponse = requestBuilder.method(api.getMethod(), ClientResponse.class, requestObject);
 
             LOG.debug("HTTP Status  : {}", clientResponse.getStatus());
+
+            LOG.info("Call         : {} {}", api.getMethod(), api.getNormalizedPath());
+            LOG.info("HTTP Status  : {}", clientResponse.getStatus());
 
             if (!LOG.isDebugEnabled()) {
                 LOG.info("method={} path={} contentType={} accept={} status={}", api.getMethod(),
@@ -321,7 +333,7 @@ public class RangerClient {
                 } catch (ClientHandlerException e) {
                     throw new AtlasServiceException(api, e);
                 }
-            } else if (clientResponse.getStatus() != ClientResponse.Status.SERVICE_UNAVAILABLE.getStatusCode()) {
+            } else if (skipRetryCode.contains(clientResponse.getStatus())) {
                 break;
             } else {
                 LOG.error("Got a service unavailable when calling: {}, will retry..", resource);
