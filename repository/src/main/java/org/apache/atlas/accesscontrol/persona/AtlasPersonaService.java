@@ -808,6 +808,14 @@ public class AtlasPersonaService {
             throw new AtlasBaseException("Assets list is empty");
         }
 
+        boolean isConnection = false;
+        if (assets.size() == 1 && context.getConnection() != null) {
+            String connectionQualifiedName = getQualifiedName(context.getConnection());
+            if (assets.get(0).equals(connectionQualifiedName)) {
+                isConnection = true;
+            }
+        }
+
         List<String> rangerPolicyItemAssets = new ArrayList<>(assets);
         assets.forEach(x -> rangerPolicyItemAssets.add(x + "/*"));
 
@@ -825,7 +833,7 @@ public class AtlasPersonaService {
             if (ENTITY_ACTIONS.contains(action)) {
                 policyName = "CRUD-" + UUID.randomUUID();
 
-                if (getName(persona).startsWith("collection") || getName(persona).startsWith("connection")) {
+                if (isConnection) {
                     resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource("*"));
                 } else {
                     resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource(Arrays.asList("Process", "Catalog"), false, false));
@@ -845,7 +853,7 @@ public class AtlasPersonaService {
             if (CLASSIFICATION_ACTIONS.contains(action)) {
                 policyName = "classification-" + UUID.randomUUID();
 
-                if (getName(persona).startsWith("collection") || getName(persona).startsWith("connection")) {
+                if (isConnection) {
                     resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource("*"));
                 } else {
                     resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource(Arrays.asList("Process", "Catalog"), false, false));
@@ -866,8 +874,7 @@ public class AtlasPersonaService {
             if (BM_ACTION.equals(action)) {
                 policyName = "entity-business-metadata-" + UUID.randomUUID();
 
-                //TODO : Persona.go: 1328
-                if (getName(persona).startsWith("collection") || getName(persona).startsWith("connection")) {
+                if (isConnection) {
                     resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource("*"));
                 } else {
                     resources.put(RESOURCE_ENTITY_TYPE, new RangerPolicyResource(Arrays.asList("Process", "Catalog"), false, false));
