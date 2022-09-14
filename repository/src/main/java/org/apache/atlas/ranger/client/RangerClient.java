@@ -333,7 +333,7 @@ public class RangerClient {
                 } catch (ClientHandlerException e) {
                     throw new AtlasServiceException(api, e);
                 }
-            } else if (skipRetryCode.contains(clientResponse.getStatus())) {
+            } else if (!skipRetryCode.contains(clientResponse.getStatus())) {
                 break;
             } else {
                 LOG.error("Got a service unavailable when calling: {}, will retry..", resource);
