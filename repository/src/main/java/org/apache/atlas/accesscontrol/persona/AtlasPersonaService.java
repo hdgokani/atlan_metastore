@@ -23,7 +23,6 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.ranger.AtlasRangerService;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -91,7 +90,6 @@ public class AtlasPersonaService {
     public void createPersona(PersonaContext context) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("createPersona");
         LOG.info("Creating Persona");
-        EntityMutationResponse ret;
         AtlasEntityWithExtInfo entityWithExtInfo = context.getPersonaExtInfo();
         context.setCreateNewPersona(true);
 
@@ -142,7 +140,7 @@ public class AtlasPersonaService {
             validateUniquenessByName(graph, getName(persona), PERSONA_ENTITY_TYPE);
         }
 
-        RangerRole rangerRole = atlasRangerService.updateRangerRole(context);
+        atlasRangerService.updateRangerRole(context);
 
         aliasStore.updateAlias(context);
 

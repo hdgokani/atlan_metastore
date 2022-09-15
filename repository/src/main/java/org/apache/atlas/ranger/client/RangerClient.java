@@ -82,9 +82,7 @@ public class RangerClient {
     public static final  String UPDATE_ROLE = "service/roles/roles/%s";
     public static final  String DELETE_ROLE = "service/roles/roles/%s";
     public static final  String CREATE_POLICY = "service/public/v2/api/policy";
-    //public static final  String CREATE_POLICY = "service/plugins/policies";
     public static final  String UPDATE_POLICY = "service/public/v2/api/policy/%s";
-    //public static final  String UPDATE_POLICY = "service/plugins/policies/%s";
     public static final  String SEARCH_BY_RESOURCES = "service/plugins/policies";
     public static final  String SEARCH_BY_LABELS = "service/plugins/policies";
 
@@ -273,10 +271,6 @@ public class RangerClient {
         ClientResponse clientResponse = null;
         int i = 0;
         do {
-            if (i > 0) {
-                LOG.info("Retry attemp {}", i);
-            }
-
             if (LOG.isDebugEnabled()) {
                 LOG.debug("------------------------------------------------------");
                 LOG.debug("Call         : {} {}", api.getMethod(), api.getNormalizedPath());
@@ -298,9 +292,6 @@ public class RangerClient {
             clientResponse = requestBuilder.method(api.getMethod(), ClientResponse.class, requestObject);
 
             LOG.debug("HTTP Status  : {}", clientResponse.getStatus());
-
-            LOG.info("Call         : {} {}", api.getMethod(), api.getNormalizedPath());
-            LOG.info("HTTP Status  : {}", clientResponse.getStatus());
 
             if (!LOG.isDebugEnabled()) {
                 LOG.info("method={} path={} contentType={} accept={} status={}", api.getMethod(),
