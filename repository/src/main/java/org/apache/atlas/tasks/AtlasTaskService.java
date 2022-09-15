@@ -90,7 +90,7 @@ public class AtlasTaskService implements TaskService {
 
             setEncodedProperty(atlasVertex, Constants.TASK_STATUS, AtlasTask.Status.PENDING);
             int attemptCount = atlasVertex.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
-            setEncodedProperty(atlasVertex, Constants.TASK_ATTEMPT_COUNT, ++attemptCount);
+            setEncodedProperty(atlasVertex, Constants.TASK_ATTEMPT_COUNT, attemptCount+1);
             graph.commit();
         } else {
             throw new AtlasBaseException(AtlasErrorCode.TASK_NOT_FOUND, taskGuid);
