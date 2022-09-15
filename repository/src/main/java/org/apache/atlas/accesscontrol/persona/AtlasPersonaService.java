@@ -315,8 +315,12 @@ public class AtlasPersonaService {
     private List<RangerPolicy> createPersonaPolicy(PersonaContext context, List<RangerPolicy> provisionalRangerPolicies) throws AtlasBaseException {
         List<RangerPolicy> ret = new ArrayList<>();
 
-        submitCallablesAndWaitToFinish("createPersonaPolicyWorker",
-                provisionalRangerPolicies.stream().map(x -> new CreateRangerPolicyWorker(context, x)).collect(Collectors.toList()));
+        if (CollectionUtils.isNotEmpty(provisionalRangerPolicies)) {
+            submitCallablesAndWaitToFinish("createPersonaPolicyWorker",
+                    provisionalRangerPolicies.stream().map(x -> new CreateRangerPolicyWorker(context, x)).collect(Collectors.toList()));
+        } else {
+            LOG.error("No provisional policy to create on Ranger");
+        }
 
         return ret;
     }
@@ -426,8 +430,10 @@ public class AtlasPersonaService {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("cleanRoleFromExistingPolicies");
         LOG.info("clean role from existing {} policies", rangerPolicies.size());
 
-        submitCallablesAndWaitToFinish("cleanRoleWorker",
-                rangerPolicies.stream().map(x -> new CleanRoleWorker(persona, x, removePolicyGuids)).collect(Collectors.toList()));
+        if (CollectionUtils.isNotEmpty(rangerPolicies)) {
+            submitCallablesAndWaitToFinish("cleanRoleWorker",
+                    rangerPolicies.stream().map(x -> new CleanRoleWorker(persona, x, removePolicyGuids)).collect(Collectors.toList()));
+        }
 
         RequestContext.get().endMetricRecord(recorder);
     }
@@ -526,8 +532,12 @@ public class AtlasPersonaService {
         }
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processUpdatePolicies");
 
-        submitCallablesAndWaitToFinish("updateRangerPolicyWorker",
-                provisionalToRangerPoliciesMap.entrySet().stream().map(x -> new UpdateRangerPolicyWorker(context, x.getValue(), x.getKey())).collect(Collectors.toList()));
+        if (MapUtils.isNotEmpty(provisionalToRangerPoliciesMap)) {
+            submitCallablesAndWaitToFinish("updateRangerPolicyWorker",
+                    provisionalToRangerPoliciesMap.entrySet().stream().map(x -> new UpdateRangerPolicyWorker(context, x.getValue(), x.getKey())).collect(Collectors.toList()));
+        } else {
+            LOG.error("No provisional policy pair found to create on Ranger");
+        }
 
         RequestContext.get().endMetricRecord(recorder);
     }
