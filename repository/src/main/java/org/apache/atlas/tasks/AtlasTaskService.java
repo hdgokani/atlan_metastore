@@ -84,6 +84,7 @@ public class AtlasTaskService implements TaskService {
 
             String status = atlasVertex.getProperty(Constants.TASK_STATUS, String.class);
 
+            // Retrial ability of the task is not limited to FAILED ones due to testing/debugging
             if (status.equals(AtlasTask.Status.PENDING.toString()) || status.equals(AtlasTask.Status.IN_PROGRESS.toString())) {
                 throw new AtlasBaseException(AtlasErrorCode.TASK_STATUS_NOT_APPROPRIATE, taskGuid, status);
             }

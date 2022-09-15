@@ -33,5 +33,10 @@ public interface TaskService {
      */
     TaskSearchResult getTasks(TaskSearchParams searchParams) throws AtlasBaseException;
 
+    /**
+     * Retry the task by changing its status to PENDING and increment attempt count
+     * @param taskGuid Guid of the task
+     * @throws AtlasBaseException
+     */
     void retryTask(String taskGuid) throws AtlasBaseException;
 }
