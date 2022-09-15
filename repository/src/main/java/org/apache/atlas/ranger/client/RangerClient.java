@@ -68,6 +68,9 @@ import static org.apache.atlas.accesscontrol.AccessControlUtil.RESOURCE_PREFIX;
 public class RangerClient {
     private static final Logger LOG = LoggerFactory.getLogger(RangerClient.class);
 
+    private static final String RANGER_CLIENT_RETRIES_KEY = "ranger.client.retries";
+    private static final String RANGER_CLIENT_SLEEP_INTERVAL_MS_KEY = "ranger.client.sleep.interval.ms";
+
     private static final String PROP_RANGER_BASE_URL = "atlas.ranger.base.url";
     private static final String PROP_RANGER_USERNAME = "atlas.ranger.username";
     private static final String PROP_RANGER_PASSWORD = "atlas.ranger.password";
@@ -89,7 +92,7 @@ public class RangerClient {
     protected static WebResource service;
 
     private static List<Integer> skipRetryCode = Arrays.asList(ClientResponse.Status.SERVICE_UNAVAILABLE.getStatusCode(),
-                                                ClientResponse.Status.BAD_REQUEST.getStatusCode());
+            ClientResponse.Status.BAD_REQUEST.getStatusCode());
 
     public RangerClient() {
         try {
@@ -208,7 +211,7 @@ public class RangerClient {
         return callAPI(api, RangerPolicyList.class, queryParams);
     }
 
-    public RangerPolicyList getPoliciesByLabels(Map<String, String> attributes) throws AtlasServiceException {
+    public RangerPolicyList getPoliciesByLabel(Map<String, String> attributes) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = toQueryParams(attributes, null);
 
         AtlasBaseClient.API api = new AtlasBaseClient.API(SEARCH_BY_LABELS, GET, Response.Status.OK);
@@ -379,23 +382,28 @@ public class RangerClient {
     }
 
     private static int getNumberOfRetries() {
-        //TODO: read from properties
-        //return configuration.getInt(AtlasBaseClient.ATLAS_CLIENT_HA_RETRIES_KEY, AtlasBaseClient.DEFAULT_NUM_RETRIES);
-        return 3;
+        try {
+            return ApplicationProperties.get().getInt(RANGER_CLIENT_RETRIES_KEY, 3);
+        } catch (AtlasException e) {
+            LOG.error("Failed to get retry count from configuration, defaulting to 3: {}", e.getMessage());
+            return 3;
+        }
     }
 
-    private static int getSleepBetweenRetriesMs() {
-        //TODO: read from properties
-        //return configuration.getInt(AtlasBaseClient.ATLAS_CLIENT_HA_SLEEP_INTERVAL_MS_KEY, AtlasBaseClient.DEFAULT_SLEEP_BETWEEN_RETRIES_MS);
-        return 5000;
+    private static int getSleepBetweenRetriesMs() throws AtlasException {
+        return ApplicationProperties.get().getInt(RANGER_CLIENT_SLEEP_INTERVAL_MS_KEY, 5000);
     }
 
     static void sleepBetweenRetries() {
         try {
             Thread.sleep(getSleepBetweenRetriesMs());
-        } catch (InterruptedException e) {
-            LOG.error("Interrupted from sleeping between retries.", e);
+        } catch (Exception e) {
+            LOG.error("Failed to get sleep time from configuration defaulting to 5000 ms: {}", e.getMessage());
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException ex) {
+                LOG.error("Failed to sleep between retries: {}", e.getMessage());
+            }
         }
     }
 }
-

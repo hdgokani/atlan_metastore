@@ -17,12 +17,12 @@
  */
 package org.apache.atlas.ranger;
 
-import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.accesscontrol.persona.PersonaContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.ranger.client.RangerClientHelper;
-import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.ranger.client.RangerClient;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ranger.plugin.model.RangerPolicy;
 import org.apache.ranger.plugin.model.RangerRole;
@@ -48,6 +48,11 @@ import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getUsersAs
 public class AtlasRangerService {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasRangerService.class);
 
+    private static RangerClient client;
+
+    static {
+        client = new RangerClient();
+    }
 
     public RangerRole createRangerRole(PersonaContext context) throws AtlasBaseException {
         RangerRole ret;
@@ -65,10 +70,7 @@ public class AtlasRangerService {
                 rangerRole.setDescription("For persona entity with name " + getName(personaEntity));
             }
 
-            ret = RangerClientHelper.createRole(rangerRole);
-
-            LOG.info("Created: Ranger Role");
-
+            ret = client.createRole(rangerRole);
         } catch (Exception e) {
             e.printStackTrace();
             throw new AtlasBaseException(RANGER_ROLE_MUTATION_FAILED, "create", getQualifiedName(context.getPersona()), e.getMessage());
@@ -81,7 +83,7 @@ public class AtlasRangerService {
         RangerRole ret;
 
         try {
-            roles = RangerClientHelper.getRole(roleName);
+            roles = client.getRole(roleName);
 
             Optional<RangerRole> opt = roles.getList().stream().filter(x -> roleName.equals(x.getName())).findFirst();
 
@@ -112,10 +114,7 @@ public class AtlasRangerService {
 
             rangerRole.setDescription(getDescription(personaEntity));
 
-            ret = RangerClientHelper.updateRole(rangerRole);
-
-            LOG.info("Updated: Ranger Role");
-
+            ret = client.updateRole(rangerRole);
         } catch (Exception e) {
             e.printStackTrace();
             throw new AtlasBaseException(RANGER_ROLE_MUTATION_FAILED, "update", getQualifiedName(context.getPersona()), e.getMessage());
@@ -126,10 +125,7 @@ public class AtlasRangerService {
 
     public void deleteRangerRole(long roleId) throws AtlasBaseException {
         try {
-            RangerClientHelper.deleteRole(roleId);
-
-            LOG.info("Deleted: Ranger Role {}", roleId);
-
+            client.deleteRole(roleId);
         } catch (Exception e) {
             e.printStackTrace();
             throw new AtlasBaseException(RANGER_ROLE_MUTATION_FAILED, "delete", "roleId " + roleId, e.getMessage());
@@ -137,14 +133,9 @@ public class AtlasRangerService {
     }
 
     public RangerPolicy createRangerPolicy(RangerPolicy rangerPolicy) throws AtlasBaseException {
-        RangerPolicy ret = null;
+        RangerPolicy ret;
         try {
-
-            LOG.info("creating on Ranger \n{}\n", AtlasType.toJson(rangerPolicy));
-            ret = RangerClientHelper.createPolicy(rangerPolicy);
-
-            LOG.info("Created: Ranger Policy {}", ret.getId());
-
+            ret = client.createPolicy(rangerPolicy);
         } catch (Exception e) {
             e.printStackTrace();
             throw new AtlasBaseException(RANGER_POLICY_MUTATION_FAILED, "create", e.getMessage());
@@ -154,13 +145,9 @@ public class AtlasRangerService {
     }
 
     public RangerPolicy updateRangerPolicy(RangerPolicy rangerPolicy) throws AtlasBaseException {
-        RangerPolicy ret = null;
+        RangerPolicy ret;
         try {
-            LOG.info("updating on Ranger {}", AtlasType.toJson(rangerPolicy));
-            ret = RangerClientHelper.updatePolicy(rangerPolicy);
-
-            LOG.info("Updated: Ranger Policy {}", ret.getId());
-
+            ret = client.updatePolicy(rangerPolicy);
         } catch (Exception e) {
             e.printStackTrace();
             throw new AtlasBaseException(RANGER_POLICY_MUTATION_FAILED, "update", e.getMessage());
@@ -171,10 +158,7 @@ public class AtlasRangerService {
 
     public void deleteRangerPolicy(RangerPolicy rangerPolicy) throws AtlasBaseException {
         try {
-            RangerClientHelper.deletePolicy(rangerPolicy.getId());
-
-            LOG.info("Deleted: Ranger Policy {}", rangerPolicy.getId());
-
+            client.deletePolicyById(rangerPolicy.getId());
         } catch (Exception e) {
             e.printStackTrace();
             throw new AtlasBaseException(RANGER_POLICY_MUTATION_FAILED, "delete", e.getMessage());
@@ -182,11 +166,12 @@ public class AtlasRangerService {
     }
 
     public List<RangerPolicy> getPoliciesByResources(Map<String, String> resources,
-                                                        Map<String, String> attributes) throws AtlasBaseException {
+                                                     Map<String, String> attributes) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("searchPoliciesByResources");
         List<RangerPolicy> ret = null;
 
         try {
-            RangerPolicyList list = RangerClientHelper.searchPoliciesByResources(resources, attributes);
+            RangerPolicyList list = client.searchPoliciesByResources(resources, attributes);
 
             if (list != null) {
                 ret = list.getPolicies();
@@ -197,14 +182,16 @@ public class AtlasRangerService {
             throw new AtlasBaseException(RANGER_POLICY_FIND_FAILED, "resources:" + resources, e.getMessage());
         }
 
+        RequestContext.get().endMetricRecord(recorder);
         return ret;
     }
 
     public List<RangerPolicy> getPoliciesByLabel(Map<String, String> attributes) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getPoliciesByLabel");
         List<RangerPolicy> ret = null;
 
         try {
-            RangerPolicyList list = RangerClientHelper.getPoliciesByLabels(attributes);
+            RangerPolicyList list = client.getPoliciesByLabel(attributes);
 
             if (list != null) {
                 ret = list.getPolicies();
@@ -214,6 +201,7 @@ public class AtlasRangerService {
             throw new AtlasBaseException(RANGER_POLICY_FIND_FAILED, "labels:" + attributes, e.getMessage());
         }
 
+        RequestContext.get().endMetricRecord(recorder);
         return ret;
     }
 }

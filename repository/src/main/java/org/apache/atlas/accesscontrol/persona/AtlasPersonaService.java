@@ -134,8 +134,6 @@ public class AtlasPersonaService {
             }
         }
 
-        //check name update
-        // if yes: check naw name for uniqueness
         if (!getName(persona).equals(getName(existingPersonaEntity))) {
             validateUniquenessByName(graph, getName(persona), PERSONA_ENTITY_TYPE);
         }
@@ -315,8 +313,12 @@ public class AtlasPersonaService {
     private List<RangerPolicy> createPersonaPolicy(PersonaContext context, List<RangerPolicy> provisionalRangerPolicies) throws AtlasBaseException {
         List<RangerPolicy> ret = new ArrayList<>();
 
-        submitCallablesAndWaitToFinish("createPersonaPolicyWorker",
-                provisionalRangerPolicies.stream().map(x -> new CreateRangerPolicyWorker(context, x)).collect(Collectors.toList()));
+        if (CollectionUtils.isNotEmpty(provisionalRangerPolicies)) {
+            submitCallablesAndWaitToFinish("createPersonaPolicyWorker",
+                    provisionalRangerPolicies.stream().map(x -> new CreateRangerPolicyWorker(context, x)).collect(Collectors.toList()));
+        } else {
+            LOG.error("No provisional policy to create on Ranger");
+        }
 
         return ret;
     }
@@ -426,33 +428,35 @@ public class AtlasPersonaService {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("cleanRoleFromExistingPolicies");
         LOG.info("clean role from existing {} policies", rangerPolicies.size());
 
-        submitCallablesAndWaitToFinish("cleanRoleWorker",
-                rangerPolicies.stream().map(x -> new CleanRoleWorker(persona, x, removePolicyGuids)).collect(Collectors.toList()));
+        if (CollectionUtils.isNotEmpty(rangerPolicies)) {
+            submitCallablesAndWaitToFinish("cleanRoleWorker",
+                    rangerPolicies.stream().map(x -> new CleanRoleWorker(persona, x, removePolicyGuids)).collect(Collectors.toList()));
+        }
 
         RequestContext.get().endMetricRecord(recorder);
     }
 
     /*
-    *
-    * This method removes action that does not have any other action left of its type
-    * e.g. consider entity action type -> entity-read,entity-create,entity-update,entity-delete
-    *      There were only one entity action in policy say entity-read,
-    *      removing entity-read while updating policy will call this method
-    *
-    *
-    * @Param existingRangerPolicies found by label policy search
-    *
-    *
-    *    check if resource match is found in existingRangerPolicies
-    *        if yes, remove access from policy Item
-    *            check if no access remaining, remove item if true
-    *                 check if no policy item remaining, delete Ranger policy if true
-    *        if not, search by resources
-    *            if found, remove access from policy Item
-    *                check if no access remaining, remove item if true
-    *                     check if no policy item remaining, delete Ranger policy if true
-    *
-    * */
+     *
+     * This method removes action that does not have any other action left of its type
+     * e.g. consider entity action type -> entity-read,entity-create,entity-update,entity-delete
+     *      There were only one entity action in policy say entity-read,
+     *      removing entity-read while updating policy will call this method
+     *
+     *
+     * @Param existingRangerPolicies found by label policy search
+     *
+     *
+     *    check if resource match is found in existingRangerPolicies
+     *        if yes, remove access from policy Item
+     *            check if no access remaining, remove item if true
+     *                 check if no policy item remaining, delete Ranger policy if true
+     *        if not, search by resources
+     *            if found, remove access from policy Item
+     *                check if no access remaining, remove item if true
+     *                     check if no policy item remaining, delete Ranger policy if true
+     *
+     * */
     private void processActionsRemoval(PersonaContext context) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processActionsRemoval");
         List<String> existingActions = getActions(context.getExistingPersonaPolicy());
@@ -526,8 +530,12 @@ public class AtlasPersonaService {
         }
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("processUpdatePolicies");
 
-        submitCallablesAndWaitToFinish("updateRangerPolicyWorker",
-                provisionalToRangerPoliciesMap.entrySet().stream().map(x -> new UpdateRangerPolicyWorker(context, x.getValue(), x.getKey())).collect(Collectors.toList()));
+        if (MapUtils.isNotEmpty(provisionalToRangerPoliciesMap)) {
+            submitCallablesAndWaitToFinish("updateRangerPolicyWorker",
+                    provisionalToRangerPoliciesMap.entrySet().stream().map(x -> new UpdateRangerPolicyWorker(context, x.getValue(), x.getKey())).collect(Collectors.toList()));
+        } else {
+            LOG.error("No provisional policy pair found to create on Ranger");
+        }
 
         RequestContext.get().endMetricRecord(recorder);
     }
@@ -1015,7 +1023,7 @@ public class AtlasPersonaService {
 
         rangerPolicy.setPolicyType(context.isDataMaskPolicy() ? 1 : 0);
 
-        rangerPolicy.setService(context.isDataPolicy() ? "heka" : "atlas"); //TODO: read from property config
+        rangerPolicy.setService(context.isDataPolicy() ? "heka" : "atlas");
 
         return rangerPolicy;
     }
