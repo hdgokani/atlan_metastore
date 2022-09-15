@@ -2,7 +2,6 @@ package org.apache.atlas.accesscontrol;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.accesscontrol.persona.AtlasPersonaService;
 import org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;

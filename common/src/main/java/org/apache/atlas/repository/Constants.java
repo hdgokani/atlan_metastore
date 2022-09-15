@@ -135,7 +135,7 @@ public final class Constants {
     /*
      * Purpose / Persona
      */
-    public static final String ACCESS_CONTROL_ENTITY_TYPE = "Persona";
+    public static final String ACCESS_CONTROL_ENTITY_TYPE = "AccessControl";
     public static final String PERSONA_ENTITY_TYPE = "Persona";
     public static final String PURPOSE_ENTITY_TYPE = "Purpose";
     public static final String POLICY_ENTITY_TYPE  = "Policy";

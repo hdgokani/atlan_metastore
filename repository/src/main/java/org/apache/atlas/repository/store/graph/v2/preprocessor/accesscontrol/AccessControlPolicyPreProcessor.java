@@ -29,7 +29,6 @@ import java.util.List;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
-import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.POLICY_CATEGORY_PERSONA;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 
