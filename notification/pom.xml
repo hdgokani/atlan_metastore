@@ -93,6 +93,7 @@
             <groupId>ch.qos.reload4j</groupId>
             <artifactId>reload4j</artifactId>
             <version>${reload4j.version}</version>
+            <scope>compile</scope>
         </dependency>
 
     </dependencies>
