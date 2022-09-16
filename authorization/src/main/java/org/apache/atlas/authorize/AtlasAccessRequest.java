@@ -176,16 +176,16 @@ public class AtlasAccessRequest {
         return ret == null ? "" : ret.toString();
     }
 
-    public Set<AtlasClassification> getClassificationNames(AtlasEntityHeader entity) {
-        final Set<AtlasClassification> ret;
+    public Set<String> getClassificationNames(AtlasEntityHeader entity) {
+        final Set<String> ret;
 
         if (entity == null || entity.getClassifications() == null) {
             ret = Collections.emptySet();
         } else {
             ret = new HashSet<>();
 
-            for (AtlasClassification classification : entity.getClassifications()) {
-                ret.add(classification);
+            for (AtlasClassification classify : entity.getClassifications()) {
+                ret.add(classify.getTypeName());
             }
         }
 

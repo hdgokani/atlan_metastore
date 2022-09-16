@@ -32,7 +32,7 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
     private final String              businessMetadata;
     private final String              attributeName;
     private final AtlasTypeRegistry   typeRegistry;
-    private final Set<AtlasClassification>         entityClassifications;
+    private final Set<String>         entityClassifications;
     private final boolean             auditEnabled;
 
 
@@ -116,7 +116,7 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
         return entity == null ? StringUtils.EMPTY : entity.getTypeName();
     }
 
-    public Set<AtlasClassification> getEntityClassifications() {
+    public Set<String> getEntityClassifications() {
         return entityClassifications;
     }
 
