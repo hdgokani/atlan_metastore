@@ -33,7 +33,6 @@ import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.*;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.authorize.AtlasAccessorResponse;
-import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -201,10 +200,10 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
         final Set<String> roles                       = getRoles(request.getUser(), request.getUserGroups());
         final String      relationShipType            = request.getRelationshipType();
         final Set<String> end1EntityTypeAndSuperTypes = request.getEnd1EntityTypeAndAllSuperTypes();
-        final Set<AtlasClassification> end1Classifications         = new HashSet<>(request.getEnd1EntityClassifications());
+        final Set<String> end1Classifications         = new HashSet<>(request.getEnd1EntityClassifications());
         final String      end1EntityId                = request.getEnd1EntityId();
         final Set<String> end2EntityTypeAndSuperTypes = request.getEnd2EntityTypeAndAllSuperTypes();
-        final Set<AtlasClassification> end2Classifications         = new HashSet<>(request.getEnd2EntityClassifications());
+        final Set<String> end2Classifications         = new HashSet<>(request.getEnd2EntityClassifications());
         final String      end2EntityId                = request.getEnd2EntityId();
         final String      action                      = request.getAction() != null ? request.getAction().getType() : null;
 
@@ -223,10 +222,10 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
                     //End1 permission check
                     if (!hasEnd1EntityAccess) {
                          if (isMatchAny(end1EntityTypeAndSuperTypes, permission.getEnd1EntityType()) && isMatch(end1EntityId, permission.getEnd1EntityId())) {
-                             for (Iterator<AtlasClassification> iter = end1Classifications.iterator(); iter.hasNext();) {
-                                 AtlasClassification entityClassification = iter.next();
+                             for (Iterator<String> iter = end1Classifications.iterator(); iter.hasNext();) {
+                                 String entityClassification = iter.next();
 
-                                 if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification.getTypeName()), permission.getEnd1EntityClassification())) {
+                                 if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getEnd1EntityClassification())) {
                                      iter.remove();
                                  }
                              }
@@ -238,10 +237,10 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
                     //End2 permission chech
                     if (!hasEnd2EntityAccess) {
                         if (isMatchAny(end2EntityTypeAndSuperTypes, permission.getEnd2EntityType()) && isMatch(end2EntityId, permission.getEnd2EntityId())) {
-                            for (Iterator<AtlasClassification> iter = end2Classifications.iterator(); iter.hasNext();) {
-                                AtlasClassification entityClassification = iter.next();
+                            for (Iterator<String> iter = end2Classifications.iterator(); iter.hasNext();) {
+                                String entityClassification = iter.next();
 
-                                if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification.getTypeName()), permission.getEnd2EntityClassification())) {
+                                if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getEnd2EntityClassification())) {
                                     iter.remove();
                                 }
                             }
@@ -267,7 +266,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
         final Set<String> entityTypes    = request.getEntityTypeAndAllSuperTypes();
         final String      entityId       = request.getEntityId();
         final String      attribute      = request.getAttributeName();
-        final Set<AtlasClassification> entClsToAuthz  = new HashSet<>(request.getEntityClassifications());
+        final Set<String> entClsToAuthz  = new HashSet<>(request.getEntityClassifications());
         final Set<String> roles          = getRoles(request.getUser(), request.getUserGroups());
 
         for (String role : roles) {
@@ -283,10 +282,10 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
                         // 2. access for these classifications could be granted by multiple AtlasEntityPermission entries
                         // 3. classifications allowed by the current permission will be removed from entClsToAuthz
                         // 4. request will be allowed once entClsToAuthz is empty i.e. user has permission for all classifications
-                        for (Iterator<AtlasClassification> iter = entClsToAuthz.iterator(); iter.hasNext(); ) {
-                            AtlasClassification entityClassification = iter.next();
+                        for (Iterator<String> iter = entClsToAuthz.iterator(); iter.hasNext(); ) {
+                            String entityClassification = iter.next();
 
-                            if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification.getTypeName()), permission.getEntityClassifications())) {
+                            if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getEntityClassifications())) {
                                 iter.remove();
                             }
                         }

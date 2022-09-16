@@ -18,7 +18,6 @@
 
 package org.apache.atlas.authorize;
 
-import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
@@ -61,7 +60,7 @@ public class AtlasRelationshipAccessRequest extends AtlasAccessRequest {
         return super.getEntityTypeAndAllSuperTypes(end1Entity == null ? null : end1Entity.getTypeName(), typeRegistry);
     }
 
-    public Set<AtlasClassification> getEnd1EntityClassifications() {
+    public Set<String> getEnd1EntityClassifications() {
         return super.getClassificationNames(end1Entity);
     }
 
@@ -73,7 +72,7 @@ public class AtlasRelationshipAccessRequest extends AtlasAccessRequest {
         return super.getEntityTypeAndAllSuperTypes(end2Entity == null ? null : end2Entity.getTypeName(), typeRegistry);
     }
 
-    public Set<AtlasClassification> getEnd2EntityClassifications() {
+    public Set<String> getEnd2EntityClassifications() {
         return super.getClassificationNames(end2Entity);
     }
 
