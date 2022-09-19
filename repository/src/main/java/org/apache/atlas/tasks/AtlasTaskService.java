@@ -26,9 +26,15 @@ public class AtlasTaskService implements TaskService {
 
     private final AtlasGraph graph;
 
+    private final List<String> retryNotAllowedStatuses;
+
     @Inject
     public AtlasTaskService(AtlasGraph graph) {
         this.graph = graph;
+        retryNotAllowedStatuses = new ArrayList<>();
+        retryNotAllowedStatuses.add(AtlasTask.Status.PENDING.toString());
+        retryNotAllowedStatuses.add(AtlasTask.Status.IN_PROGRESS.toString());
+        retryNotAllowedStatuses.add(AtlasTask.Status.DELETED.toString());
     }
 
     @Override
@@ -85,7 +91,7 @@ public class AtlasTaskService implements TaskService {
             String status = atlasVertex.getProperty(Constants.TASK_STATUS, String.class);
 
             // Retrial ability of the task is not limited to FAILED ones due to testing/debugging
-            if (status.equals(AtlasTask.Status.PENDING.toString()) || status.equals(AtlasTask.Status.IN_PROGRESS.toString())) {
+            if (retryNotAllowedStatuses.contains(status)) {
                 throw new AtlasBaseException(AtlasErrorCode.TASK_STATUS_NOT_APPROPRIATE, taskGuid, status);
             }
 
