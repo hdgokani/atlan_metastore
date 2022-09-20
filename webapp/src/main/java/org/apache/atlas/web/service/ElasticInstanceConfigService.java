@@ -52,7 +52,7 @@ public class ElasticInstanceConfigService implements Service {
         }
     }
 
-    public void createInstanceConfig() throws AtlasBaseException {
+    private void createInstanceConfig() throws AtlasBaseException {
         try {
             typeDefStore.getEntityDefByName("InstanceConfig");
         } catch (AtlasBaseException e) {
@@ -159,7 +159,8 @@ public class ElasticInstanceConfigService implements Service {
         idAttribute.put("qualifiedName", ELASTIC_INSTANCE_CONFIGURATION);
         AtlasEntityType instanceConfigType;
         try {
-            instanceConfigType = (AtlasEntityType) atlasTypeRegistry.getType("InstanceConfig");
+            instanceConfigType = atlasTypeRegistry.getEntityTypeByName("InstanceConfig");
+            ;
             return Optional.of(atlasEntityStore.getByUniqueAttributes(instanceConfigType, idAttribute));
         } catch (AtlasBaseException e) {
             LOG.error("Error while fetching the InstanceConfig entity:", e);

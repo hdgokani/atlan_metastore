@@ -18,6 +18,7 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.management.GraphIndexStatusReport;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.service.ActiveIndexNameManager.*;
 import static org.janusgraph.graphdb.database.management.ManagementSystem.awaitGraphIndexStatus;
@@ -95,12 +97,14 @@ public class TypeSyncService {
 
     private void disableJanusgraphIndex(String oldIndexName) throws InterruptedException, ExecutionException {
         StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
+
         ManagementSystem janusGraphManagement = (ManagementSystem) graph.openManagement();
 
-//        List<JanusGraphTransaction> openTransactions = graph.getOpenTransactions()
-//                .stream()
-//                .filter(tx -> !tx.toString().equals(janusGraphManagement.getWrappedTx().toString()))
-//                .collect(Collectors.toList());
+        graph.getOpenTransactions()
+                .stream()
+                .filter(tx -> !tx.toString().equals(janusGraphManagement.getWrappedTx().toString()))
+                .collect(Collectors.toList())
+                .forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));
 //
 //        openTransactions.forEach(tx -> tx.rollback());
 //        openTransactions.forEach(tx -> tx.close());
