@@ -26,16 +26,15 @@ public class AtlasTaskService implements TaskService {
 
     private final AtlasGraph graph;
 
-    private final List<String> retryNotAllowedStatuses;
+    private final List<String> retryAllowedStatuses;
 
     @Inject
     public AtlasTaskService(AtlasGraph graph) {
         this.graph = graph;
-        retryNotAllowedStatuses = new ArrayList<>();
-        retryNotAllowedStatuses.add(AtlasTask.Status.PENDING.toString());
-        retryNotAllowedStatuses.add(AtlasTask.Status.IN_PROGRESS.toString());
-        // Since classification vertex is deleted after the task gets deleted, no need to retry it
-        retryNotAllowedStatuses.add(AtlasTask.Status.DELETED.toString());
+        retryAllowedStatuses = new ArrayList<>();
+        retryAllowedStatuses.add(AtlasTask.Status.COMPLETE.toString());
+        retryAllowedStatuses.add(AtlasTask.Status.FAILED.toString());
+        // Since classification vertex is deleted after the task gets deleted, no need to retry the DELETED task
     }
 
     @Override
@@ -92,7 +91,7 @@ public class AtlasTaskService implements TaskService {
             String status = atlasVertex.getProperty(Constants.TASK_STATUS, String.class);
 
             // Retrial ability of the task is not limited to FAILED ones due to testing/debugging
-            if (retryNotAllowedStatuses.contains(status)) {
+            if (! retryAllowedStatuses.contains(status)) {
                 throw new AtlasBaseException(AtlasErrorCode.TASK_STATUS_NOT_APPROPRIATE, taskGuid, status);
             }
 
