@@ -34,6 +34,7 @@ public class AtlasTaskService implements TaskService {
         retryNotAllowedStatuses = new ArrayList<>();
         retryNotAllowedStatuses.add(AtlasTask.Status.PENDING.toString());
         retryNotAllowedStatuses.add(AtlasTask.Status.IN_PROGRESS.toString());
+        // Since classification vertex is deleted after the task gets deleted, no need to retry it
         retryNotAllowedStatuses.add(AtlasTask.Status.DELETED.toString());
     }
 
