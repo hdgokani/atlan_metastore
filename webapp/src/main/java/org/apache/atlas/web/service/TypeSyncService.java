@@ -84,7 +84,7 @@ public class TypeSyncService {
         if (!oldIndexName.equals(newIndexName)) {
             try {
                 disableJanusgraphIndex(oldIndexName);
-//                deleteJanusgraphIndex(oldIndexName);
+                deleteJanusgraphIndex(oldIndexName);
 
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
             } catch (InterruptedException | ExecutionException | IOException e) {
@@ -112,7 +112,8 @@ public class TypeSyncService {
         JanusGraphIndex graphIndex = janusGraphManagement.getGraphIndex(oldIndexName);
         janusGraphManagement.updateIndex(graphIndex, SchemaAction.DISABLE_INDEX).get();
         janusGraphManagement.commit();
-        GraphIndexStatusReport report = awaitGraphIndexStatus(graph, oldIndexName).status(SchemaStatus.DISABLED).call();
+        atlasGraph.getGraph().tx().commit();
+        GraphIndexStatusReport report = awaitGraphIndexStatus(atlasGraph.getGraph(), oldIndexName).status(SchemaStatus.DISABLED).call();
         System.out.println(report);
     }
 

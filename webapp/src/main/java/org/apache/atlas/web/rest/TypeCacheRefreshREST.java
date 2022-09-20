@@ -4,7 +4,6 @@ import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.IAtlasGraphProvider;
-import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.web.service.AtlasHealthStatus;
 import org.apache.atlas.web.service.ServiceState;
@@ -66,8 +65,7 @@ public class TypeCacheRefreshREST {
 
     private void refreshTypeDef(int expectedFieldKeys) throws RepositoryException, InterruptedException, AtlasBaseException {
         LOG.info("Initiating type-def cache refresh with expectedFieldKeys = {}", expectedFieldKeys);
-        AtlasGraphManagement managementSystem = provider.get().getManagementSystem();
-        int currentSize = managementSystem.getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
+        int currentSize = provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
         LOG.info("Size of field keys before refresh = {}", currentSize);
 
         long totalWaitTimeInMillis = 15 * 1000;//15 seconds
@@ -76,7 +74,7 @@ public class TypeCacheRefreshREST {
         int counter = 0;
 
         while (currentSize != expectedFieldKeys && counter++ < totalIterationsAllowed) {
-            currentSize = managementSystem.getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
+            currentSize = provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
             LOG.info("field keys size found = {} at iteration {}", currentSize, counter);
             Thread.sleep(sleepTimeInMillis);
         }
@@ -90,8 +88,7 @@ public class TypeCacheRefreshREST {
         //Reload in-memory cache of type-registry
         typeDefStore.init();
 
-        LOG.info("Size of field keys after refresh = {}", managementSystem.getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size());
+        LOG.info("Size of field keys after refresh = {}", provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size());
         LOG.info("Completed type-def cache refresh");
-        managementSystem.commit();
     }
 }

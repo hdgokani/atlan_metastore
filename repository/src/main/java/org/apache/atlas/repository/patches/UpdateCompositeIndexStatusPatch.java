@@ -20,7 +20,6 @@ package org.apache.atlas.repository.patches;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,9 +49,7 @@ public class UpdateCompositeIndexStatusPatch extends AtlasPatchHandler {
 
         try {
             LOG.info("UpdateCompositeIndexStatusPatch: Starting...");
-            AtlasGraphManagement managementSystem = graph.getManagementSystem();
-            managementSystem.updateSchemaStatus();
-            managementSystem.commit();
+            graph.getManagementSystem().updateSchemaStatus();
         } finally {
             LOG.info("UpdateCompositeIndexStatusPatch: Done!");
         }

@@ -7,7 +7,6 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
-import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -92,11 +91,9 @@ public class TypeCacheRefresher {
         }
 
         try {
-            AtlasGraphManagement managementSystem = provider.get().getManagementSystem();
-            int totalFieldKeys = managementSystem.getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
-            LOG.info("Found {} totalFieldKeys to be expected in other nodes", totalFieldKeys);
-            refreshCache(cacheRefresherEndpoint, totalFieldKeys);
-            managementSystem.commit();
+            int totalFieldKeys = provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
+            LOG.info("Found {} totalFieldKeys to be expected in other nodes",totalFieldKeys);
+            refreshCache(cacheRefresherEndpoint,totalFieldKeys);
         }
         catch (final Exception exception) {
             LOG.error(exception.getMessage(),exception);
