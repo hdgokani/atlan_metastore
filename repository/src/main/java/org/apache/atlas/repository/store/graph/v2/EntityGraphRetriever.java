@@ -634,6 +634,7 @@ public class EntityGraphRetriever {
 
             Iterator<AtlasEdge> propagationEdges = entityVertex.getEdges(AtlasEdgeDirection.BOTH, tagPropagationEdges).iterator();
 
+            AtlasPerfMetrics.MetricRecorder adjacentVerticesTraversalRecorder = RequestContext.get().startMetricRecord("traverseAdjacentVertices");
             while (propagationEdges.hasNext()) {
                 AtlasEdge propagationEdge = propagationEdges.next();
 
@@ -671,16 +672,28 @@ public class EntityGraphRetriever {
 
                 AtlasVertex adjacentVertex             = getOtherVertex(propagationEdge, entityVertex);
                 String      adjacentVertexIdForDisplay = adjacentVertex.getIdForDisplay();
+                AtlasPerfMetrics.MetricRecorder vertexCheckRecorder = RequestContext.get().startMetricRecord("vertexCheckMetric");
 
+                AtlasPerfMetrics.MetricRecorder containMetricRecorder = RequestContext.get().startMetricRecord("containPerf");
                 if (!visitedVertices.contains(adjacentVertexIdForDisplay) && !resultsMap.containsKey(adjacentVertexIdForDisplay)) {
+                    RequestContext.get().endMetricRecord(containMetricRecorder);
+                    AtlasPerfMetrics.MetricRecorder mapPutMetricRecorder = RequestContext.get().startMetricRecord("putVertexIntoMap");
                     resultsMap.put(adjacentVertexIdForDisplay, adjacentVertex);
+                    RequestContext.get().endMetricRecord(mapPutMetricRecorder);
 
+                    AtlasPerfMetrics.MetricRecorder queueAddMetricRecorder = RequestContext.get().startMetricRecord("putVertexIntoQueue");
                     queue.add(adjacentVertex);
-                }
-            }
-        }
+                    RequestContext.get().endMetricRecord(queueAddMetricRecorder);
 
+                }
+                RequestContext.get().endMetricRecord(vertexCheckRecorder);
+
+            }
+            RequestContext.get().endMetricRecord(adjacentVerticesTraversalRecorder);
+        }
+        AtlasPerfMetrics.MetricRecorder addMapValuesRecorder = RequestContext.get().startMetricRecord("addMapValuesRecorder");
         result.addAll(resultsMap.values());
+        RequestContext.get().endMetricRecord(addMapValuesRecorder);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
