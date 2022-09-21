@@ -606,15 +606,17 @@ public class EntityGraphRetriever {
             queue.add(entityVertexStart);
         }
 
+        AtlasPerfMetrics.MetricRecorder queueMetricRecorder = RequestContext.get().startMetricRecord("TraverseQueue");
         while (!queue.isEmpty()) {
             AtlasVertex entityVertex   = queue.poll();
             String      entityVertexId = entityVertex.getIdForDisplay();
-
+            AtlasPerfMetrics.MetricRecorder visitVertexMetricRecorder = RequestContext.get().startMetricRecord("visitVertexMetricRecord");
             if (visitedVertices.contains(entityVertexId)) {
                 LOG.info("Already visited: {}", entityVertexId);
 
                 continue;
             }
+            RequestContext.get().endMetricRecord(visitVertexMetricRecorder);
 
             visitedVertices.add(entityVertexId);
 
@@ -632,7 +634,11 @@ public class EntityGraphRetriever {
                         .toArray(new String[0]);
             }
 
+            AtlasPerfMetrics.MetricRecorder getPropagatedEdgesMetric = RequestContext.get().startMetricRecord("getPropagatedEdges");
+
             Iterator<AtlasEdge> propagationEdges = entityVertex.getEdges(AtlasEdgeDirection.BOTH, tagPropagationEdges).iterator();
+
+            RequestContext.get().endMetricRecord(getPropagatedEdgesMetric);
 
             AtlasPerfMetrics.MetricRecorder adjacentVerticesTraversalRecorder = RequestContext.get().startMetricRecord("traverseAdjacentVertices");
             while (propagationEdges.hasNext()) {
@@ -680,17 +686,16 @@ public class EntityGraphRetriever {
                     AtlasPerfMetrics.MetricRecorder mapPutMetricRecorder = RequestContext.get().startMetricRecord("putVertexIntoMap");
                     resultsMap.put(adjacentVertexIdForDisplay, adjacentVertex);
                     RequestContext.get().endMetricRecord(mapPutMetricRecorder);
-
                     AtlasPerfMetrics.MetricRecorder queueAddMetricRecorder = RequestContext.get().startMetricRecord("putVertexIntoQueue");
                     queue.add(adjacentVertex);
                     RequestContext.get().endMetricRecord(queueAddMetricRecorder);
-
                 }
                 RequestContext.get().endMetricRecord(vertexCheckRecorder);
 
             }
             RequestContext.get().endMetricRecord(adjacentVerticesTraversalRecorder);
         }
+        RequestContext.get().endMetricRecord(queueMetricRecorder);
         AtlasPerfMetrics.MetricRecorder addMapValuesRecorder = RequestContext.get().startMetricRecord("addMapValuesRecorder");
         result.addAll(resultsMap.values());
         RequestContext.get().endMetricRecord(addMapValuesRecorder);
