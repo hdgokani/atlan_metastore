@@ -12,7 +12,6 @@ import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.web.dto.TypeSyncResponse;
 import org.janusgraph.core.schema.JanusGraphIndex;
-import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.SchemaAction;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -26,7 +25,6 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 import static org.apache.atlas.service.ActiveIndexNameManager.*;
 import static org.janusgraph.graphdb.database.management.ManagementSystem.awaitGraphIndexStatus;
@@ -84,8 +82,6 @@ public class TypeSyncService {
         if (!oldIndexName.equals(newIndexName)) {
             try {
                 disableJanusgraphIndex(oldIndexName);
-                deleteJanusgraphIndex(oldIndexName);
-
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
             } catch (InterruptedException | ExecutionException | IOException e) {
                 LOG.error("Error while deleting index {}. Exception: {}", oldIndexName, e.toString());
@@ -99,15 +95,10 @@ public class TypeSyncService {
         StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
 
         ManagementSystem janusGraphManagement = (ManagementSystem) graph.openManagement();
-
         graph.getOpenTransactions()
                 .stream()
                 .filter(tx -> !tx.toString().equals(janusGraphManagement.getWrappedTx().toString()))
-                .collect(Collectors.toList())
                 .forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));
-//
-//        openTransactions.forEach(tx -> tx.rollback());
-//        openTransactions.forEach(tx -> tx.close());
 
         JanusGraphIndex graphIndex = janusGraphManagement.getGraphIndex(oldIndexName);
         janusGraphManagement.updateIndex(graphIndex, SchemaAction.DISABLE_INDEX).get();
@@ -115,14 +106,5 @@ public class TypeSyncService {
         atlasGraph.getGraph().tx().commit();
         GraphIndexStatusReport report = awaitGraphIndexStatus(atlasGraph.getGraph(), oldIndexName).status(SchemaStatus.DISABLED).call();
         System.out.println(report);
-    }
-
-    private void deleteJanusgraphIndex(String oldIndexName) throws InterruptedException, ExecutionException {
-        JanusGraphManagement janusGraphManagement = atlasGraph.getGraph().openManagement();
-        JanusGraphIndex graphIndex = janusGraphManagement.getGraphIndex(oldIndexName);
-        JanusGraphManagement.IndexJobFuture indexJobFuture = janusGraphManagement.updateIndex(graphIndex, SchemaAction.REMOVE_INDEX);
-        janusGraphManagement.commit();
-        atlasGraph.getGraph().tx().commit();
-        indexJobFuture.get();
     }
 }
