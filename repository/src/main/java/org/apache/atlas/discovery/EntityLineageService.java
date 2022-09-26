@@ -471,6 +471,10 @@ public class EntityLineageService implements AtlasLineageService {
                     if (entityVertex == null) {
                         continue;
                     }
+                    if (getGuid(entityVertex).equals(lineageContext.getGuid())) {
+                        currentOffset++;
+                        continue;
+                    }
                     if (shouldTerminate(isInput, ret, lineageContext, currentVertexEdges, inputVertexCount, i, edgesOfProcess, j)) {
                         return;
                     }
