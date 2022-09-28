@@ -21,6 +21,7 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.sun.tools.javac.util.GraphUtils;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -33,7 +34,6 @@ import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
-import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
@@ -51,6 +51,7 @@ import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.exception.EntityNotFoundException;
@@ -139,7 +140,7 @@ public final class GraphHelper {
         }
 
         String fromGuid = getGuid(fromVertex);
-        if (fromGuid.equals(getGuid(toVertex))) {
+        if (fromGuid != null && fromGuid.equals(getGuid(toVertex))) {
             LOG.error("Attempting to create a relationship between same vertex with guid {}", fromGuid);
             throw new AtlasBaseException(RELATIONSHIP_CREATE_INVALID_PARAMS, fromGuid);
         }
@@ -449,6 +450,26 @@ public final class GraphHelper {
                 AtlasEdge edge = iterator.next();
 
                 ret.add(edge);
+            }
+        }
+
+        return ret;
+    }
+
+    public static List<AtlasVertex> getPropagatedVertices (AtlasVertex classificationVertex) {
+        List<AtlasVertex>   ret      =  new ArrayList<>();
+        Iterable            vertices =  classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
+                                                            .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
+                                                            .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
+                                                            .vertices();
+
+        if (vertices != null) {
+            Iterator<AtlasVertex> iterator = vertices.iterator();
+
+            while (iterator.hasNext()) {
+                AtlasVertex vertex = iterator.next();
+
+                ret.add(vertex);
             }
         }
 
@@ -1429,7 +1450,15 @@ public final class GraphHelper {
         boolean isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
 
         if (isReference(elementType)) {
-            return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute);
+            boolean isStruct = TypeCategory.STRUCT == attribute.getDefinedInType().getTypeCategory() ||
+                               TypeCategory.STRUCT == elementType.getTypeCategory();
+
+            if (isStruct) {
+                String edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(attribute.getName());
+                return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute, edgeLabel);
+            } else {
+                return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute);
+            }
         } else if (isArrayOfPrimitiveType || isArrayOfEnum) {
             return (List) instanceVertex.getMultiValuedProperty(propertyName, elementType.getClass());
         } else {
@@ -1479,8 +1508,19 @@ public final class GraphHelper {
     }
 
     public static List<AtlasEdge> getCollectionElementsUsingRelationship(AtlasVertex vertex, AtlasAttribute attribute) {
+        String edgeLabel = attribute.getRelationshipEdgeLabel();
+        return getCollectionElementsUsingRelationship(vertex, attribute, edgeLabel);
+    }
+
+    public static List<AtlasEdge> getCollectionElementsUsingRelationship(AtlasVertex vertex, AtlasAttribute attribute,
+                                                                         boolean isStructType) {
+        String edgeLabel = isStructType ? AtlasGraphUtilsV2.getEdgeLabel(attribute.getName()) :  attribute.getRelationshipEdgeLabel();
+        return getCollectionElementsUsingRelationship(vertex, attribute, edgeLabel);
+    }
+
+
+    public static List<AtlasEdge> getCollectionElementsUsingRelationship(AtlasVertex vertex, AtlasAttribute attribute, String edgeLabel) {
         List<AtlasEdge>                ret;
-        String                         edgeLabel     = attribute.getRelationshipEdgeLabel();
         AtlasRelationshipEdgeDirection edgeDirection = attribute.getRelationshipEdgeDirection();
         Iterator<AtlasEdge>            edgesForLabel = getEdgesForLabel(vertex, edgeLabel, edgeDirection);
 

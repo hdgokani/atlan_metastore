@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.discovery;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageRequest;
@@ -34,10 +35,12 @@ public class AtlasLineageContext {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasLineageContext.class);
 
     private int depth;
+    private int offset;
     private int limit;
     private String guid;
     private boolean hideProcess;
     private boolean allowDeletedProcess;
+    private boolean calculateRemainingVertexCounts;
     private AtlasLineageInfo.LineageDirection direction = BOTH;
 
     private boolean isDataset;
@@ -56,8 +59,14 @@ public class AtlasLineageContext {
         this.hideProcess = lineageRequest.isHideProcess();
         this.allowDeletedProcess = lineageRequest.isAllowDeletedProcess();
         this.attributes = lineageRequest.getAttributes();
+        this.offset = lineageRequest.getOffset();
+        this.calculateRemainingVertexCounts = lineageRequest.getCalculateRemainingVertexCounts();
 
         predicate = constructInMemoryPredicate(typeRegistry, lineageRequest.getEntityFilters());
+    }
+
+    @VisibleForTesting
+    AtlasLineageContext() {
     }
 
     public int getDepth() {
@@ -140,6 +149,10 @@ public class AtlasLineageContext {
         this.allowDeletedProcess = allowDeletedProcess;
     }
 
+    public int getOffset() {
+        return offset;
+    }
+
     protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteria) {
         LineageSearchProcessor lineageSearchProcessor = new LineageSearchProcessor();
         return lineageSearchProcessor.constructInMemoryPredicate(typeRegistry, filterCriteria);
@@ -152,8 +165,12 @@ public class AtlasLineageContext {
         return true;
     }
 
-    public boolean shouldApplyLimit() {
-        return limit > 0;
+    public boolean shouldApplyPagination() {
+        return offset > -1;
+    }
+
+    public boolean isCalculateRemainingVertexCounts() {
+        return calculateRemainingVertexCounts;
     }
 
     @Override
