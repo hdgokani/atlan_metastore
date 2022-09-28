@@ -402,6 +402,7 @@ public class EntityLineageService implements AtlasLineageService {
         } else {
             processLastLevel(currentVertex, isInput, ret);
         }
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private void processIntermediateLevel(AtlasVertex currentVertex,
