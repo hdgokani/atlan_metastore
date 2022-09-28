@@ -27,7 +27,6 @@ public class ElasticInstanceConfigService implements Service {
 
     private static final Logger LOG = LoggerFactory.getLogger(ElasticInstanceConfigService.class);
 
-
     private static final String ELASTIC_INSTANCE_CONFIGURATION = "elastic_instance_configurations";
 
     private final AtlasTypeDefStore typeDefStore;
@@ -157,13 +156,10 @@ public class ElasticInstanceConfigService implements Service {
     private Optional<AtlasEntityWithExtInfo> getInstanceConfigEntity() {
         Map<String, Object> idAttribute = new HashMap<>();
         idAttribute.put("qualifiedName", ELASTIC_INSTANCE_CONFIGURATION);
-        AtlasEntityType instanceConfigType;
         try {
-            instanceConfigType = atlasTypeRegistry.getEntityTypeByName("InstanceConfig");
-            ;
+            AtlasEntityType instanceConfigType = atlasTypeRegistry.getEntityTypeByName("InstanceConfig");
             return Optional.of(atlasEntityStore.getByUniqueAttributes(instanceConfigType, idAttribute));
         } catch (AtlasBaseException e) {
-            LOG.error("Error while fetching the InstanceConfig entity:", e);
             return Optional.empty();
         }
     }
