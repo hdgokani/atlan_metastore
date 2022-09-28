@@ -28,14 +28,16 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.AtlasErrorCode.JSON_ERROR;
+import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.ADD;
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.REMOVE;
+
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ESAliasRequestBuilder {
     private List<JSONObject> jActionObject = new ArrayList<>();
 
-    public enum ESAliasAction {
+    public static enum ESAliasAction {
         ADD("add"),
         REMOVE("remove");
 
@@ -50,12 +52,12 @@ public class ESAliasRequestBuilder {
         }
     }
 
-    public ESAliasRequestBuilder addAction(ESAliasAction ESAliasAction, AliasAction action) throws AtlasBaseException {
+    public ESAliasRequestBuilder addAction(ESAliasAction eSAliasAction, AliasAction action) throws AtlasBaseException {
         JSONObject object = new JSONObject();
         String type = "";
 
         try {
-            switch (ESAliasAction) {
+            switch (eSAliasAction) {
                 case ADD:
                     type = ADD.getType();
                     object.put("index", action.getIndex());
@@ -69,6 +71,9 @@ public class ESAliasRequestBuilder {
                     object.put("index", action.getIndex());
                     object.put("alias", action.getAlias());
                     break;
+
+                default:
+                    throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, String.format("Action %s is not supported by ENUM ESAliasAction", eSAliasAction));
             }
 
             JSONObject j_1 = new JSONObject();

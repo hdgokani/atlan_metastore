@@ -48,10 +48,14 @@ import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getIsAllow
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getQualifiedName;
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.mapOf;
 import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.getTags;
+import static org.apache.atlas.repository.Constants.POLICY_TYPE_GLOSSARY;
+import static org.apache.atlas.repository.Constants.POLICY_TYPE_METADATA;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
+
+;
 
 @Component
 public class ESAliasStore implements IndexAliasStore {
@@ -126,74 +130,60 @@ public class ESAliasStore implements IndexAliasStore {
     private Map<String, Object> getFilter(PersonaContext context) throws AtlasBaseException {
         AtlasEntity.AtlasEntityWithExtInfo personaEntityWithExtInfo = context.getPersonaExtInfo();
 
-        Map<String, Object> ret = null;
-        List<Map> allowClauseList = new ArrayList<>();
-        List<Map> denyClauseList = new ArrayList<>();
+        List<Map<String, Object>> allowClauseList = new ArrayList<>();
+        List<Map<String, Object>> denyClauseList = new ArrayList<>();
 
         List<AtlasEntity> policies = AtlasPersonaUtil.getMetadataPolicies(personaEntityWithExtInfo);
-
         if (CollectionUtils.isNotEmpty(policies)) {
+            personaPolicyToESDslClauses(context, policies, POLICY_TYPE_METADATA, allowClauseList, denyClauseList);
+        }
 
-            for (AtlasEntity entity: policies) {
-                if (!getActions(entity).contains(ACCESS_ENTITY_READ) || isDeletedPolicy(context, entity)) {
-                    continue;
-                }
+        policies = AtlasPersonaUtil.getGlossaryPolicies(personaEntityWithExtInfo);
+        if (CollectionUtils.isNotEmpty(policies)) {
+            personaPolicyToESDslClauses(context, policies, POLICY_TYPE_GLOSSARY, allowClauseList, denyClauseList);
+        }
 
+        return esClausesToFilter(allowClauseList, denyClauseList);
+    }
+
+    private void personaPolicyToESDslClauses(PersonaContext context, List<AtlasEntity> policies, String type,
+                                             List<Map<String, Object>> allowClauseList, List<Map<String, Object>> denyClauseList) throws AtlasBaseException {
+        for (AtlasEntity entity: policies) {
+            if (!getActions(entity).contains(ACCESS_ENTITY_READ) || isDeletedPolicy(context, entity)) {
+                continue;
+            }
+
+            List<Map<String, Object>> clauseList = getIsAllow(entity) ? allowClauseList : denyClauseList;
+            List<String> assets = getAssets(entity);
+
+            if (POLICY_TYPE_METADATA.equals(type)) {
                 boolean addConnectionFilter = true;
                 String connectionQName = getQualifiedName(getConnectionEntity(entity));
-
-                List<String> assets = getAssets(entity);
-                boolean allow = getIsAllow(entity);
 
                 for (String asset : assets) {
                     if (StringUtils.equals(connectionQName, asset)) {
                         addConnectionFilter = false;
                     }
 
-                    addPersonaMetadataFilterClauses(asset, allow ? allowClauseList : denyClauseList);
+                    addPersonaMetadataFilterClauses(asset, clauseList);
                 }
 
                 if (addConnectionFilter) {
-                    addPersonaMetadataFilterConnectionClause(connectionQName, allow ? allowClauseList : denyClauseList);
+                    addPersonaMetadataFilterConnectionClause(connectionQName, clauseList);
+                }
+            } else if (POLICY_TYPE_GLOSSARY.equals(type)) {
+                for (String glossaryQName : assets) {
+                    addPersonaGlossaryFilterClauses(glossaryQName, clauseList);
                 }
             }
         }
-
-        policies = AtlasPersonaUtil.getGlossaryPolicies(personaEntityWithExtInfo);
-        if (CollectionUtils.isNotEmpty(policies)) {
-            for (AtlasEntity entity: policies) {
-                if (!getActions(entity).contains(ACCESS_ENTITY_READ) || isDeletedPolicy(context, entity)) {
-                    continue;
-                }
-
-                List<String> glossaryQNames = getAssets(entity);
-
-                for (String glossaryQName : glossaryQNames) {
-                    addPersonaGlossaryFilterClauses(glossaryQName, getIsAllow(entity) ? allowClauseList : denyClauseList);
-                }
-            }
-        }
-
-        Map bool = new HashMap();
-        if (CollectionUtils.isNotEmpty(allowClauseList)) {
-            bool.put("should", allowClauseList);
-        }
-
-        if (CollectionUtils.isNotEmpty(denyClauseList)) {
-            bool.put("must_not", denyClauseList);
-        }
-
-        ret = mapOf("bool", bool);
-
-        return ret;
     }
 
-    private Map<String, Object> getFilter(PurposeContext context) throws AtlasBaseException {
+    private Map<String, Object> getFilter(PurposeContext context) {
         AtlasEntity.AtlasEntityWithExtInfo purposeEntityWithExtInfo = context.getPurposeExtInfo();
 
-        Map<String, Object> ret = null;
-        List<Map> allowClauseList = new ArrayList<>();
-        List<Map> denyClauseList = new ArrayList<>();
+        List<Map<String, Object>> allowClauseList = new ArrayList<>();
+        List<Map<String, Object>> denyClauseList = new ArrayList<>();
 
         List<AtlasEntity> policies = AtlasPurposeUtil.getMetadataPolicies(purposeEntityWithExtInfo);
         List<String> tags = getTags(context.getPurpose());
@@ -213,18 +203,20 @@ public class ESAliasStore implements IndexAliasStore {
             }
         }
 
-        Map bool = new HashMap();
+        return esClausesToFilter(allowClauseList, denyClauseList);
+    }
+
+    private Map<String, Object> esClausesToFilter(List<Map<String, Object>> allowClauseList, List<Map<String, Object>> denyClauseList) {
+        Map<String, Object> eSFilterBoolClause = new HashMap<>();
         if (CollectionUtils.isNotEmpty(allowClauseList)) {
-            bool.put("should", allowClauseList);
+            eSFilterBoolClause.put("should", allowClauseList);
         }
 
         if (CollectionUtils.isNotEmpty(denyClauseList)) {
-            bool.put("must_not", denyClauseList);
+            eSFilterBoolClause.put("must_not", denyClauseList);
         }
 
-        ret = mapOf("bool", bool);
-
-        return ret;
+        return mapOf("bool", eSFilterBoolClause);
     }
 
     private boolean isDeletedPolicy(PersonaContext context, AtlasEntity policy) {
@@ -239,25 +231,25 @@ public class ESAliasStore implements IndexAliasStore {
         return getESAliasName(entity);
     }
 
-    private void addPersonaMetadataFilterClauses(String asset, List<Map> clauseList) {
+    private void addPersonaMetadataFilterClauses(String asset, List<Map<String, Object>> clauseList) {
         addPersonaFilterClauses(asset, clauseList);
     }
 
-    private void addPersonaMetadataFilterConnectionClause(String connection, List<Map> clauseList) {
+    private void addPersonaMetadataFilterConnectionClause(String connection, List<Map<String, Object>> clauseList) {
         clauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, connection)));
     }
 
-    private void addPersonaGlossaryFilterClauses(String asset, List<Map> clauseList) {
+    private void addPersonaGlossaryFilterClauses(String asset, List<Map<String, Object>> clauseList) {
         addPersonaFilterClauses(asset, clauseList);
     }
 
-    private void addPersonaFilterClauses(String asset, List<Map> clauseList) {
+    private void addPersonaFilterClauses(String asset, List<Map<String, Object>> clauseList) {
         clauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, asset)));
         clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
         clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + asset)));
     }
 
-    private void addPurposeMetadataFilterClauses(List<String> tags, List<Map> clauseList) {
+    private void addPurposeMetadataFilterClauses(List<String> tags, List<Map<String, Object>> clauseList) {
         clauseList.add(mapOf("terms", mapOf(TRAIT_NAMES_PROPERTY_KEY, tags)));
         clauseList.add(mapOf("terms", mapOf(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, tags)));
     }

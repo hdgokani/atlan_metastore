@@ -33,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasErrorCode.ACCESS_CONTROL_ALREADY_EXISTS;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.repository.Constants.ACCESS_CONTROL_ENTITY_TYPES;
 import static org.apache.atlas.repository.Constants.ACCESS_CONTROL_RELATION_TYPE;
@@ -203,7 +204,7 @@ public class AccessControlUtil {
         indexSearchParams.setDsl(dsl);
 
         if (checkEntityExists(graph, indexSearchParams)){
-            throw new AtlasBaseException(String.format("Entity already exists, typeName:name, %s:%s", typeName, name));
+            throw new AtlasBaseException(ACCESS_CONTROL_ALREADY_EXISTS, typeName, name);
         }
     }
 
@@ -258,7 +259,7 @@ public class AccessControlUtil {
             resourceForSearch.put(resourceName, value.getValues().get(0));
         }
 
-        LOG.info("resourceForSearch {}", AtlasType.toJson(resourceForSearch));
+        LOG.info("AccessControlUtil: fetchRangerPolicyByResources: {}", resourceForSearch);
 
         Map <String, String> params = new HashMap<>();
         int size = 25;
@@ -283,20 +284,28 @@ public class AccessControlUtil {
 
         if (CollectionUtils.isNotEmpty(rangerPolicies)) {
             //find exact match among the result list
-            String provisionalPolicyResourcesSignature = new RangerPolicyResourceSignature(policy).getSignature();
+            String expectedSignature = new RangerPolicyResourceSignature(policy).getSignature();
 
             for (RangerPolicy resourceMatchedPolicy : rangerPolicies) {
-                String resourceMatchedPolicyResourcesSignature = new RangerPolicyResourceSignature(resourceMatchedPolicy).getSignature();
+                String currentSignature = new RangerPolicyResourceSignature(resourceMatchedPolicy).getSignature();
 
-                if (provisionalPolicyResourcesSignature.equals(resourceMatchedPolicyResourcesSignature) &&
-                        Integer.valueOf(policyType).equals(resourceMatchedPolicy.getPolicyType()) &&
-                        serviceType.equals(resourceMatchedPolicy.getServiceType())) {
+                if (isExactResourceMatch(resourceMatchedPolicy, expectedSignature, currentSignature,
+                        policyType, serviceType)) {
                     return resourceMatchedPolicy;
                 }
             }
         }
 
         return null;
+    }
+
+    private static boolean isExactResourceMatch(RangerPolicy resourceMatchedPolicy, String provisionalPolicyResourcesSignature,
+                                                String resourceMatchedPolicyResourcesSignature, String policyType,
+                                                String serviceType) {
+        return provisionalPolicyResourcesSignature.equals(resourceMatchedPolicyResourcesSignature) &&
+                Integer.valueOf(policyType).equals(resourceMatchedPolicy.getPolicyType()) &&
+                serviceType.equals(resourceMatchedPolicy.getServiceType());
+
     }
 
     public static List<RangerPolicy> fetchRangerPoliciesByLabel(AtlasRangerService atlasRangerService,
@@ -347,20 +356,24 @@ public class AccessControlUtil {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("ensureNonAccessControlEntityType");
         long accessControlEntityCount = types.stream().filter(ACCESS_CONTROL_ENTITY_TYPES::contains).count();
 
-        if (accessControlEntityCount > 0) {
-            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED);
+        try {
+            if (accessControlEntityCount > 0) {
+                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED);
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
-
-        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     public static void ensureNonAccessControlRelType(String type) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("ensureNonAccessControlRelType");
-        if (ACCESS_CONTROL_RELATION_TYPE.equals(type)) {
-            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED);
+        try {
+            if (ACCESS_CONTROL_RELATION_TYPE.equals(type)) {
+                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED);
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
-
-        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     public static ExecutorService getExecutorService(int numThreads, String threadNamePattern) {
@@ -371,12 +384,15 @@ public class AccessControlUtil {
     public static <T> void submitCallablesAndWaitToFinish(String threadName, List<Callable<T>> callables) throws AtlasBaseException {
         ExecutorService service = getExecutorService(callables.size(), threadName + "-%d-");
         try {
+
+            LOG.info("Submitting callables: {}", threadName);
             callables.forEach(service::submit);
 
-            service.shutdown();
             LOG.info("Shutting down executor: {}", threadName);
-            boolean terminated = service.awaitTermination(60, TimeUnit.SECONDS);
+            service.shutdown();
             LOG.info("Shut down executor: {}", threadName);
+            boolean terminated = service.awaitTermination(60, TimeUnit.SECONDS);
+            LOG.info("awaitTermination done: {}", threadName);
 
             if (!terminated) {
                 LOG.warn("Time out occurred while waiting to complete {}", threadName);

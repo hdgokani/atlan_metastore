@@ -87,11 +87,8 @@ public class AtlasRangerService {
 
             Optional<RangerRole> opt = roles.getList().stream().filter(x -> roleName.equals(x.getName())).findFirst();
 
-            if (opt.isPresent()) {
-                ret = opt.get();
-            } else {
-                throw new AtlasBaseException(RANGER_ROLE_NOT_FOUND, roleName, String.format("Role with name %s not present", roleName));
-            }
+            ret = opt.orElseThrow(() -> new AtlasBaseException(RANGER_ROLE_NOT_FOUND, roleName,
+                                                            String.format("Role with name %s not present", roleName)));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -199,9 +196,10 @@ public class AtlasRangerService {
         } catch (Exception e) {
             e.printStackTrace();
             throw new AtlasBaseException(RANGER_POLICY_FIND_FAILED, "labels:" + attributes, e.getMessage());
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
         }
 
-        RequestContext.get().endMetricRecord(recorder);
         return ret;
     }
 }
