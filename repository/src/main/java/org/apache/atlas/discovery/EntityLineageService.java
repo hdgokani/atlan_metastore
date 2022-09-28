@@ -615,7 +615,6 @@ public class EntityLineageService implements AtlasLineageService {
             }
         }
 
-        RequestContext.get().endMetricRecord(metric);
     }
 
     private void processLastLevel(AtlasVertex currentVertex, boolean isInput, AtlasLineageInfo ret) {
