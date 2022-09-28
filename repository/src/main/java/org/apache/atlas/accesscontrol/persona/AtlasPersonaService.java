@@ -268,6 +268,10 @@ public class AtlasPersonaService {
             }
 
             processActionsRemoval(context);
+
+            if (context.isMetadataPolicy() || context.isGlossaryPolicy()) {
+                aliasStore.updateAlias(context);
+            }
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }

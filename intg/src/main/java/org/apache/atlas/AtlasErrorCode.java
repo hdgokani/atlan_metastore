@@ -240,8 +240,7 @@ public enum AtlasErrorCode {
     RELATIONSHIP_CREATE_INVALID_PARAMS(409, "ATLAS-409-00-014", "Relationship create between same vertex not allowed, vertex guid: {0}"),
     OPERATION_NOT_SUPPORTED(409, "ATLAS-409-00-015", "Operation not supported: {0}"),
 
-    PERSONA_ALREADY_EXISTS(409, "ATLAS-409-00-016", "Persona with name {0} already exists"),
-    PURPOSE_ALREADY_EXISTS(409, "ATLAS-409-00-017", "Purpose with name {0} already exists"),
+    ACCESS_CONTROL_ALREADY_EXISTS(409, "ATLAS-409-00-016", "{0} with name {1} already exists"),
     POLICY_ALREADY_EXISTS(409, "ATLAS-409-00-017", "Policy with name {0} already exists"),
 
     CATEGORY_PARENT_FROM_OTHER_GLOSSARY(409, "ATLAS-400-00-0015", "Parent category from another Anchor(glossary) not supported"),

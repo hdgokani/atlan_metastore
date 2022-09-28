@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
-import static org.apache.atlas.AtlasErrorCode.PURPOSE_ALREADY_EXISTS;
+import static org.apache.atlas.AtlasErrorCode.POLICY_ALREADY_EXISTS;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.ACCESS_ADD_REL;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.ACCESS_REMOVE_REL;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.ACCESS_UPDATE_REL;
@@ -104,7 +104,7 @@ public class PurposeServiceHelper {
         policies.forEach(x -> policyNames.add(getName(x)));
 
         if (policyNames.contains(newPolicyName)) {
-            throw new AtlasBaseException(PURPOSE_ALREADY_EXISTS, newPolicyName);
+            throw new AtlasBaseException(POLICY_ALREADY_EXISTS, newPolicyName);
         }
     }
 

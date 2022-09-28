@@ -33,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasErrorCode.ACCESS_CONTROL_ALREADY_EXISTS;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.repository.Constants.ACCESS_CONTROL_ENTITY_TYPES;
 import static org.apache.atlas.repository.Constants.ACCESS_CONTROL_RELATION_TYPE;
@@ -203,7 +204,7 @@ public class AccessControlUtil {
         indexSearchParams.setDsl(dsl);
 
         if (checkEntityExists(graph, indexSearchParams)){
-            throw new AtlasBaseException(String.format("Entity already exists, typeName:name, %s:%s", typeName, name));
+            throw new AtlasBaseException(ACCESS_CONTROL_ALREADY_EXISTS, typeName, name);
         }
     }
 
