@@ -242,6 +242,7 @@ public enum AtlasErrorCode {
 
     PERSONA_ALREADY_EXISTS(409, "ATLAS-409-00-016", "Persona with name {0} already exists"),
     PURPOSE_ALREADY_EXISTS(409, "ATLAS-409-00-017", "Purpose with name {0} already exists"),
+    POLICY_ALREADY_EXISTS(409, "ATLAS-409-00-017", "Policy with name {0} already exists"),
 
     CATEGORY_PARENT_FROM_OTHER_GLOSSARY(409, "ATLAS-400-00-0015", "Parent category from another Anchor(glossary) not supported"),
     RANGER_DUPLICATE_POLICY(409, "ATLAS-409-00-019", "Not allowed to create duplicate policy for same set of assets, duplicate policy: {0}:{1}"),

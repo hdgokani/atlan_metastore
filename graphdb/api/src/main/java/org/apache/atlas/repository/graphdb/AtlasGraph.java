@@ -207,13 +207,13 @@ public interface AtlasGraph<V, E> {
      */
     AtlasIndexQuery<V, E> elasticsearchQuery(String indexName, SearchSourceBuilder sourceBuilder);
 
-    AtlasIndexQuery<V, E> elasticsearchQuery(String indexName, SearchParams searchParams);
+    AtlasIndexQuery<V, E> elasticsearchQuery(String indexName, SearchParams searchParams) throws AtlasBaseException;
 
     void createOrUpdateESAlias(ESAliasRequestBuilder aliasRequestBuilder) throws AtlasBaseException;
 
     void deleteESAlias(String indexName, String aliasName) throws AtlasBaseException;
 
-    AtlasIndexQuery elasticsearchQuery(String indexName);
+    AtlasIndexQuery elasticsearchQuery(String indexName) throws AtlasBaseException;
 
     /**
      * Gets the management object associated with this graph and opens a transaction

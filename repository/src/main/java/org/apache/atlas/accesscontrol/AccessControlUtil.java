@@ -258,7 +258,7 @@ public class AccessControlUtil {
             resourceForSearch.put(resourceName, value.getValues().get(0));
         }
 
-        LOG.info("resourceForSearch {}", AtlasType.toJson(resourceForSearch));
+        LOG.info("AccessControlUtil: fetchRangerPolicyByResources: {}", resourceForSearch);
 
         Map <String, String> params = new HashMap<>();
         int size = 25;
@@ -283,20 +283,28 @@ public class AccessControlUtil {
 
         if (CollectionUtils.isNotEmpty(rangerPolicies)) {
             //find exact match among the result list
-            String provisionalPolicyResourcesSignature = new RangerPolicyResourceSignature(policy).getSignature();
+            String expectedSignature = new RangerPolicyResourceSignature(policy).getSignature();
 
             for (RangerPolicy resourceMatchedPolicy : rangerPolicies) {
-                String resourceMatchedPolicyResourcesSignature = new RangerPolicyResourceSignature(resourceMatchedPolicy).getSignature();
+                String currentSignature = new RangerPolicyResourceSignature(resourceMatchedPolicy).getSignature();
 
-                if (provisionalPolicyResourcesSignature.equals(resourceMatchedPolicyResourcesSignature) &&
-                        Integer.valueOf(policyType).equals(resourceMatchedPolicy.getPolicyType()) &&
-                        serviceType.equals(resourceMatchedPolicy.getServiceType())) {
+                if (isExactResourceMatch(resourceMatchedPolicy, expectedSignature, currentSignature,
+                        policyType, serviceType)) {
                     return resourceMatchedPolicy;
                 }
             }
         }
 
         return null;
+    }
+
+    private static boolean isExactResourceMatch(RangerPolicy resourceMatchedPolicy, String provisionalPolicyResourcesSignature,
+                                                String resourceMatchedPolicyResourcesSignature, String policyType,
+                                                String serviceType) {
+        return provisionalPolicyResourcesSignature.equals(resourceMatchedPolicyResourcesSignature) &&
+                Integer.valueOf(policyType).equals(resourceMatchedPolicy.getPolicyType()) &&
+                serviceType.equals(resourceMatchedPolicy.getServiceType());
+
     }
 
     public static List<RangerPolicy> fetchRangerPoliciesByLabel(AtlasRangerService atlasRangerService,
@@ -347,20 +355,24 @@ public class AccessControlUtil {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("ensureNonAccessControlEntityType");
         long accessControlEntityCount = types.stream().filter(ACCESS_CONTROL_ENTITY_TYPES::contains).count();
 
-        if (accessControlEntityCount > 0) {
-            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED);
+        try {
+            if (accessControlEntityCount > 0) {
+                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED);
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
-
-        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     public static void ensureNonAccessControlRelType(String type) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("ensureNonAccessControlRelType");
-        if (ACCESS_CONTROL_RELATION_TYPE.equals(type)) {
-            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED);
+        try {
+            if (ACCESS_CONTROL_RELATION_TYPE.equals(type)) {
+                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED);
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
-
-        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     public static ExecutorService getExecutorService(int numThreads, String threadNamePattern) {
