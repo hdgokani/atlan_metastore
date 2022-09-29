@@ -259,6 +259,7 @@ public enum AtlasErrorCode {
     FAILED_TO_REFRESH_TYPE_DEF_CACHE(500, "ATLAS-500-00-20", "Failed to refresh type-def cache"),
     CINV_UNHEALTHY(500, "ATLAS-500-00-21", "Unable to process type-definition operations"),
     RUNTIME_EXCEPTION(500, "ATLAS-500-00-020", "Runtime exception {0}"),
+    TYPE_DEF_SYNC_IN_PROGRESS(500, "ATLAS-500-00-021", "Can't update types while type sync is active"),
     CLASSIFICATION_CURRENTLY_BEING_PROPAGATED(400, "ATLAS-400-00-105", "Classification {0} is currently being propagated.");
 
     private String errorCode;

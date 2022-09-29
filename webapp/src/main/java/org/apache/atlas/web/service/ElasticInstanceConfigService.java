@@ -153,6 +153,27 @@ public class ElasticInstanceConfigService implements Service {
         return newIndexName;
     }
 
+    public boolean isTypeDefUpdatesLocked() throws AtlasBaseException {
+        AtlasEntityWithExtInfo instanceConfig = getInstanceConfigEntity().orElseThrow(() -> new AtlasBaseException("The instance config doesn't exist"));
+        return (boolean) instanceConfig.getEntity().getAttribute("isUpdateLocked");
+    }
+
+    public boolean lockTypeDefUpdates() throws AtlasBaseException {
+        AtlasEntityWithExtInfo instanceConfig = getInstanceConfigEntity().orElseThrow(() -> new AtlasBaseException("The instance config doesn't exist"));
+        instanceConfig.getEntity().setAttribute("isUpdateLocked", true);
+        atlasEntityStore.createOrUpdate(new AtlasEntityStream(instanceConfig), true);
+
+        return true;
+    }
+
+    public boolean unlockTypeDefUpdates() throws AtlasBaseException {
+        AtlasEntityWithExtInfo instanceConfig = getInstanceConfigEntity().orElseThrow(() -> new AtlasBaseException("The instance config doesn't exist"));
+        instanceConfig.getEntity().setAttribute("isUpdateLocked", true);
+        atlasEntityStore.createOrUpdate(new AtlasEntityStream(instanceConfig), false);
+
+        return true;
+    }
+
     private Optional<AtlasEntityWithExtInfo> getInstanceConfigEntity() {
         Map<String, Object> idAttribute = new HashMap<>();
         idAttribute.put("qualifiedName", ELASTIC_INSTANCE_CONFIGURATION);

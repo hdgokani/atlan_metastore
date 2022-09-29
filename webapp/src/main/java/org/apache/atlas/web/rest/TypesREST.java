@@ -32,6 +32,7 @@ import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.dto.TypeSyncResponse;
 import org.apache.atlas.web.service.CuratorFactory;
+import org.apache.atlas.web.service.ElasticInstanceConfigService;
 import org.apache.atlas.web.service.TypeSyncService;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
@@ -51,7 +52,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -74,15 +74,22 @@ public class TypesREST {
     private final TypeCacheRefresher typeCacheRefresher;
     private final boolean isActiveActiveHAEnabled;
     private final TypeSyncService typeSyncService;
+    private final ElasticInstanceConfigService elasticInstanceConfigService;
 
     @Inject
-    public TypesREST(AtlasTypeDefStore typeDefStore, CuratorFactory curatorFactory, Configuration configuration, TypeCacheRefresher typeCacheRefresher, TypeSyncService typeSyncService) {
+    public TypesREST(AtlasTypeDefStore typeDefStore,
+                     CuratorFactory curatorFactory,
+                     Configuration configuration,
+                     TypeCacheRefresher typeCacheRefresher,
+                     TypeSyncService typeSyncService,
+                     ElasticInstanceConfigService elasticInstanceConfigService) {
         this.typeDefStore = typeDefStore;
         this.typeSyncService = typeSyncService;
         this.curatorFactory = curatorFactory;
         this.typeCacheRefresher = typeCacheRefresher;
         this.zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
         this.isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
+        this.elasticInstanceConfigService = elasticInstanceConfigService;
     }
 
     /**
@@ -387,8 +394,14 @@ public class TypesREST {
     }
 
     private InterProcessMutex attemptAcquiringLock() throws AtlasBaseException {
-        if (!isActiveActiveHAEnabled)
+        if (!isActiveActiveHAEnabled) {
             return null;
+        }
+
+        if (elasticInstanceConfigService.isTypeDefUpdatesLocked()) {
+            LOG.info("Type Defs are locked due to type sync");
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_DEF_SYNC_IN_PROGRESS);
+        }
 
         final InterProcessMutex lock = curatorFactory.lockInstance(zkRoot, TYPE_DEF_LOCK);
         try {
@@ -457,8 +470,20 @@ public class TypesREST {
     }
 
     @POST
+    @Path("/typeDefSync/typeDefLock")
+    public boolean lockTypeDefUpdates() throws AtlasBaseException {
+        return elasticInstanceConfigService.lockTypeDefUpdates();
+    }
+
+    @DELETE
+    @Path("/typeDefSync/typeDefLock")
+    public boolean unlockTypeDefUpdates() throws AtlasBaseException {
+        return elasticInstanceConfigService.unlockTypeDefUpdates();
+    }
+
+    @POST
     @Path("/syncTypeDefs")
-    public TypeSyncResponse syncTypeDefs(final AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException, ExecutionException, InterruptedException {
+    public TypeSyncResponse syncTypeDefs(final AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException {
         return typeSyncService.syncTypes(newTypeDefinitions);
     }
 
