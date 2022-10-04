@@ -63,3 +63,63 @@ updates:
       - "beta_ecosystem"
       - "dependencies"
       - "dependabot"
+ 
+  - package-ecosystem: "bundler"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct updates for all packages
+      - dependency-type: "direct"
+    labels:
+      - "bundler"
+      - "dependencies"
+      - "dependabot"
+      
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct updates for all packages
+      - dependency-type: "direct"
+    labels:
+      - "cargo"
+      - "dependencies"
+      - "dependabot"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct updates for all packages
+      - dependency-type: "direct"
+    labels:
+      - "docker"
+      - "dependencies"
+      - "dependabot"
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct updates for all packages
+      - dependency-type: "direct"
+    labels:
+      - "golang"
+      - "dependencies"
+      - "dependabot"
+  
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct updates for all packages
+      - dependency-type: "direct"
+    labels:
+      - "gradle"
+      - "dependencies"
+      - "dependabot"
+ 
