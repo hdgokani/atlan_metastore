@@ -15,7 +15,7 @@ updates:
       - "dependabot"
 
   - package-ecosystem: "composer" #composer
-    directory: "/"
+    directory: ["atlas_scan/requirements.txt", "atlas_scan/addons/falcon-bridge-shim/requirements.txt", "atlas_scan/intg/src/main/python/requirements.txt"]
     schedule:
       interval: "daily"
     allow:
