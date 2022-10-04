@@ -9,15 +9,17 @@ on:
       - master
       - ecrdev
 
+permissions:
+  id-token: write
+  contents: write
+  
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: write
+
     steps:
     - name: Checkout Repo
-      uses: actions/checkout@main
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
