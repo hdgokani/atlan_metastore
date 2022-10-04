@@ -123,3 +123,38 @@ updates:
       - "dependencies"
       - "dependabot"
  
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct updates for all packages
+      - dependency-type: "direct"
+    labels:
+      - "maven"
+      - "dependencies"
+      - "dependabot"
+
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct updates for all packages
+      - dependency-type: "direct"
+    labels:
+      - "pub"
+      - "dependencies"
+      - "dependabot"
+
+  - package-ecosystem: "terraform"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct updates for all packages
+      - dependency-type: "direct"
+    labels:
+      - "terraform"
+      - "dependencies"
+      - "dependabot"
