@@ -1,7 +1,6 @@
 # Use `allow` to specify which dependencies to maintain
 
 version: 2
-enable-beta-ecosystems: true
 updates:
   - package-ecosystem: "npm" #npm
     directory: "/"
@@ -9,7 +8,7 @@ updates:
       interval: "daily"
     allow:
       # Allow direct updates for all packages
-      - dependency-type: "direct"
+      - dependency-type: "all"
     labels:
       - "npm"
       - "dependencies"
@@ -21,7 +20,7 @@ updates:
       interval: "daily"
     allow:
       #  Allow direct updates for all packages
-      - dependency-type: "direct"
+      - dependency-type: "all"
     labels:
       - "composer"
       - "dependencies"
@@ -33,12 +32,12 @@ updates:
       interval: "daily"
     allow:
       #  Allow direct updates for all packages
-      - dependency-type: "direct"
+      - dependency-type: "all"
     labels:
       - "python"
       - "dependencies"
-      - "dependabot"   
-
+      - "dependabot"
+ 
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions" #github-actions
     directory: "/"
@@ -46,43 +45,31 @@ updates:
       interval: "daily"
     allow:
       #  Allow direct updates for all packages
-      - dependency-type: "direct"
+      - dependency-type: "all"
     labels:
       - "github_actions"
       - "dependencies"
       - "dependabot"
- 
-  - package-ecosystem: "beta-ecosystem"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    allow:
-      #  Allow direct updates for all packages
-      - dependency-type: "direct"
-    labels:
-      - "beta_ecosystem"
-      - "dependencies"
-      - "dependabot"
- 
+
   - package-ecosystem: "bundler"
     directory: "/"
     schedule:
       interval: "daily"
     allow:
       #  Allow direct updates for all packages
-      - dependency-type: "direct"
+      - dependency-type: "all"
     labels:
       - "bundler"
       - "dependencies"
       - "dependabot"
-      
+
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: "daily"
     allow:
       #  Allow direct updates for all packages
-      - dependency-type: "direct"
+      - dependency-type: "all"
     labels:
       - "cargo"
       - "dependencies"
@@ -94,42 +81,43 @@ updates:
       interval: "daily"
     allow:
       #  Allow direct updates for all packages
-      - dependency-type: "direct"
+      - dependency-type: "all"
     labels:
       - "docker"
       - "dependencies"
       - "dependabot"
+  
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "daily"
     allow:
       #  Allow direct updates for all packages
-      - dependency-type: "direct"
+      - dependency-type: "all"
     labels:
       - "golang"
       - "dependencies"
       - "dependabot"
-  
+
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "daily"
     allow:
       #  Allow direct updates for all packages
-      - dependency-type: "direct"
+      - dependency-type: "all"
     labels:
       - "gradle"
       - "dependencies"
       - "dependabot"
- 
+
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
       interval: "daily"
     allow:
       #  Allow direct updates for all packages
-      - dependency-type: "direct"
+      - dependency-type: "all"
     labels:
       - "maven"
       - "dependencies"
@@ -141,7 +129,7 @@ updates:
       interval: "daily"
     allow:
       #  Allow direct updates for all packages
-      - dependency-type: "direct"
+      - dependency-type: "all"
     labels:
       - "pub"
       - "dependencies"
@@ -153,7 +141,7 @@ updates:
       interval: "daily"
     allow:
       #  Allow direct updates for all packages
-      - dependency-type: "direct"
+      - dependency-type: "all"
     labels:
       - "terraform"
       - "dependencies"
