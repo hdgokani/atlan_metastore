@@ -1,31 +1,65 @@
 # Use `allow` to specify which dependencies to maintain
 
 version: 2
+enable-beta-ecosystems: true
 updates:
-  - package-ecosystem: "npm"
+  - package-ecosystem: "npm" #npm
     directory: "/"
     schedule:
       interval: "daily"
     allow:
-      # Allow updates for Lodash
-      - dependency-name: "lodash"
-      # Allow updates for React and any packages starting "react"
-      - dependency-name: "react*"
+      # Allow direct updates for all packages
+      - dependency-type: "direct"
+    labels:
+      - "npm"
+      - "dependencies"
+      - "dependabot"
 
-  - package-ecosystem: "composer"
+  - package-ecosystem: "composer" #composer
     directory: "/"
     schedule:
       interval: "daily"
     allow:
-      # Allow both direct and indirect updates for all packages
-      - dependency-type: "all"
+      #  Allow direct updates for all packages
+      - dependency-type: "direct"
+    labels:
+      - "composer"
+      - "dependencies"
+      - "dependabot"
 
-  - package-ecosystem: "pip"
+  - package-ecosystem: "pip" #python
     directory: "/"
     schedule:
       interval: "daily"
     allow:
-      # Allow only direct updates for
-      # Django and any packages starting "django"
-      - dependency-name: "django*"
-        dependency-type: "direct"
+      #  Allow direct updates for all packages
+      - dependency-type: "direct"
+    labels:
+      - "python"
+      - "dependencies"
+      - "dependabot"   
+
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions" #github-actions
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct updates for all packages
+      - dependency-type: "direct"
+    labels:
+      - "github_actions"
+      - "dependencies"
+      - "dependabot"
+ 
+  - package-ecosystem: "beta-ecosystem"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      #  Allow direct updates for all packages
+      - dependency-type: "direct"
+    labels:
+      - "beta_ecosystem"
+      - "dependencies"
+      - "dependabot"
