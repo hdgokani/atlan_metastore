@@ -27,7 +27,7 @@ updates:
       - "dependabot"
 
   - package-ecosystem: "pip" #python
-    directory: ["/requirements.txt", "/addons/falcon-bridge-shim/requirements.txt", "/intg/src/main/python/requirements.txt"]
+    directory: "/addons/falcon-bridge-shim/requirements.txt"
     schedule:
       interval: "daily"
     allow:
