@@ -1252,14 +1252,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         String                          typeName       = getTypeName(entityVertex);
         AtlasEntityType                 entityType     = typeRegistry.getEntityTypeByName(typeName);
-        AtlasEntityHeader               entityHeader   = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
-        AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA, entityHeader);
-
-        for (String bmName : businessAttributes.keySet()) {
-            requestBuilder.setBusinessMetadata(bmName);
-
-            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "remove business-metadata: guid=", guid, ", business-metadata=", bmName);
-        }
 
         entityGraphMapper.removeBusinessAttributes(entityVertex, entityType, businessAttributes);
 
