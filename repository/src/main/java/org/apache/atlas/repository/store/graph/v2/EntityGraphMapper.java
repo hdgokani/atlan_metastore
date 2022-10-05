@@ -450,14 +450,6 @@ public class EntityGraphMapper {
                         } else {
                             addOrUpdateBusinessAttributes(guid, updatedEntity.getBusinessAttributes(), isOverwriteBusinessAttribute);
                         }
-                        /*if (MapUtils.isEmpty(updatedEntity.getBusinessAttributes())) {
-                            Map<String, Map<String, Object>> businessMetadata = entityRetriever.getBusinessMetadata(vertex);
-                            if (MapUtils.isNotEmpty(businessMetadata)){
-                                removeBusinessAttributes(vertex, entityType, businessMetadata);
-                            }
-                        } else {
-                            setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
-                        }*/
                     }
                     
                     setSystemAttributesToEntity(vertex,updatedEntity);
