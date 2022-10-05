@@ -654,7 +654,7 @@ public class EntityGraphMapper {
         }
 
         if (MapUtils.isEmpty(businessAttrbutes)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "businessAttributes is null/empty");
+            return;
         }
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
