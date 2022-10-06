@@ -13,6 +13,5 @@ django-filters==0.2.1
 django-silk==2.0.0
 mysql-connector-python==8.0.28
 mysqlclient==2.1.0
-numpy==1.19.5
 o365==2.0.11
 paramiko==2.7.1
