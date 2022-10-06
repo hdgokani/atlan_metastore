@@ -193,6 +193,3 @@ jobs:
         build-args: |
           ACCESS_TOKEN_USR=$GITHUB_ACTOR
           ACCESS_TOKEN_PWD=${{ secrets.my_pat }}  
-
-
-      
