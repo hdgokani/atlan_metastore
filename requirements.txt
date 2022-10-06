@@ -4,6 +4,5 @@ bleach==3.1.1
 boto3==1.14.3
 bs4==0.0.1
 charset-normalizer==2.0.12
-coverage==5.5
 dateparser==1.1.0
 edgegrid-python==1.1.1
