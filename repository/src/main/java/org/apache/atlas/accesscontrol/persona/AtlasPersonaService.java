@@ -472,7 +472,9 @@ public class AtlasPersonaService {
             if (CollectionUtils.isNotEmpty(removedActions)) {
                 List<RangerPolicy> provisionalPoliciesForDelete = PersonaServiceHelper.personaPolicyToRangerPolicies(context, removedActions);
 
-                Map<RangerPolicy, RangerPolicy> provisionalToRangerPoliciesMap = mapPolicies(context, provisionalPoliciesForDelete, context.getExcessExistingRangerPolicies());
+                Map<RangerPolicy, RangerPolicy> provisionalToRangerPoliciesMap = mapPolicies(context,
+                        provisionalPoliciesForDelete,
+                        new ArrayList<>(context.getExcessExistingRangerPolicies()));
 
                 List<RangerPolicy> provPoliciesForResourceSearch = new ArrayList<>();
                 List<RangerPolicy> rangerPoliciesToClean = new ArrayList<>();
