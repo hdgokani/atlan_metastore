@@ -28,6 +28,16 @@ public class AtlasTaskService implements TaskService {
 
     private final List<String> retryAllowedStatuses;
 
+    static class SearchResult {
+        Long vertexTotals;
+        DirectIndexQueryResult directIndexQueryResult;
+
+        public SearchResult(Long vertexTotals, DirectIndexQueryResult directIndexQueryResult) {
+            this.vertexTotals = vertexTotals;
+            this.directIndexQueryResult = directIndexQueryResult;
+        }
+    }
+
     @Inject
     public AtlasTaskService(AtlasGraph graph) {
         this.graph = graph;
@@ -41,12 +51,10 @@ public class AtlasTaskService implements TaskService {
     public TaskSearchResult getTasks(TaskSearchParams searchParams) throws AtlasBaseException {
         TaskSearchResult ret = new TaskSearchResult();
         List<AtlasTask> tasks = new ArrayList<>();
-        AtlasIndexQuery indexQuery = null;
-        DirectIndexQueryResult indexQueryResult;
 
         try {
-            indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
-            indexQueryResult = indexQuery.vertices(searchParams);
+            SearchResult searchResult = searchTask(searchParams);
+            DirectIndexQueryResult indexQueryResult = searchResult.directIndexQueryResult;
 
             if (indexQueryResult != null) {
                 Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
@@ -63,7 +71,7 @@ public class AtlasTaskService implements TaskService {
                 }
 
                 ret.setTasks(tasks);
-                ret.setApproximateCount(indexQuery.vertexTotals());
+                ret.setApproximateCount(searchResult.vertexTotals);
                 ret.setAggregations(indexQueryResult.getAggregationMap());
             }
         } catch (AtlasBaseException e) {
@@ -79,14 +87,13 @@ public class AtlasTaskService implements TaskService {
 
     @Override
     public void retryTask(String taskGuid) throws AtlasBaseException {
-        AtlasGraphQuery query = graph.query()
-                .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
-                .has(TASK_GUID, taskGuid);
+        SearchResult searchResult = searchTask(constructSearch(taskGuid));
+        DirectIndexQueryResult indexQueryResult = searchResult.directIndexQueryResult;
 
-        Iterator<AtlasVertex> results = query.vertices().iterator();
+        Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
 
-        if (results.hasNext()) {
-            AtlasVertex atlasVertex = results.next();
+        if (iterator.hasNext()) {
+            AtlasVertex atlasVertex = iterator.next().getVertex();
 
             String status = atlasVertex.getProperty(Constants.TASK_STATUS, String.class);
 
@@ -102,5 +109,16 @@ public class AtlasTaskService implements TaskService {
         } else {
             throw new AtlasBaseException(AtlasErrorCode.TASK_NOT_FOUND, taskGuid);
         }
+    }
+
+    private TaskSearchParams constructSearch(String taskGuid) {
+        TaskSearchParams searchParams = new TaskSearchParams();
+        searchParams.setDsl(searchParams.getDSLGuid(taskGuid));
+        return searchParams;
+    }
+
+    private SearchResult searchTask(TaskSearchParams searchParams) throws AtlasBaseException {
+        AtlasIndexQuery indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
+        return new SearchResult(indexQuery.vertexTotals(), indexQuery.vertices(searchParams));
     }
 }
