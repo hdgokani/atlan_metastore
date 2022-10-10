@@ -22,7 +22,7 @@ wget  https://atlan-public.s3.eu-west-1.amazonaws.com/artifact/keycloak-15.0.2.1
 unzip -o keycloak-15.0.2.1.zip -d ~/.m2/repository/org
 
 echo "Maven Building"
-mvn -T 100 -pl '!addons/hdfs-model,!addons/hive-bridge,!addons/hive-bridge-shim,!addons/falcon-bridge-shim,!addons/falcon-bridge,!addons/sqoop-bridge,!addons/sqoop-bridge-shim,!addons/hbase-bridge,!addons/hbase-bridge-shim' -Dmaven.test.skip -DskipTests -Drat.skip=true package -Pdist
+mvn -pl '!addons/hdfs-model,!addons/hive-bridge,!addons/hive-bridge-shim,!addons/falcon-bridge-shim,!addons/falcon-bridge,!addons/sqoop-bridge,!addons/sqoop-bridge-shim,!addons/hbase-bridge,!addons/hbase-bridge-shim,!addons/hbase-bridge-shim,!addons/kafka-bridge,!addons/impala-bridge-shim,!addons/impala-bridge,!addons/storm-bridge-shim,!addons/storm-bridge' -Dmaven.test.skip -DskipTests -Drat.skip=true package -Pdist
 
 echo "[DEBUG listing distro/target"
 ls distro/target
