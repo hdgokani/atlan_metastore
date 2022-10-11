@@ -88,7 +88,10 @@ public enum AtlasConfiguration {
     UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true),
     TASKS_GRAPH_COMMIT_CHUNK_SIZE("atlas.tasks.graph.commit.chunk.size", 1000),
     MAX_NUMBER_OF_RETRIES("atlas.tasks.graph.retry.count", 3),
-    GRAPH_TRAVERSE_LEVEL_BUCKET_SIZE("atlas.graph.traverse.bucket.size",100);
+    GRAPH_TRAVERSE_LEVEL_BUCKET_SIZE("atlas.graph.traverse.bucket.size",100),
+    ENABLE_SEARCH_LOGGING("atlas.enable.search.logging", true),
+    RANGER_ATLAS_SERVICE_TYPE("atlas.ranger.service.type.atlas", "atlas"),
+    RANGER_HEKA_SERVICE_TYPE("atlas.ranger.service.type.heka", "heka");
 
 
     private static final Configuration APPLICATION_PROPERTIES;

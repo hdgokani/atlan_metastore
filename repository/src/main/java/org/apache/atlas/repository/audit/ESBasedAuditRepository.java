@@ -20,16 +20,11 @@ package org.apache.atlas.repository.audit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.EntityAuditEvent;
-import org.apache.atlas.RequestContext;
-import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.*;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasType;
@@ -56,14 +51,12 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.*;
 
 import static java.nio.charset.Charset.defaultCharset;
 import static org.springframework.util.StreamUtils.copyToString;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * This class provides cassandra support as the backend for audit storage support.
@@ -225,8 +218,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
                 try {
                     entityHeader = entityGraphRetriever.toAtlasEntityHeader(entityGuid, attributes);
-                }catch (AtlasBaseException exception){
-                    if (exception.getAtlasErrorCode() != AtlasErrorCode.INSTANCE_GUID_NOT_FOUND){
+                } catch (AtlasBaseException exception) {
+                    if (exception.getAtlasErrorCode() != AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
                         throw exception;
                     }
                 }
@@ -302,30 +295,12 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 LOG.info("Updating ES total field limit");
                 updateFieldLimit();
             }
+            updateMappingsIfChanged();
         } catch (IOException e) {
             LOG.error("error", e);
             throw new AtlasException(e);
         }
 
-    }
-
-    private boolean createAuditIndex() throws IOException {
-        LOG.info("ESBasedAuditRepo - createAuditIndex!");
-        String esMappingsString = getAuditIndexMappings();
-        HttpEntity entity = new NStringEntity(esMappingsString, ContentType.APPLICATION_JSON);
-        Request request = new Request("PUT", INDEX_NAME);
-        request.setEntity(entity);
-        Response response = lowLevelClient.performRequest(request);
-        int statusCode = response.getStatusLine().getStatusCode();
-        return statusCode == 200 ? true : false;
-    }
-
-    private String getAuditIndexMappings() throws IOException {
-        String atlasHomeDir = System.getProperty("atlas.home");
-        String elasticsearchSettingsFilePath = (org.apache.commons.lang3.StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "elasticsearch" + File.separator + "es-audit-mappings.json";
-        File elasticsearchSettingsFile = new File(elasticsearchSettingsFilePath);
-        String jsonString = new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
-        return jsonString;
     }
 
     private boolean checkIfIndexExists() throws IOException {
@@ -338,6 +313,16 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         }
         LOG.info("Entity audits index does not exist!");
         return false;
+    }
+
+    private boolean createAuditIndex() throws IOException {
+        LOG.info("ESBasedAuditRepo - createAuditIndex!");
+        String esMappingsString = getAuditIndexMappings();
+        HttpEntity entity = new NStringEntity(esMappingsString, ContentType.APPLICATION_JSON);
+        Request request = new Request("PUT", INDEX_NAME);
+        request.setEntity(entity);
+        Response response = lowLevelClient.performRequest(request);
+        return isSuccess(response);
     }
 
     private boolean isFieldLimitDifferent() {
@@ -376,6 +361,47 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         } catch (IOException e) {
             LOG.error("Error while updating the field limit", e);
         }
+    }
+
+    private void updateMappingsIfChanged() throws IOException, AtlasException {
+        LOG.info("ESBasedAuditRepo - updateMappings!");
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode activeIndexInformation = getActiveIndexInfoAsJson(mapper);
+        JsonNode indexInformationFromConfigurationFile = mapper.readTree(getAuditIndexMappings());
+        if (!areConfigurationsSame(activeIndexInformation, indexInformationFromConfigurationFile)) {
+            Response response = updateMappings(indexInformationFromConfigurationFile);
+            if (isSuccess(response)) {
+                LOG.info("ESBasedAuditRepo - Elasticsearch mappings have been updated!");
+            } else {
+                LOG.error("Error while updating the Elasticsearch indexes!");
+                throw new AtlasException(copyToString(response.getEntity().getContent(), Charset.defaultCharset()));
+            }
+        }
+    }
+
+    private JsonNode getActiveIndexInfoAsJson(ObjectMapper mapper) throws IOException {
+        Request request = new Request("GET", INDEX_NAME);
+        Response response = lowLevelClient.performRequest(request);
+        String responseString = copyToString(response.getEntity().getContent(), Charset.defaultCharset());
+        return mapper.readTree(responseString);
+    }
+
+    private boolean areConfigurationsSame(JsonNode activeIndexInformation, JsonNode indexInformationFromConfigurationFile) {
+        return indexInformationFromConfigurationFile.get("mappings").equals(activeIndexInformation.get("entity_audits").get("mappings"));
+    }
+
+    private Response updateMappings(JsonNode indexInformationFromConfigurationFile) throws IOException {
+        Request request = new Request("PUT", INDEX_NAME + "/_mapping");
+        HttpEntity entity = new NStringEntity(indexInformationFromConfigurationFile.get("mappings").toString(), ContentType.APPLICATION_JSON);
+        request.setEntity(entity);
+        return lowLevelClient.performRequest(request);
+    }
+
+    private String getAuditIndexMappings() throws IOException {
+        String atlasHomeDir = System.getProperty("atlas.home");
+        String atlasHome = StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir;
+        File elasticsearchSettingsFile = Paths.get(atlasHome, "elasticsearch", "es-audit-mappings.json").toFile();
+        return new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
     }
 
     @Override
@@ -428,6 +454,10 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             }
         }
         return httpHosts;
+    }
+
+    private boolean isSuccess(Response response) {
+        return response.getStatusLine().getStatusCode() == 200;
     }
 
 }
