@@ -15,10 +15,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
+import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 import static org.apache.atlas.tasks.TaskRegistry.toAtlasTask;
 
@@ -81,7 +80,9 @@ public class AtlasTaskService implements TaskService {
 
     @Override
     public void retryTask(String taskGuid) throws AtlasBaseException {
-        DirectIndexQueryResult indexQueryResult = searchTask(taskGuid);
+        TaskSearchParams taskSearchParams = getMatchQuery(taskGuid);
+        AtlasIndexQuery atlasIndexQuery = searchTask(taskSearchParams);
+        DirectIndexQueryResult indexQueryResult = atlasIndexQuery.vertices(taskSearchParams);
 
         Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
 
@@ -104,14 +105,20 @@ public class AtlasTaskService implements TaskService {
         }
     }
 
-    private AtlasIndexQuery searchTask(TaskSearchParams searchParams) {
-        return graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
+    private TaskSearchParams getMatchQuery(String guid) {
+        TaskSearchParams params = new TaskSearchParams();
+        params.setDsl(mapOf("query", mapOf("match", mapOf(TASK_GUID, guid))));
+        return params;
     }
 
-    private DirectIndexQueryResult searchTask(String taskGuid) throws AtlasBaseException {
-        TaskSearchParams searchParams = new TaskSearchParams();
-        searchParams.setDsl(searchParams.getDSLGuid(taskGuid));
-        AtlasIndexQuery indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
-        return indexQuery.vertices(searchParams);
+    private Map<String, Object> mapOf(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+
+        return map;
+    }
+
+    private AtlasIndexQuery searchTask(TaskSearchParams searchParams) {
+        return graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
     }
 }
