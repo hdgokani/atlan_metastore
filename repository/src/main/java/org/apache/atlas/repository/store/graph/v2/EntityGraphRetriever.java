@@ -700,27 +700,24 @@ public class EntityGraphRetriever {
             verticesAtCurrentLevel.add(entityVertexStart.getIdForDisplay());
         }
         // Start Processing the level
+        // Start Processing the level
         while (!verticesAtCurrentLevel.isEmpty()) {
             Set<String> verticesToVisitNextLevel = new HashSet<>();
-            // Chunk the Levels into n parts, with constant bucket size
-            Iterable<List<String>> chunkedLevelVerticesIterable = Iterables.partition(verticesAtCurrentLevel, AtlasConfiguration.GRAPH_TRAVERSE_LEVEL_BUCKET_SIZE.getInt());
-            chunkedLevelVerticesIterable.forEach(x -> {
-                // Process the chunks in Parallel get the Vertices for next level
-                x.parallelStream().forEach(y -> {
-                    AtlasVertex entityVertex = graph.getVertex(y);
-                    if (!visitedVerticesIds.contains(y)) {
-                        //get adjacent vertices of the current level vertex to be added to next level
-                       Set<String> adjacentVerticesIds =  getAdjacentVertices(entityVertex, classificationId,
-                                relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds);
-                        verticesToVisitNextLevel.addAll(adjacentVerticesIds);
-                        traversedVerticesIds.addAll(adjacentVerticesIds);
-                        visitedVerticesIds.add(entityVertex.getIdForDisplay());
-                    }
-                });
+            verticesAtCurrentLevel.parallelStream().forEach(x -> {
+                AtlasVertex entityVertex = graph.getVertex(x);
+                if (!visitedVerticesIds.contains(x)) {
+                    //get adjacent vertices of the current level vertex to be added to next level
+                    Set<String> adjacentVerticesIds =  getAdjacentVertices(entityVertex, classificationId,
+                            relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds);
+                    verticesToVisitNextLevel.addAll(adjacentVerticesIds);
+                    traversedVerticesIds.addAll(adjacentVerticesIds);
+                    visitedVerticesIds.add(entityVertex.getIdForDisplay());
+                }
             });
             verticesAtCurrentLevel.clear();
             verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
         }
+
 
         result.addAll(traversedVerticesIds);
         requestContext.endMetricRecord(metricRecorder);
