@@ -814,6 +814,7 @@ public class EntityGraphMapper {
                         continue;
 
                     } else if (!entityBmAttributes.containsKey(bmAttrName)) {
+                        //since overwriteBusinessAttributes is false, ignore in case BM attr is not passed at all
                         continue;
                     }
 
