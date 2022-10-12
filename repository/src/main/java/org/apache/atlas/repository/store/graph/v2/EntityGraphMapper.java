@@ -453,14 +453,6 @@ public class EntityGraphMapper {
                         } else {
                             addOrUpdateBusinessAttributes(guid, updatedEntity.getBusinessAttributes(), isOverwriteBusinessAttribute);
                         }
-                        /*if (MapUtils.isEmpty(updatedEntity.getBusinessAttributes())) {
-                            Map<String, Map<String, Object>> businessMetadata = entityRetriever.getBusinessMetadata(vertex);
-                            if (MapUtils.isNotEmpty(businessMetadata)){
-                                removeBusinessAttributes(vertex, entityType, businessMetadata);
-                            }
-                        } else {
-                            setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
-                        }*/
                     }
 
                     setSystemAttributesToEntity(vertex,updatedEntity);
@@ -687,9 +679,10 @@ public class EntityGraphMapper {
             Map<String, Object> bmAttrs     = businessAttrbutes.get(bmName);
             Map<String, Object> currBmAttrs = currEntityBusinessAttributes != null ? currEntityBusinessAttributes.get(bmName) : null;
 
-            if (bmAttrs == null && !isOverwrite) {
+            /*if (bmAttrs == null && !isOverwrite) {
                 continue;
-            } else if (MapUtils.isEmpty(bmAttrs) && MapUtils.isEmpty(currBmAttrs)) { // no change
+            } else*/
+            if (MapUtils.isEmpty(bmAttrs) && MapUtils.isEmpty(currBmAttrs)) { // no change
                 continue;
             } else if (Objects.equals(bmAttrs, currBmAttrs)) { // no change
                 continue;
@@ -811,14 +804,19 @@ public class EntityGraphMapper {
                 Map<String, AtlasBusinessAttribute> bmAttributes       = entry.getValue();
                 Map<String, Object>                 entityBmAttributes = businessAttributes.get(bmName);
 
-                if (MapUtils.isEmpty(entityBmAttributes)) {
+                if (MapUtils.isEmpty(entityBmAttributes) && !businessAttributes.containsKey(bmName)) {
                     continue;
                 }
 
                 for (AtlasBusinessAttribute bmAttribute : bmAttributes.values()) {
                     String bmAttrName = bmAttribute.getName();
 
-                    if (!entityBmAttributes.containsKey(bmAttrName)) {
+                    if (MapUtils.isEmpty(entityBmAttributes)) {
+                        entityVertex.removeProperty(bmAttribute.getVertexPropertyName());
+                        addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, null);
+                        continue;
+
+                    } else if (!entityBmAttributes.containsKey(bmAttrName)) {
                         continue;
                     }
 
@@ -3701,7 +3699,7 @@ public class EntityGraphMapper {
             for (AtlasBusinessAttribute bmAttribute : entityTypeBusinessAttributes.values()) {
                 AtlasType attrType  = bmAttribute.getAttributeType();
                 String    attrName  = bmAttribute.getName();
-                Object    attrValue = entityBusinessAttributes.get(attrName);
+                Object    attrValue = entityBusinessAttributes == null ? null : entityBusinessAttributes.get(attrName);
                 String    fieldName = entityType.getTypeName() + "." + bmName + "." + attrName;
 
                 if (attrValue != null) {
