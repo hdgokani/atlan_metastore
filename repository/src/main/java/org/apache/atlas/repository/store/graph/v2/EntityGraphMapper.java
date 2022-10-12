@@ -678,10 +678,7 @@ public class EntityGraphMapper {
         for (String bmName : entityType.getBusinessAttributes().keySet()) {
             Map<String, Object> bmAttrs     = businessAttrbutes.get(bmName);
             Map<String, Object> currBmAttrs = currEntityBusinessAttributes != null ? currEntityBusinessAttributes.get(bmName) : null;
-
-            /*if (bmAttrs == null && !isOverwrite) {
-                continue;
-            } else*/
+            
             if (MapUtils.isEmpty(bmAttrs) && MapUtils.isEmpty(currBmAttrs)) { // no change
                 continue;
             } else if (Objects.equals(bmAttrs, currBmAttrs)) { // no change
