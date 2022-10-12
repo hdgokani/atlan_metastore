@@ -694,12 +694,12 @@ public class EntityGraphRetriever {
         Set<String>                 verticesAtCurrentLevel    = new HashSet<>();
         Set<String>                 traversedVerticesIds      = new HashSet<>();
         RequestContext              requestContext            = RequestContext.get();
+        LOG.info("Available Processor here : {}",Runtime.getRuntime().availableProcessors());
 
         //Add Source vertex to level 1
         if (entityVertexStart != null) {
             verticesAtCurrentLevel.add(entityVertexStart.getIdForDisplay());
         }
-        // Start Processing the level
         // Start Processing the level
         while (!verticesAtCurrentLevel.isEmpty()) {
             Set<String> verticesToVisitNextLevel = new HashSet<>();
