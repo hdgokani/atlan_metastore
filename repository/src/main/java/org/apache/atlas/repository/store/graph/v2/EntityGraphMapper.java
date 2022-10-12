@@ -450,14 +450,6 @@ public class EntityGraphMapper {
                         } else {
                             addOrUpdateBusinessAttributes(guid, updatedEntity.getBusinessAttributes(), isOverwriteBusinessAttribute);
                         }
-                        /*if (MapUtils.isEmpty(updatedEntity.getBusinessAttributes())) {
-                            Map<String, Map<String, Object>> businessMetadata = entityRetriever.getBusinessMetadata(vertex);
-                            if (MapUtils.isNotEmpty(businessMetadata)){
-                                removeBusinessAttributes(vertex, entityType, businessMetadata);
-                            }
-                        } else {
-                            setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
-                        }*/
                     }
                     
                     setSystemAttributesToEntity(vertex,updatedEntity);
@@ -654,7 +646,7 @@ public class EntityGraphMapper {
         }
 
         if (MapUtils.isEmpty(businessAttrbutes)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "businessAttributes is null/empty");
+            return;
         }
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
