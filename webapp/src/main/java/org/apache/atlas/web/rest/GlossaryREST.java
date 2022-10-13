@@ -54,6 +54,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
+
 @Path("v2/glossary")
 @Service
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
@@ -83,18 +85,7 @@ public class GlossaryREST {
     public List<AtlasGlossary> getGlossaries(@DefaultValue("-1") @QueryParam("limit") final String limit,
                                              @DefaultValue("0") @QueryParam("offset") final String offset,
                                              @DefaultValue("ASC") @QueryParam("sort") final String sort) throws AtlasBaseException {
-        AtlasPerfTracer perf = null;
-
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryREST.getGlossaries()");
-            }
-
-
-            return glossaryService.getGlossaries(Integer.parseInt(limit), Integer.parseInt(offset), toSortOrder(sort));
-        } finally {
-            AtlasPerfTracer.log(perf);
-        }
+        throw new AtlasBaseException(DEPRECATED_API, "/search/indexsearch");
     }
 
     /**
