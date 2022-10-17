@@ -6,15 +6,16 @@ import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.tasks.TaskSearchParams;
 import org.apache.atlas.model.tasks.TaskSearchResult;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
@@ -45,7 +46,7 @@ public class AtlasTaskService implements TaskService {
         DirectIndexQueryResult indexQueryResult;
 
         try {
-            indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
+            indexQuery = searchTask(searchParams);
             indexQueryResult = indexQuery.vertices(searchParams);
 
             if (indexQueryResult != null) {
@@ -79,14 +80,14 @@ public class AtlasTaskService implements TaskService {
 
     @Override
     public void retryTask(String taskGuid) throws AtlasBaseException {
-        AtlasGraphQuery query = graph.query()
-                .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
-                .has(TASK_GUID, taskGuid);
+        TaskSearchParams taskSearchParams = getMatchQuery(taskGuid);
+        AtlasIndexQuery atlasIndexQuery = searchTask(taskSearchParams);
+        DirectIndexQueryResult indexQueryResult = atlasIndexQuery.vertices(taskSearchParams);
 
-        Iterator<AtlasVertex> results = query.vertices().iterator();
+        Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
 
-        if (results.hasNext()) {
-            AtlasVertex atlasVertex = results.next();
+        if (iterator.hasNext()) {
+            AtlasVertex atlasVertex = iterator.next().getVertex();
 
             String status = atlasVertex.getProperty(Constants.TASK_STATUS, String.class);
 
@@ -102,5 +103,22 @@ public class AtlasTaskService implements TaskService {
         } else {
             throw new AtlasBaseException(AtlasErrorCode.TASK_NOT_FOUND, taskGuid);
         }
+    }
+
+    private TaskSearchParams getMatchQuery(String guid) {
+        TaskSearchParams params = new TaskSearchParams();
+        params.setDsl(mapOf("query", mapOf("match", mapOf(TASK_GUID, guid))));
+        return params;
+    }
+
+    private Map<String, Object> mapOf(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+
+        return map;
+    }
+
+    private AtlasIndexQuery searchTask(TaskSearchParams searchParams) {
+        return graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
     }
 }
