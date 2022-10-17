@@ -40,6 +40,7 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
 import org.apache.atlas.model.lineage.AtlasLineageRequest;
 import org.apache.atlas.model.lineage.LineageChildrenInfo;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -621,6 +622,14 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private List<AtlasEdge> getEdgesOfProcess(boolean isInput, AtlasLineageContext lineageContext, AtlasVertex processVertex) {
+        AtlasVertex atlasVertex = AtlasGraphUtilsV2.findByGuid(this.graph, lineageContext.getGuid());
+
+        // In case of column lineage, return empty if level of the request is not column
+        if (processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class).equals("ColumnProcess") &&
+                ! atlasVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class).equals("Column")) {
+            return Collections.emptyList();
+        }
+
         return vertexEdgeCache.getEdges(processVertex, OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE)
                 .stream()
                 .filter(edge -> shouldProcessEdge(lineageContext, edge) && vertexMatchesEvaluation(edge.getInVertex(), lineageContext))
