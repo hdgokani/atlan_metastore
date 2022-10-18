@@ -49,6 +49,7 @@ public class AtlasLineageRequest {
     private SearchParameters.FilterCriteria entityFilters;
 
     private Set<String> attributes;
+    private Set<String> ignoredProcesses;
     private Set<String> relationAttributes;
 
     public AtlasLineageRequest() {
@@ -63,6 +64,7 @@ public class AtlasLineageRequest {
         this.limit = limit;
         this.calculateRemainingVertexCounts = calculateRemainingVertexCounts;
         this.attributes = new HashSet<>();
+        this.ignoredProcesses = new HashSet<>();
         performValidation();
     }
 
@@ -124,6 +126,14 @@ public class AtlasLineageRequest {
 
     public void setAttributes(Set<String> attributes) {
         this.attributes = attributes;
+    }
+
+    public Set<String> getIgnoredProcesses() {
+        return ignoredProcesses;
+    }
+
+    public void setIgnoredProcesses(Set<String> ignoredProcesses) {
+        this.ignoredProcesses = ignoredProcesses;
     }
 
     public SearchParameters.FilterCriteria getEntityFilters() {
