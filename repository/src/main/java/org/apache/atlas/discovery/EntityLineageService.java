@@ -622,11 +622,8 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private List<AtlasEdge> getEdgesOfProcess(boolean isInput, AtlasLineageContext lineageContext, AtlasVertex processVertex) {
-        AtlasVertex atlasVertex = AtlasGraphUtilsV2.findByGuid(this.graph, lineageContext.getGuid());
-
-        // In case of column lineage, return empty if level of the request is not column
-        if (processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class).equals("ColumnProcess") &&
-                ! atlasVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class).equals("Column")) {
+        if (lineageContext.getIgnoredProcesses() != null &&
+                lineageContext.getIgnoredProcesses().contains(processVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class))) {
             return Collections.emptyList();
         }
 
