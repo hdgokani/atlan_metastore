@@ -1314,6 +1314,31 @@ public abstract class DeleteHandlerV1 {
         RequestContext.get().queueTask(task);
     }
 
+    public void createAndQueueTask(String taskType, AtlasEdge edge) {
+        String currentUser = RequestContext.getCurrentUser();
+        boolean isRelationshipEdge = isRelationshipEdge(edge);
+        boolean isTermEntityEdge = GraphHelper.isTermEntityEdge(edge);
+
+        if (edge == null || !isRelationshipEdge) {
+            return;
+        }
+
+        List<AtlasVertex> currentClassificationVertices = GraphHelper.getPropagatableClassifications(edge);
+        for (AtlasVertex currentClassificationVertex : currentClassificationVertices) {
+            AtlasVertex referenceVertex = GraphHelper.getEndVertex(edge);
+            if(referenceVertex == null) {
+                return;
+            }
+            Map<String, Object> taskParams = ClassificationTask.toParameters(currentClassificationVertex.getIdForDisplay(),
+                    referenceVertex.getIdForDisplay(), isTermEntityEdge);
+
+            AtlasTask task  =  taskManagement.createTask(taskType,currentUser,taskParams);
+
+            RequestContext.get().queueTask(task);
+        }
+
+    }
+
     public void createAndQueueTask(String taskType, AtlasEdge relationshipEdge, AtlasRelationship relationship) {
         String              currentUser        = RequestContext.getCurrentUser();
         String              relationshipEdgeId = relationshipEdge.getIdForDisplay();
