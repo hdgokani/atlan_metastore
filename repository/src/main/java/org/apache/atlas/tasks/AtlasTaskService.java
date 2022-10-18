@@ -107,7 +107,7 @@ public class AtlasTaskService implements TaskService {
 
     private TaskSearchParams getMatchQuery(String guid) {
         TaskSearchParams params = new TaskSearchParams();
-        params.setDsl(mapOf("query", mapOf("match", mapOf(TASK_GUID, guid))));
+        params.setDsl(mapOf("query", mapOf("term", mapOf(TASK_GUID, guid))));
         return params;
     }
 
