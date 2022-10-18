@@ -146,11 +146,11 @@ import static org.apache.atlas.repository.graph.GraphHelper.isTermEntityEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getRemovePropagations;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
+import static org.apache.atlas.repository.graph.GraphHelper.getAllClassificationEdges;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
@@ -406,7 +406,7 @@ public class EntityGraphMapper {
                     reqContext.cache(createdEntity);
 
                     if (DEFERRED_ACTION_ENABLED) {
-                        deleteDelegate.getHandler().createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, reqContext.getDeletedEdgesIds());
+                        deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(getAllClassificationEdges(vertex), reqContext.getDeletedEdgesIds());
                     }
                 } catch (AtlasBaseException baseException) {
                     setEntityGuidToException(createdEntity, baseException, context);
@@ -475,7 +475,7 @@ public class EntityGraphMapper {
                     reqContext.cache(updatedEntity);
 
                     if (DEFERRED_ACTION_ENABLED) {
-                        deleteDelegate.getHandler().createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, reqContext.getDeletedEdgesIds());
+                        deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(getAllClassificationEdges(vertex), reqContext.getDeletedEdgesIds());
                     }
 
                 } catch (AtlasBaseException baseException) {
@@ -3409,6 +3409,7 @@ public class EntityGraphMapper {
         }
     }
 
+    // TODO: Will be deprecated
     public void deleteClassificationOnlyPropagation(Set<String> deletedEdgeIds) throws AtlasBaseException {
         RequestContext.get().getDeletedEdgesIds().clear();
         RequestContext.get().getDeletedEdgesIds().addAll(deletedEdgeIds);
@@ -3478,6 +3479,77 @@ public class EntityGraphMapper {
                 LOG.info("Completed remove propagation for edge {} and classification vertex {} with classification name {} and source entity {}", edge.getId(),
                         classificationId, classification.getTypeName(), classification.getEntityGuid());
             }
+        }
+    }
+
+    public void deleteClassificationOnlyPropagation(String deletedEdgeId) throws AtlasBaseException {
+        RequestContext.get().getDeletedEdgesIds().clear();
+        RequestContext.get().getDeletedEdgesIds().add(deletedEdgeId);
+
+        AtlasEdge edge = graph.getEdge(deletedEdgeId);
+
+        boolean isRelationshipEdge = deleteDelegate.getHandler().isRelationshipEdge(edge);
+        boolean isTermEntityEdge = isTermEntityEdge(edge);
+
+        if (edge == null || !isRelationshipEdge) {
+            return;
+        }
+
+        List<AtlasVertex> currentClassificationVertices = getPropagatableClassifications(edge);
+
+        for (AtlasVertex currentClassificationVertex : currentClassificationVertices) {
+            String              classificationId                = currentClassificationVertex.getIdForDisplay();
+            String              sourceEntityId                  = getClassificationEntityGuid(currentClassificationVertex);
+            AtlasVertex         sourceEntityVertex              = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityId);
+            AtlasClassification classification                  = entityRetriever.toAtlasClassification(currentClassificationVertex);
+            boolean             removePropagationOnEntityDelete = getRemovePropagations(currentClassificationVertex);
+
+            if (!(isTermEntityEdge || removePropagationOnEntityDelete)) {
+                continue;
+            }
+
+            String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
+
+            Boolean restrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(currentClassificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
+
+            if (restrictPropagationThroughLineage != null && restrictPropagationThroughLineage) {
+                propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
+            }
+
+            List<String> propagatedVerticesIds = GraphHelper.getPropagatedVerticesIds(currentClassificationVertex);
+            LOG.info("Traversed {} vertices with edge {} for classification vertex {}", propagatedVerticesIds.size(), edge.getId(), classificationId);
+
+            List<String> propagatedVerticesIdsWithoutEdge = entityRetriever.getImpactedVerticesIds(sourceEntityVertex, GraphHelper.getRelationshipGuid(edge), classificationId,
+                    CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode));
+
+            LOG.info("Traversed {} vertices except edge {} for classification vertex {}", propagatedVerticesIdsWithoutEdge.size(), edge.getId(), classificationId);
+
+            List<String>   verticesIdsToRemove = (List<String>)CollectionUtils.subtract(propagatedVerticesIds, propagatedVerticesIdsWithoutEdge);
+
+            propagatedVerticesIdsWithoutEdge.clear();
+            propagatedVerticesIds.clear();
+
+            List<AtlasVertex> verticesToRemove = verticesIdsToRemove.stream().map(x -> graph.getVertex(x)).collect(Collectors.toList());
+
+            LOG.info("To delete classification from {} vertices for deletion of edge {} and classification {}", verticesToRemove.size(), edge.getId(), classificationId);
+
+            while (verticesToRemove.size() >= CHUNK_SIZE)
+            {
+                List<AtlasVertex> chunkedVerticesToRemoveTag = verticesToRemove.subList(0, CHUNK_SIZE);
+
+                processClassificationDeletionFromVerticesInChunk(chunkedVerticesToRemoveTag, currentClassificationVertex, classification);
+
+                chunkedVerticesToRemoveTag.clear();
+
+                transactionInterceptHelper.intercept();
+            }
+
+            processClassificationDeletionFromVerticesInChunk(verticesToRemove, currentClassificationVertex, classification);
+
+            transactionInterceptHelper.intercept();
+
+            LOG.info("Completed remove propagation for edge {} and classification vertex {} with classification name {} and source entity {}", edge.getId(),
+                    classificationId, classification.getTypeName(), classification.getEntityGuid());
         }
     }
 
