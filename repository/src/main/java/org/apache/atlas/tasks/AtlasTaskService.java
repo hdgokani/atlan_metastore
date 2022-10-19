@@ -84,30 +84,34 @@ public class AtlasTaskService implements TaskService {
         AtlasIndexQuery atlasIndexQuery = searchTask(taskSearchParams);
         DirectIndexQueryResult indexQueryResult = atlasIndexQuery.vertices(taskSearchParams);
 
-        Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
+        AtlasVertex atlasVertex = getTaskVertex(indexQueryResult.getIterator(), taskGuid);
 
-        if (iterator.hasNext()) {
-            AtlasVertex atlasVertex = iterator.next().getVertex();
+        String status = atlasVertex.getProperty(Constants.TASK_STATUS, String.class);
 
-            String status = atlasVertex.getProperty(Constants.TASK_STATUS, String.class);
-
-            // Retrial ability of the task is not limited to FAILED ones due to testing/debugging
-            if (! retryAllowedStatuses.contains(status)) {
-                throw new AtlasBaseException(AtlasErrorCode.TASK_STATUS_NOT_APPROPRIATE, taskGuid, status);
-            }
-
-            setEncodedProperty(atlasVertex, Constants.TASK_STATUS, AtlasTask.Status.PENDING);
-            int attemptCount = atlasVertex.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
-            setEncodedProperty(atlasVertex, Constants.TASK_ATTEMPT_COUNT, attemptCount+1);
-            graph.commit();
-        } else {
-            throw new AtlasBaseException(AtlasErrorCode.TASK_NOT_FOUND, taskGuid);
+        // Retrial ability of the task is not limited to FAILED ones due to testing/debugging
+        if (! retryAllowedStatuses.contains(status)) {
+            throw new AtlasBaseException(AtlasErrorCode.TASK_STATUS_NOT_APPROPRIATE, taskGuid, status);
         }
+
+        setEncodedProperty(atlasVertex, Constants.TASK_STATUS, AtlasTask.Status.PENDING);
+        int attemptCount = atlasVertex.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
+        setEncodedProperty(atlasVertex, Constants.TASK_ATTEMPT_COUNT, attemptCount+1);
+        graph.commit();
+    }
+
+    private AtlasVertex getTaskVertex(Iterator<AtlasIndexQuery.Result> iterator, String taskGuid) throws AtlasBaseException {
+        while(iterator.hasNext()) {
+            AtlasVertex atlasVertex = iterator.next().getVertex();
+            if (atlasVertex.getProperty(Constants.TASK_GUID, String.class).equals(taskGuid)) {
+                return atlasVertex;
+            }
+        }
+        throw new AtlasBaseException(AtlasErrorCode.TASK_NOT_FOUND, taskGuid);
     }
 
     private TaskSearchParams getMatchQuery(String guid) {
         TaskSearchParams params = new TaskSearchParams();
-        params.setDsl(mapOf("query", mapOf("term", mapOf(TASK_GUID, guid))));
+        params.setDsl(mapOf("query", mapOf("match", mapOf(TASK_GUID, guid))));
         return params;
     }
 
