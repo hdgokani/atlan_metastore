@@ -3407,8 +3407,17 @@ public class EntityGraphMapper {
         AtlasVertex classificationVertex = graph.getVertex(classificationId);
         AtlasVertex referenceVertex = graph.getVertex(referenceVertexId);
 
-        if (!propagatedClassificationAttachedToVertex(classificationVertex, referenceVertex))
+        if (classificationVertex == null) {
+            LOG.warn("Classification Vertex with ID {} is not present or Deleted", classificationId);
             return;
+        }
+
+        if (referenceVertex != null) {
+            if (!propagatedClassificationAttachedToVertex(classificationVertex, referenceVertex)) {
+                LOG.warn("No Classification is attached to the reference vertex {} for classification {}", referenceVertexId, classificationId);
+                return;
+            }
+        }
 
         processClassificationDeletionOnEdgeDelete(classificationVertex, null, isTermEntityEdge);
     }
