@@ -419,7 +419,6 @@ public class EntityLineageService implements AtlasLineageService {
         List<AtlasEdge> currentVertexEdges = getEdgesOfCurrentVertex(currentVertex, isInput, lineageContext);
         Set<String> paginationCalculatedVertices = new HashSet<>();
         paginationCalculatedVertices.add(currentVertex.getIdForDisplay());
-        ret.setHasChildrenForDirection(getGuid(currentVertex), new LineageChildrenInfo(isInput ? INPUT : OUTPUT, hasMoreChildren(currentVertexEdges)));
         if (lineageContext.shouldApplyPagination()) {
             if (lineageContext.isCalculateRemainingVertexCounts()) {
                 calculateRemainingVertexCounts(currentVertex, isInput, ret);
