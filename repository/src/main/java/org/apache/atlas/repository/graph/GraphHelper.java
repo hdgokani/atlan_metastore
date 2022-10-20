@@ -803,6 +803,24 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static AtlasVertex getEndVertex(AtlasEdge edge) {
+        if(edge != null) {
+            PropagateTags propagateTags = getPropagateTags(edge);
+            AtlasVertex   outVertex     = edge.getOutVertex();
+            AtlasVertex   inVertex      = edge.getInVertex();
+
+            if (propagateTags == PropagateTags.ONE_TO_TWO || propagateTags == PropagateTags.BOTH) {
+                return outVertex;
+            }
+
+            if (propagateTags == PropagateTags.TWO_TO_ONE || propagateTags == PropagateTags.BOTH) {
+                return inVertex;
+            }
+
+        }
+        return null;
+    }
+
     public static List<AtlasVertex> getPropagationEnabledClassificationVertices(AtlasVertex entityVertex) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getPropagationEnabledClassificationVertices");
         List<AtlasVertex> ret   = new ArrayList<>();

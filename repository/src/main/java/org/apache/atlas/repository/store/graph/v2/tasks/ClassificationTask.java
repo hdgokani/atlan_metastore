@@ -50,6 +50,8 @@ public abstract class ClassificationTask extends AbstractTask {
     public static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
     public static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
     public static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
+    public static final String PARAM_REFERENCED_VERTEX_ID     = "referencedVertexId";
+    public static final String PARAM_IS_TERM_ENTITY_EDGE       = "isTermEntityEdge";
     public static final String PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE = "previousRestrictPropagationThroughLineage";
   
     protected final AtlasGraph             graph;
@@ -131,6 +133,14 @@ public abstract class ClassificationTask extends AbstractTask {
     public static Map<String, Object> toParameters(Set<String> deletedEdgeIds) {
         return new HashMap<String, Object>() {{
             put(PARAM_DELETED_EDGE_IDS, AtlasType.toJson(deletedEdgeIds));
+        }};
+    }
+
+    public static Map<String, Object> toParameters(String classificationVertexId, String referencedVertexId, boolean isTermEntityEdge) {
+        return new HashMap<String, Object>() {{
+            put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
+            put(PARAM_REFERENCED_VERTEX_ID, referencedVertexId);
+            put(PARAM_IS_TERM_ENTITY_EDGE, isTermEntityEdge);
         }};
     }
 

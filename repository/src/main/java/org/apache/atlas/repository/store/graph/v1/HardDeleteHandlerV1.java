@@ -24,11 +24,16 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE_ON_HARD_DELETE;
 
 @Component
 @ConditionalOnAtlasProperty(property = "atlas.DeleteHandlerV1.impl")
@@ -56,7 +61,11 @@ public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
 
         authorizeRemoveRelation(edge);
 
-        removeTagPropagation(edge);
+        if (DEFERRED_ACTION_ENABLED) {
+            createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE_ON_HARD_DELETE, edge);
+        } else {
+            removeTagPropagation(edge);
+        }
 
         graphHelper.removeEdge(edge);
     }
