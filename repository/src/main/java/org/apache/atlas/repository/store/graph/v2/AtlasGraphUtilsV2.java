@@ -241,6 +241,11 @@ public class AtlasGraphUtilsV2 {
         return vertex;
     }
 
+    public static AtlasVertex addEncodedListProperty(AtlasVertex vertex, String propertyName, Object value) {
+        return addListProperty(vertex, propertyName, value, true);
+    }
+
+
     public static <T extends AtlasElement> void setProperty(T element, String propertyName, Object value) {
         setProperty(element, propertyName, value, false);
     }
