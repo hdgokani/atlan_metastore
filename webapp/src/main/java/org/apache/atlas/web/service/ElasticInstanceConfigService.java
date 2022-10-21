@@ -48,7 +48,7 @@ public class ElasticInstanceConfigService /*implements Service*/ {
         this.atlasTypeRegistry = atlasTypeRegistry;
     }
 
-    @Override
+    //@Override
     public void start() throws AtlasException {
         try {
             //createInstanceConfigEntity();
@@ -128,7 +128,7 @@ public class ElasticInstanceConfigService /*implements Service*/ {
         }
     }
 
-    @Override
+    //@Override
     public void stop() throws AtlasException {
 
     }
