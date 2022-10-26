@@ -365,7 +365,11 @@ public final class Constants {
     }};
 
     public static final String REQUEST_HEADER_USER_AGENT = "User-Agent";
-    public static final String REQUEST_HEADER_HOST = "Host";
+    public static final String REQUEST_HEADER_HOST       = "Host";
+    public static final String ATLAN_HEADER_PREFIX       = "x-atlan-";
+    public static final String X_ATLAN_AGENT             = ATLAN_HEADER_PREFIX + "agent";
+    public static final String X_ATLAN_AGENT_ID          = ATLAN_HEADER_PREFIX + "agent-id";
+    public static final String X_ATLAN_PACKAGE_ALIAS     = ATLAN_HEADER_PREFIX + "package-alias";
 
     private Constants() {
     }

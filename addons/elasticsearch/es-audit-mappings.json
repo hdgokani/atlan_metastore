@@ -27,6 +27,15 @@
       },
       "eventKey": {
         "type": "keyword"
+      },
+      "x-atlan-agent": {
+        "type": "keyword"
+      },
+      "x-atlan-agent-id": {
+        "type": "keyword"
+      },
+      "x-atlan-package-alias": {
+        "type": "keyword"
       }
     },
     "date_detection": false,
