@@ -406,7 +406,13 @@ public class EntityGraphMapper {
                     reqContext.cache(createdEntity);
 
                     if (DEFERRED_ACTION_ENABLED) {
-                        deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(getAllClassificationEdges(vertex), reqContext.getDeletedEdgesIds());
+                        Set<String> deletedEdgeIds = reqContext.getDeletedEdgesIds();
+                        Set<AtlasVertex> classificationVertices = new HashSet<>();
+                        for (String deletedEdgeId : deletedEdgeIds) {
+                            AtlasEdge edge = graph.getEdge(deletedEdgeId);
+                            classificationVertices.addAll(GraphHelper.getPropagatableClassifications(edge));
+                        }
+                        deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(classificationVertices, reqContext.getDeletedEdgesIds());
                     }
                 } catch (AtlasBaseException baseException) {
                     setEntityGuidToException(createdEntity, baseException, context);
@@ -475,7 +481,13 @@ public class EntityGraphMapper {
                     reqContext.cache(updatedEntity);
 
                     if (DEFERRED_ACTION_ENABLED) {
-                        deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(getAllClassificationEdges(vertex), reqContext.getDeletedEdgesIds());
+                        Set<String> deletedEdgeIds = reqContext.getDeletedEdgesIds();
+                        Set<AtlasVertex> classificationVertices = new HashSet<>();
+                        for (String deletedEdgeId : deletedEdgeIds) {
+                            AtlasEdge edge = graph.getEdge(deletedEdgeId);
+                            classificationVertices.addAll(GraphHelper.getPropagatableClassifications(edge));
+                        }
+                        deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(classificationVertices, reqContext.getDeletedEdgesIds());
                     }
 
                 } catch (AtlasBaseException baseException) {

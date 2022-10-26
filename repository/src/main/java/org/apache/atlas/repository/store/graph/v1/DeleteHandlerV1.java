@@ -89,6 +89,7 @@ public abstract class DeleteHandlerV1 {
     private   final boolean              shouldUpdateInverseReferences;
     private   final boolean              softDelete;
     private   final TaskManagement       taskManagement;
+    private   final AtlasGraph           graph;
 
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
@@ -98,6 +99,7 @@ public abstract class DeleteHandlerV1 {
         this.shouldUpdateInverseReferences = shouldUpdateInverseReference;
         this.softDelete                    = softDelete;
         this.taskManagement                = taskManagement;
+        this.graph                         = graph;
     }
 
     /**
@@ -149,7 +151,13 @@ public abstract class DeleteHandlerV1 {
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 
             if (DEFERRED_ACTION_ENABLED) {
-                createClassificationOnlyPropagationDeleteTasksAndQueue(getAllClassificationEdges(deletionCandidateVertex), RequestContext.get().getDeletedEdgesIds());
+                Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
+                Set<AtlasVertex> classificationVertices = new HashSet<>();
+                for (String deletedEdgeId : deletedEdgeIds) {
+                    AtlasEdge edge = graph.getEdge(deletedEdgeId);
+                    classificationVertices.addAll(GraphHelper.getPropagatableClassifications(edge));
+                }
+                createClassificationOnlyPropagationDeleteTasksAndQueue(classificationVertices, RequestContext.get().getDeletedEdgesIds());
             }
         }
     }
@@ -1278,9 +1286,9 @@ public abstract class DeleteHandlerV1 {
         }
     }
 
-    public void createClassificationOnlyPropagationDeleteTasksAndQueue(List<AtlasEdge> classificationEdges, Set<String> deletedEdgeIds) {
-        for (AtlasEdge classificationEdge : classificationEdges) {
-            String classificationVertexId = classificationEdge.getInVertex().getIdForDisplay();
+    public void createClassificationOnlyPropagationDeleteTasksAndQueue(Set<AtlasVertex> classificationVertices, Set<String> deletedEdgeIds) {
+        for (AtlasVertex classificationVertex : classificationVertices) {
+            String classificationVertexId = classificationVertex.getIdForDisplay();
             for (String deletedEdgeId: deletedEdgeIds) {
                 createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, deletedEdgeId, classificationVertexId);
             }

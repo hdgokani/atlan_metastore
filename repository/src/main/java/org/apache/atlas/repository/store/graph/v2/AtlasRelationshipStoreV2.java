@@ -317,13 +317,14 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         deleteDelegate.getHandler().deleteRelationships(edgesToDelete, false);
 
         if (DEFERRED_ACTION_ENABLED) {
+            Set<AtlasVertex> classificationVertices = new HashSet<>();
             for (AtlasEdge edge: edgesToDelete) {
-                String entityGuid = edge.getInVertex().getIdForDisplay();
-                deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(
-                        GraphHelper.getAllClassificationEdges(graph.getVertex(entityGuid)),
-                        RequestContext.get().getDeletedEdgesIds()
-                );
+                classificationVertices.addAll(GraphHelper.getPropagatableClassifications(edge));
             }
+            deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(
+                    classificationVertices,
+                    RequestContext.get().getDeletedEdgesIds()
+            );
         }
 
         sendNotifications(deletedRelationships, OperationType.RELATIONSHIP_DELETE);
@@ -364,9 +365,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         deleteDelegate.getHandler().deleteRelationships(Collections.singleton(edge), forceDelete);
 
         if (DEFERRED_ACTION_ENABLED) {
-            String entityGuid = edge.getInVertex().getIdForDisplay();
+            Set<AtlasVertex> classificationVertices = new HashSet<>();
+            classificationVertices.addAll(GraphHelper.getPropagatableClassifications(edge));
             deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(
-                    GraphHelper.getAllClassificationEdges(graph.getVertex(entityGuid)),
+                    classificationVertices,
                     RequestContext.get().getDeletedEdgesIds()
             );
         }
