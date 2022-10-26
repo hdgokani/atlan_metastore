@@ -25,7 +25,7 @@ import static org.apache.atlas.AtlasErrorCode.TYPE_NAME_NOT_FOUND;
 
 @Component
 @Order
-public class ElasticInstanceConfigService /*implements Service*/ {
+public class ElasticInstanceConfigService implements Service {
 
     private static final Logger LOG = LoggerFactory.getLogger(ElasticInstanceConfigService.class);
 
@@ -48,10 +48,11 @@ public class ElasticInstanceConfigService /*implements Service*/ {
         this.atlasTypeRegistry = atlasTypeRegistry;
     }
 
-    //@Override
+    @Override
     public void start() throws AtlasException {
+        LOG.info("==> ElasticInstanceConfigService.start()");
         try {
-            //createInstanceConfigEntity();
+            createInstanceConfigEntity();
             //create instanceConfig entity
                 // can be done after start
 
@@ -60,6 +61,8 @@ public class ElasticInstanceConfigService /*implements Service*/ {
             ActiveIndexNameManager.setCurrentWriteVertexIndexName(currentIndexName);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        } finally {
+            LOG.info("<== ElasticInstanceConfigService.start()");
         }
     }
 
@@ -128,7 +131,7 @@ public class ElasticInstanceConfigService /*implements Service*/ {
         }
     }
 
-    //@Override
+    @Override
     public void stop() throws AtlasException {
 
     }
