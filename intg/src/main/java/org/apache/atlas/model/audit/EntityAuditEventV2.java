@@ -20,6 +20,7 @@ package org.apache.atlas.model.audit;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.Clearable;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -134,6 +135,9 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
     private EntityAuditType     type;
     private Map<String, Object> detail;
     private AtlasEntityHeader   entityDetail;
+    private String              headerAtlanAgent;
+    private String              headerAtlanAgentId;
+    private String              headerAtlanPackageAlias;
 
     public EntityAuditEventV2() { }
 
@@ -263,6 +267,33 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         this.entityQualifiedName = entityQualifiedName;
     }
 
+    @JsonProperty("x-atlan-agent")
+    public String getHeaderAtlanAgent() {
+        return headerAtlanAgent;
+    }
+
+    public void setHeaderAtlanAgent(String headerAtlanAgent) {
+        this.headerAtlanAgent = headerAtlanAgent;
+    }
+
+    @JsonProperty("x-atlan-agent-id")
+    public String getHeaderAtlanAgentId() {
+        return headerAtlanAgentId;
+    }
+
+    public void setHeaderAtlanAgentId(String headerAtlanAgentId) {
+        this.headerAtlanAgentId = headerAtlanAgentId;
+    }
+
+    @JsonProperty("x-atlan-package-alias")
+    public String getHeaderAtlanPackageAlias() {
+        return headerAtlanPackageAlias;
+    }
+
+    public void setHeaderAtlanPackageAlias(String headerAtlanPackageAlias) {
+        this.headerAtlanPackageAlias = headerAtlanPackageAlias;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) { return true; }
@@ -280,12 +311,15 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
                Objects.equals(detail, that.detail) &&
                Objects.equals(created, that.created) &&
                Objects.equals(typeName, that.typeName) &&
-               Objects.equals(entityQualifiedName, that.entityQualifiedName);
+               Objects.equals(entityQualifiedName, that.entityQualifiedName) &&
+               Objects.equals(headerAtlanAgent, that.headerAtlanAgent) &&
+               Objects.equals(headerAtlanAgentId, that.headerAtlanAgentId) &&
+               Objects.equals(headerAtlanPackageAlias, that.headerAtlanPackageAlias);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity, type, detail, created, entityQualifiedName, typeName);
+        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity, type, detail, created, entityQualifiedName, typeName, headerAtlanAgent, headerAtlanAgentId, headerAtlanPackageAlias);
     }
 
     @Override
@@ -304,6 +338,9 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         sb.append(", type=").append(type);
         sb.append(", detail=").append(detail);
         sb.append(", created=").append(created);
+        sb.append(", headerAtlanAgent=").append(headerAtlanAgent);
+        sb.append(", headerAtlanAgentId=").append(headerAtlanAgentId);
+        sb.append(", headerAtlanPackageAlias=").append(headerAtlanPackageAlias);
         sb.append('}');
 
         return sb.toString();
@@ -334,6 +371,9 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         type = null;
         detail = null;
         created = 0L;
+        headerAtlanAgent = null;
+        headerAtlanAgentId = null;
+        headerAtlanPackageAlias = null;
     }
 
     private String getJsonPartFromDetails() {

@@ -56,6 +56,9 @@ import java.text.MessageFormat;
 import java.util.*;
 
 import static java.nio.charset.Charset.defaultCharset;
+import static org.apache.atlas.repository.Constants.X_ATLAN_AGENT;
+import static org.apache.atlas.repository.Constants.X_ATLAN_AGENT_ID;
+import static org.apache.atlas.repository.Constants.X_ATLAN_PACKAGE_ALIAS;
 import static org.springframework.util.StreamUtils.copyToString;
 
 /**
@@ -79,6 +82,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String USER = "user";
     private static final String DETAIL = "detail";
     private static final String ENTITY = "entity";
+    private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
 
     /*
     *    created   → event creation time
@@ -111,9 +115,10 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
         try {
             if (events != null && events.size() > 0) {
-                String entityPayloadTemplate = "'{'\"entityId\":\"{0}\",\"action\":\"{1}\",\"detail\":{2},\"user\":\"{3}\", \"eventKey\":\"{4}\", " +
-                        "\"entityQualifiedName\": {5}, \"typeName\": \"{6}\",\"created\":{7}, \"timestamp\":{8}'}'";
-                String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
+
+                Optional<String> requestContextHeadersString = RequestContext.get().getRequestContextHeadersAsString();
+                String entityPayloadTemplate = getQueryTemplate(requestContextHeadersString);
+
                 StringBuilder bulkRequestBody = new StringBuilder();
                 for (EntityAuditEventV2 event : events) {
                     String created = String.format("%s", event.getTimestamp());
@@ -163,6 +168,19 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         } catch (Exception e) {
             throw new AtlasBaseException("Unable to push entity audits to ES", e);
         }
+    }
+
+    private String getQueryTemplate(Optional<String> requestContextHeadersString) {
+        StringBuilder template = new StringBuilder();
+
+        template.append("'{'\"entityId\":\"{0}\",\"action\":\"{1}\",\"detail\":{2},\"user\":\"{3}\", \"eventKey\":\"{4}\", " +
+                        "\"entityQualifiedName\": {5}, \"typeName\": \"{6}\",\"created\":{7}, \"timestamp\":{8}");
+
+        requestContextHeadersString.ifPresent(template::append);
+
+        template.append("'}'");
+
+        return template.toString();
     }
 
     @Override
@@ -241,6 +259,16 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             String eventKey = (String) source.get(EVENT_KEY);
             if (StringUtils.isEmpty(eventKey)) {
                 eventKey = event.getEntityId() + ":" + event.getTimestamp();
+            }
+
+            if (StringUtils.isNotEmpty((String) source.get(X_ATLAN_AGENT))) {
+                event.setHeaderAtlanAgent((String) source.get(X_ATLAN_AGENT));
+            }
+            if (StringUtils.isNotEmpty((String) source.get(X_ATLAN_AGENT_ID))) {
+                event.setHeaderAtlanAgentId((String) source.get(X_ATLAN_AGENT_ID));
+            }
+            if (StringUtils.isNotEmpty((String) source.get(X_ATLAN_PACKAGE_ALIAS))) {
+                event.setHeaderAtlanPackageAlias((String) source.get(X_ATLAN_PACKAGE_ALIAS));
             }
 
             event.setEventKey(eventKey);
@@ -459,5 +487,4 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private boolean isSuccess(Response response) {
         return response.getStatusLine().getStatusCode() == 200;
     }
-
 }
