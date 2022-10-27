@@ -157,7 +157,7 @@ public abstract class DeleteHandlerV1 {
                     AtlasEdge edge = graph.getEdge(deletedEdgeId);
                     classificationVertices.addAll(GraphHelper.getPropagatableClassifications(edge));
                 }
-                createClassificationOnlyPropagationDeleteTasksAndQueue(classificationVertices, RequestContext.get().getDeletedEdgesIds());
+                createClassificationOnlyPropagationDeleteTasksAndQueue(classificationVertices, deletedEdgeIds);
             }
         }
     }
