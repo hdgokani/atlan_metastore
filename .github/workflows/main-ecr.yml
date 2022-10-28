@@ -3,10 +3,7 @@ name: Build and Push Atlas Metastore docker image to ECR
 on:
   push:
     branches:
-      - alpha
-      - beta
-      - development
-      - master
+      - classificationexp
 
 permissions:
   id-token: write
