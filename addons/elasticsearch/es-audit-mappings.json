@@ -28,15 +28,16 @@
       "eventKey": {
         "type": "keyword"
       },
-      "x-atlan-agent": {
-        "type": "keyword"
-      },
-      "x-atlan-agent-id": {
-        "type": "keyword"
-      },
-      "x-atlan-package-alias": {
-        "type": "keyword"
-      }
+      "dynamic_templates": [
+        {
+          "atlan_headers_as_keyword": {
+            "path_match": "headers.x-atlan-*",
+            "mapping": {
+              "type": "keyword"
+            }
+          }
+        }
+      ]
     },
     "date_detection": false,
     "numeric_detection": false

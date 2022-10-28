@@ -517,14 +517,8 @@ public class RequestContext {
         }
     }
 
-    public Optional<String> getRequestContextHeadersAsString() {
-        StringBuilder headerString = new StringBuilder();
-
-        for (String header : requestContextHeaders.keySet()) {
-            headerString.append(",").append("\"").append(header).append("\"").append(":").append("\"").append(requestContextHeaders.get(header)).append("\"");
-        }
-
-        return Optional.of(headerString.toString());
+    public Map<String, String> getRequestContextHeaders() {
+        return requestContextHeaders;
     }
 
     public MetricRecorder startMetricRecord(String name) { return metrics != null ? metrics.getMetricRecorder(name) : null; }

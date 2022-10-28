@@ -28,6 +28,7 @@ import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasType;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
@@ -116,8 +117,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         try {
             if (events != null && events.size() > 0) {
 
-                Optional<String> requestContextHeadersString = RequestContext.get().getRequestContextHeadersAsString();
-                String entityPayloadTemplate = getQueryTemplate(requestContextHeadersString);
+                Map<String, String> requestContextHeaders = RequestContext.get().getRequestContextHeaders();
+                String entityPayloadTemplate = getQueryTemplate(requestContextHeaders);
 
                 StringBuilder bulkRequestBody = new StringBuilder();
                 for (EntityAuditEventV2 event : events) {
@@ -170,13 +171,19 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         }
     }
 
-    private String getQueryTemplate(Optional<String> requestContextHeadersString) {
+    private String getQueryTemplate(Map<String, String> requestContextHeaders) {
         StringBuilder template = new StringBuilder();
 
         template.append("'{'\"entityId\":\"{0}\",\"action\":\"{1}\",\"detail\":{2},\"user\":\"{3}\", \"eventKey\":\"{4}\", " +
                         "\"entityQualifiedName\": {5}, \"typeName\": \"{6}\",\"created\":{7}, \"timestamp\":{8}");
 
-        requestContextHeadersString.ifPresent(template::append);
+        if (MapUtils.isNotEmpty(requestContextHeaders)) {
+            template.append(",")
+                    .append("\"").append("headers").append("\"")
+                    .append(":")
+                    .append(AtlasType.toJson(requestContextHeaders).replaceAll("\\{", "'{").replaceAll("\\}", "'}"));
+
+        }
 
         template.append("'}'");
 
@@ -261,15 +268,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 eventKey = event.getEntityId() + ":" + event.getTimestamp();
             }
 
-            if (StringUtils.isNotEmpty((String) source.get(X_ATLAN_AGENT))) {
-                event.setHeaderAtlanAgent((String) source.get(X_ATLAN_AGENT));
-            }
-            if (StringUtils.isNotEmpty((String) source.get(X_ATLAN_AGENT_ID))) {
-                event.setHeaderAtlanAgentId((String) source.get(X_ATLAN_AGENT_ID));
-            }
-            if (StringUtils.isNotEmpty((String) source.get(X_ATLAN_PACKAGE_ALIAS))) {
-                event.setHeaderAtlanPackageAlias((String) source.get(X_ATLAN_PACKAGE_ALIAS));
-            }
+            event.setHeaders((Map<String, String>) source.get("headers"));
 
             event.setEventKey(eventKey);
             entityAudits.add(event);
