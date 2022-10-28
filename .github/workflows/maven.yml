@@ -21,6 +21,10 @@ name: Java CI with Maven
 on:
   push:
     branches:
+      - alpha
+      - beta
+      - development
+      - master
       - classificationexp
 
 jobs:
