@@ -152,12 +152,10 @@ public abstract class DeleteHandlerV1 {
 
             if (DEFERRED_ACTION_ENABLED) {
                 Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
-                Set<AtlasVertex> classificationVertices = new HashSet<>();
                 for (String deletedEdgeId : deletedEdgeIds) {
                     AtlasEdge edge = graph.getEdge(deletedEdgeId);
-                    classificationVertices.addAll(GraphHelper.getPropagatableClassifications(edge));
+                    createClassificationOnlyPropagationDeleteTasksAndQueue(GraphHelper.getPropagatableClassifications(edge), deletedEdgeId);
                 }
-                createClassificationOnlyPropagationDeleteTasksAndQueue(classificationVertices, deletedEdgeIds);
             }
         }
     }
@@ -1286,12 +1284,10 @@ public abstract class DeleteHandlerV1 {
         }
     }
 
-    public void createClassificationOnlyPropagationDeleteTasksAndQueue(Set<AtlasVertex> classificationVertices, Set<String> deletedEdgeIds) {
+    public void createClassificationOnlyPropagationDeleteTasksAndQueue(List<AtlasVertex> classificationVertices, String deletedEdgeId) {
         for (AtlasVertex classificationVertex : classificationVertices) {
             String classificationVertexId = classificationVertex.getIdForDisplay();
-            for (String deletedEdgeId: deletedEdgeIds) {
-                createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, deletedEdgeId, classificationVertexId);
-            }
+            createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, deletedEdgeId, classificationVertexId);
         }
     }
 

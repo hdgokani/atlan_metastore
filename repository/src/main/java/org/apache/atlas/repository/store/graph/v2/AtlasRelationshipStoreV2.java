@@ -317,14 +317,14 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         deleteDelegate.getHandler().deleteRelationships(edgesToDelete, false);
 
         if (DEFERRED_ACTION_ENABLED) {
-            Set<AtlasVertex> classificationVertices = new HashSet<>();
-            for (AtlasEdge edge: edgesToDelete) {
-                classificationVertices.addAll(GraphHelper.getPropagatableClassifications(edge));
+            Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
+            for (String deletedEdgeId : deletedEdgeIds) {
+                AtlasEdge deletedEdge = graph.getEdge(deletedEdgeId);
+                deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(
+                        GraphHelper.getPropagatableClassifications(deletedEdge),
+                        deletedEdgeId
+                );
             }
-            deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(
-                    classificationVertices,
-                    RequestContext.get().getDeletedEdgesIds()
-            );
         }
 
         sendNotifications(deletedRelationships, OperationType.RELATIONSHIP_DELETE);
@@ -365,12 +365,14 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         deleteDelegate.getHandler().deleteRelationships(Collections.singleton(edge), forceDelete);
 
         if (DEFERRED_ACTION_ENABLED) {
-            Set<AtlasVertex> classificationVertices = new HashSet<>();
-            classificationVertices.addAll(GraphHelper.getPropagatableClassifications(edge));
-            deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(
-                    classificationVertices,
-                    RequestContext.get().getDeletedEdgesIds()
-            );
+            Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
+            for (String deletedEdgeId : deletedEdgeIds) {
+                AtlasEdge deletedEdge = graph.getEdge(deletedEdgeId);
+                deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(
+                        GraphHelper.getPropagatableClassifications(deletedEdge),
+                        deletedEdgeId
+                );
+            }
         }
 
         sendNotifications(entityRetriever.mapEdgeToAtlasRelationship(edge), OperationType.RELATIONSHIP_DELETE);

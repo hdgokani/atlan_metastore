@@ -407,12 +407,10 @@ public class EntityGraphMapper {
 
                     if (DEFERRED_ACTION_ENABLED) {
                         Set<String> deletedEdgeIds = reqContext.getDeletedEdgesIds();
-                        Set<AtlasVertex> classificationVertices = new HashSet<>();
                         for (String deletedEdgeId : deletedEdgeIds) {
                             AtlasEdge edge = graph.getEdge(deletedEdgeId);
-                            classificationVertices.addAll(GraphHelper.getPropagatableClassifications(edge));
+                            deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(GraphHelper.getPropagatableClassifications(edge), deletedEdgeId);
                         }
-                        deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(classificationVertices, deletedEdgeIds);
                     }
                 } catch (AtlasBaseException baseException) {
                     setEntityGuidToException(createdEntity, baseException, context);
@@ -482,12 +480,10 @@ public class EntityGraphMapper {
 
                     if (DEFERRED_ACTION_ENABLED) {
                         Set<String> deletedEdgeIds = reqContext.getDeletedEdgesIds();
-                        Set<AtlasVertex> classificationVertices = new HashSet<>();
                         for (String deletedEdgeId : deletedEdgeIds) {
                             AtlasEdge edge = graph.getEdge(deletedEdgeId);
-                            classificationVertices.addAll(GraphHelper.getPropagatableClassifications(edge));
+                            deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(GraphHelper.getPropagatableClassifications(edge), deletedEdgeId);
                         }
-                        deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(classificationVertices, deletedEdgeIds);
                     }
 
                 } catch (AtlasBaseException baseException) {
