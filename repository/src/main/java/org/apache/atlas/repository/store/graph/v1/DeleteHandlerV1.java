@@ -149,7 +149,7 @@ public abstract class DeleteHandlerV1 {
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 
             if (DEFERRED_ACTION_ENABLED) {
-                createClassificationOnlyPropagationDeleteTasksAndQueue(getAllClassificationEdges(deletionCandidateVertex), RequestContext.get().getDeletedEdgesIds());
+                createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, RequestContext.get().getDeletedEdgesIds());
             }
         }
     }
@@ -1278,15 +1278,6 @@ public abstract class DeleteHandlerV1 {
         }
     }
 
-    public void createClassificationOnlyPropagationDeleteTasksAndQueue(List<AtlasEdge> classificationEdges, Set<String> deletedEdgeIds) {
-        for (AtlasEdge classificationEdge : classificationEdges) {
-            String classificationVertexId = classificationEdge.getInVertex().getIdForDisplay();
-            for (String deletedEdgeId: deletedEdgeIds) {
-                createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, deletedEdgeId, classificationVertexId);
-            }
-        }
-    }
-
     public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid, Boolean currentRestrictPropagationThroughLineage) {
         String              currentUser = RequestContext.getCurrentUser();
         String              entityGuid  = GraphHelper.getGuid(entityVertex);
@@ -1309,15 +1300,14 @@ public abstract class DeleteHandlerV1 {
         RequestContext.get().queueTask(task);
     }
 
-
-    public void createAndQueueTask(String taskType, String deletedEdgeId, String classificationVertexId) {
+    public void createAndQueueTask(String taskType, Set<String> deletedEdgeIds) {
         String currentUser = RequestContext.getCurrentUser();
 
-        if (deletedEdgeId == null) {
+        if (CollectionUtils.isEmpty(deletedEdgeIds)) {
             return;
         }
 
-        Map<String, Object> taskParams  = ClassificationTask.toParameters(deletedEdgeId, classificationVertexId);
+        Map<String, Object> taskParams  = ClassificationTask.toParameters(deletedEdgeIds);
         AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams);
 
         RequestContext.get().queueTask(task);
