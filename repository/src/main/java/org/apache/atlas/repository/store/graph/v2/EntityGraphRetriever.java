@@ -87,6 +87,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
@@ -579,7 +581,7 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    public List<AtlasVertex> getIncludedImpactedVerticesV3(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
+    public List<AtlasVertex> getIncludedImpactedVerticesV3(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) throws AtlasBaseException {
         List<String> verticesIds = new ArrayList<>(Arrays.asList(entityVertex.getIdForDisplay()));
 
         traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, verticesIds, edgeLabelsToExclude);
@@ -589,7 +591,7 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
+    public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) throws AtlasBaseException {
         List<String > ret = new ArrayList<>();
 
         traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
@@ -688,13 +690,14 @@ public class EntityGraphRetriever {
     }
 
     private void traverseImpactedVerticesByLevel(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
-                                          final String classificationId, final List<String> result, List<String> edgeLabelsToExclude) {
+                                          final String classificationId, final List<String> result, List<String> edgeLabelsToExclude) throws  AtlasBaseException{
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseImpactedVerticesByLevel");
         Set<String>                 visitedVerticesIds        = new HashSet<>();
         Set<String>                 verticesAtCurrentLevel    = new HashSet<>();
         Set<String>                 traversedVerticesIds      = new HashSet<>();
         RequestContext              requestContext            = RequestContext.get();
-        LOG.info("Available Processor here : {}",Runtime.getRuntime().availableProcessors());
+
+        ForkJoinPool customThreadPool = new ForkJoinPool(10);
 
         //Add Source vertex to level 1
         if (entityVertexStart != null) {
@@ -703,21 +706,41 @@ public class EntityGraphRetriever {
         // Start Processing the level
         while (!verticesAtCurrentLevel.isEmpty()) {
             Set<String> verticesToVisitNextLevel = new HashSet<>();
-            verticesAtCurrentLevel.parallelStream().forEach(x -> {
-                AtlasVertex entityVertex = graph.getVertex(x);
-                if (!visitedVerticesIds.contains(x)) {
-                    //get adjacent vertices of the current level vertex to be added to next level
-                    Set<String> adjacentVerticesIds =  getAdjacentVertices(entityVertex, classificationId,
-                            relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds);
-                    verticesToVisitNextLevel.addAll(adjacentVerticesIds);
-                    traversedVerticesIds.addAll(adjacentVerticesIds);
-                    visitedVerticesIds.add(entityVertex.getIdForDisplay());
-                }
-            });
+            try {
+                customThreadPool.submit(() -> verticesAtCurrentLevel.parallelStream().forEach(x -> {
+                    AtlasVertex entityVertex = graph.getVertex(x);
+                    if (!visitedVerticesIds.contains(x)) {
+                        //get adjacent vertices of the current level vertex to be added to next level
+                        Set<String> adjacentVerticesIds =  getAdjacentVertices(entityVertex, classificationId,
+                                relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds);
+                        verticesToVisitNextLevel.addAll(adjacentVerticesIds);
+                        traversedVerticesIds.addAll(adjacentVerticesIds);
+                        visitedVerticesIds.add(entityVertex.getIdForDisplay());
+                    }
+                })).get();
+            } catch (InterruptedException e) {
+               throw new AtlasBaseException(e.getMessage());
+            } catch (ExecutionException e) {
+                throw new AtlasBaseException(e.getMessage());
+            }
+//            verticesAtCurrentLevel.parallelStream().forEach(x -> {
+//                AtlasVertex entityVertex = graph.getVertex(x);
+//                if (!visitedVerticesIds.contains(x)) {
+//                    //get adjacent vertices of the current level vertex to be added to next level
+//                    Set<String> adjacentVerticesIds =  getAdjacentVertices(entityVertex, classificationId,
+//                            relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds);
+//                    verticesToVisitNextLevel.addAll(adjacentVerticesIds);
+//                    traversedVerticesIds.addAll(adjacentVerticesIds);
+//                    visitedVerticesIds.add(entityVertex.getIdForDisplay());
+//                }
+//            });
             verticesAtCurrentLevel.clear();
             verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
         }
 
+        LOG.info("Currently running {} threads in custom thread pool",customThreadPool.getActiveThreadCount());
+
+        customThreadPool.shutdown();
 
         result.addAll(traversedVerticesIds);
         requestContext.endMetricRecord(metricRecorder);
