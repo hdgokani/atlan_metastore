@@ -21,7 +21,6 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.sun.tools.javac.util.GraphUtils;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -456,19 +455,15 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static List<String> getPropagatedVerticesIds (AtlasVertex classificationVertex) {
-        List<String>            ret      =  new ArrayList<>();
-        Iterator<AtlasVertex>   vertices =  classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
-                                                            .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
-                                                            .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
-                                                            .vertices().iterator();
+    public static List<AtlasVertex> getPropagatedVertices(AtlasVertex classificationVertex) {
+        List<AtlasVertex>   ret      =  new ArrayList<AtlasVertex>();
+        Iterator<AtlasVertex>            vertices =  classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
+                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
+                .vertices().iterator();
 
         if (vertices != null) {
-            while(vertices.hasNext()){
-                String vertexId = vertices.next().getIdForDisplay();
-                ret.add(vertexId);
-            }
-
+            ret = IteratorUtils.toList(vertices);
         }
 
         return ret;
