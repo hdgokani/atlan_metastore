@@ -88,8 +88,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
@@ -698,7 +697,7 @@ public class EntityGraphRetriever {
         Set<String>                 traversedVerticesIds      = new HashSet<>();
         RequestContext              requestContext            = RequestContext.get();
 
-        ForkJoinPool customThreadPool = new ForkJoinPool(10);
+        ExecutorService executorService = Executors.newWorkStealingPool(100);
 
         //Add Source vertex to level 1
         if (entityVertexStart != null) {
@@ -707,48 +706,32 @@ public class EntityGraphRetriever {
         // Start Processing the level
         while (!verticesAtCurrentLevel.isEmpty()) {
             Set<String> verticesToVisitNextLevel = new HashSet<>();
-            try {
-                customThreadPool.submit(() -> verticesAtCurrentLevel.parallelStream().forEach(x -> {
-                    AtlasVertex entityVertex = graph.getVertex(x);
-                    if (!visitedVerticesIds.contains(x)) {
-                        //get adjacent vertices of the current level vertex to be added to next level
-                        Set<String> adjacentVerticesIds =  getAdjacentVertices(entityVertex, classificationId,
-                                relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds);
-                        verticesToVisitNextLevel.addAll(adjacentVerticesIds);
-                        traversedVerticesIds.addAll(adjacentVerticesIds);
+            List<CompletableFuture<Set<String>>> futures = verticesAtCurrentLevel.stream()
+                    .map(t -> CompletableFuture.supplyAsync(() -> {
+                        AtlasVertex entityVertex  = graph.getVertex(t);
                         visitedVerticesIds.add(entityVertex.getIdForDisplay());
-                    }
-                })).get();
-            } catch (InterruptedException e) {
-               throw new AtlasBaseException(e.getMessage());
-            } catch (ExecutionException e) {
-                throw new AtlasBaseException(e.getMessage());
-            }
-//            verticesAtCurrentLevel.parallelStream().forEach(x -> {
-//                AtlasVertex entityVertex = graph.getVertex(x);
-//                if (!visitedVerticesIds.contains(x)) {
-//                    //get adjacent vertices of the current level vertex to be added to next level
-//                    Set<String> adjacentVerticesIds =  getAdjacentVertices(entityVertex, classificationId,
-//                            relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds);
-//                    verticesToVisitNextLevel.addAll(adjacentVerticesIds);
-//                    traversedVerticesIds.addAll(adjacentVerticesIds);
-//                    visitedVerticesIds.add(entityVertex.getIdForDisplay());
-//                }
-//            });
+                        return getAdjacentVertices(graph.getVertex(t), classificationId,
+                                    relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds);
+
+                    }, executorService)).collect(Collectors.toList());
+
+            futures.stream().map(CompletableFuture::join).forEach(x -> {
+                verticesToVisitNextLevel.addAll(x);
+                traversedVerticesIds.addAll(x);
+            });
+
             verticesAtCurrentLevel.clear();
             verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
         }
 
-        LOG.info("Currently running {} threads in custom thread pool",customThreadPool.getActiveThreadCount());
-
-        customThreadPool.shutdown();
+        executorService.shutdownNow();
 
         result.addAll(traversedVerticesIds);
         requestContext.endMetricRecord(metricRecorder);
 
     }
 
-    private Set<String> getAdjacentVertices(AtlasVertex entityVertex,final String classificationId, final String relationshipGuidToExclude
+    private Set<String> getAdjacentVertices(AtlasVertex entityVertex, final String classificationId, final String relationshipGuidToExclude
             ,List<String> edgeLabelsToExclude, Set<String> visitedVerticesIds) {
 
         AtlasEntityType         entityType          = typeRegistry.getEntityTypeByName(getTypeName(entityVertex));
