@@ -696,7 +696,7 @@ public class EntityGraphRetriever {
         Set<String>                 traversedVerticesIds      = new HashSet<>();
         RequestContext              requestContext            = RequestContext.get();
 
-        ExecutorService executorService = Executors.newWorkStealingPool(100);
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
 
         //Add Source vertex to level 1
         if (entityVertexStart != null) {
@@ -713,6 +713,7 @@ public class EntityGraphRetriever {
                                     relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds);
 
                     }, executorService)).collect(Collectors.toList());
+
 
             futures.stream().map(CompletableFuture::join).forEach(x -> {
                 verticesToVisitNextLevel.addAll(x);
