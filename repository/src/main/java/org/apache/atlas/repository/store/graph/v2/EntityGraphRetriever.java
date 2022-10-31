@@ -580,6 +580,16 @@ public class EntityGraphRetriever {
         return ret;
     }
 
+    public List<AtlasVertex> getImpactedVerticesV3(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) throws AtlasBaseException {
+        List<String> verticesIds = new ArrayList<>();
+
+        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, verticesIds, edgeLabelsToExclude);
+
+        List<AtlasVertex> ret = verticesIds.stream().map(x -> graph.getVertex(x)).collect(Collectors.toList());
+
+        return ret;
+    }
+
     public List<AtlasVertex> getIncludedImpactedVerticesV3(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) throws AtlasBaseException {
         List<String> verticesIds = new ArrayList<>(Arrays.asList(entityVertex.getIdForDisplay()));
 
