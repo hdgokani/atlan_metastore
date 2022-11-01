@@ -456,7 +456,7 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static List<AtlasVertex> getPropagatedVertices(AtlasVertex classificationVertex) {
+    public static List<AtlasVertex> getPropagatedVertices (AtlasVertex classificationVertex) {
         List<AtlasVertex>   ret      =  new ArrayList<AtlasVertex>();
         Iterator<AtlasVertex>            vertices =  classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
                                                             .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
@@ -464,7 +464,7 @@ public final class GraphHelper {
                                                             .vertices().iterator();
 
         if (vertices != null) {
-            ret = IteratorUtils.toList(vertices);
+           ret = IteratorUtils.toList(vertices);
         }
 
         return ret;
