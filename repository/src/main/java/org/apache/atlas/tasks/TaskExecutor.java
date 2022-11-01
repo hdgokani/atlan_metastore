@@ -169,6 +169,8 @@ public class TaskExecutor {
 
                 latch.countDown();
                 RequestContext.get().clearCache();
+
+                System.gc();
                 AtlasPerfTracer.log(perf);
             }
         }

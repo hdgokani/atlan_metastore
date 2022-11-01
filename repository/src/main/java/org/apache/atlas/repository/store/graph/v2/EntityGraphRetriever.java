@@ -587,6 +587,8 @@ public class EntityGraphRetriever {
 
         List<AtlasVertex> ret = verticesIds.stream().map(x -> graph.getVertex(x)).collect(Collectors.toList());
 
+        verticesIds.clear();
+
         return ret;
     }
 
