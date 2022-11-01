@@ -3461,20 +3461,20 @@ public class EntityGraphMapper {
 
                 LOG.info("To delete classification from {} vertices for deletion of edge {} and classification {}", verticesToRemove.size(), edge.getId(), classificationId);
 
-                while (verticesToRemove.size() >= CHUNK_SIZE)
-                {
-                    List<AtlasVertex> chunkedVerticesToRemoveTag = verticesToRemove.subList(0, CHUNK_SIZE);
-
-                    processClassificationDeletionFromVerticesInChunk(chunkedVerticesToRemoveTag, currentClassificationVertex, classification);
-
-                    chunkedVerticesToRemoveTag.clear();
-
-                    transactionInterceptHelper.intercept();
-                }
-
-                processClassificationDeletionFromVerticesInChunk(verticesToRemove, currentClassificationVertex, classification);
-
-                transactionInterceptHelper.intercept();
+//                while (verticesToRemove.size() >= CHUNK_SIZE)
+//                {
+//                    List<AtlasVertex> chunkedVerticesToRemoveTag = verticesToRemove.subList(0, CHUNK_SIZE);
+//
+//                    processClassificationDeletionFromVerticesInChunk(chunkedVerticesToRemoveTag, currentClassificationVertex, classification);
+//
+//                    chunkedVerticesToRemoveTag.clear();
+//
+//                    transactionInterceptHelper.intercept();
+//                }
+//
+//                processClassificationDeletionFromVerticesInChunk(verticesToRemove, currentClassificationVertex, classification);
+//
+//                transactionInterceptHelper.intercept();
 
                 LOG.info("Completed remove propagation for edge {} and classification vertex {} with classification name {} and source entity {}", edge.getId(),
                         classificationId, classification.getTypeName(), classification.getEntityGuid());
