@@ -7,7 +7,6 @@ on:
       - beta
       - development
       - master
-      - ecrdevnew
 
 permissions:
   id-token: write
