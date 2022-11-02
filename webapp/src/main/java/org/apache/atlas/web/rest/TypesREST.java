@@ -28,6 +28,7 @@ import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.TypeCacheRefresher;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.dto.TypeSyncResponse;
@@ -472,25 +473,75 @@ public class TypesREST {
     @POST
     @Path("/typeDefSync/typeDefLock")
     public boolean lockTypeDefUpdates() throws AtlasBaseException {
-        return elasticInstanceConfigService.lockTypeDefUpdates();
+        AtlasPerfTracer perf = null;
+        boolean ret;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.lockTypeDefUpdates()");
+            }
+
+            ret = elasticInstanceConfigService.lockTypeDefUpdates();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+
+        return ret;
     }
 
     @DELETE
     @Path("/typeDefSync/typeDefLock")
     public boolean unlockTypeDefUpdates() throws AtlasBaseException {
-        return elasticInstanceConfigService.unlockTypeDefUpdates();
+        AtlasPerfTracer perf = null;
+        boolean ret;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.unlockTypeDefUpdates()");
+            }
+
+            ret = elasticInstanceConfigService.unlockTypeDefUpdates();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+        return ret;
     }
 
     @POST
     @Path("/syncTypeDefs")
     public TypeSyncResponse syncTypeDefs(final AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException {
-        return typeSyncService.syncTypes(newTypeDefinitions);
+        AtlasPerfTracer perf = null;
+        TypeSyncResponse ret;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.syncTypeDefs()");
+            }
+
+            LOG.info("newTypeDefinitions is_null: {}", newTypeDefinitions == null);
+            LOG.info("newTypeDefinitions: {}", AtlasType.toJson(newTypeDefinitions));
+            ret = typeSyncService.syncTypes(newTypeDefinitions);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+
+        return ret;
     }
 
     @DELETE
     @Path("/cleanupTypeSync")
     public void cleanupTypeSync() {
-        typeSyncService.cleanupTypeSync();
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.cleanupTypeSync()");
+            }
+
+            typeSyncService.cleanupTypeSync();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /**
