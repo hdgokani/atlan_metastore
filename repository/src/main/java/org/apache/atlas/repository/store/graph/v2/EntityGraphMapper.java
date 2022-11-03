@@ -2840,21 +2840,21 @@ public class EntityGraphMapper {
             LOG.info(String.format("Total number of vertices to propagate: %d", impactedVerticesSize));
             AtlasPerfMetrics.MetricRecorder chunkedPropMetricRecorder = RequestContext.get().startMetricRecord("chunkedPropagationAndNotification");
 
-            int toIndex;
-
-            do {
-                toIndex = ((offset + CHUNK_SIZE > impactedVerticesSize) ? (int) impactedVerticesSize : (offset + CHUNK_SIZE));
-
-                List<String> chunkedGuids = processChunkedPropagation(impactedVertices.subList(offset, toIndex), classificationVertex);
-
-                transactionInterceptHelper.intercept();
-
-                if((chunkedGuids != null) && (! chunkedGuids.isEmpty())){
-                    propagatedEntitiesGuid.addAll(chunkedGuids);
-                }
-                offset += CHUNK_SIZE;
-            }
-            while (offset < impactedVerticesSize);
+//            int toIndex;
+//
+//            do {
+//                toIndex = ((offset + CHUNK_SIZE > impactedVerticesSize) ? (int) impactedVerticesSize : (offset + CHUNK_SIZE));
+//
+//                List<String> chunkedGuids = processChunkedPropagation(impactedVertices.subList(offset, toIndex), classificationVertex);
+//
+//                transactionInterceptHelper.intercept();
+//
+//                if((chunkedGuids != null) && (! chunkedGuids.isEmpty())){
+//                    propagatedEntitiesGuid.addAll(chunkedGuids);
+//                }
+//                offset += CHUNK_SIZE;
+//            }
+//            while (offset < impactedVerticesSize);
 
             RequestContext.get().endMetricRecord(chunkedPropMetricRecorder);
 
@@ -3475,6 +3475,7 @@ public class EntityGraphMapper {
 
                 LOG.info("Completed remove propagation for edge {} and classification vertex {} with classification name {} and source entity {}", edge.getId(),
                         classificationId, classification.getTypeName(), classification.getEntityGuid());
+                break;
             }
         }
     }
