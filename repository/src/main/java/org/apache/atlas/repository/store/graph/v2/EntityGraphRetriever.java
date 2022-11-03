@@ -580,30 +580,27 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    public List<AtlasVertex> getImpactedVerticesV3(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) throws AtlasBaseException {
-        List<String> verticesIds = new ArrayList<>();
+    public List<AtlasVertex> getImpactedVerticesV3(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
 
-        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, verticesIds, edgeLabelsToExclude);
-
-        List<AtlasVertex> ret = verticesIds.stream().map(x -> graph.getVertex(x)).collect(Collectors.toList());
-
-        return ret;
-    }
-
-    public List<AtlasVertex> getIncludedImpactedVerticesV3(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) throws AtlasBaseException {
-        List<String> verticesIds = new ArrayList<>(Arrays.asList(entityVertex.getIdForDisplay()));
-
-        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, verticesIds, edgeLabelsToExclude);
+        List<String> verticesIds =traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, edgeLabelsToExclude);
 
         List<AtlasVertex> ret = verticesIds.stream().map(x -> graph.getVertex(x)).collect(Collectors.toList());
 
         return ret;
     }
 
-    public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) throws AtlasBaseException {
-        List<String > ret = new ArrayList<>();
+    public List<AtlasVertex> getIncludedImpactedVerticesV3(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
+        List<String> verticesIds = traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, edgeLabelsToExclude);
 
-        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToExclude);
+        List<AtlasVertex> ret = verticesIds.stream().map(x -> graph.getVertex(x)).collect(Collectors.toList());
+
+        ret.add(entityVertex);
+        return ret;
+    }
+
+    public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
+
+        List<String > ret = traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, edgeLabelsToExclude);
 
         return ret;
     }
@@ -698,8 +695,9 @@ public class EntityGraphRetriever {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void traverseImpactedVerticesByLevel(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
-                                          final String classificationId, final List<String> result, List<String> edgeLabelsToExclude) throws  AtlasBaseException{
+    private List<String> traverseImpactedVerticesByLevel(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
+                                                         final String classificationId, List<String> edgeLabelsToExclude) {
+        List<String> ret  = new ArrayList<>();
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseImpactedVerticesByLevel");
         Set<String>                 visitedVerticesIds        = new HashSet<>();
         Set<String>                 verticesAtCurrentLevel    = new HashSet<>();
@@ -736,8 +734,9 @@ public class EntityGraphRetriever {
 
         executorService.shutdownNow();
 
-        result.addAll(traversedVerticesIds);
+        ret.addAll(traversedVerticesIds);
         requestContext.endMetricRecord(metricRecorder);
+        return ret;
 
     }
 
