@@ -52,7 +52,7 @@ public class ElasticInstanceConfigService implements Service {
     public void start() throws AtlasException {
         LOG.info("==> ElasticInstanceConfigService.start()");
         try {
-            createInstanceConfigEntity();
+            //createInstanceConfigEntity();
             //create instanceConfig entity
                 // can be done after start
 
