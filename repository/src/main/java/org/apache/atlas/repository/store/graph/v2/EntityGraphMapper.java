@@ -2783,6 +2783,7 @@ public class EntityGraphMapper {
         }
     }
 
+    @GraphTransaction
     public List<String> propagateClassification(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean previousRestrictPropagationThroughLineage) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(classificationVertexId)) {
@@ -2857,6 +2858,7 @@ public class EntityGraphMapper {
 //            while (offset < impactedVerticesSize);
 
             RequestContext.get().endMetricRecord(chunkedPropMetricRecorder);
+            impactedVertices.clear();
 
             return propagatedEntitiesGuid;
         } catch (Exception e) {
@@ -3412,6 +3414,7 @@ public class EntityGraphMapper {
         }
     }
 
+    @GraphTransaction
     public void deleteClassificationOnlyPropagation(Set<String> deletedEdgeIds) throws AtlasBaseException {
         RequestContext.get().getDeletedEdgesIds().clear();
         RequestContext.get().getDeletedEdgesIds().addAll(deletedEdgeIds);
