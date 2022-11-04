@@ -729,15 +729,17 @@ public class EntityGraphRetriever {
                 traversedVerticesIds.addAll(x);
             });
 
+            futures.clear();
+
             verticesAtCurrentLevel.clear();
             verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
         }
 
         executorService.shutdownNow();
-
-        ret.addAll(traversedVerticesIds);
+        visitedVerticesIds.clear();
         requestContext.endMetricRecord(metricRecorder);
-        return ret;
+
+        return traversedVerticesIds.stream().collect(Collectors.toList());
 
     }
 
