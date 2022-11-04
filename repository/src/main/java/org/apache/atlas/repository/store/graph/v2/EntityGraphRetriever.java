@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Iterables;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
@@ -707,10 +708,21 @@ public class EntityGraphRetriever {
 
 //        ExecutorService executorService = Executors.newFixedThreadPool(10);
 
+        final ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("Tasks-BFS-%d")
+                .setDaemon(true)
+                .build();
+        final BlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(100);
+        ExecutorService es = new ThreadPoolExecutor(5, 10,
+                0L, TimeUnit.MILLISECONDS,
+                queue);
+
         //Add Source vertex to level 1
         if (entityVertexStart != null) {
             verticesAtCurrentLevel.add(entityVertexStart.getIdForDisplay());
         }
+
+
         // Start Processing the level
         while (!verticesAtCurrentLevel.isEmpty()) {
             Set<String> verticesToVisitNextLevel = new HashSet<>();
@@ -721,7 +733,7 @@ public class EntityGraphRetriever {
                         return getAdjacentVertices(graph.getVertex(t), classificationId,
                                     relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds);
 
-                    })).collect(Collectors.toList());
+                    }, es)).collect(Collectors.toList());
 
             futures.stream().map(CompletableFuture::join).forEach(x -> {
                 verticesToVisitNextLevel.addAll(x);
@@ -735,6 +747,8 @@ public class EntityGraphRetriever {
         }
 
 //        executorService.shutdownNow();
+        es.shutdownNow();
+
         visitedVerticesIds.clear();
         requestContext.endMetricRecord(metricRecorder);
 
