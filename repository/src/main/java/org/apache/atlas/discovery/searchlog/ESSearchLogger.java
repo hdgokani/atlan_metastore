@@ -88,7 +88,7 @@ public class ESSearchLogger implements SearchLogger, Service {
             }
 
         } catch (Exception e) {
-            LOG.error("Unable to push search log to ES: {}", e.getMessage());
+            LOG.error("Unable to push search log to ES", e);
         }
     }
 
