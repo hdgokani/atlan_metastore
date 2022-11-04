@@ -706,16 +706,17 @@ public class EntityGraphRetriever {
         Set<String>                 traversedVerticesIds      = new HashSet<>();
         RequestContext              requestContext            = RequestContext.get();
 
-//        ExecutorService executorService = Executors.newFixedThreadPool(10);
-
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
                 .setNameFormat("Tasks-BFS-%d")
-                .setDaemon(true)
                 .build();
-        final BlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(100);
-        ExecutorService es = new ThreadPoolExecutor(5, 10,
-                0L, TimeUnit.MILLISECONDS,
-                queue);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(10, threadFactory);
+
+
+//        final BlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(100);
+//        ExecutorService es = new ThreadPoolExecutor(5, 10,
+//                0L, TimeUnit.MILLISECONDS,
+//                queue);
 
         //Add Source vertex to level 1
         if (entityVertexStart != null) {
@@ -730,21 +731,28 @@ public class EntityGraphRetriever {
                     .map(t -> CompletableFuture.supplyAsync(() -> {
                         AtlasVertex entityVertex  = graph.getVertex(t);
                         visitedVerticesIds.add(entityVertex.getIdForDisplay());
-                        return getAdjacentVertices(graph.getVertex(t), classificationId,
+                        return getAdjacentVerticesIds(graph.getVertex(t), classificationId,
                                     relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds);
 
-                    }, es)).collect(Collectors.toList());
+                    }, executorService)).collect(Collectors.toList());
 
             futures.stream().map(CompletableFuture::join).forEach(x -> {
                 verticesToVisitNextLevel.addAll(x);
                 traversedVerticesIds.addAll(x);
             });
+
             verticesAtCurrentLevel.clear();
             verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
         }
 
-//        executorService.shutdownNow();
-        es.shutdown();
+        executorService.shutdown();
+//        es.shutdown();
+        try {
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+            LOG.info("All thread Thread got shut down");
+        } catch (InterruptedException e) {
+            LOG.error("Error Occured while terminating threads : {}", e.getMessage());
+        }
 
         visitedVerticesIds.clear();
         requestContext.endMetricRecord(metricRecorder);
@@ -753,7 +761,7 @@ public class EntityGraphRetriever {
 
     }
 
-    private Set<String> getAdjacentVertices(AtlasVertex entityVertex, final String classificationId, final String relationshipGuidToExclude
+    private Set<String> getAdjacentVerticesIds(AtlasVertex entityVertex, final String classificationId, final String relationshipGuidToExclude
             ,List<String> edgeLabelsToExclude, Set<String> visitedVerticesIds) {
 
         AtlasEntityType         entityType          = typeRegistry.getEntityTypeByName(getTypeName(entityVertex));
