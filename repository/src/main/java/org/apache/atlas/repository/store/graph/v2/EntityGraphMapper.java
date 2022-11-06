@@ -2825,7 +2825,7 @@ public class EntityGraphMapper {
 
             List<String> edgeLabelsToExclude = CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode);
 
-            List<String> impactedVertices = entityRetriever.getIncludedImpactedVerticesV3(entityVertex, relationshipGuid, classificationVertexId, edgeLabelsToExclude);
+            List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV3(entityVertex, relationshipGuid, classificationVertexId, edgeLabelsToExclude);
 
             if (CollectionUtils.isEmpty(impactedVertices)) {
                 LOG.debug("propagateClassification(entityGuid={}, classificationVertexId={}): found no entities to propagate the classification", entityGuid, classificationVertexId);
@@ -2840,26 +2840,26 @@ public class EntityGraphMapper {
             LOG.info(String.format("Total number of vertices to propagate: %d", impactedVerticesSize));
             AtlasPerfMetrics.MetricRecorder chunkedPropMetricRecorder = RequestContext.get().startMetricRecord("chunkedPropagationAndNotification");
 
-//            int toIndex;
-//
-//            do {
-//                toIndex = ((offset + CHUNK_SIZE > impactedVerticesSize) ? (int) impactedVerticesSize : (offset + CHUNK_SIZE));
-//
-//                List<String> chunkedGuids = processChunkedPropagation(impactedVertices.subList(offset, toIndex), classificationVertex);
-//
-//                transactionInterceptHelper.intercept();
-//
-//                if((chunkedGuids != null) && (! chunkedGuids.isEmpty())){
-//                    propagatedEntitiesGuid.addAll(chunkedGuids);
-//                }
-//                offset += CHUNK_SIZE;
-//            }
-//            while (offset < impactedVerticesSize);
+            int toIndex;
+
+            do {
+                toIndex = ((offset + CHUNK_SIZE > impactedVerticesSize) ? (int) impactedVerticesSize : (offset + CHUNK_SIZE));
+
+                List<String> chunkedGuids = processChunkedPropagation(impactedVertices.subList(offset, toIndex), classificationVertex);
+
+                transactionInterceptHelper.intercept();
+
+                if((chunkedGuids != null) && (! chunkedGuids.isEmpty())){
+                    propagatedEntitiesGuid.addAll(chunkedGuids);
+                }
+                offset += CHUNK_SIZE;
+            }
+            while (offset < impactedVerticesSize);
 
             RequestContext.get().endMetricRecord(chunkedPropMetricRecorder);
             impactedVertices.clear();
 
-            return impactedVertices;
+            return propagatedEntitiesGuid;
         } catch (Exception e) {
             LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): error while propagating classification", entityGuid, classificationVertexId, e);
 
@@ -3461,24 +3461,23 @@ public class EntityGraphMapper {
 
                 LOG.info("To delete classification from {} vertices for deletion of edge {} and classification {}", verticesToRemove.size(), edge.getId(), classificationId);
 
-//                while (verticesToRemove.size() >= CHUNK_SIZE)
-//                {
-//                    List<AtlasVertex> chunkedVerticesToRemoveTag = verticesToRemove.subList(0, CHUNK_SIZE);
-//
-//                    processClassificationDeletionFromVerticesInChunk(chunkedVerticesToRemoveTag, currentClassificationVertex, classification);
-//
-//                    chunkedVerticesToRemoveTag.clear();
-//
-//                    transactionInterceptHelper.intercept();
-//                }
-//
-//                processClassificationDeletionFromVerticesInChunk(verticesToRemove, currentClassificationVertex, classification);
-//
-//                transactionInterceptHelper.intercept();
+                while (verticesToRemove.size() >= CHUNK_SIZE)
+                {
+                    List<AtlasVertex> chunkedVerticesToRemoveTag = verticesToRemove.subList(0, CHUNK_SIZE);
+
+                    processClassificationDeletionFromVerticesInChunk(chunkedVerticesToRemoveTag, currentClassificationVertex, classification);
+
+                    chunkedVerticesToRemoveTag.clear();
+
+                    transactionInterceptHelper.intercept();
+                }
+
+                processClassificationDeletionFromVerticesInChunk(verticesToRemove, currentClassificationVertex, classification);
+
+                transactionInterceptHelper.intercept();
 
                 LOG.info("Completed remove propagation for edge {} and classification vertex {} with classification name {} and source entity {}", edge.getId(),
                         classificationId, classification.getTypeName(), classification.getEntityGuid());
-                break;
             }
         }
     }

@@ -590,14 +590,14 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    public List<String> getIncludedImpactedVerticesV3(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
+    public List<AtlasVertex> getIncludedImpactedVerticesV3(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
         List<String> verticesIds = traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, edgeLabelsToExclude);
 
-        //List<String> ret = verticesIds.stream().map(x -> graph.getVertex(x)).collect(Collectors.toList());
+        List<AtlasVertex> ret = verticesIds.stream().map(x -> graph.getVertex(x)).collect(Collectors.toList());
 
-        verticesIds.add(entityVertex.getIdForDisplay());
+        ret.add(entityVertex);
 
-        return verticesIds;
+        return ret;
     }
 
     public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
@@ -744,14 +744,13 @@ public class EntityGraphRetriever {
             verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
         }
 
-        executorService.shutdown();
-//        es.shutdown();
-        try {
-            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-            LOG.info("All thread Thread got shut down");
-        } catch (InterruptedException e) {
-            LOG.error("Error Occured while terminating threads : {}", e.getMessage());
-        }
+        executorService.shutdownNow();
+//        try {
+//            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+//            LOG.info("All thread Thread got shut down");
+//        } catch (InterruptedException e) {
+//            LOG.error("Error Occured while terminating threads : {}", e.getMessage());
+//        }
 
         visitedVerticesIds.clear();
         requestContext.endMetricRecord(metricRecorder);
