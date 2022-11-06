@@ -724,18 +724,16 @@ public class EntityGraphRetriever {
             verticesAtCurrentLevel.add(entityVertexStart.getIdForDisplay());
         }
 
-
         // Start Processing the level
         while (!verticesAtCurrentLevel.isEmpty()) {
             Set<String> verticesToVisitNextLevel = new HashSet<>();
             List<CompletableFuture<Set<String>>> futures = verticesAtCurrentLevel.stream()
-                    .map(t -> CompletableFuture.supplyAsync(() -> {
-                        AtlasVertex entityVertex  = graph.getVertex(t);
+                    .map(t -> {
+                        AtlasVertex entityVertex = graph.getVertex(t);
                         visitedVerticesIds.add(entityVertex.getIdForDisplay());
-                        return getAdjacentVerticesIds(graph.getVertex(t), classificationId,
-                                    relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds);
-
-                    }, executorService)).collect(Collectors.toList());
+                        return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, classificationId,
+                                relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds), executorService);
+                    }).collect(Collectors.toList());
 
             futures.stream().map(CompletableFuture::join).forEach(x -> {
                 verticesToVisitNextLevel.addAll(x);
