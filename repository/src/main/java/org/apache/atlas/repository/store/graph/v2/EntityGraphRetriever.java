@@ -590,14 +590,14 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    public List<AtlasVertex> getIncludedImpactedVerticesV3(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
+    public List<String> getIncludedImpactedVerticesV3(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
         List<String> verticesIds = traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, edgeLabelsToExclude);
 
-        List<AtlasVertex> ret = verticesIds.stream().map(x -> graph.getVertex(x)).collect(Collectors.toList());
+        //List<String> ret = verticesIds.stream().map(x -> graph.getVertex(x)).collect(Collectors.toList());
 
-        ret.add(entityVertex);
+        verticesIds.add(entityVertex.getIdForDisplay());
 
-        return ret;
+        return verticesIds;
     }
 
     public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
@@ -708,6 +708,7 @@ public class EntityGraphRetriever {
 
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
                 .setNameFormat("Tasks-BFS-%d")
+                .setDaemon(true)
                 .build();
 
         ExecutorService executorService = Executors.newFixedThreadPool(10, threadFactory);

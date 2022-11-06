@@ -2783,7 +2783,6 @@ public class EntityGraphMapper {
         }
     }
 
-    @GraphTransaction
     public List<String> propagateClassification(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean previousRestrictPropagationThroughLineage) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(classificationVertexId)) {
@@ -2826,7 +2825,7 @@ public class EntityGraphMapper {
 
             List<String> edgeLabelsToExclude = CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode);
 
-            List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV3(entityVertex, relationshipGuid, classificationVertexId, edgeLabelsToExclude);
+            List<String> impactedVertices = entityRetriever.getIncludedImpactedVerticesV3(entityVertex, relationshipGuid, classificationVertexId, edgeLabelsToExclude);
 
             if (CollectionUtils.isEmpty(impactedVertices)) {
                 LOG.debug("propagateClassification(entityGuid={}, classificationVertexId={}): found no entities to propagate the classification", entityGuid, classificationVertexId);
@@ -2860,11 +2859,13 @@ public class EntityGraphMapper {
             RequestContext.get().endMetricRecord(chunkedPropMetricRecorder);
             impactedVertices.clear();
 
-            return propagatedEntitiesGuid;
+            return impactedVertices;
         } catch (Exception e) {
             LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): error while propagating classification", entityGuid, classificationVertexId, e);
 
             throw new AtlasBaseException(e);
+        } finally {
+            graph.commit();
         }
     }
 
@@ -3414,7 +3415,6 @@ public class EntityGraphMapper {
         }
     }
 
-    @GraphTransaction
     public void deleteClassificationOnlyPropagation(Set<String> deletedEdgeIds) throws AtlasBaseException {
         RequestContext.get().getDeletedEdgesIds().clear();
         RequestContext.get().getDeletedEdgesIds().addAll(deletedEdgeIds);
