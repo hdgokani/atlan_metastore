@@ -3482,7 +3482,7 @@ public class EntityGraphMapper {
         }
     }
 
-    void processClassificationDeletionFromVerticesInChunk(List<AtlasVertex> VerticesToRemoveTag, AtlasVertex classificationVertex, AtlasClassification classification) throws AtlasBaseException {
+    private void processClassificationDeletionFromVerticesInChunk(List<AtlasVertex> VerticesToRemoveTag, AtlasVertex classificationVertex, AtlasClassification classification) throws AtlasBaseException {
 
         List<AtlasVertex> updatedVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex, VerticesToRemoveTag);
 
@@ -3510,14 +3510,13 @@ public class EntityGraphMapper {
             toIndex = ((offset + CHUNK_SIZE > propagatedEdgesSize) ? propagatedEdgesSize : (offset + CHUNK_SIZE));
 
             List<AtlasVertex> entityVertices = deleteDelegate.getHandler().removeTagPropagation(classification, propagatedEdges.subList(offset, toIndex));
-
             List<String> impactedGuids = entityVertices.stream().map(x -> GraphHelper.getGuid(x)).collect(Collectors.toList());
+
             GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
 
             List<AtlasEntity>  propagatedEntities = updateClassificationText(classification, entityVertices);
 
             entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification));
-
             if(! propagatedEntities.isEmpty()) {
                 deletedPropagationsGuid.addAll(propagatedEntities.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
             }
@@ -3530,6 +3529,7 @@ public class EntityGraphMapper {
 
         return deletedPropagationsGuid;
     }
+
     @GraphTransaction
     public void updateTagPropagations(String relationshipEdgeId, AtlasRelationship relationship) throws AtlasBaseException {
         AtlasEdge relationshipEdge = graph.getEdge(relationshipEdgeId);
