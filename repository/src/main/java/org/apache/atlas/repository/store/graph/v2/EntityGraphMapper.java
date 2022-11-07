@@ -3532,6 +3532,11 @@ public class EntityGraphMapper {
 
         AtlasVertex currentClassificationVertex = graph.getVertex(classificationVertexId);
 
+        List<AtlasVertex> currentClassificationVertices = getPropagatableClassifications(edge);
+        if (! currentClassificationVertices.contains(currentClassificationVertex)) {
+            return;
+        }
+
         String              classificationId                = currentClassificationVertex.getIdForDisplay();
         String              sourceEntityId                  = getClassificationEntityGuid(currentClassificationVertex);
         AtlasVertex         sourceEntityVertex              = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityId);
