@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import static org.apache.atlas.model.tasks.AtlasTask.Status.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE;
@@ -45,7 +44,8 @@ public abstract class ClassificationTask extends AbstractTask {
     private static final Logger LOG = LoggerFactory.getLogger(ClassificationTask.class);
 
     public static final String PARAM_ENTITY_GUID              = "entityGuid";
-    public static final String PARAM_DELETED_EDGE_IDS         = "deletedEdgeIds";
+    public static final String PARAM_DELETED_EDGE_IDS         = "deletedEdgeIds"; // TODO: Will be deprecated
+    public static final String PARAM_DELETED_EDGE_ID          = "deletedEdgeId";
     public static final String PARAM_CLASSIFICATION_VERTEX_ID = "classificationVertexId";
     public static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
     public static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
@@ -128,9 +128,10 @@ public abstract class ClassificationTask extends AbstractTask {
         }};
     }
 
-    public static Map<String, Object> toParameters(Set<String> deletedEdgeIds) {
+    public static Map<String, Object> toParameters(String deletedEdgeId, String classificationVertexId) {
         return new HashMap<String, Object>() {{
-            put(PARAM_DELETED_EDGE_IDS, AtlasType.toJson(deletedEdgeIds));
+            put(PARAM_DELETED_EDGE_ID, deletedEdgeId);
+            put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
         }};
     }
 

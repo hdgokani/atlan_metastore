@@ -50,7 +50,6 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -58,32 +57,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static org.apache.atlas.AtlasConfiguration.NOTIFICATION_RELATIONSHIPS_ENABLED;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.ensureNonAccessControlRelType;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.BOTH;
-import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.NONE;
-import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
-import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.TWO_TO_ONE;
-import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.HOME_ID_KEY;
-import static org.apache.atlas.repository.Constants.PROVENANCE_TYPE_KEY;
-import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
-import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
+import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.*;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getState;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getTypeName;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE;
 
 @Component
@@ -318,7 +300,14 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         deleteDelegate.getHandler().deleteRelationships(edgesToDelete, false);
 
         if (DEFERRED_ACTION_ENABLED) {
-            deleteDelegate.getHandler().createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, RequestContext.get().getDeletedEdgesIds());
+            Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
+            for (String deletedEdgeId : deletedEdgeIds) {
+                AtlasEdge deletedEdge = graph.getEdge(deletedEdgeId);
+                deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(
+                        GraphHelper.getPropagatableClassifications(deletedEdge),
+                        deletedEdgeId
+                );
+            }
         }
 
         sendNotifications(deletedRelationships, OperationType.RELATIONSHIP_DELETE);
@@ -360,7 +349,14 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         deleteDelegate.getHandler().deleteRelationships(Collections.singleton(edge), forceDelete);
 
         if (DEFERRED_ACTION_ENABLED) {
-            deleteDelegate.getHandler().createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, RequestContext.get().getDeletedEdgesIds());
+            Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
+            for (String deletedEdgeId : deletedEdgeIds) {
+                AtlasEdge deletedEdge = graph.getEdge(deletedEdgeId);
+                deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(
+                        GraphHelper.getPropagatableClassifications(deletedEdge),
+                        deletedEdgeId
+                );
+            }
         }
 
         sendNotifications(entityRetriever.mapEdgeToAtlasRelationship(edge), OperationType.RELATIONSHIP_DELETE);
