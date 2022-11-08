@@ -60,6 +60,7 @@ public class TypeSyncService {
         String newIndexName = null;
         if (haveIndexSettingsChanged) {
             newIndexName = elasticInstanceConfigService.updateCurrentIndexName();
+            LOG.info("newIndexName: {}", newIndexName);
             atlasMixedBackendIndexManager.createIndexIfNotExists(newIndexName);
             setCurrentWriteVertexIndexName(newIndexName);
             defaultIndexCreator.createDefaultIndexes(atlasGraph);
