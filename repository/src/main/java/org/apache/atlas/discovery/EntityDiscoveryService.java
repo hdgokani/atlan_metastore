@@ -27,6 +27,7 @@ import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
+import org.apache.atlas.discovery.searchlog.ESSearchLogger;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasAggregationEntry;
 import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
