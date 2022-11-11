@@ -4,7 +4,8 @@ import static org.apache.atlas.repository.Constants.INDEX_PREFIX;
 
 public class ActiveIndexNameManager {
 
-    public static final String DEFAULT_VERTEX_INDEX = INDEX_PREFIX + "vertex_index";
+    //public static final String DEFAULT_VERTEX_INDEX = INDEX_PREFIX + "vertex_index";
+    public static final String DEFAULT_VERTEX_INDEX = "vertex_index";
 
     //private static String CURRENT_READ_VERTEX_INDEX_NAME = DEFAULT_VERTEX_INDEX;
     //private static String CURRENT_WRITE_VERTEX_INDEX_NAME = DEFAULT_VERTEX_INDEX;
