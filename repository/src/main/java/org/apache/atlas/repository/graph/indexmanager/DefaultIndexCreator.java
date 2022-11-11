@@ -176,7 +176,7 @@ public class DefaultIndexCreator extends GraphTransactionManager {
 
             LOG.info("Index creation for global keys complete.");
         } catch (Throwable t) {
-            LOG.error("GraphBackedSearchIndexer.initialize() failed", t);
+            LOG.error("GraphBackedSearchIndexer.initialize() failed");
 
             rollback(management);
             throw new RepositoryException(t);

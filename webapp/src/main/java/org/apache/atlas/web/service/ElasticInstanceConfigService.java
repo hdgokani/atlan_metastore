@@ -7,6 +7,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.service.ActiveIndexNameManager;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 import static org.apache.atlas.AtlasErrorCode.TYPE_NAME_NOT_FOUND;
+import static org.apache.atlas.service.ActiveIndexNameManager.DEFAULT_VERTEX_INDEX;
 
 @Component
 @Order
@@ -56,9 +58,8 @@ public class ElasticInstanceConfigService implements Service {
             //create instanceConfig entity
                 // can be done after start
 
-            String currentIndexName = getCurrentIndexName();
-            ActiveIndexNameManager.setCurrentReadVertexIndexName(currentIndexName);
-            ActiveIndexNameManager.setCurrentWriteVertexIndexName(currentIndexName);
+            ActiveIndexNameManager.init(getCurrentIndexName());
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
@@ -72,7 +73,7 @@ public class ElasticInstanceConfigService implements Service {
             instanceConfig.setTypeName(ELASTIC_INSTANCE_CONFIGURATION_TYPE_NAME);
             instanceConfig.setStatus(AtlasEntity.Status.ACTIVE);
             instanceConfig.setAttribute(ATTR_UNIQUE_NAME, ELASTIC_INSTANCE_CONFIGURATION);
-            instanceConfig.setAttribute(ATTR_VERTEX_INDEX_NAME, "vertex_index");
+            instanceConfig.setAttribute(ATTR_VERTEX_INDEX_NAME, DEFAULT_VERTEX_INDEX);
             instanceConfig.setAttribute(ATTR_IS_UPDATE_LOCKED, false);
             instanceConfig.setVersion(0L);
             atlasEntityStore.createOrUpdate(new AtlasEntityStream(instanceConfig), false);
@@ -82,12 +83,12 @@ public class ElasticInstanceConfigService implements Service {
     public String getCurrentIndexName() {
         return getInstanceConfigEntity()
                 .map(config -> (String) config.getEntity().getAttribute(ATTR_VERTEX_INDEX_NAME))
-                .orElse("vertex_index");
+                .orElse(DEFAULT_VERTEX_INDEX);
     }
 
     public String updateCurrentIndexName() throws AtlasBaseException {
         AtlasEntityWithExtInfo instanceConfig = getInstanceConfigEntity().orElseThrow(() -> new AtlasBaseException("The instance config doesn't exist"));
-        String newIndexName = "vertex_index_" + System.currentTimeMillis();
+        String newIndexName = ActiveIndexNameManager.getNewIndexName();
         instanceConfig.getEntity().setAttribute(ATTR_VERTEX_INDEX_NAME, newIndexName);
 
         atlasEntityStore.createOrUpdate(new AtlasEntityStream(instanceConfig), true);
