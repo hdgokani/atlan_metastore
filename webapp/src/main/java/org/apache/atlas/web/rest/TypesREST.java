@@ -518,8 +518,10 @@ public class TypesREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.syncTypeDefs()");
             }
 
-            LOG.info("newTypeDefinitions is_null: {}", newTypeDefinitions == null);
-            LOG.info("newTypeDefinitions: {}", AtlasType.toJson(newTypeDefinitions));
+            if (newTypeDefinitions == null) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "No types specified");
+            }
+
             ret = typeSyncService.syncTypes(newTypeDefinitions);
         } finally {
             AtlasPerfTracer.log(perf);

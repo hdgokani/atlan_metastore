@@ -61,6 +61,7 @@ public class TypeSyncService {
         if (haveIndexSettingsChanged) {
             newIndexName = elasticInstanceConfigService.updateCurrentIndexName();
             LOG.info("newIndexName: {}", newIndexName);
+
             atlasMixedBackendIndexManager.createIndexIfNotExists(newIndexName);
             setCurrentWriteVertexIndexName(newIndexName);
             defaultIndexCreator.createDefaultIndexes(atlasGraph);
@@ -80,15 +81,19 @@ public class TypeSyncService {
     public void cleanupTypeSync() {
         String oldIndexName = getCurrentReadVertexIndexName();
         String newIndexName = getCurrentWriteVertexIndexName();
+
         if (!oldIndexName.equals(newIndexName)) {
+            setCurrentReadVertexIndexName(newIndexName);
+            LOG.info("Redirected ES reads to new index {}", newIndexName);
+
             try {
                 disableJanusgraphIndex(oldIndexName);
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
+
+                LOG.info("Deleted old index {}", oldIndexName);
             } catch (InterruptedException | ExecutionException | IOException e) {
                 LOG.error("Error while deleting index {}. Exception: {}", oldIndexName, e.toString());
             }
-
-            setCurrentReadVertexIndexName(newIndexName);
         }
     }
 
