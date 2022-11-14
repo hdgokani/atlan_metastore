@@ -30,6 +30,7 @@ import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.indexmanager.IndexApplicabilityChecker.isIndexApplicable;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.*;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentWriteVertexIndexName;
 import static org.apache.atlas.type.Constants.*;
 
@@ -58,7 +59,7 @@ public class DefaultIndexCreator extends GraphTransactionManager {
         AtlasGraphManagement management = graph.getManagementSystem();
 
         try {
-            LOG.info("Creating indexes for graph.");
+            LOG.info("Creating indexes for graph. read:{}, write:{}", getCurrentReadVertexIndexName(), getCurrentWriteVertexIndexName());
 
             if (management.getGraphIndex(getCurrentWriteVertexIndexName()) == null) {
                 management.createVertexMixedIndex(getCurrentWriteVertexIndexName(), BACKING_INDEX, Collections.emptyList());
