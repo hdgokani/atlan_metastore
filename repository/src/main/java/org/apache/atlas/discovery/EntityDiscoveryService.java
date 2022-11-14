@@ -984,6 +984,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         try {
             indexQuery = graph.elasticsearchQuery(getCurrentReadVertexIndexName(), searchParams);
+            LOG.info("directIndexSearch.index: {}", getCurrentReadVertexIndexName());
 
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
 
