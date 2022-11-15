@@ -89,6 +89,8 @@ public enum AtlasConfiguration {
     MAX_NUMBER_OF_RETRIES("atlas.tasks.graph.retry.count", 3),
     ENABLE_SEARCH_LOGGING("atlas.enable.search.logging", true),
     TASKS_GRAPH_COMMIT_CHUNK_SIZE("atlas.tasks.graph.commit.chunk.size", 1000),
+    RANGER_ATLAS_SERVICE_TYPE("atlas.ranger.service.type.atlas", "atlas"),
+    RANGER_HEKA_SERVICE_TYPE("atlas.ranger.service.type.heka", "heka"),
     GRAPH_TRAVERSAL_PARALLELISM("atlas.graph.traverse.bucket.size",10);
 
 
