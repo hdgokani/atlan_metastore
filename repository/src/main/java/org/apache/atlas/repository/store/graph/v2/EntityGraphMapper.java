@@ -24,6 +24,9 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.TimeBoundary;
@@ -340,7 +343,12 @@ public class EntityGraphMapper {
         }
     }
 
-    public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context, final boolean isPartialUpdate, final boolean replaceClassifications, boolean replaceBusinessAttributes) throws AtlasBaseException {
+    public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context,
+                                                                  final boolean isPartialUpdate,
+                                                                  final boolean replaceClassifications,
+                                                                  boolean replaceBusinessAttributes,
+                                                                  boolean isOverwriteBusinessAttribute) throws AtlasBaseException {
+
         MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributesAndClassifications");
 
         EntityMutationResponse resp       = new EntityMutationResponse();
@@ -398,7 +406,11 @@ public class EntityGraphMapper {
                     reqContext.cache(createdEntity);
 
                     if (DEFERRED_ACTION_ENABLED) {
-                        deleteDelegate.getHandler().createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, reqContext.getDeletedEdgesIds());
+                        Set<String> deletedEdgeIds = reqContext.getDeletedEdgesIds();
+                        for (String deletedEdgeId : deletedEdgeIds) {
+                            AtlasEdge edge = graph.getEdge(deletedEdgeId);
+                            deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(GraphHelper.getPropagatableClassifications(edge), deletedEdgeId);
+                        }
                     }
                 } catch (AtlasBaseException baseException) {
                     setEntityGuidToException(createdEntity, baseException, context);
@@ -434,13 +446,13 @@ public class EntityGraphMapper {
                     }
 
                     if (replaceBusinessAttributes) {
-                        if (MapUtils.isEmpty(updatedEntity.getBusinessAttributes())) {
+                        if (MapUtils.isEmpty(updatedEntity.getBusinessAttributes()) && isOverwriteBusinessAttribute) {
                             Map<String, Map<String, Object>> businessMetadata = entityRetriever.getBusinessMetadata(vertex);
                             if (MapUtils.isNotEmpty(businessMetadata)){
                                 removeBusinessAttributes(vertex, entityType, businessMetadata);
                             }
                         } else {
-                            setBusinessAttributes(vertex, entityType, updatedEntity.getBusinessAttributes());
+                            addOrUpdateBusinessAttributes(guid, updatedEntity.getBusinessAttributes(), isOverwriteBusinessAttribute);
                         }
                     }
                     
@@ -467,7 +479,11 @@ public class EntityGraphMapper {
                     reqContext.cache(updatedEntity);
 
                     if (DEFERRED_ACTION_ENABLED) {
-                        deleteDelegate.getHandler().createAndQueueTask(CLASSIFICATION_ONLY_PROPAGATION_DELETE, reqContext.getDeletedEdgesIds());
+                        Set<String> deletedEdgeIds = reqContext.getDeletedEdgesIds();
+                        for (String deletedEdgeId : deletedEdgeIds) {
+                            AtlasEdge edge = graph.getEdge(deletedEdgeId);
+                            deleteDelegate.getHandler().createClassificationOnlyPropagationDeleteTasksAndQueue(GraphHelper.getPropagatableClassifications(edge), deletedEdgeId);
+                        }
                     }
 
                 } catch (AtlasBaseException baseException) {
@@ -632,6 +648,55 @@ public class EntityGraphMapper {
         }
     }
 
+    public void addOrUpdateBusinessAttributes(String guid, Map<String, Map<String, Object>> businessAttrbutes, boolean isOverwrite) throws AtlasBaseException {
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid is null/empty");
+        }
+
+        if (MapUtils.isEmpty(businessAttrbutes)) {
+            return;
+        }
+
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        String                           typeName                     = getTypeName(entityVertex);
+        AtlasEntityType                  entityType                   = typeRegistry.getEntityTypeByName(typeName);
+        AtlasEntityHeader                entityHeader                 = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+        Map<String, Map<String, Object>> currEntityBusinessAttributes = entityRetriever.getBusinessMetadata(entityVertex);
+        Set<String>                      updatedBusinessMetadataNames = new HashSet<>();
+
+        for (String bmName : entityType.getBusinessAttributes().keySet()) {
+            Map<String, Object> bmAttrs     = businessAttrbutes.get(bmName);
+            Map<String, Object> currBmAttrs = currEntityBusinessAttributes != null ? currEntityBusinessAttributes.get(bmName) : null;
+
+            if (MapUtils.isEmpty(bmAttrs) && MapUtils.isEmpty(currBmAttrs)) { // no change
+                continue;
+            } else if (Objects.equals(bmAttrs, currBmAttrs)) { // no change
+                continue;
+            }
+
+            updatedBusinessMetadataNames.add(bmName);
+        }
+
+        AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA, entityHeader);
+
+        for (String bmName : updatedBusinessMetadataNames) {
+            requestBuilder.setBusinessMetadata(bmName);
+
+            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add/update business-metadata: guid=", guid, ", business-metadata-name=", bmName);
+        }
+
+        if (isOverwrite) {
+            setBusinessAttributes(entityVertex, entityType, businessAttrbutes);
+        } else {
+            addOrUpdateBusinessAttributes(entityVertex, entityType, businessAttrbutes);
+        }
+    }
+
     /*
      * reset/overwrite business attributes of the entity with given values
      */
@@ -730,14 +795,20 @@ public class EntityGraphMapper {
                 Map<String, AtlasBusinessAttribute> bmAttributes       = entry.getValue();
                 Map<String, Object>                 entityBmAttributes = businessAttributes.get(bmName);
 
-                if (MapUtils.isEmpty(entityBmAttributes)) {
+                if (MapUtils.isEmpty(entityBmAttributes) && !businessAttributes.containsKey(bmName)) {
                     continue;
                 }
 
                 for (AtlasBusinessAttribute bmAttribute : bmAttributes.values()) {
                     String bmAttrName = bmAttribute.getName();
 
-                    if (!entityBmAttributes.containsKey(bmAttrName)) {
+                    if (MapUtils.isEmpty(entityBmAttributes)) {
+                        entityVertex.removeProperty(bmAttribute.getVertexPropertyName());
+                        addToUpdatedBusinessAttributes(updatedBusinessAttributes, bmAttribute, null);
+                        continue;
+
+                    } else if (!entityBmAttributes.containsKey(bmAttrName)) {
+                        //since overwriteBusinessAttributes is false, ignore in case BM attr is not passed at all
                         continue;
                     }
 
@@ -795,6 +866,15 @@ public class EntityGraphMapper {
     public void removeBusinessAttributes(AtlasVertex entityVertex, AtlasEntityType entityType, Map<String, Map<String, Object>> businessAttributes) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> removeBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
+        }
+
+        AtlasEntityHeader               entityHeader   = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+        AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA, entityHeader);
+
+        for (String bmName : businessAttributes.keySet()) {
+            requestBuilder.setBusinessMetadata(bmName);
+
+            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "remove business-metadata: guid=", entityHeader.getGuid(), ", business-metadata=", bmName);
         }
 
         Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessAttributes = entityType.getBusinessAttributes();
@@ -925,17 +1005,26 @@ public class EntityGraphMapper {
                         Object attrOldValue = null;
                         boolean isArrayOfPrimitiveType = false;
                         boolean isArrayOfEnum = false;
+
+                        boolean isStruct = (TypeCategory.STRUCT == attribute.getDefinedInType().getTypeCategory()
+                                || TypeCategory.STRUCT == attribute.getAttributeType().getTypeCategory());
+
                         if (attribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
                             AtlasArrayType attributeType = (AtlasArrayType) attribute.getAttributeType();
                             AtlasType elementType = attributeType.getElementType();
                             isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
                             isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
                         }
+
                         if (isArrayOfPrimitiveType || isArrayOfEnum) {
                             attrOldValue = vertex.getPropertyValues(attribute.getVertexPropertyName(),attribute.getClass());
+                        } else if (isStruct) {
+                            String edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(attribute.getName());
+                            attrOldValue = getCollectionElementsUsingRelationship(vertex, attribute, edgeLabel);
                         } else {
                             attrOldValue = vertex.getProperty(attribute.getVertexPropertyName(),attribute.getClass());
                         }
+
                         if (attrValue != null && !attrValue.equals(attrOldValue)) {
                             addValuesToAutoUpdateAttributesList(attribute, userAutoUpdateAttributes, timestampAutoUpdateAttributes);
                         }
@@ -1404,9 +1493,11 @@ public class EntityGraphMapper {
 
             if (structVal != null) {
                 updateVertex(structVal, ctx.getCurrentEdge().getInVertex(), context);
+                ret = ctx.getCurrentEdge();
+            } else {
+                ret = null;
             }
 
-            ret = ctx.getCurrentEdge();
         } else if (ctx.getValue() != null) {
             String edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(ctx.getVertexProperty());
 
@@ -1687,7 +1778,8 @@ public class EntityGraphMapper {
         List           newElements         = (List) ctx.getValue();
         AtlasArrayType arrType             = (AtlasArrayType) attribute.getAttributeType();
         AtlasType      elementType         = arrType.getElementType();
-        boolean        isStructType        = (elementType.getTypeCategory() == TypeCategory.STRUCT);
+        boolean        isStructType        = (TypeCategory.STRUCT == elementType.getTypeCategory()) ||
+                                             (TypeCategory.STRUCT == attribute.getDefinedInType().getTypeCategory());
         boolean        isReference         = isReference(elementType);
         boolean        isSoftReference     = ctx.getAttribute().getAttributeDef().isSoftReferenced();
         AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
@@ -1700,7 +1792,7 @@ public class EntityGraphMapper {
         boolean deleteExistingRelations = shouldDeleteExistingRelations(ctx, attribute);
 
         if (isReference && !isSoftReference) {
-            currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute);
+            currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute, isStructType);
         } else {
             currentElements = (List) getArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty());
         }
@@ -1958,7 +2050,10 @@ public class EntityGraphMapper {
             Iterator<AtlasEdge> edgeIterator = vertex.getEdges(AtlasEdgeDirection.OUT, CATEGORY_PARENT_EDGE_LABEL).iterator();
             while (edgeIterator.hasNext()) {
                 AtlasEdge childEdge = edgeIterator.next();
-                childEdge.getInVertex().removeProperty(CATEGORIES_PARENT_PROPERTY_KEY);
+                AtlasEntity.Status edgeStatus = getStatus(childEdge);
+                if (ACTIVE.equals(edgeStatus)) {
+                    childEdge.getInVertex().removeProperty(CATEGORIES_PARENT_PROPERTY_KEY);
+                }
             }
 
             String catQualifiedName = vertex.getProperty(QUALIFIED_NAME, String.class);
@@ -3406,6 +3501,78 @@ public class EntityGraphMapper {
         }
     }
 
+    public void deleteClassificationOnlyPropagation(String deletedEdgeId, String classificationVertexId) throws AtlasBaseException {
+        RequestContext.get().getDeletedEdgesIds().clear();
+        RequestContext.get().getDeletedEdgesIds().add(deletedEdgeId);
+
+        AtlasEdge edge = graph.getEdge(deletedEdgeId);
+
+        boolean isRelationshipEdge = deleteDelegate.getHandler().isRelationshipEdge(edge);
+        boolean isTermEntityEdge = isTermEntityEdge(edge);
+
+        if (edge == null || !isRelationshipEdge) {
+            return;
+        }
+
+        AtlasVertex currentClassificationVertex = graph.getVertex(classificationVertexId);
+
+        List<AtlasVertex> currentClassificationVertices = getPropagatableClassifications(edge);
+        if (! currentClassificationVertices.contains(currentClassificationVertex)) {
+            return;
+        }
+
+        String              classificationId                = currentClassificationVertex.getIdForDisplay();
+        String              sourceEntityId                  = getClassificationEntityGuid(currentClassificationVertex);
+        AtlasVertex         sourceEntityVertex              = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityId);
+        AtlasClassification classification                  = entityRetriever.toAtlasClassification(currentClassificationVertex);
+        boolean             removePropagationOnEntityDelete = getRemovePropagations(currentClassificationVertex);
+
+        if (!(isTermEntityEdge || removePropagationOnEntityDelete)) {
+            return;
+        }
+
+        String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
+
+        Boolean restrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(currentClassificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
+
+        if (restrictPropagationThroughLineage != null && restrictPropagationThroughLineage) {
+            propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
+        }
+
+        List<AtlasVertex> propagatedVertices = GraphHelper.getPropagatedVertices(currentClassificationVertex);
+        LOG.info("Traversed {} vertices with edge {} for classification vertex {}", propagatedVertices.size(), edge.getId(), classificationId);
+
+        List<AtlasVertex> propagatedEntitiesWithoutEdge = entityRetriever.getImpactedVerticesV2(sourceEntityVertex, GraphHelper.getRelationshipGuid(edge), classificationId,
+                CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode));
+
+        LOG.info("Traversed {} vertices except edge {} for classification vertex {}", propagatedEntitiesWithoutEdge.size(), edge.getId(), classificationId);
+
+        List<AtlasVertex>   verticesToRemove = (List<AtlasVertex>)CollectionUtils.subtract(propagatedVertices, propagatedEntitiesWithoutEdge);
+
+        propagatedEntitiesWithoutEdge.clear();
+        propagatedVertices.clear();
+
+        LOG.info("To delete classification from {} vertices for deletion of edge {} and classification {}", verticesToRemove.size(), edge.getId(), classificationId);
+
+        while (verticesToRemove.size() >= CHUNK_SIZE)
+        {
+            List<AtlasVertex> chunkedVerticesToRemoveTag = verticesToRemove.subList(0, CHUNK_SIZE);
+
+            processClassificationDeletionFromVerticesInChunk(chunkedVerticesToRemoveTag, currentClassificationVertex, classification);
+
+            chunkedVerticesToRemoveTag.clear();
+
+            transactionInterceptHelper.intercept();
+        }
+
+        processClassificationDeletionFromVerticesInChunk(verticesToRemove, currentClassificationVertex, classification);
+
+        transactionInterceptHelper.intercept();
+
+        LOG.info("Completed remove propagation for edge {} and classification vertex {} with classification name {} and source entity {}", edge.getId(),
+                classificationId, classification.getTypeName(), classification.getEntityGuid());
+    }
+
     void processClassificationDeletionFromVerticesInChunk(List<AtlasVertex> VerticesToRemoveTag, AtlasVertex classificationVertex, AtlasClassification classification) throws AtlasBaseException {
 
         List<AtlasVertex> updatedVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex, VerticesToRemoveTag);
@@ -3610,7 +3777,7 @@ public class EntityGraphMapper {
             for (AtlasBusinessAttribute bmAttribute : entityTypeBusinessAttributes.values()) {
                 AtlasType attrType  = bmAttribute.getAttributeType();
                 String    attrName  = bmAttribute.getName();
-                Object    attrValue = entityBusinessAttributes.get(attrName);
+                Object    attrValue = entityBusinessAttributes == null ? null : entityBusinessAttributes.get(attrName);
                 String    fieldName = entityType.getTypeName() + "." + bmName + "." + attrName;
 
                 if (attrValue != null) {
