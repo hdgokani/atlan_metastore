@@ -60,7 +60,8 @@ public class ServiceState {
         PASSIVE,
         BECOMING_ACTIVE,
         BECOMING_PASSIVE,
-        MIGRATING
+        MIGRATING,
+        EXECUTING_TASK
     }
 
     private Configuration configuration;

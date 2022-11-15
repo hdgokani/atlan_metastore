@@ -315,10 +315,13 @@ public class AdminResource {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AdminResource.getStatus()");
         }
+        Map<String, Object> responseData = new HashMap<>();
 
-        Map<String, Object> responseData = new HashMap() {{
-                put(AtlasClient.STATUS, serviceState.getState().toString());
-            }};
+        if (taskManagement.getTaskLockAcquired()) {
+            responseData.put(AtlasClient.STATUS, ServiceState.ServiceStateValue.EXECUTING_TASK.toString());
+        } else {
+            responseData.put(AtlasClient.STATUS, serviceState.getState().toString());
+        }
 
         if(serviceState.isInstanceInMigration()) {
             MigrationStatus status = migrationProgressService.getStatus();

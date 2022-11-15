@@ -192,6 +192,10 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         return ret;
     }
 
+    public boolean getTaskLockAcquired() {
+        return taskExecutor.getTaskLockAcquired();
+    }
+
     public List<AtlasTask> getByGuidsES(List<String> guids) throws AtlasBaseException {
         return registry.getByIdsES(guids);
     }

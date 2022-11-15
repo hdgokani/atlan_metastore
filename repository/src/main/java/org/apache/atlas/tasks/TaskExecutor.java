@@ -48,6 +48,7 @@ public class TaskExecutor {
     private final ICuratorFactory curatorFactory;
     private final boolean isActiveActiveHAEnabled;
     private final String zkRoot;
+    public boolean taskLockAcquired;
 
     private TaskQueueWatcher watcher;
     private Thread watcherThread;
@@ -69,10 +70,18 @@ public class TaskExecutor {
 
     public Thread startWatcherThread() {
 
-        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, curatorFactory, zkRoot, isActiveActiveHAEnabled);
+        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, curatorFactory, zkRoot, isActiveActiveHAEnabled, this);
         watcherThread = new Thread(watcher);
         watcherThread.start();
         return watcherThread;
+    }
+
+    public void setTaskLockAcquired(boolean taskLockAcquired) {
+        this.taskLockAcquired = taskLockAcquired;
+    }
+
+    public boolean getTaskLockAcquired() {
+        return this.taskLockAcquired;
     }
 
     public void stopQueueWatcher() {

@@ -43,6 +43,7 @@ public class TaskQueueWatcher implements Runnable {
     private final Map<String, TaskFactory> taskTypeFactoryMap;
     private final TaskManagement.Statistics statistics;
     private final ICuratorFactory curatorFactory;
+    private TaskExecutor taskExecutor;
 
     private static long pollInterval = AtlasConfiguration.TASKS_REQUEUE_POLL_INTERVAL.getLong();
     private static final String TASK_LOCK = "/task-lock";
@@ -51,7 +52,7 @@ public class TaskQueueWatcher implements Runnable {
 
     public TaskQueueWatcher(ExecutorService executorService, TaskRegistry registry,
                             Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
-                            ICuratorFactory curatorFactory, final String zkRoot, boolean isActiveActiveHAEnabled) {
+                            ICuratorFactory curatorFactory, final String zkRoot, boolean isActiveActiveHAEnabled, TaskExecutor taskExecutor) {
 
         this.registry = registry;
         this.executorService = executorService;
@@ -60,6 +61,7 @@ public class TaskQueueWatcher implements Runnable {
         this.curatorFactory = curatorFactory;
         this.zkRoot = zkRoot;
         this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
+        this.taskExecutor = taskExecutor;
     }
 
     public void shutdown() {
@@ -88,12 +90,14 @@ public class TaskQueueWatcher implements Runnable {
 
                 List<AtlasTask> tasks = fetcher.getTasks();
                 if (CollectionUtils.isNotEmpty(tasks)) {
+                    taskExecutor.setTaskLockAcquired(true);
                     final CountDownLatch latch = new CountDownLatch(tasks.size());
                     submitAll(tasks, latch);
                     waitForTasksToComplete(latch);
                 } else {
                     LOG.info("No tasks to queue, sleeping for {} ms", pollInterval);
                     releaseLock(lock);
+                    taskExecutor.setTaskLockAcquired(false);
                 }
                 Thread.sleep(pollInterval);
             } catch (InterruptedException interruptedException) {
@@ -104,6 +108,7 @@ public class TaskQueueWatcher implements Runnable {
             }
             finally {
                 releaseLock(lock);
+                taskExecutor.setTaskLockAcquired(false);
             }
         }
     }
