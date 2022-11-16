@@ -470,20 +470,6 @@ public class EntityGraphMapper {
                         }
 
                         addHasLineage(inOutEdges, isRestoreEntity);
-                    } else {
-                        if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore()) && context.getEntitiesToRestore().contains(vertex)) {
-                            Set<AtlasEdge> activeEdges = new HashSet<>();
-                            Iterator<AtlasEdge> iterator = vertex.getEdges(AtlasEdgeDirection.BOTH).iterator();
-                            while (iterator.hasNext()) {
-                                AtlasEdge edge = iterator.next();
-                                if (edge.getProperty(Constants.STATE_PROPERTY_KEY, String.class).equalsIgnoreCase("ACTIVE")) {
-                                    activeEdges.add(edge);
-                                }
-                            }
-                            if (activeEdges.size() > 0) {
-                                addHasLineage(activeEdges, true);
-                            }
-                        }
                     }
 
                     Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
