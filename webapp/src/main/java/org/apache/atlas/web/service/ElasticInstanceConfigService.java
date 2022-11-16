@@ -1,6 +1,7 @@
 package org.apache.atlas.web.service;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -88,7 +89,7 @@ public class ElasticInstanceConfigService implements Service {
 
     public String updateCurrentIndexName() throws AtlasBaseException {
         AtlasEntityWithExtInfo instanceConfig = getInstanceConfigEntity().orElseThrow(() -> new AtlasBaseException("The instance config doesn't exist"));
-        String newIndexName = ActiveIndexNameManager.getNewIndexName();
+        String newIndexName = ActiveIndexNameManager.getNewIndexName(RequestContext.get().getRequestTime());
         instanceConfig.getEntity().setAttribute(ATTR_VERTEX_INDEX_NAME, newIndexName);
 
         atlasEntityStore.createOrUpdate(new AtlasEntityStream(instanceConfig), true);

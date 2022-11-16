@@ -72,16 +72,18 @@ public class TypeCacheRefresher {
         }
     }
 
-    public void refreshAllHostCache() throws IOException, URISyntaxException, RepositoryException {
+    public String refreshAllHostCache() throws IOException, URISyntaxException, RepositoryException {
         final String traceId = RequestContext.get().getTraceId();
         if(StringUtils.isBlank(cacheRefresherEndpoint) || !isActiveActiveHAEnabled) {
             LOG.info("Skipping type-def cache refresh :: traceId {}", traceId);
-            return;
+            return traceId;
         }
 
         int totalFieldKeys = provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
         LOG.info("Found {} totalFieldKeys to be expected in other nodes :: traceId {}", totalFieldKeys, traceId);
         refreshCache(totalFieldKeys, traceId);
+
+        return traceId;
     }
 
     private void refreshCache(final int totalFieldKeys, final String traceId) throws IOException, URISyntaxException {

@@ -4,8 +4,10 @@ import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.IAtlasGraphProvider;
+import org.apache.atlas.service.ActiveIndexNameManager;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.web.service.AtlasHealthStatus;
+import org.apache.atlas.web.service.ElasticInstanceConfigService;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
@@ -33,13 +35,17 @@ public class TypeCacheRefreshREST {
     private final IAtlasGraphProvider provider;
     private final ServiceState serviceState;
     private final AtlasHealthStatus atlasHealthStatus;
+    private final ElasticInstanceConfigService elasticInstanceConfigService;
 
     @Inject
-    public TypeCacheRefreshREST(AtlasTypeDefStore typeDefStore, IAtlasGraphProvider provider, ServiceState serviceState, AtlasHealthStatus atlasHealthStatus) {
+    public TypeCacheRefreshREST(AtlasTypeDefStore typeDefStore, IAtlasGraphProvider provider,
+                                ServiceState serviceState, AtlasHealthStatus atlasHealthStatus,
+                                ElasticInstanceConfigService elasticInstanceConfigService) {
         this.typeDefStore = typeDefStore;
         this.provider = provider;
         this.serviceState = serviceState;
         this.atlasHealthStatus = atlasHealthStatus;
+        this.elasticInstanceConfigService = elasticInstanceConfigService;
     }
 
     /**
@@ -59,6 +65,8 @@ public class TypeCacheRefreshREST {
                 return;
             }
             refreshTypeDef(expectedFieldKeys, traceId);
+            refreshWriteIndexName(traceId);
+
         } catch (Exception e) {
             LOG.error("Error during refreshing cache  :: traceId " + traceId + " " + e.getMessage(), e);
             serviceState.setState(ServiceState.ServiceStateValue.PASSIVE, true);
@@ -95,5 +103,23 @@ public class TypeCacheRefreshREST {
 
         LOG.info("Size of field keys after refresh = {}", provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size());
         LOG.info("Completed type-def cache refresh :: traceId {}", traceId);
+    }
+
+    private void refreshWriteIndexName(final String traceId) {
+        LOG.info("Refreshing write index name of ES :: traceId {}", traceId);
+
+        String newIndexName = elasticInstanceConfigService.getCurrentIndexName();
+        ActiveIndexNameManager.setCurrentWriteVertexIndexName(newIndexName);
+
+        LOG.info("Refreshed write index name of ES :: traceId {}, newWriteIndexName {}", traceId, newIndexName);
+    }
+
+    private void refreshReadIndexName(final String traceId) {
+        LOG.info("Refreshing read index name of ES :: traceId {}", traceId);
+
+        String newIndexName = elasticInstanceConfigService.getCurrentIndexName();
+        ActiveIndexNameManager.setCurrentReadVertexIndexName(newIndexName);
+
+        LOG.info("Refreshed read index name of ES :: traceId {}, newReadIndexName {}", traceId, newIndexName);
     }
 }

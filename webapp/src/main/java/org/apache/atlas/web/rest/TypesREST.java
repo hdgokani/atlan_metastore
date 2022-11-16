@@ -51,6 +51,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -521,11 +522,15 @@ public class TypesREST {
 
     @POST
     @Path("/syncTypeDefs")
-    public TypeSyncResponse syncTypeDefs(final AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException {
+    public TypeSyncResponse syncTypeDefs(final AtlasTypesDef newTypeDefinitions) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         TypeSyncResponse ret;
+        InterProcessMutex lock = null;
+        RequestContext.get().setTraceId(UUID.randomUUID().toString());
 
         try {
+            typeCacheRefresher.verifyCacheRefresherHealth();
+
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.syncTypeDefs()");
             }
@@ -534,8 +539,21 @@ public class TypesREST {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "No types specified");
             }
 
+            lock = attemptAcquiringLock();
             ret = typeSyncService.syncTypes(newTypeDefinitions);
+
+            String traceId = typeCacheRefresher.refreshAllHostCache();
+
+            ret.setTraceId(traceId);
+
+        } catch (AtlasBaseException atlasBaseException) {
+            LOG.error("TypesREST.syncTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
+            throw atlasBaseException;
+        } catch (Exception e) {
+            LOG.error("TypesREST.syncTypeDefs:: " + e.getMessage(), e);
+            throw new AtlasBaseException("Error while syncing types");
         } finally {
+            releaseLock(lock);
             AtlasPerfTracer.log(perf);
         }
 
@@ -544,15 +562,15 @@ public class TypesREST {
 
     @DELETE
     @Path("/cleanupTypeSync")
-    public void cleanupTypeSync() {
+    public void cleanupTypeSync(@QueryParam("traceId") String traceId) {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.cleanupTypeSync()");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.cleanupTypeSync(" + traceId + ")");
             }
 
-            typeSyncService.cleanupTypeSync();
+            typeSyncService.cleanupTypeSync(traceId);
         } finally {
             AtlasPerfTracer.log(perf);
         }

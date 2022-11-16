@@ -7,6 +7,8 @@ public class TypeSyncResponse {
     private final String currentIndexName;
     private final String newIndexName;
 
+    private String traceId;
+
     public TypeSyncResponse(boolean shouldReindexData, boolean shouldCreateNewIndex, String currentIndexName, String newIndexName) {
         this.shouldReindexData = shouldReindexData;
         this.shouldCreateNewIndex = shouldCreateNewIndex;
@@ -28,5 +30,13 @@ public class TypeSyncResponse {
 
     public String getNewIndexName() {
         return newIndexName;
+    }
+
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
+    }
+
+    public String getTraceId() {
+        return traceId;
     }
 }
