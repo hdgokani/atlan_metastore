@@ -91,7 +91,9 @@ public enum AtlasConfiguration {
     TASKS_GRAPH_COMMIT_CHUNK_SIZE("atlas.tasks.graph.commit.chunk.size", 1000),
     RANGER_ATLAS_SERVICE_TYPE("atlas.ranger.service.type.atlas", "atlas"),
     RANGER_HEKA_SERVICE_TYPE("atlas.ranger.service.type.heka", "heka"),
-    GRAPH_TRAVERSAL_PARALLELISM("atlas.graph.traverse.bucket.size",10);
+    GRAPH_TRAVERSAL_PARALLELISM("atlas.graph.traverse.bucket.size",10),
+    TASK_EXECUTION_POD_HOST_NAME("atlas.task.execution.pod.host.name", "");
+
 
 
     private static final Configuration APPLICATION_PROPERTIES;

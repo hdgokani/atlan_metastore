@@ -51,8 +51,18 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final Statistics                statistics;
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
     private final ICuratorFactory curatorFactory;
+    private boolean taskExecutionInProgressInSeparation;
+    private static final String HOST_NAME = "HOSTNAME";
 
     private Thread watcherThread = null;
+
+    public boolean isTaskExecutionInProgressInSeparation() {
+        return taskExecutionInProgressInSeparation;
+    }
+
+    public void setTaskExecutionInProgressInSeparation(boolean taskExecutionInProgressInSeparation) {
+        this.taskExecutionInProgressInSeparation = taskExecutionInProgressInSeparation;
+    }
 
     public enum DeleteType {
         SOFT,
@@ -98,7 +108,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     @Override
     public void stop() throws AtlasException {
-        stopQueueWatcher();
+        setTaskExecutionInProgressInSeparation(false);
         LOG.info("TaskManagement: Stopped!");
     }
 
@@ -251,6 +261,16 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             return;
         }
 
+        String currentHostName = System.getenv(HOST_NAME);
+        String taskExecutionPodName = AtlasConfiguration.TASK_EXECUTION_POD_HOST_NAME.getString();
+
+        if (!taskExecutionPodName.isEmpty() && currentHostName != null) {
+            if (currentHostName.equals(taskExecutionPodName))
+                setTaskExecutionInProgressInSeparation(true);
+            else
+                return;
+        }
+
         LOG.info("TaskManagement: Started!");
         if (this.taskTypeFactoryMap.size() == 0) {
             LOG.warn("Not factories registered! Pending tasks will be queued once factories are registered!");
@@ -260,6 +280,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         try {
             startWatcherThread();
         } catch (Exception e) {
+            setTaskExecutionInProgressInSeparation(false);
             LOG.error("TaskManagement: Error while re queue tasks");
             e.printStackTrace();
         }
@@ -285,6 +306,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private void stopQueueWatcher() {
         taskExecutor.stopQueueWatcher();
         watcherThread = null;
+        setTaskExecutionInProgressInSeparation(false);
     }
 
     static class Statistics {
