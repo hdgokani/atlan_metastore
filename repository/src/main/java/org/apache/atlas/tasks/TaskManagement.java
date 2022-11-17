@@ -108,7 +108,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     @Override
     public void stop() throws AtlasException {
-        setTaskExecutionInProgressInSeparation(false);
+        stopQueueWatcher();
         LOG.info("TaskManagement: Stopped!");
     }
 
