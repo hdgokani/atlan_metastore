@@ -56,6 +56,7 @@ import org.apache.atlas.repository.impexp.MigrationProgressService;
 import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.service.ActiveIndexNameManager;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasType;
@@ -332,6 +333,20 @@ public class AdminResource {
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.getStatus()");
         }
+
+        return response;
+    }
+
+    @GET
+    @Path("indexes")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response getIndexes() {
+        Map<String, String> responseData = new HashMap() {{
+            put("read", ActiveIndexNameManager.getCurrentReadVertexIndexName());
+            put("write", ActiveIndexNameManager.getCurrentWriteVertexIndexName());
+        }};
+
+        Response response = Response.ok(AtlasJson.toV1Json(responseData)).build();
 
         return response;
     }
