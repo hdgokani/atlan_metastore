@@ -402,10 +402,10 @@ public class TypesREST {
             return null;
         }
 
-        if (elasticInstanceConfigService.isTypeDefUpdatesLocked()) {
+        /*if (elasticInstanceConfigService.isTypeDefUpdatesLocked()) {
             LOG.info("Type Defs are locked due to type sync");
             throw new AtlasBaseException(AtlasErrorCode.TYPE_DEF_SYNC_IN_PROGRESS);
-        }
+        }*/
 
         final String traceId = RequestContext.get().getTraceId();
         final InterProcessMutex lock = curatorFactory.lockInstance(zkRoot, TYPE_DEF_LOCK);

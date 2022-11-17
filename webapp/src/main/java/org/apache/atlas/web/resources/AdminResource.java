@@ -341,14 +341,11 @@ public class AdminResource {
     @Path("indexes")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getIndexes() {
-        Map<String, String> responseData = new HashMap() {{
-            put("read", ActiveIndexNameManager.getCurrentReadVertexIndexName());
-            put("write", ActiveIndexNameManager.getCurrentWriteVertexIndexName());
-        }};
+        Map<String, String> responseData = new HashMap<>();
+        responseData.put("read", ActiveIndexNameManager.getCurrentReadVertexIndexName());
+        responseData.put("write", ActiveIndexNameManager.getCurrentWriteVertexIndexName());
 
-        Response response = Response.ok(AtlasJson.toV1Json(responseData)).build();
-
-        return response;
+        return Response.ok(AtlasJson.toV1Json(responseData)).build();
     }
 
     @GET
