@@ -50,6 +50,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateCustomAttributes;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
@@ -421,6 +422,11 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     }
 
     private void processDynamicAttributes(AtlasEntity entity) throws AtlasBaseException {
+        if (typeRegistry != null) {
+            LOG.info(typeRegistry.getAllEntityDefNames().stream().collect(Collectors.joining(",")));
+        } else {
+          LOG.error("typeRegistry is null");
+        }
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
         if (entityType == null) {
