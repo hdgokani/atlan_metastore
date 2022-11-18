@@ -1019,7 +1019,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         try {
-            indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
+
+            String indexName = getIndexName(params);
+            LOG.info("indexName {}", indexName);
+
+            indexQuery = graph.elasticsearchQuery(indexName);
 
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
 
