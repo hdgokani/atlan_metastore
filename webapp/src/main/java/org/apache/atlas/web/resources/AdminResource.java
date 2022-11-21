@@ -317,7 +317,7 @@ public class AdminResource {
         }
         Map<String, Object> responseData = new HashMap<>();
 
-        if (taskManagement.getTaskLockAcquired()) {
+        if (taskManagement.isTaskExecutionInProgressInSeparation()) {
             responseData.put(AtlasClient.STATUS, ServiceState.ServiceStateValue.EXECUTING_TASK.toString());
         } else {
             responseData.put(AtlasClient.STATUS, serviceState.getState().toString());
