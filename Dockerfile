@@ -71,6 +71,10 @@ RUN cd /opt/apache-atlas/bin \
 #     && patch -b -f < atlas_start.py.patch \
 #     && patch -b -f < atlas_config.py.patch \
 
+RUN echo 'alias tlog="tail -f /opt/apache-atlas/logs/application.log"' >> ~/.bashrc
+RUN echo 'alias tindex="curl localhost:21000/api/atlas/admin/indexes"' >> ~/.bashrc
+RUN apt-get install vim -y
+
 RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true
 
