@@ -345,7 +345,8 @@ public class AdminResource {
         responseData.put("read", ActiveIndexNameManager.getCurrentReadVertexIndexName());
         responseData.put("write", ActiveIndexNameManager.getCurrentWriteVertexIndexName());
 
-        return Response.ok(AtlasJson.toV1Json(responseData)).build();
+        LOG.info("indexes: " + AtlasType.toJson(responseData));
+        return Response.ok(AtlasType.toJson(responseData)).build();
     }
 
     @GET
