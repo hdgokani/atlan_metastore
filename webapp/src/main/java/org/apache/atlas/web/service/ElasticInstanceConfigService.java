@@ -27,7 +27,7 @@ import static org.apache.atlas.AtlasErrorCode.TYPE_NAME_NOT_FOUND;
 import static org.apache.atlas.service.ActiveIndexNameManager.DEFAULT_VERTEX_INDEX;
 
 @Component
-@Order
+@Order(3)
 public class ElasticInstanceConfigService implements Service {
 
     private static final Logger LOG = LoggerFactory.getLogger(ElasticInstanceConfigService.class);
