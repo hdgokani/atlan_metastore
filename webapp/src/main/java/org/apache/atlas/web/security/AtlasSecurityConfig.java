@@ -174,6 +174,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
             "/api/atlas/admin/status",
             "/api/atlas/admin/metrics",
             "/api/atlas/admin/health",
+            "/api/atlas/admin/indexes",
             "/api/atlas/admin/types/refresh",
             "/api/atlas/admin/isactive",
             "/api/atlas/admin/killtheleader",
