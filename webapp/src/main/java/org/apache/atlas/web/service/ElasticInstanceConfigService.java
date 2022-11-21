@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.util.*;
 
 import static org.apache.atlas.AtlasErrorCode.TYPE_NAME_NOT_FOUND;
@@ -41,12 +42,11 @@ public class ElasticInstanceConfigService implements Service {
     private static final String ATTR_UNIQUE_NAME       = ELASTIC_INSTANCE_CONFIGURATION_ATTR_PREFIX + "name";
     private static final String ATTR_IS_UPDATE_LOCKED  = ELASTIC_INSTANCE_CONFIGURATION_ATTR_PREFIX + "isUpdateLocked";
 
-    private final AtlasTypeDefStore typeDefStore;
     private final AtlasEntityStore atlasEntityStore;
     private final AtlasTypeRegistry atlasTypeRegistry;
 
-    public ElasticInstanceConfigService(AtlasTypeDefStore typeDefStore, AtlasEntityStore atlasEntityStore, AtlasTypeRegistry atlasTypeRegistry) {
-        this.typeDefStore = typeDefStore;
+    @Inject
+    public ElasticInstanceConfigService(AtlasEntityStore atlasEntityStore, AtlasTypeRegistry atlasTypeRegistry) {
         this.atlasEntityStore = atlasEntityStore;
         this.atlasTypeRegistry = atlasTypeRegistry;
     }
