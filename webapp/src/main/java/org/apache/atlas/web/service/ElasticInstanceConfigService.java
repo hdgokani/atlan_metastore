@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.TYPE_NAME_NOT_FOUND;
 import static org.apache.atlas.service.ActiveIndexNameManager.DEFAULT_VERTEX_INDEX;
@@ -72,7 +73,6 @@ public class ElasticInstanceConfigService implements Service {
         if (!getInstanceConfigEntity().isPresent()) {
             AtlasEntity instanceConfig = new AtlasEntity();
             instanceConfig.setTypeName(ELASTIC_INSTANCE_CONFIGURATION_TYPE_NAME);
-            instanceConfig.setStatus(AtlasEntity.Status.ACTIVE);
             instanceConfig.setAttribute(ATTR_UNIQUE_NAME, ELASTIC_INSTANCE_CONFIGURATION);
             instanceConfig.setAttribute(ATTR_VERTEX_INDEX_NAME, DEFAULT_VERTEX_INDEX);
             instanceConfig.setAttribute(ATTR_IS_UPDATE_LOCKED, false);
@@ -122,6 +122,13 @@ public class ElasticInstanceConfigService implements Service {
         Map<String, Object> idAttribute = new HashMap<>();
         idAttribute.put(ATTR_UNIQUE_NAME, ELASTIC_INSTANCE_CONFIGURATION);
         try {
+            if (atlasTypeRegistry != null) {
+                LOG.error("typeRegistry is not null");
+                LOG.info(atlasTypeRegistry.getAllEntityDefNames().stream().collect(Collectors.joining(",")));
+            } else {
+                LOG.error("typeRegistry is null");
+            }
+
             AtlasEntityType instanceConfigType = atlasTypeRegistry.getEntityTypeByName(ELASTIC_INSTANCE_CONFIGURATION_TYPE_NAME);
             if (instanceConfigType == null) {
                 throw new AtlasBaseException(TYPE_NAME_NOT_FOUND, ELASTIC_INSTANCE_CONFIGURATION_TYPE_NAME);
