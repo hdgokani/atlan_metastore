@@ -3,6 +3,7 @@ package org.apache.atlas.web.service;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -29,8 +30,8 @@ import static org.apache.atlas.AtlasErrorCode.TYPE_NAME_NOT_FOUND;
 import static org.apache.atlas.service.ActiveIndexNameManager.DEFAULT_VERTEX_INDEX;
 
 @Component
-@Order(3)
-public class ElasticInstanceConfigService implements Service {
+@Order(8)
+public class ElasticInstanceConfigService implements Service, ActiveStateChangeHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(ElasticInstanceConfigService.class);
 
@@ -56,10 +57,6 @@ public class ElasticInstanceConfigService implements Service {
     public void start() throws AtlasException {
         LOG.info("==> ElasticInstanceConfigService.start()");
         try {
-            createInstanceConfigEntity();
-            //create instanceConfig entity
-                // can be done after start
-
             ActiveIndexNameManager.init(getCurrentIndexName());
 
         } catch (Exception e) {
@@ -143,5 +140,29 @@ public class ElasticInstanceConfigService implements Service {
     @Override
     public void stop() throws AtlasException {
 
+    }
+
+    @Override
+    public void instanceIsActive() throws AtlasException {
+        LOG.info("==> ElasticInstanceConfigService.instanceIsActive()");
+
+        try {
+            createInstanceConfigEntity();
+        } catch (AtlasBaseException e) {
+            LOG.error("Failed to initialize ElasticInstanceConfigService after instance became ACTIVE");
+            throw new AtlasException(e);
+        }
+
+        LOG.info("<== ElasticInstanceConfigService.instanceIsActive()");
+    }
+
+    @Override
+    public void instanceIsPassive() throws AtlasException {
+
+    }
+
+    @Override
+    public int getHandlerOrder() {
+        return HandlerOrder.TASK_MANAGEMENT.getOrder();
     }
 }
