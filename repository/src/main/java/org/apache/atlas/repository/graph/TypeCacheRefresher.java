@@ -39,6 +39,22 @@ public class TypeCacheRefresher {
     private final IAtlasGraphProvider provider;
     private boolean isActiveActiveHAEnabled;
 
+    public enum RefreshOperation {
+        ONLY_TYPE(0),
+        TYPE_WRITE_INDEX(1),
+        READ_INDEX(2);
+
+        int id;
+
+        RefreshOperation(int id) {
+            this.id = id;
+        }
+
+        public int getId() {
+            return id;
+        }
+    }
+
     @Inject
     public TypeCacheRefresher(final IAtlasGraphProvider provider) {
         this.provider = provider;
@@ -72,7 +88,7 @@ public class TypeCacheRefresher {
         }
     }
 
-    public String refreshAllHostCache() throws IOException, URISyntaxException, RepositoryException {
+    public String refreshAllHostCache(int operationId) throws IOException, URISyntaxException, RepositoryException {
         final String traceId = RequestContext.get().getTraceId();
         if(StringUtils.isBlank(cacheRefresherEndpoint) || !isActiveActiveHAEnabled) {
             LOG.info("Skipping type-def cache refresh :: traceId {}", traceId);
@@ -81,15 +97,21 @@ public class TypeCacheRefresher {
 
         int totalFieldKeys = provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
         LOG.info("Found {} totalFieldKeys to be expected in other nodes :: traceId {}", totalFieldKeys, traceId);
-        refreshCache(totalFieldKeys, traceId);
+        refreshCache(operationId, totalFieldKeys, traceId);
 
         return traceId;
     }
 
-    private void refreshCache(final int totalFieldKeys, final String traceId) throws IOException, URISyntaxException {
+    private void refreshCache(final int operationId, final int totalFieldKeys, final String traceId) throws IOException, URISyntaxException {
         URIBuilder builder = new URIBuilder(cacheRefresherEndpoint);
-        builder.setParameter("expectedFieldKeys", String.valueOf(totalFieldKeys));
+
+        if (totalFieldKeys != -1) {
+            builder.setParameter("expectedFieldKeys", String.valueOf(totalFieldKeys));
+        }
+
+        builder.setParameter("operationId", String.valueOf(operationId));
         builder.setParameter("traceId", traceId);
+
         final HttpPost httpPost = new HttpPost(builder.build());
         LOG.info("Invoking cache refresh endpoint {} :: traceId {}", cacheRefresherEndpoint, traceId);
 
@@ -191,3 +213,4 @@ class CacheRefresherHealthResponse {
         this.message = message;
     }
 }
+

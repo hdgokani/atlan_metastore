@@ -91,8 +91,6 @@ public class TypeSyncService {
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
 
                 LOG.info("Deleted old index {}", oldIndexName);
-
-                //TODO: Refresh read index across all ACTIVE pods
             } catch (InterruptedException | ExecutionException | IOException e) {
                 LOG.error("Error while deleting index {}. Exception: {}", oldIndexName, e.toString());
             }

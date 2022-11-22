@@ -4,6 +4,7 @@ import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.IAtlasGraphProvider;
+import org.apache.atlas.repository.graph.TypeCacheRefresher.RefreshOperation;
 import org.apache.atlas.service.ActiveIndexNameManager;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.web.service.AtlasHealthStatus;
@@ -58,14 +59,24 @@ public class TypeCacheRefreshREST {
     @POST
     @Path("/refresh")
     @Timed
-    public void refreshCache(@QueryParam("expectedFieldKeys") int expectedFieldKeys, @QueryParam("traceId") String traceId) throws AtlasBaseException {
+    public void refreshCache(@QueryParam("operationId") @DefaultValue("0") int operationId,
+                             @QueryParam("expectedFieldKeys") int expectedFieldKeys,
+                             @QueryParam("traceId") String traceId) throws AtlasBaseException {
         try {
             if (serviceState.getState() != ServiceState.ServiceStateValue.ACTIVE) {
-                LOG.warn("Node is in {} state. skipping refreshing type-def-cache :: traceId {}", serviceState.getState(), traceId);
+                LOG.warn("Node is in {} state. skipping refreshing type-def-cache :: traceId {}, operationId {}",
+                        serviceState.getState(), traceId, operationId);
                 return;
             }
-            refreshTypeDef(expectedFieldKeys, traceId);
-            refreshWriteIndexName(traceId);
+
+            if (operationId == RefreshOperation.ONLY_TYPE.getId()) {
+                refreshTypeDef(expectedFieldKeys, traceId);
+            } else if (operationId == RefreshOperation.TYPE_WRITE_INDEX.getId()) {
+                refreshTypeDef(expectedFieldKeys, traceId);
+                refreshWriteIndexName(traceId);
+            } else if (operationId == RefreshOperation.READ_INDEX.getId()) {
+                refreshReadIndexName(traceId);
+            }
 
         } catch (Exception e) {
             LOG.error("Error during refreshing cache  :: traceId " + traceId + " " + e.getMessage(), e);
