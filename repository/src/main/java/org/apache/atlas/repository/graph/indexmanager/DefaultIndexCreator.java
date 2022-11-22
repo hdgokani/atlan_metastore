@@ -55,7 +55,7 @@ public class DefaultIndexCreator extends GraphTransactionManager {
         atlasMixedBackendIndexManager.createIndexIfNotExists(getCurrentWriteVertexIndexName());
     }
 
-    public void createDefaultIndexes(AtlasGraph graph) throws RepositoryException, IndexException, IOException {
+    public void createDefaultIndexes(AtlasGraph graph, boolean shouldCommit) throws RepositoryException, IndexException, IOException {
         AtlasGraphManagement management = graph.getManagementSystem();
 
         try {
@@ -173,7 +173,9 @@ public class DefaultIndexCreator extends GraphTransactionManager {
             createPropertyKey(management, PROVENANCE_TYPE_KEY, Integer.class, SINGLE);
             createPropertyKey(management, HOME_ID_KEY, String.class, SINGLE);
 
-            commit(management);
+            if (shouldCommit) {
+                commit(management);
+            }
 
             LOG.info("Index creation for global keys complete.");
         } catch (Throwable t) {

@@ -64,11 +64,10 @@ public class TypeSyncService {
 
             atlasMixedBackendIndexManager.createIndexIfNotExists(newIndexName);
             setCurrentWriteVertexIndexName(newIndexName);
-            defaultIndexCreator.createDefaultIndexes(atlasGraph);
+            defaultIndexCreator.createDefaultIndexes(atlasGraph, false);
         }
         typeDefStore.updateTypesDef(newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions));
         typeDefStore.createTypesDef(newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions));
-        //typeDefStore.deleteTypesDef(existingTypeDefinitions.getCreatedOrDeletedTypesDef(newTypeDefinitions));
 
         return new TypeSyncResponse(
                 haveIndexSettingsChanged,
