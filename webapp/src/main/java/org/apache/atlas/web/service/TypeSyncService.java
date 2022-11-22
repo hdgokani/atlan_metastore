@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.service.ActiveIndexNameManager.*;
 import static org.janusgraph.graphdb.database.management.ManagementSystem.awaitGraphIndexStatus;
@@ -66,8 +67,14 @@ public class TypeSyncService {
             setCurrentWriteVertexIndexName(newIndexName);
             defaultIndexCreator.createDefaultIndexes(atlasGraph, false);
         }
-        typeDefStore.updateTypesDef(newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions));
-        typeDefStore.createTypesDef(newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions));
+        AtlasTypesDef toUpdate = newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions);
+        AtlasTypesDef toCreate = newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions);
+
+        LOG.info("toUpdate {}", toUpdate.getEntityDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
+        LOG.info("toCreate {}", toCreate.getEntityDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
+
+        typeDefStore.updateTypesDef(toCreate);
+        typeDefStore.createTypesDef(toUpdate);
 
         return new TypeSyncResponse(
                 haveIndexSettingsChanged,
