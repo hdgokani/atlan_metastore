@@ -10,6 +10,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
+import org.apache.atlas.service.ActiveIndexNameManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -124,6 +125,6 @@ public class AtlasTaskService implements TaskService {
     }
 
     private AtlasIndexQuery searchTask(TaskSearchParams searchParams) {
-        return graph.elasticsearchQuery(Constants.VERTEX_INDEX, searchParams);
+        return graph.elasticsearchQuery(ActiveIndexNameManager.getCurrentReadVertexIndexName(), searchParams);
     }
 }

@@ -26,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.service.ActiveIndexNameManager;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -59,7 +60,7 @@ public class RepairIndex {
     private static final int EXIT_CODE_FAILED = 1;
     private static final int  MAX_TRIES_ON_FAILURE = 3;
 
-    private static final String INDEX_NAME_VERTEX_INDEX = "vertex_index";
+    private static final String INDEX_NAME_VERTEX_INDEX = ActiveIndexNameManager.getCurrentReadVertexIndexName();
     private static final String INDEX_NAME_FULLTEXT_INDEX = "fulltext_index";
     private static final String INDEX_NAME_EDGE_INDEX = "edge_index";
     private static final String DEFAULT_ATLAS_URL = "http://localhost:21000/";

@@ -70,11 +70,20 @@ public class TypeSyncService {
         AtlasTypesDef toUpdate = newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions);
         AtlasTypesDef toCreate = newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions);
 
-        LOG.info("toUpdate {}", toUpdate.getEntityDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
-        LOG.info("toCreate {}", toCreate.getEntityDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
+        LOG.info("toUpdate entity {}", toUpdate.getEntityDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
+        LOG.info("toUpdate enum {}", toUpdate.getEnumDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
+        LOG.info("toUpdate class {}", toUpdate.getClassificationDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
+        LOG.info("toUpdate BM {}", toUpdate.getBusinessMetadataDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
+        LOG.info("toUpdate relation {}", toUpdate.getRelationshipDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
 
-        typeDefStore.updateTypesDef(toCreate);
-        typeDefStore.createTypesDef(toUpdate);
+        LOG.info("toCreate entity {}", toCreate.getEntityDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
+        LOG.info("toCreate enum {}", toCreate.getEnumDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
+        LOG.info("toCreate class {}", toCreate.getClassificationDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
+        LOG.info("toCreate BM {}", toCreate.getBusinessMetadataDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
+        LOG.info("toCreate relation {}", toCreate.getRelationshipDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
+
+        typeDefStore.updateTypesDef(toUpdate);
+        typeDefStore.createTypesDef(toCreate);
 
         return new TypeSyncResponse(
                 haveIndexSettingsChanged,
