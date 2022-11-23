@@ -422,12 +422,6 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     }
 
     private void processDynamicAttributes(AtlasEntity entity) throws AtlasBaseException {
-        if (typeRegistry != null) {
-            LOG.error("typeRegistry is not null");
-            LOG.info(typeRegistry.getAllEntityDefNames().stream().collect(Collectors.joining(",")));
-        } else {
-          LOG.error("typeRegistry is null");
-        }
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
         if (entityType == null) {

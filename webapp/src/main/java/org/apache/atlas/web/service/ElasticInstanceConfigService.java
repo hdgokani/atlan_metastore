@@ -119,13 +119,6 @@ public class ElasticInstanceConfigService implements Service, ActiveStateChangeH
         Map<String, Object> idAttribute = new HashMap<>();
         idAttribute.put(ATTR_UNIQUE_NAME, ELASTIC_INSTANCE_CONFIGURATION);
         try {
-            if (atlasTypeRegistry != null) {
-                LOG.error("typeRegistry is not null");
-                LOG.info(atlasTypeRegistry.getAllEntityDefNames().stream().collect(Collectors.joining(",")));
-            } else {
-                LOG.error("typeRegistry is null");
-            }
-
             AtlasEntityType instanceConfigType = atlasTypeRegistry.getEntityTypeByName(ELASTIC_INSTANCE_CONFIGURATION_TYPE_NAME);
             if (instanceConfigType == null) {
                 throw new AtlasBaseException(TYPE_NAME_NOT_FOUND, ELASTIC_INSTANCE_CONFIGURATION_TYPE_NAME);

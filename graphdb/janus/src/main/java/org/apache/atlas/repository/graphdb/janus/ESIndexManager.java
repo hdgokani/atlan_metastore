@@ -34,7 +34,7 @@ public class ESIndexManager implements AtlasMixedBackendIndexManager {
         try {
             return esClient.indices().exists(getIndexRequest, RequestOptions.DEFAULT);
         } catch (IOException e) {
-            LOG.error("Error sending index exists request: ", e);
+            LOG.error("Error sending ES index exists request: ", e);
             throw e;
         }
     }
@@ -44,9 +44,9 @@ public class ESIndexManager implements AtlasMixedBackendIndexManager {
         try {
             AcknowledgedResponse response = esClient.indices().create(createIndexRequest, RequestOptions.DEFAULT);
             if (response.isAcknowledged()) {
-                LOG.info("Atlan index {} created.", INDEX_PREFIX + indexName);
+                LOG.info("Atlan ES index {} created.", INDEX_PREFIX + indexName);
             } else {
-                LOG.error("error creating atlan index {}", INDEX_PREFIX + indexName);
+                LOG.error("error creating atlan ES index {}", INDEX_PREFIX + indexName);
             }
         } catch (Exception e) {
             LOG.error("Caught exception: {}", e.toString());
@@ -60,9 +60,9 @@ public class ESIndexManager implements AtlasMixedBackendIndexManager {
         try {
             AcknowledgedResponse response = esClient.indices().delete(deleteIndexRequest, RequestOptions.DEFAULT);
             if (response.isAcknowledged()) {
-                LOG.info("Atlan index {} deleted.", INDEX_PREFIX + indexName);
+                LOG.info("Atlan ES index {} deleted.", INDEX_PREFIX + indexName);
             } else {
-                LOG.error("error deleting atlan index {}", INDEX_PREFIX + indexName);
+                LOG.error("error deleting ES atlan index {}", INDEX_PREFIX + indexName);
             }
         } catch (Exception e) {
             LOG.error("Caught exception: {}", e.toString());

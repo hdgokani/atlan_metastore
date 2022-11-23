@@ -65,6 +65,8 @@ public class DefaultIndexCreator extends GraphTransactionManager {
                 management.createVertexMixedIndex(getCurrentWriteVertexIndexName(), BACKING_INDEX, Collections.emptyList());
 
                 LOG.info("Created index : {}", getCurrentWriteVertexIndexName());
+
+                LOG.info("Created index exists? : {}", management.getGraphIndex(getCurrentWriteVertexIndexName()) != null);
             }
 
             if (management.getGraphIndex(EDGE_INDEX) == null) {
@@ -173,9 +175,7 @@ public class DefaultIndexCreator extends GraphTransactionManager {
             createPropertyKey(management, PROVENANCE_TYPE_KEY, Integer.class, SINGLE);
             createPropertyKey(management, HOME_ID_KEY, String.class, SINGLE);
 
-            if (shouldCommit) {
-                commit(management);
-            }
+            commit(management);
 
             LOG.info("Index creation for global keys complete.");
         } catch (Throwable t) {

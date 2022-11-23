@@ -74,6 +74,7 @@ RUN cd /opt/apache-atlas/bin \
 RUN echo 'alias tlog="tail -f /opt/apache-atlas/logs/application.log"' >> ~/.bashrc
 RUN echo 'alias tindex="curl localhost:21000/api/atlas/admin/indexes"' >> ~/.bashrc
 RUN apt-get install vim -y
+RUN apt-get install unzip -y
 
 RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true

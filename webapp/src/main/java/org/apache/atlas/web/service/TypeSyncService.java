@@ -7,6 +7,7 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.indexmanager.DefaultIndexCreator;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasMixedBackendIndexManager;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -66,6 +67,10 @@ public class TypeSyncService {
             atlasMixedBackendIndexManager.createIndexIfNotExists(newIndexName);
             setCurrentWriteVertexIndexName(newIndexName);
             defaultIndexCreator.createDefaultIndexes(atlasGraph, false);
+
+            AtlasGraphManagement management = atlasGraph.getManagementSystem();
+            LOG.info("Created index exists again? : {}", management.getGraphIndex(getCurrentWriteVertexIndexName()) != null);
+            management.commit(); 
         }
         AtlasTypesDef toUpdate = newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions);
         AtlasTypesDef toCreate = newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions);
