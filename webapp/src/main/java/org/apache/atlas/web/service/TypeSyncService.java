@@ -70,7 +70,7 @@ public class TypeSyncService {
 
             AtlasGraphManagement management = atlasGraph.getManagementSystem();
             LOG.info("Created index exists again? : {}", management.getGraphIndex(getCurrentWriteVertexIndexName()) != null);
-            management.commit(); 
+            management.commit();
         }
         AtlasTypesDef toUpdate = newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions);
         AtlasTypesDef toCreate = newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions);

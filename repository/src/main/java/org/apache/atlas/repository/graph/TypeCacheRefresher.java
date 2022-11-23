@@ -30,6 +30,7 @@ import java.util.Map;
 
 import static org.apache.atlas.AtlasErrorCode.CINV_UNHEALTHY;
 import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
+import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentWriteVertexIndexName;
 
 @Component
 public class TypeCacheRefresher {
@@ -88,16 +89,23 @@ public class TypeCacheRefresher {
         }
     }
 
-    public String refreshAllHostCache(int operationId) throws IOException, URISyntaxException, RepositoryException {
+    public String refreshAllHostCache(int operationId) throws IOException, URISyntaxException, RepositoryException, AtlasBaseException {
         final String traceId = RequestContext.get().getTraceId();
         if(StringUtils.isBlank(cacheRefresherEndpoint) || !isActiveActiveHAEnabled) {
             LOG.info("Skipping type-def cache refresh :: traceId {}", traceId);
             return traceId;
         }
 
-        int totalFieldKeys = provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
-        LOG.info("Found {} totalFieldKeys to be expected in other nodes :: traceId {}", totalFieldKeys, traceId);
-        refreshCache(operationId, totalFieldKeys, traceId);
+        try {
+            int totalFieldKeys = provider.get().getManagementSystem().getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys().size();
+            LOG.info("Found {} totalFieldKeys to be expected in other nodes :: traceId {}", totalFieldKeys, traceId);
+            refreshCache(operationId, totalFieldKeys, traceId);
+        } catch (IOException | URISyntaxException | RepositoryException e) {
+            throw e;
+        } catch (Exception e) {
+            LOG.error("Failed to refresh all host cache: operationId: {}, reason: {}", operationId, e.getMessage());
+            throw new AtlasBaseException(e.getCause());
+        }
 
         return traceId;
     }
