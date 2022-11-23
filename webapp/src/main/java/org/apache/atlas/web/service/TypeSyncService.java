@@ -55,7 +55,7 @@ public class TypeSyncService {
         this.elasticInstanceConfigService = elasticInstanceConfigService;
     }
 
-    @GraphTransaction
+    //@GraphTransaction
     public TypeSyncResponse syncTypes(AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException {
         AtlasTypesDef existingTypeDefinitions = typeDefStore.searchTypesDef(new SearchFilter());
         boolean haveIndexSettingsChanged = existingTypeDefinitions.haveIndexSettingsChanged(newTypeDefinitions);
