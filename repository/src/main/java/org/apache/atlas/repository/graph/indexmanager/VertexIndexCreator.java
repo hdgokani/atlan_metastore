@@ -43,7 +43,6 @@ public class VertexIndexCreator {
             if (logP) {
                 LOG.info("getCurrentWriteVertexIndexName() {}", getCurrentWriteVertexIndexName());
                 if (management.getGraphIndex(getCurrentWriteVertexIndexName()) != null) {
-                    LOG.info("getFieldKeys() {}", management.getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys());
                     LOG.info("propertyKey exists: {}", !management.getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys().contains(propertyKey));
                 }
             }

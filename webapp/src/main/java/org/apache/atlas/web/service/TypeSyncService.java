@@ -66,11 +66,11 @@ public class TypeSyncService {
 
             atlasMixedBackendIndexManager.createIndexIfNotExists(newIndexName);
             setCurrentWriteVertexIndexName(newIndexName);
-            defaultIndexCreator.createDefaultIndexes(atlasGraph, false);
+            defaultIndexCreator.createDefaultIndexes(atlasGraph);
 
-            AtlasGraphManagement management = atlasGraph.getManagementSystem();
+/*            AtlasGraphManagement management = atlasGraph.getManagementSystem();
             LOG.info("Created index exists again? : {}", management.getGraphIndex(getCurrentWriteVertexIndexName()) != null);
-            management.commit();
+            management.commit();*/
         }
         AtlasTypesDef toUpdate = newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions);
         AtlasTypesDef toCreate = newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions);

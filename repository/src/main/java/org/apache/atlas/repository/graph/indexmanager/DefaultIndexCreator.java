@@ -55,7 +55,7 @@ public class DefaultIndexCreator extends GraphTransactionManager {
         atlasMixedBackendIndexManager.createIndexIfNotExists(getCurrentWriteVertexIndexName());
     }
 
-    public void createDefaultIndexes(AtlasGraph graph, boolean shouldCommit) throws RepositoryException, IndexException, IOException {
+    public void createDefaultIndexes(AtlasGraph graph) throws RepositoryException, IndexException, IOException {
         AtlasGraphManagement management = graph.getManagementSystem();
 
         try {

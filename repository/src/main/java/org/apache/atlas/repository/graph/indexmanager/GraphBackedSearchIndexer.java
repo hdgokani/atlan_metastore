@@ -88,7 +88,7 @@ public class GraphBackedSearchIndexer extends GraphTransactionManager implements
         this.indexChangeListenerManager.addIndexListener(new SolrIndexHelper(this.typeRegistry));
 
         if (!HAConfiguration.isHAEnabled(ApplicationProperties.get())) {
-            this.defaultIndexCreator.createDefaultIndexes(this.provider.get(), true);
+            this.defaultIndexCreator.createDefaultIndexes(this.provider.get());
         }
         this.indexChangeListenerManager.notifyInitializationStart();
     }
@@ -102,7 +102,7 @@ public class GraphBackedSearchIndexer extends GraphTransactionManager implements
     public void instanceIsActive() throws AtlasException {
         LOG.info("Reacting to active: initializing index");
         try {
-            defaultIndexCreator.createDefaultIndexes(provider.get(), true);
+            defaultIndexCreator.createDefaultIndexes(provider.get());
         } catch (RepositoryException | IndexException | IOException e) {
             throw new AtlasException("Error in reacting to active on initialization", e);
         }
