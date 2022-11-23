@@ -42,8 +42,10 @@ public class VertexIndexCreator {
 
             if (logP) {
                 LOG.info("getCurrentWriteVertexIndexName() {}", getCurrentWriteVertexIndexName());
-                LOG.info("getFieldKeys() {}", management.getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys());
-                LOG.info("propertyKey exists: {}", !management.getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys().contains(propertyKey));
+                if (management.getGraphIndex(getCurrentWriteVertexIndexName()) != null) {
+                    LOG.info("getFieldKeys() {}", management.getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys());
+                    LOG.info("propertyKey exists: {}", !management.getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys().contains(propertyKey));
+                }
             }
 
             if (isIndexApplicable(propertyClass, cardinality) && !management.getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys().contains(propertyKey)) {
