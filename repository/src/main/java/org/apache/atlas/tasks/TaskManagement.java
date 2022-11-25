@@ -28,6 +28,7 @@ import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.service.Service;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -51,18 +52,11 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final Statistics                statistics;
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
     private final ICuratorFactory curatorFactory;
-    private boolean taskExecutionInProgressInSeparation;
     private static final String HOST_NAME = "HOSTNAME";
+    private static final String currentHostName = System.getenv(HOST_NAME);
+    private static final String taskExecutionPodName = AtlasConfiguration.TASK_EXECUTION_POD_HOST_NAME.getString();
 
     private Thread watcherThread = null;
-
-    public boolean isTaskExecutionInProgressInSeparation() {
-        return taskExecutionInProgressInSeparation;
-    }
-
-    public void setTaskExecutionInProgressInSeparation(boolean taskExecutionInProgressInSeparation) {
-        this.taskExecutionInProgressInSeparation = taskExecutionInProgressInSeparation;
-    }
 
     public enum DeleteType {
         SOFT,
@@ -261,26 +255,20 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             return;
         }
 
-        String currentHostName = System.getenv(HOST_NAME);
-        String taskExecutionPodName = AtlasConfiguration.TASK_EXECUTION_POD_HOST_NAME.getString();
-
-        if (!taskExecutionPodName.isEmpty() && currentHostName != null) {
-            if (currentHostName.equals(taskExecutionPodName))
-                setTaskExecutionInProgressInSeparation(true);
-            else
-                return;
-        }
-
         LOG.info("TaskManagement: Started!");
         if (this.taskTypeFactoryMap.size() == 0) {
             LOG.warn("Not factories registered! Pending tasks will be queued once factories are registered!");
             return;
         }
 
+        if (tasksToBeExecutedInDedicatedInstance() && !tasksToBeExecutedInCurrentInstance()) {
+            LOG.warn("Not starting task Queue watcher in this instance! It will be started at host {} ", AtlasConfiguration.TASK_EXECUTION_POD_HOST_NAME.getString());
+            return;
+        }
+
         try {
             startWatcherThread();
         } catch (Exception e) {
-            setTaskExecutionInProgressInSeparation(false);
             LOG.error("TaskManagement: Error while re queue tasks");
             e.printStackTrace();
         }
@@ -306,7 +294,14 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private void stopQueueWatcher() {
         taskExecutor.stopQueueWatcher();
         watcherThread = null;
-        setTaskExecutionInProgressInSeparation(false);
+    }
+
+    public static boolean tasksToBeExecutedInDedicatedInstance() {
+        return StringUtils.isNotEmpty(taskExecutionPodName) && StringUtils.isNotEmpty(currentHostName);
+    }
+
+    public static boolean tasksToBeExecutedInCurrentInstance() {
+        return tasksToBeExecutedInDedicatedInstance() ? taskExecutionPodName.equals(currentHostName) : false;
     }
 
     static class Statistics {
