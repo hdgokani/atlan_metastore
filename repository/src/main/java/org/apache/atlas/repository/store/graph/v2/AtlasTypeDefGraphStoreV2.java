@@ -312,7 +312,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         Long   updateTime  = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
         Object versionObj  = vertex.getProperty(Constants.VERSION_PROPERTY_KEY, Object.class);
         String options     = vertex.getProperty(Constants.TYPEOPTIONS_PROPERTY_KEY, String.class);
-        String displayName = vertex.getProperty(Constants.TYPE_DISPLAYNAME_PROPERTY_KEY, String.class);
+//        String displayName = vertex.getProperty(Constants.TYPE_DISPLAYNAME_PROPERTY_KEY, String.class);
 
         Long version = null;
 
@@ -332,9 +332,9 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         typeDef.setGuid(guid);
         typeDef.setCreatedBy(createdBy);
         typeDef.setUpdatedBy(updatedBy);
-        if (typeDef instanceof AtlasNamedTypeDef) {
-            ((AtlasNamedTypeDef)typeDef).setDisplayName(displayName);
-        }
+//        if (typeDef instanceof AtlasNamedTypeDef) {
+//            ((AtlasNamedTypeDef)typeDef).setDisplayName(displayName);
+//        }
         if (createTime != null) {
             typeDef.setCreateTime(new Date(createTime));
         }
