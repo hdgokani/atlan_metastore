@@ -319,15 +319,14 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
             String descKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(elemKey, "description");
 
             Integer ordinal = AtlasGraphUtilsV2.getProperty(vertex, elemKey, Integer.class);
-//            String  desc    = AtlasGraphUtilsV2.getProperty(vertex, descKey, String.class);
-            String  desc    = null;
+            String  desc    = AtlasGraphUtilsV2.getProperty(vertex, descKey, String.class);
+
             elements.add(new AtlasEnumElementDef(elemValue, desc, ordinal));
         }
         ret.setElementDefs(elements);
 
-//        String defaultValueKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(ret, "defaultValue");
-//        String defaultValue = AtlasGraphUtilsV2.getProperty(vertex, defaultValueKey, String.class);
-        String defaultValue = null;
+        String defaultValueKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(ret, "defaultValue");
+        String defaultValue = AtlasGraphUtilsV2.getProperty(vertex, defaultValueKey, String.class);
         ret.setDefaultValue(defaultValue);
 
         return ret;
