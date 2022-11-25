@@ -26,6 +26,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
 import org.apache.atlas.repository.audit.AtlasAuditService;
+import org.apache.atlas.tasks.TaskManagement;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -78,6 +79,10 @@ public class ServiceState {
 
         if(!StringUtils.isEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME, ""))) {
             state = ServiceStateValue.MIGRATING;
+        }
+
+        if(TaskManagement.tasksToBeExecutedInDedicatedInstance() && TaskManagement.tasksToBeExecutedInCurrentInstance()) {
+            state = ServiceStateValue.EXECUTING_TASK;
         }
     }
 
