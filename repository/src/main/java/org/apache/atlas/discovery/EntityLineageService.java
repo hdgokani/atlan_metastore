@@ -494,11 +494,10 @@ public class EntityLineageService implements AtlasLineageService {
     private List<AtlasEdge> getEdgesOfProcess(boolean isInput, AtlasLineageContext lineageContext, Set<String> paginationCalculatedVertices, AtlasVertex processVertex) {
         List<Pair<AtlasEdge, String>> processEdgeOutputVertexIdPairs = getUnvisitedProcessEdgesWithOutputVertexIds(isInput, lineageContext, paginationCalculatedVertices, processVertex);
         processEdgeOutputVertexIdPairs.forEach(pair -> paginationCalculatedVertices.add(pair.getRight()));
-        List<AtlasEdge> edgesOfProcess = processEdgeOutputVertexIdPairs
+        return processEdgeOutputVertexIdPairs
                 .stream()
                 .map(Pair::getLeft)
                 .collect(Collectors.toList());
-        return edgesOfProcess;
     }
 
     private boolean executeCurrentProcessVertex(boolean isInput,
@@ -560,11 +559,12 @@ public class EntityLineageService implements AtlasLineageService {
                             int processEdgeIndex) {
         if (lineageContext.getDirection() == BOTH) {
             if (isInput && nonProcessEntityCount(ret) == lineageContext.getLimit()) {
-                //ret.setHasMoreUpstreamVertices(hasMoreVertices(currentVertexEdges, currentVertexEdgeIndex, edgesOfProcess, processEdgeIndex));
                 ret.setHasMoreUpstreamVertices(true);
                 return true;
             } else if (!isInput && nonProcessEntityCount(ret) - inputVertexCount == lineageContext.getLimit()) {
-                //ret.setHasMoreDownstreamVertices(hasMoreVertices(currentVertexEdges, currentVertexEdgeIndex, edgesOfProcess, processEdgeIndex));
+                ret.setHasMoreUpstreamVertices(true);
+                return true;
+            } else if (!isInput && nonProcessEntityCount(ret) - inputVertexCount == lineageContext.getLimit()) {
                 ret.setHasMoreDownstreamVertices(true);
                 return true;
             }
@@ -576,23 +576,11 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private void setVertexCountsForOneDirection(boolean isInput, AtlasLineageInfo ret, List<AtlasEdge> currentVertexEdges, int currentVertexEdgeIndex, List<AtlasEdge> edgesOfProcess, int processEdgeIndex) {
-        if (hasMoreVertices(currentVertexEdges, currentVertexEdgeIndex, edgesOfProcess, processEdgeIndex)) {
-            if (isInput) {
-                ret.setHasMoreUpstreamVertices(true);
-            } else {
-                ret.setHasMoreDownstreamVertices(true);
-            }
+        if (isInput) {
+            ret.setHasMoreUpstreamVertices(true);
         } else {
-            if (isInput) {
-                ret.setHasMoreUpstreamVertices(false);
-            } else {
-                ret.setHasMoreDownstreamVertices(false);
-            }
+            ret.setHasMoreDownstreamVertices(true);
         }
-    }
-
-    private boolean hasMoreVertices(List<AtlasEdge> currentVertexEdges, int currentVertexEdgeIndex, List<AtlasEdge> edgesOfProcess, int currentProcessEdgeIndex) {
-        return currentProcessEdgeIndex < edgesOfProcess.size() || currentVertexEdgeIndex < currentVertexEdges.size();
     }
 
     private long nonProcessEntityCount(AtlasLineageInfo ret) {
