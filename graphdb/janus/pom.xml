@@ -72,6 +72,12 @@
 
         <dependency>
             <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-hadoop</artifactId>
+            <version>${janusgraph.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-server</artifactId>
             <version>${janusgraph.version}</version>
             <exclusions>
