@@ -528,6 +528,8 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
             }
         } catch (Exception e) {
             LOG.error("Error: Retrieving log transaction stats!", e);
+        } finally {
+            this.management.commit();
         }
     }
 
@@ -568,39 +570,46 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         int count = 0;
 
         StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
-
+        LOG.info("Open transactions {}", graph.getOpenTransactions().size());
         graph.getOpenTransactions().forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));
 
         JanusGraphManagement management = graph.openManagement();
-        JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
-        LOG.info("SchemaStatus updating for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
 
-        management.updateIndex(indexToUpdate, toAction).get();
         try {
-            management.commit();
-        } catch (Exception e) {
-            LOG.info("Exception while committing, class name: {}", e.getClass().getSimpleName());
-            if (e.getClass().getSimpleName().equals("PermanentLockingException")) {
-                LOG.info("Commit error! will pause and retry");
-                Thread.sleep(5000);
+            LOG.info("Open instances {}", management.getOpenInstances().toArray());
+
+            JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
+            LOG.info("SchemaStatus updating for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
+
+            management.updateIndex(indexToUpdate, toAction).get();
+            try {
                 management.commit();
+            } catch (Exception e) {
+                LOG.info("Exception while committing, class name: {}", e.getClass().getSimpleName());
+                if (e.getClass().getSimpleName().equals("PermanentLockingException")) {
+                    LOG.info("Commit error! will pause and retry");
+                    Thread.sleep(5000);
+                    management.commit();
+                }
             }
-        }
 
-        GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, indexName).status(toStatus).call();
-        LOG.info("SchemaStatus update report: {}", report);
+            GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, indexName).status(toStatus).call();
+            LOG.info("SchemaStatus update report: {}", report);
 
-        if (!report.getSucceeded()) {
-            LOG.error("SchemaStatus failed to update report: {}", report);
-            return -1;
-        }
+            if (!report.getSucceeded()) {
+                LOG.error("SchemaStatus failed to update for index: {}, from {} to {}", indexName, fromStatus, toStatus);
+                return -1;
+            }
 
-        if (!report.getConvergedKeys().isEmpty() && report.getConvergedKeys().containsKey(indexName)) {
-            LOG.info("SchemaStatus updated for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
+            if (!report.getConvergedKeys().isEmpty() && report.getConvergedKeys().containsKey(indexName)) {
+                LOG.info("SchemaStatus updated for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
 
-            count++;
-        } else if (!report.getNotConvergedKeys().isEmpty() && report.getNotConvergedKeys().containsKey(indexName)) {
-            LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", indexName, fromStatus, toStatus);
+                count++;
+            } else if (!report.getNotConvergedKeys().isEmpty() && report.getNotConvergedKeys().containsKey(indexName)) {
+                LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", indexName, fromStatus, toStatus);
+            }
+        } catch (Exception e) {
+            management.rollback();
         }
 
         return count;

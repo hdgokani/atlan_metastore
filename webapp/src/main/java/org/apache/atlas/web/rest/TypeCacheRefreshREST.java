@@ -5,6 +5,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.IAtlasGraphProvider;
 import org.apache.atlas.repository.graph.TypeCacheRefresher.RefreshOperation;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.service.ActiveIndexNameManager;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.web.service.AtlasHealthStatus;
@@ -88,32 +89,39 @@ public class TypeCacheRefreshREST {
 
     private void refreshTypeDef(int expectedFieldKeys,final String traceId) throws RepositoryException, InterruptedException, AtlasBaseException {
         LOG.info("Initiating type-def cache refresh with expectedFieldKeys = {} :: traceId {}", expectedFieldKeys,traceId);
-        int currentSize = provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
-        LOG.info("Size of field keys before refresh = {} :: traceId {}", currentSize,traceId);
+        AtlasGraphManagement management = provider.get().getManagementSystem();
 
-        long totalWaitTimeInMillis = 15 * 1000;//15 seconds
-        long sleepTimeInMillis = 500;
-        long totalIterationsAllowed = Math.floorDiv(totalWaitTimeInMillis, sleepTimeInMillis);
-        int counter = 0;
+        try {
+            int currentSize = management.getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
+            LOG.info("Size of field keys before refresh = {} :: traceId {}", currentSize,traceId);
 
-        while (currentSize != expectedFieldKeys && counter++ < totalIterationsAllowed) {
-            currentSize = provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
-            LOG.info("field keys size found = {} at iteration {} :: traceId {}", currentSize, counter, traceId);
-            Thread.sleep(sleepTimeInMillis);
+            long totalWaitTimeInMillis = 15 * 1000;//15 seconds
+            long sleepTimeInMillis = 500;
+            long totalIterationsAllowed = Math.floorDiv(totalWaitTimeInMillis, sleepTimeInMillis);
+            int counter = 0;
+
+            while (currentSize != expectedFieldKeys && counter++ < totalIterationsAllowed) {
+                currentSize = management.getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size();
+                LOG.info("field keys size found = {} at iteration {} :: traceId {}", currentSize, counter, traceId);
+                Thread.sleep(sleepTimeInMillis);
+            }
+            //This condition will hold true when expected fieldKeys did not appear even after waiting for totalWaitTimeInMillis
+            if (counter > totalIterationsAllowed) {
+                final String errorMessage = String.format("Could not find desired count of fieldKeys %d after %d ms of wait. Current size of field keys is %d :: traceId %s",
+                        expectedFieldKeys, totalWaitTimeInMillis, currentSize, traceId);
+                throw new AtlasBaseException(errorMessage);
+            } else {
+                LOG.info("Found desired size of fieldKeys in iteration {} :: traceId {}", counter, traceId);
+            }
+            //Reload in-memory cache of type-registry
+            typeDefStore.init();
+
+            LOG.info("Size of field keys after refresh = {}", management.getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size());
+            LOG.info("Completed type-def cache refresh :: traceId {}", traceId);
+
+        } finally {
+            management.commit();
         }
-        //This condition will hold true when expected fieldKeys did not appear even after waiting for totalWaitTimeInMillis
-        if (counter > totalIterationsAllowed) {
-            final String errorMessage = String.format("Could not find desired count of fieldKeys %d after %d ms of wait. Current size of field keys is %d :: traceId %s",
-                    expectedFieldKeys, totalWaitTimeInMillis, currentSize, traceId);
-            throw new AtlasBaseException(errorMessage);
-        } else {
-            LOG.info("Found desired size of fieldKeys in iteration {} :: traceId {}", counter, traceId);
-        }
-        //Reload in-memory cache of type-registry
-        typeDefStore.init();
-
-        LOG.info("Size of field keys after refresh = {}", provider.get().getManagementSystem().getGraphIndex(getCurrentReadVertexIndexName()).getFieldKeys().size());
-        LOG.info("Completed type-def cache refresh :: traceId {}", traceId);
     }
 
     private void refreshWriteIndexName(final String traceId) {

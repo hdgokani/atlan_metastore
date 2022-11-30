@@ -8,6 +8,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -96,8 +97,10 @@ public class TypeCacheRefresher {
             return traceId;
         }
 
+        AtlasGraphManagement management = null;
         try {
-            int totalFieldKeys = provider.get().getManagementSystem().getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys().size();
+            management = provider.get().getManagementSystem();
+            int totalFieldKeys = management.getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys().size();
             LOG.info("Found {} totalFieldKeys to be expected in other nodes :: traceId {}", totalFieldKeys, traceId);
             refreshCache(operationId, totalFieldKeys, traceId);
         } catch (IOException | URISyntaxException | RepositoryException e) {
@@ -105,6 +108,10 @@ public class TypeCacheRefresher {
         } catch (Exception e) {
             LOG.error("Failed to refresh all host cache: operationId: {}, reason: {}", operationId, e.getMessage());
             throw new AtlasBaseException(e.getCause());
+        } finally {
+            if (management != null) {
+                management.commit();
+            }
         }
 
         return traceId;

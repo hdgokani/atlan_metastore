@@ -65,6 +65,7 @@ public class TypeSyncService {
 
                 atlasMixedBackendIndexManager.createIndexIfNotExists(newIndexName);
                 setCurrentWriteVertexIndexName(newIndexName);
+
                 defaultIndexCreator.createDefaultIndexes(atlasGraph);
             }
             AtlasTypesDef toUpdate = newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions);
