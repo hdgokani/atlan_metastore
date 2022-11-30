@@ -570,10 +570,13 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         int count = 0;
 
         StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
+
         LOG.info("Open transactions {}", graph.getOpenTransactions().size());
         graph.getOpenTransactions().forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));
+        LOG.info("Open transactions after closing {}", graph.getOpenTransactions().size());
 
         JanusGraphManagement management = graph.openManagement();
+        LOG.info("Open transactions after opening new management {}", graph.getOpenTransactions().size());
 
         try {
             LOG.info("Open instances {}", management.getOpenInstances().toArray());
