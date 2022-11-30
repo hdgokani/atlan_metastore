@@ -66,8 +66,6 @@ public class TypeSyncService {
                 atlasMixedBackendIndexManager.createIndexIfNotExists(newIndexName);
                 setCurrentWriteVertexIndexName(newIndexName);
                 defaultIndexCreator.createDefaultIndexes(atlasGraph);
-
-                atlasGraph.getManagementSystem().enableIndexForTypeSync();
             }
             AtlasTypesDef toUpdate = newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions);
             AtlasTypesDef toCreate = newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions);
@@ -86,6 +84,8 @@ public class TypeSyncService {
 
             typeDefStore.createTypesDef(toCreate);
             typeDefStore.updateTypesDef(toUpdate);
+
+            atlasGraph.getManagementSystem().enableIndexForTypeSync();
         } catch (Exception e){
             setCurrentWriteVertexIndexName(getCurrentReadVertexIndexName());
             //TODO: rollback instance config entity
