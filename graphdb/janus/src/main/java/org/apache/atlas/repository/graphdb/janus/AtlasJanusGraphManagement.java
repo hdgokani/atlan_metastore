@@ -579,6 +579,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         LOG.info("Open transactions after opening new management {}", graph.getOpenTransactions().size());
 
         try {
+            LOG.info("Open instances {}", management.getOpenInstances().size());
             LOG.info("Open instances {}", management.getOpenInstances().toArray());
 
             JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
