@@ -572,7 +572,8 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
 
         LOG.info("Open transactions {}", graph.getOpenTransactions().size());
-        graph.getOpenTransactions().forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));
+        //graph.getOpenTransactions().forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));
+        graph.getOpenTransactions().forEach(JanusGraphTransaction::commit);
         LOG.info("Open transactions after closing {}", graph.getOpenTransactions().size());
 
         JanusGraphManagement management = graph.openManagement();
