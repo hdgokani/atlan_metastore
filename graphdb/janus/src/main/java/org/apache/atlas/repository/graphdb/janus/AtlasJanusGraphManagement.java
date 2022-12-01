@@ -580,7 +580,8 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
         try {
             LOG.info("Open instances {}", management.getOpenInstances().size());
-            LOG.info("Open instances {}", management.getOpenInstances().toArray());
+            LOG.info("Open instances");
+            management.getOpenInstances().forEach(LOG::info);
 
             JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
             LOG.info("SchemaStatus updating for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
