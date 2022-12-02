@@ -23,6 +23,7 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.service.ActiveIndexNameManager;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -581,9 +582,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         LOG.info("Open transactions after opening new management {}", graph.getOpenTransactions().size());
 
         try {
-            LOG.info("Open instances {}", management.getOpenInstances().size());
-            LOG.info("Open instances");
-            management.getOpenInstances().forEach(LOG::info);
+            closeOpenInstances(management);
 
             JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
             LOG.info("SchemaStatus updating for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
@@ -620,6 +619,19 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         }
 
         return count;
+    }
+
+    private static void closeOpenInstances(JanusGraphManagement management) {
+        LOG.info("Open instances {}", management.getOpenInstances().size());
+        LOG.info("Open instances");
+        Set<String> openInstances = management.getOpenInstances();
+
+        if (CollectionUtils.isNotEmpty(openInstances)) {
+            openInstances.forEach(LOG::info);
+
+            openInstances.stream().filter(x -> !x.contains("current")).forEach(management::forceCloseInstance);
+        }
+        LOG.info("Closed all other instances");
     }
 
     private void reindexElement(ManagementSystem managementSystem, IndexSerializer indexSerializer, MixedIndexType indexType, List<AtlasElement> elements) throws Exception {
