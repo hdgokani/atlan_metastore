@@ -155,16 +155,15 @@ public class TypeSyncService {
         LOG.info(report.toString());*/
 
         //atlasGraph.getManagementSystem().disableIndex(oldIndexName);
-        updateIndexStatus(atlasGraph, oldIndexName, DISABLE_INDEX, ENABLED, DISABLED);
+        updateIndexStatus(atlasGraph, oldIndexName, DISABLE_INDEX, DISABLED);
 
         //atlasGraph.getManagementSystem().removeIndex(oldIndexName);
         //java.lang.UnsupportedOperationException: External mixed indexes must be removed in the indexing system directly.
         //at org.janusgraph.hadoop.MapReduceIndexManagement.updateIndex(MapReduceIndexManagement.java:126)
     }
 
-    private int updateIndexStatus(AtlasJanusGraph atlasGraph,
-                                         String indexName, SchemaAction toAction,
-                                         SchemaStatus fromStatus, SchemaStatus toStatus) throws ExecutionException, InterruptedException {
+    private int updateIndexStatus(AtlasJanusGraph atlasGraph, String indexName,
+                                  SchemaAction toAction, SchemaStatus toStatus) throws ExecutionException, InterruptedException {
         int count = 0;
 
         StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
@@ -179,6 +178,8 @@ public class TypeSyncService {
 
             management = graph.openManagement();
             JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
+            SchemaStatus fromStatus = indexToUpdate.getIndexStatus(indexToUpdate.getFieldKeys()[0]);
+
             LOG.info("SchemaStatus updating for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
 
             management.updateIndex(indexToUpdate, toAction).get();
