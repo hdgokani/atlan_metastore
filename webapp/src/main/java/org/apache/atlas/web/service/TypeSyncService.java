@@ -10,7 +10,10 @@ import org.apache.atlas.repository.graphdb.AtlasMixedBackendIndexManager;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.web.dto.TypeSyncResponse;
+import org.apache.commons.collections.CollectionUtils;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.SchemaAction;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -23,10 +26,14 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.service.ActiveIndexNameManager.*;
+import static org.janusgraph.core.schema.SchemaAction.DISABLE_INDEX;
+import static org.janusgraph.core.schema.SchemaStatus.DISABLED;
+import static org.janusgraph.core.schema.SchemaStatus.ENABLED;
 import static org.janusgraph.graphdb.database.management.ManagementSystem.awaitGraphIndexStatus;
 
 @Component
@@ -89,7 +96,7 @@ public class TypeSyncService {
             typeDefStore.createTypesDef(toCreate);
             typeDefStore.updateTypesDef(toUpdate);
 
-            atlasGraph.getManagementSystem().enableIndexForTypeSync();
+            //atlasGraph.getManagementSystem().enableIndexForTypeSync();
         } catch (Exception e){
             setCurrentWriteVertexIndexName(getCurrentReadVertexIndexName());
             //TODO: rollback instance config entity
@@ -147,9 +154,95 @@ public class TypeSyncService {
         GraphIndexStatusReport report = awaitGraphIndexStatus(atlasGraph.getGraph(), oldIndexName).status(SchemaStatus.DISABLED).call();
         LOG.info(report.toString());*/
 
-        atlasGraph.getManagementSystem().disableIndex(oldIndexName);
+        //atlasGraph.getManagementSystem().disableIndex(oldIndexName);
+        updateIndexStatus(atlasGraph, oldIndexName, DISABLE_INDEX, ENABLED, DISABLED);
+
         //atlasGraph.getManagementSystem().removeIndex(oldIndexName);
         //java.lang.UnsupportedOperationException: External mixed indexes must be removed in the indexing system directly.
         //at org.janusgraph.hadoop.MapReduceIndexManagement.updateIndex(MapReduceIndexManagement.java:126)
+    }
+
+    private int updateIndexStatus(AtlasJanusGraph atlasGraph,
+                                         String indexName, SchemaAction toAction,
+                                         SchemaStatus fromStatus, SchemaStatus toStatus) throws ExecutionException, InterruptedException {
+        int count = 0;
+
+        StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
+
+        closeOpenTransactions(graph);
+
+        JanusGraphManagement management = null;
+        try {
+            closeOpenInstances(graph);
+
+            LOG.info("Open transactions after opening new management {}", graph.getOpenTransactions().size());
+
+            management = graph.openManagement();
+            JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
+            LOG.info("SchemaStatus updating for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
+
+            management.updateIndex(indexToUpdate, toAction).get();
+            try {
+                management.commit();
+            } catch (Exception e) {
+                LOG.info("Exception while committing, class name: {}", e.getClass().getSimpleName());
+                if (e.getClass().getSimpleName().equals("PermanentLockingException")) {
+                    LOG.info("Commit error! will pause and retry");
+                    Thread.sleep(5000);
+                    management.commit();
+                }
+            }
+
+            GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, indexName).status(toStatus).call();
+            LOG.info("SchemaStatus update report: {}", report);
+
+            if (!report.getSucceeded()) {
+                LOG.error("SchemaStatus failed to update for index: {}, from {} to {}", indexName, fromStatus, toStatus);
+                return -1;
+            }
+
+            if (!report.getConvergedKeys().isEmpty() && report.getConvergedKeys().containsKey(indexName)) {
+                LOG.info("SchemaStatus updated for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
+
+                count++;
+            } else if (!report.getNotConvergedKeys().isEmpty() && report.getNotConvergedKeys().containsKey(indexName)) {
+                LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", indexName, fromStatus, toStatus);
+            }
+        } catch (Exception e) {
+            if (management != null) {
+                management.rollback();
+            }
+        }
+
+        return count;
+    }
+
+    private void closeOpenTransactions (StandardJanusGraph graph) {
+        LOG.info("Open transactions {}", graph.getOpenTransactions().size());
+
+        //graph.getOpenTransactions().forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));
+        //graph.getOpenTransactions().forEach(JanusGraphTransaction::commit);
+        graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+
+        LOG.info("Open transactions after closing {}", graph.getOpenTransactions().size());
+    }
+
+    private void closeOpenInstances(StandardJanusGraph graph) {
+        JanusGraphManagement management = graph.openManagement();
+
+        try {
+            LOG.info("Open instances {}", management.getOpenInstances().size());
+            LOG.info("Open instances");
+            Set<String> openInstances = management.getOpenInstances();
+
+            if (CollectionUtils.isNotEmpty(openInstances)) {
+                openInstances.forEach(LOG::info);
+
+                openInstances.stream().filter(x -> !x.contains("current")).forEach(management::forceCloseInstance);
+            }
+            LOG.info("Closed all other instances");
+        } finally {
+            management.commit();
+        }
     }
 }

@@ -49,7 +49,7 @@ public class UpdateCompositeIndexStatusPatch extends AtlasPatchHandler {
 
         try {
             LOG.info("UpdateCompositeIndexStatusPatch: Starting...");
-            graph.getManagementSystem().enableIndex();
+            graph.getManagementSystem().updateSchemaStatus();
         } finally {
             LOG.info("UpdateCompositeIndexStatusPatch: Done!");
         }

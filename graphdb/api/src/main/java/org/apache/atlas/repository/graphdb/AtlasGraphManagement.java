@@ -190,23 +190,7 @@ public interface AtlasGraphManagement {
     /**
      * update valid SchemaStatus for all vertex and edge indexes.
      */
-    void enableIndex();
-
-    /**
-     * update valid SchemaStatus after typesync
-     */
-    void enableIndexForTypeSync();
-
-
-    /**
-     * disable janusgraph index after typesync
-     */
-    void disableIndex(String indexName);
-
-    /**
-     * remove janusgraph index after typesync
-     */
-    void removeIndex(String indexName);
+    void updateSchemaStatus();
 
     /***
      * Re-index elements.
