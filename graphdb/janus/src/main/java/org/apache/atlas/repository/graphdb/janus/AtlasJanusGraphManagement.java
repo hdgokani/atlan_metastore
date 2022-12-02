@@ -578,11 +578,12 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
         LOG.info("Open transactions after closing {}", graph.getOpenTransactions().size());
 
-        JanusGraphManagement management = graph.openManagement();
-        LOG.info("Open transactions after opening new management {}", graph.getOpenTransactions().size());
-
+        JanusGraphManagement management = null;
         try {
-            closeOpenInstances(management);
+            closeOpenInstances(graph);
+
+            management = graph.openManagement();
+            LOG.info("Open transactions after opening new management {}", graph.getOpenTransactions().size());
 
             JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
             LOG.info("SchemaStatus updating for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
@@ -615,23 +616,31 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
                 LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", indexName, fromStatus, toStatus);
             }
         } catch (Exception e) {
-            management.rollback();
+            if (management != null) {
+                management.rollback();
+            }
         }
 
         return count;
     }
 
-    private static void closeOpenInstances(JanusGraphManagement management) {
-        LOG.info("Open instances {}", management.getOpenInstances().size());
-        LOG.info("Open instances");
-        Set<String> openInstances = management.getOpenInstances();
+    private static void closeOpenInstances(StandardJanusGraph graph) {
+        JanusGraphManagement management = graph.openManagement();
 
-        if (CollectionUtils.isNotEmpty(openInstances)) {
-            openInstances.forEach(LOG::info);
+        try {
+            LOG.info("Open instances {}", management.getOpenInstances().size());
+            LOG.info("Open instances");
+            Set<String> openInstances = management.getOpenInstances();
 
-            openInstances.stream().filter(x -> !x.contains("current")).forEach(management::forceCloseInstance);
+            if (CollectionUtils.isNotEmpty(openInstances)) {
+                openInstances.forEach(LOG::info);
+
+                openInstances.stream().filter(x -> !x.contains("current")).forEach(management::forceCloseInstance);
+            }
+            LOG.info("Closed all other instances");
+        } finally {
+            management.commit();
         }
-        LOG.info("Closed all other instances");
     }
 
     private void reindexElement(ManagementSystem managementSystem, IndexSerializer indexSerializer, MixedIndexType indexType, List<AtlasElement> elements) throws Exception {
