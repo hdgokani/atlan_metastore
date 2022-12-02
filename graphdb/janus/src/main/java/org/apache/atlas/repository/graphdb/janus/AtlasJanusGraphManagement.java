@@ -354,7 +354,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
             LOG.info("schemastatus is {}", status);
 
             if (status != DISABLED) {
-                updateIndexStatus(graph, indexName, DISABLE_INDEX, status, DISABLED);
+                updateIndexStatus(graph, management, indexName, DISABLE_INDEX, status, DISABLED);
             }
         } catch (InterruptedException e) {
             LOG.error("IllegalStateException for indexName : {}, Exception: ", indexName, e);
@@ -404,7 +404,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
             LOG.info("isCompositeIndex: {}", index.isCompositeIndex());
             LOG.info("isMixedIndex: {}", index.isMixedIndex());
 
-            count = enableIndex(graph, index, true);
+            count = enableIndex(graph, mgmt, index, true);
 
             LOG.info("updated SchemaStatus for index {}: {}: Done!", index, count);
         } else {
@@ -421,7 +421,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         for (JanusGraphIndex index : iterable) {
 
             if (index.isCompositeIndex()) {
-                count = enableIndex(graph, index, false);
+                count = enableIndex(graph, mgmt, index, false);
             }
         }
 
@@ -534,7 +534,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         }
     }
 
-    private static int enableIndex(AtlasJanusGraph graph, JanusGraphIndex index, boolean isTypeSync) {
+    private static int enableIndex(AtlasJanusGraph graph, JanusGraphManagement mgmt, JanusGraphIndex index, boolean isTypeSync) {
         PropertyKey[] propertyKeys = index.getFieldKeys();
         SchemaStatus status = index.getIndexStatus(propertyKeys[0]);
         String indexName = index.name();
@@ -544,7 +544,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
             if (status == REGISTERED || (isTypeSync && status == INSTALLED)) {
 
                 if (status == INSTALLED) {
-                    count = updateIndexStatus(graph, indexName, REGISTER_INDEX, status, REGISTERED);
+                    count = updateIndexStatus(graph, mgmt, indexName, REGISTER_INDEX, status, REGISTERED);
                     if (count == -1) {
                         LOG.warn("Skipping update schema to {}", ENABLED);
                         return count;
@@ -552,7 +552,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
                 }
 
                 status = index.getIndexStatus(propertyKeys[0]);
-                count = updateIndexStatus(graph, indexName, ENABLE_INDEX, status, ENABLED);
+                count = updateIndexStatus(graph, mgmt, indexName, ENABLE_INDEX, status, ENABLED);
 
             } else if (status == INSTALLED) {
                 LOG.warn("SchemaStatus {} found for index: {}", INSTALLED, indexName);
@@ -566,7 +566,8 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         return count;
     }
 
-    private static int updateIndexStatus(AtlasJanusGraph atlasGraph, String indexName, SchemaAction toAction,
+    private static int updateIndexStatus(AtlasJanusGraph atlasGraph, JanusGraphManagement management,
+                                         String indexName, SchemaAction toAction,
                                          SchemaStatus fromStatus, SchemaStatus toStatus) throws ExecutionException, InterruptedException {
         int count = 0;
 
@@ -576,9 +577,9 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         //graph.getOpenTransactions().forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));
         //graph.getOpenTransactions().forEach(JanusGraphTransaction::commit);
         graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+
         LOG.info("Open transactions after closing {}", graph.getOpenTransactions().size());
 
-        JanusGraphManagement management = null;
         try {
             closeOpenInstances(graph);
 
