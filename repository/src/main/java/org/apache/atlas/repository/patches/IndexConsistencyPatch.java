@@ -48,7 +48,6 @@ public class IndexConsistencyPatch extends AtlasPatchHandler {
         }
 
         AtlasGraph graph = context.getGraph();
-        AtlasGraphManagement management = graph.getManagementSystem();
 
         try {
             LOG.info("IndexConsistencyPatch: Starting...");

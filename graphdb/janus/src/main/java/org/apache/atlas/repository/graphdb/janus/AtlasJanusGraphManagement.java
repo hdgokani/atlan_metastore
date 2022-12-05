@@ -349,8 +349,12 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
     @Override
     public void updateSchemaStatus() {
-        updateSchemaStatus(this.management, this.graph.getGraph(), Vertex.class);
-        updateSchemaStatus(this.management, this.graph.getGraph(), Edge.class);
+        try {
+            updateSchemaStatus(this.management, this.graph.getGraph(), Vertex.class);
+            updateSchemaStatus(this.management, this.graph.getGraph(), Edge.class);
+        } finally {
+            commit();
+        }
     }
 
     public static void updateSchemaStatus(JanusGraphManagement mgmt, JanusGraph graph, Class<? extends Element> elementType) {

@@ -176,25 +176,30 @@ public class RepairIndex {
     private static void reindexVertex(String indexName, IndexSerializer indexSerializer, Set<String> entityGUIDs) throws Exception {
         Map<String, Map<String, List<IndexEntry>>> documentsPerStore = new java.util.HashMap<>();
         ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
-        StandardJanusGraphTx tx = mgmt.getWrappedTx();
-        BackendTransaction mutator = tx.getTxHandle();
-        JanusGraphIndex index = mgmt.getGraphIndex(indexName);
-        MixedIndexType indexType = (MixedIndexType) mgmt.getSchemaVertex(index).asIndexType();
 
-        for (String entityGuid : entityGUIDs){
-            for (int attemptCount = 1; attemptCount <= MAX_TRIES_ON_FAILURE; attemptCount++) {
-                AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entityGuid);
-                try {
-                    indexSerializer.reindexElement(vertex.getWrappedElement(), indexType, documentsPerStore);
-                    break;
-                }catch (Exception e){
-                    displayCrlf("Exception: " + e.getMessage());
-                    displayCrlf("Pausing before retry..");
-                    Thread.sleep(2000 * attemptCount);
+        try {
+            StandardJanusGraphTx tx = mgmt.getWrappedTx();
+            BackendTransaction mutator = tx.getTxHandle();
+            JanusGraphIndex index = mgmt.getGraphIndex(indexName);
+            MixedIndexType indexType = (MixedIndexType) mgmt.getSchemaVertex(index).asIndexType();
+
+            for (String entityGuid : entityGUIDs) {
+                for (int attemptCount = 1; attemptCount <= MAX_TRIES_ON_FAILURE; attemptCount++) {
+                    AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entityGuid);
+                    try {
+                        indexSerializer.reindexElement(vertex.getWrappedElement(), indexType, documentsPerStore);
+                        break;
+                    } catch (Exception e) {
+                        displayCrlf("Exception: " + e.getMessage());
+                        displayCrlf("Pausing before retry..");
+                        Thread.sleep(2000 * attemptCount);
+                    }
                 }
             }
+            mutator.getIndexTransaction(indexType.getBackingIndexName()).restore(documentsPerStore);
+        } finally {
+            mgmt.commit();
         }
-        mutator.getIndexTransaction(indexType.getBackingIndexName()).restore(documentsPerStore);
     }
 
     private static Set<String> getEntityAndReferenceGuids(String guid) throws Exception {
