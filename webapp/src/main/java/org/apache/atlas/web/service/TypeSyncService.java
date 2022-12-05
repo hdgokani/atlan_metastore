@@ -131,7 +131,7 @@ public class TypeSyncService {
     }
 
     private void disableJanusgraphIndex(String oldIndexName) throws InterruptedException, ExecutionException {
-        //updateIndexStatus(atlasGraph, oldIndexName, DISABLE_INDEX, DISABLED);
+        updateIndexStatus(atlasGraph, oldIndexName, DISABLE_INDEX, DISABLED);
     }
 
     private int updateIndexStatus(AtlasJanusGraph atlasGraph, String indexName,
