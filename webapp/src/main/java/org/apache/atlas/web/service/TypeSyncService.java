@@ -131,35 +131,7 @@ public class TypeSyncService {
     }
 
     private void disableJanusgraphIndex(String oldIndexName) throws InterruptedException, ExecutionException {
-        StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
-
-        /*ManagementSystem janusGraphManagement = (ManagementSystem) graph.openManagement();
-        graph.getOpenTransactions()
-                .stream()
-                .filter(tx -> !tx.toString().equals(janusGraphManagement.getWrappedTx().toString()))
-                .forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));*/
-
-        /*LOG.info("Closing {} txns", graph.getOpenTransactions().size());
-        graph.getOpenTransactions().forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));
-        LOG.info("Closed all txns");
-
-        ManagementSystem janusGraphManagement = (ManagementSystem) graph.openManagement();
-
-        LOG.info("Open instances {}", janusGraphManagement.getOpenInstances().toArray());
-
-        JanusGraphIndex graphIndex = janusGraphManagement.getGraphIndex(oldIndexName);
-        janusGraphManagement.updateIndex(graphIndex, SchemaAction.DISABLE_INDEX).get();
-        janusGraphManagement.commit();
-        //atlasGraph.getGraph().tx().commit();
-        GraphIndexStatusReport report = awaitGraphIndexStatus(atlasGraph.getGraph(), oldIndexName).status(SchemaStatus.DISABLED).call();
-        LOG.info(report.toString());*/
-
-        //atlasGraph.getManagementSystem().disableIndex(oldIndexName);
-        updateIndexStatus(atlasGraph, oldIndexName, DISABLE_INDEX, DISABLED);
-
-        //atlasGraph.getManagementSystem().removeIndex(oldIndexName);
-        //java.lang.UnsupportedOperationException: External mixed indexes must be removed in the indexing system directly.
-        //at org.janusgraph.hadoop.MapReduceIndexManagement.updateIndex(MapReduceIndexManagement.java:126)
+        //updateIndexStatus(atlasGraph, oldIndexName, DISABLE_INDEX, DISABLED);
     }
 
     private int updateIndexStatus(AtlasJanusGraph atlasGraph, String indexName,
