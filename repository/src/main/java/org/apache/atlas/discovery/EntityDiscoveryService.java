@@ -50,6 +50,7 @@ import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
 import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.util.SearchTracker;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections4.IteratorUtils;
@@ -966,6 +967,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     public AtlasSearchResult directIndexSearch(SearchParams searchParams) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("directIndexSearch");
         IndexSearchParams params = (IndexSearchParams) searchParams;
         RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
         RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
@@ -991,7 +993,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             while (iterator.hasNext()) {
                 Result result = iterator.next();
+                AtlasPerfMetrics.MetricRecorder getVertexMetric = RequestContext.get().startMetricRecord("resultGetVertex");
                 AtlasVertex vertex = result.getVertex();
+                RequestContext.get().endMetricRecord(getVertexMetric);
 
                 if (vertex == null) {
                     LOG.warn("vertex in null");
@@ -1013,6 +1017,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         scrubSearchResults(ret, searchParams.getSuppressLogs());
+        RequestContext.get().endMetricRecord(metric);
         return ret;
     }
 
