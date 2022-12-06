@@ -233,7 +233,7 @@ public class TypeSyncService {
             }
             LOG.info("Closed all other instances");
         } finally {
-            management.rollback();
+            management.commit();
         }
     }
 }
