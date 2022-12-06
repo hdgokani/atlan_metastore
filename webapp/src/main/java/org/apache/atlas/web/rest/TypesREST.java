@@ -56,6 +56,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -584,6 +585,31 @@ public class TypesREST {
             AtlasPerfTracer.log(perf);
         }
     }
+
+    @POST
+    @Path("/testcreateindex")
+    public void testcreateindex(@QueryParam("indexName") String indexName) throws AtlasBaseException {
+        try {
+            typeSyncService.testCreateIndex(indexName);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @POST
+    @Path("/testdisableindex")
+    public void testdisableindex(@QueryParam("indexName") String indexName) throws AtlasBaseException {
+        try {
+            typeSyncService.disableJanusgraphIndex(indexName);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     /**
      * Bulk update API for all types, changes detected in the type definitions would be persisted

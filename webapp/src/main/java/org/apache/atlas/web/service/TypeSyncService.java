@@ -130,7 +130,22 @@ public class TypeSyncService {
         }
     }
 
-    private void disableJanusgraphIndex(String oldIndexName) throws InterruptedException, ExecutionException {
+    public void testCreateIndex(String ndexName) throws InterruptedException, ExecutionException {
+        try {
+            atlasMixedBackendIndexManager.createIndexIfNotExists(ndexName);
+            setCurrentWriteVertexIndexName(ndexName);
+
+            defaultIndexCreator.createDefaultIndexes(atlasGraph);
+        } catch (RepositoryException e) {
+            e.printStackTrace();
+        } catch (IndexException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void disableJanusgraphIndex(String oldIndexName) throws InterruptedException, ExecutionException {
         updateIndexStatus(atlasGraph, oldIndexName, DISABLE_INDEX, DISABLED);
     }
 
@@ -207,7 +222,9 @@ public class TypeSyncService {
         try {
             LOG.info("Open instances {}", management.getOpenInstances().size());
             LOG.info("Open instances");
+
             Set<String> openInstances = management.getOpenInstances();
+            openInstances.forEach(LOG::info);
 
             if (CollectionUtils.isNotEmpty(openInstances)) {
                 openInstances.forEach(LOG::info);
@@ -216,7 +233,7 @@ public class TypeSyncService {
             }
             LOG.info("Closed all other instances");
         } finally {
-            management.commit();
+            management.rollback();
         }
     }
 }

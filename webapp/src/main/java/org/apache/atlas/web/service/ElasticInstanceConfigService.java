@@ -19,6 +19,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -30,8 +31,9 @@ import static org.apache.atlas.AtlasErrorCode.TYPE_NAME_NOT_FOUND;
 import static org.apache.atlas.service.ActiveIndexNameManager.DEFAULT_VERTEX_INDEX;
 
 @Component
-@Order(8)
-public class ElasticInstanceConfigService implements Service, ActiveStateChangeHandler {
+@Order(5)
+@DependsOn(value = {"atlasTypeDefStoreInitializer", "atlasTypeDefGraphStoreV2"})
+public class ElasticInstanceConfigService implements Service {
 
     private static final Logger LOG = LoggerFactory.getLogger(ElasticInstanceConfigService.class);
 
@@ -58,6 +60,7 @@ public class ElasticInstanceConfigService implements Service, ActiveStateChangeH
         LOG.info("==> ElasticInstanceConfigService.start()");
         try {
             ActiveIndexNameManager.init(getCurrentIndexName());
+            createInstanceConfigEntity();
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -133,29 +136,5 @@ public class ElasticInstanceConfigService implements Service, ActiveStateChangeH
     @Override
     public void stop() throws AtlasException {
 
-    }
-
-    @Override
-    public void instanceIsActive() throws AtlasException {
-        LOG.info("==> ElasticInstanceConfigService.instanceIsActive()");
-
-        try {
-            createInstanceConfigEntity();
-        } catch (AtlasBaseException e) {
-            LOG.error("Failed to initialize ElasticInstanceConfigService after instance became ACTIVE");
-            throw new AtlasException(e);
-        }
-
-        LOG.info("<== ElasticInstanceConfigService.instanceIsActive()");
-    }
-
-    @Override
-    public void instanceIsPassive() throws AtlasException {
-
-    }
-
-    @Override
-    public int getHandlerOrder() {
-        return HandlerOrder.TASK_MANAGEMENT.getOrder();
     }
 }
