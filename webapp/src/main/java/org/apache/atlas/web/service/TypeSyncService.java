@@ -157,6 +157,7 @@ public class TypeSyncService {
             management.updateIndex(indexToUpdate, toAction).get();
             try {
                 management.commit();
+                graph.tx().commit();
             } catch (Exception e) {
                 LOG.info("Exception while committing, class name: {}", e.getClass().getSimpleName());
                 if (e.getClass().getSimpleName().equals("PermanentLockingException")) {
