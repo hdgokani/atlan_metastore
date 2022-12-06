@@ -73,8 +73,14 @@ public class TypeSyncService {
                 atlasMixedBackendIndexManager.createIndexIfNotExists(newIndexName);
                 setCurrentWriteVertexIndexName(newIndexName);
 
+                //StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
+                //graph.getOpenTransactions().forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));
+
                 StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
-                graph.getOpenTransactions().forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));
+                closeOpenTransactions(graph);
+                closeOpenInstances(graph);
+
+                graph.tx().rollback();
 
                 defaultIndexCreator.createDefaultIndexes(atlasGraph);
             }
@@ -132,9 +138,15 @@ public class TypeSyncService {
 
     public void testCreateIndex(String ndexName) throws InterruptedException, ExecutionException {
         try {
-            atlasMixedBackendIndexManager.createIndexIfNotExists(ndexName);
-            setCurrentWriteVertexIndexName(ndexName);
 
+            atlasMixedBackendIndexManager.createIndexIfNotExists(ndexName); //ES index creation
+            setCurrentWriteVertexIndexName(ndexName); //set static variable
+
+            StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
+            closeOpenTransactions(graph);
+            closeOpenInstances(graph);
+
+            graph.tx().rollback();
             defaultIndexCreator.createDefaultIndexes(atlasGraph);
         } catch (RepositoryException e) {
             e.printStackTrace();
@@ -217,6 +229,7 @@ public class TypeSyncService {
         //graph.getOpenTransactions().forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));
         //graph.getOpenTransactions().forEach(JanusGraphTransaction::commit);
         graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+        graph.tx().commit();
 
         LOG.info("Open transactions after closing {}", graph.getOpenTransactions().size());
     }
