@@ -164,6 +164,11 @@ public class TypeSyncService {
             LOG.info("Open transactions after opening new management {}", graph.getOpenTransactions().size());
 
             management = graph.openManagement();
+
+            Set<String> openInstances = management.getOpenInstances();
+            LOG.info("Open instances after closing all other instance: {}", openInstances.size());
+            openInstances.forEach(LOG::info);
+
             JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
             SchemaStatus fromStatus = indexToUpdate.getIndexStatus(indexToUpdate.getFieldKeys()[0]);
 
