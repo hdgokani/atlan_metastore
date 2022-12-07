@@ -61,48 +61,53 @@ public class TypeSyncService {
     }
 
     //@GraphTransaction
-    public TypeSyncResponse syncTypes(AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException {
+    public TypeSyncResponse syncTypes(AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException, InterruptedException {
         AtlasTypesDef existingTypeDefinitions = typeDefStore.searchTypesDef(new SearchFilter());
         boolean haveIndexSettingsChanged = existingTypeDefinitions.haveIndexSettingsChanged(newTypeDefinitions);
         String newIndexName = null;
+        StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
+        LOG.info("### 1");
+
         try {
             if (haveIndexSettingsChanged) {
+                LOG.info("### 2");
                 newIndexName = elasticInstanceConfigService.updateCurrentIndexName();
+                LOG.info("### 3");
                 LOG.info("newIndexName: {}", newIndexName);
 
                 atlasMixedBackendIndexManager.createIndexIfNotExists(newIndexName);
+                LOG.info("### 4");
                 setCurrentWriteVertexIndexName(newIndexName);
 
-                //StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
-                //graph.getOpenTransactions().forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));
 
-                StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
                 closeOpenTransactions(graph);
+                LOG.info("### 5");
                 closeOpenInstances(graph);
+                LOG.info("### 6");
 
                 graph.tx().rollback();
+                LOG.info("### 7");
 
                 defaultIndexCreator.createDefaultIndexes(atlasGraph);
+                LOG.info("### 8");
             }
             AtlasTypesDef toUpdate = newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions);
+            LOG.info("### 9");
             AtlasTypesDef toCreate = newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions);
+            LOG.info("### 10");
 
-            LOG.info("toUpdate entity {}", toUpdate.getEntityDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
-            LOG.info("toUpdate enum {}", toUpdate.getEnumDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
-            LOG.info("toUpdate class {}", toUpdate.getClassificationDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
-            LOG.info("toUpdate BM {}", toUpdate.getBusinessMetadataDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
-            LOG.info("toUpdate relation {}", toUpdate.getRelationshipDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
-
-            LOG.info("toCreate entity {}", toCreate.getEntityDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
-            LOG.info("toCreate enum {}", toCreate.getEnumDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
-            LOG.info("toCreate class {}", toCreate.getClassificationDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
-            LOG.info("toCreate BM {}", toCreate.getBusinessMetadataDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
-            LOG.info("toCreate relation {}", toCreate.getRelationshipDefs().stream().map(x -> x.getName()).collect(Collectors.joining(", ")));
+            ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
+            LOG.info("### 11");
 
             typeDefStore.createTypesDef(toCreate);
-            typeDefStore.updateTypesDef(toUpdate);
+            LOG.info("### 12");
 
-            //atlasGraph.getManagementSystem().enableIndexForTypeSync();
+            typeDefStore.updateTypesDef(toUpdate);
+            LOG.info("### 13");
+
+            ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).status(SchemaStatus.REGISTERED, SchemaStatus.ENABLED).call();
+            LOG.info("### 14");
+
         } catch (Exception e){
             setCurrentWriteVertexIndexName(getCurrentReadVertexIndexName());
             //TODO: rollback instance config entity
@@ -242,7 +247,6 @@ public class TypeSyncService {
             LOG.info("Open instances");
 
             Set<String> openInstances = management.getOpenInstances();
-            openInstances.forEach(LOG::info);
 
             if (CollectionUtils.isNotEmpty(openInstances)) {
                 openInstances.forEach(LOG::info);
