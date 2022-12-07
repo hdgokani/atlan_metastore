@@ -88,11 +88,11 @@ public class ElasticInstanceConfigService implements Service {
     }
 
     public String updateCurrentIndexName() throws AtlasBaseException {
-        AtlasEntityWithExtInfo instanceConfig = getInstanceConfigEntity().orElseThrow(() -> new AtlasBaseException("The instance config doesn't exist"));
+        //AtlasEntityWithExtInfo instanceConfig = getInstanceConfigEntity().orElseThrow(() -> new AtlasBaseException("The instance config doesn't exist"));
         String newIndexName = ActiveIndexNameManager.getNewIndexName(RequestContext.get().getRequestTime());
-        instanceConfig.getEntity().setAttribute(ATTR_VERTEX_INDEX_NAME, newIndexName);
+        //instanceConfig.getEntity().setAttribute(ATTR_VERTEX_INDEX_NAME, newIndexName);
 
-        atlasEntityStore.createOrUpdate(new AtlasEntityStream(instanceConfig), true);
+        //atlasEntityStore.createOrUpdate(new AtlasEntityStream(instanceConfig), true);
 
         return newIndexName;
     }
