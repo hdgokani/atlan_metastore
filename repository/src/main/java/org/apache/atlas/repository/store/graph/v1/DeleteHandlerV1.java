@@ -1107,9 +1107,11 @@ public abstract class DeleteHandlerV1 {
             AtlasVertex classificationVertex = edge.getInVertex();
             boolean     isClassificationEdge = isClassificationEdge(edge);
             boolean     removePropagations   = getRemovePropagations(classificationVertex);
+            DeleteType  deleteHandlerType    = RequestContext.get().getDeleteType();
 
-            if (isClassificationEdge && removePropagations) {
-                if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
+
+            if (isClassificationEdge && removePropagations ) {
+                if (taskManagement != null && DEFERRED_ACTION_ENABLED && !deleteHandlerType.equals(DeleteType.HARD)) {
                     createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, instanceVertex, classificationVertex.getIdForDisplay(), null);
                 } else {
                     removeTagPropagation(classificationVertex);
