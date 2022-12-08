@@ -579,6 +579,7 @@ public class EntityGraphRetriever {
 
         return ret;
     }
+
     public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
         List<String> vertexIds = new ArrayList<>();
         traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, vertexIds, edgeLabelsToExclude);
@@ -624,7 +625,7 @@ public class EntityGraphRetriever {
         Map<String, AtlasVertex> resultsMap      = new HashMap<>();
         RequestContext requestContext = RequestContext.get();
 
-        if (entityVertexStart != null) {
+        if (entityVertexStart != null && entityVertexStart.exists()) {
             queue.add(entityVertexStart);
         }
 
@@ -722,7 +723,7 @@ public class EntityGraphRetriever {
         ExecutorService executorService = Executors.newFixedThreadPool(AtlasConfiguration.GRAPH_TRAVERSAL_PARALLELISM.getInt(), threadFactory);
 
         //Add Source vertex to level 1
-        if (entityVertexStart != null) {
+        if (entityVertexStart != null && entityVertexStart.exists()) {
             verticesAtCurrentLevel.add(entityVertexStart.getIdForDisplay());
         }
         /*
