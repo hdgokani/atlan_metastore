@@ -625,7 +625,7 @@ public class EntityGraphRetriever {
         Map<String, AtlasVertex> resultsMap      = new HashMap<>();
         RequestContext requestContext = RequestContext.get();
 
-        if (entityVertexStart != null && entityVertexStart.exists()) {
+        if (entityVertexStart != null) {
             queue.add(entityVertexStart);
         }
 
@@ -739,8 +739,9 @@ public class EntityGraphRetriever {
                 3. After that insert verticesToVisitNextLevel into current level
            Continue the steps until all vertices are processed by checking if verticesAtCurrentLevel is empty
          */
-        while (!verticesAtCurrentLevel.isEmpty()) {
-            Set<String> verticesToVisitNextLevel = new HashSet<>();
+        try {
+            while (!verticesAtCurrentLevel.isEmpty()) {
+                Set<String> verticesToVisitNextLevel = new HashSet<>();
 
                 List<CompletableFuture<Set<String>>> futures = verticesAtCurrentLevel.stream()
                         .map(t -> {
