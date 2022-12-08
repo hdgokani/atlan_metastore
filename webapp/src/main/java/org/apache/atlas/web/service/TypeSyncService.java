@@ -201,71 +201,99 @@ public class TypeSyncService {
 
         StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
 
-        closeOpenTransactions(graph);
+        int attempt = 0;
 
-        JanusGraphManagement management = null;
-        try {
-            closeOpenInstances(graph);
+        while (attempt < 3) {
+            LOG.info("Disable index attempt {}", attempt);
+            count = 0;
 
-            LOG.info("Open transactions after opening new management {}", graph.getOpenTransactions().size());
+            closeOpenTransactions(graph);
 
-            management = graph.openManagement();
-
-            Set<String> openInstances = management.getOpenInstances();
-            LOG.info("Open instances after closing all other instance: {}", openInstances.size());
-            openInstances.forEach(LOG::info);
-
-            JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
-            SchemaStatus fromStatus = indexToUpdate.getIndexStatus(indexToUpdate.getFieldKeys()[0]);
-
-            LOG.info("SchemaStatus updating for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
-
-            management.updateIndex(indexToUpdate, toAction).get();
+            JanusGraphManagement management = null;
             try {
-                management.commit();
-                //graph.tx().commit();
-            } catch (Exception e) {
-                //LOG.info("Exception while committing, class name: {}", e.getClass().getSimpleName());
+                closeOpenInstances(graph);
+
+                LOG.info("Open transactions after opening new management {}", graph.getOpenTransactions().size());
+
+                management = graph.openManagement();
+
+                Set<String> openInstances = management.getOpenInstances();
+                LOG.info("Open instances after closing all other instance: {}", openInstances.size());
+                openInstances.forEach(LOG::info);
+
+                JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
+                SchemaStatus fromStatus = indexToUpdate.getIndexStatus(indexToUpdate.getFieldKeys()[0]);
+
+                LOG.info("SchemaStatus updating for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
+
+                management.updateIndex(indexToUpdate, toAction).get();
+                try {
+                    management.commit();
+                    //graph.tx().commit();
+                } catch (Exception e) {
+                    //LOG.info("Exception while committing, class name: {}", e.getClass().getSimpleName());
 /*                if (e.getClass().getSimpleName().equals("PermanentLockingException")) {
                     LOG.info("Commit error! will pause and retry");
                     Thread.sleep(5000);
                     management.commit();
                 }*/
 
-                LOG.error("Exception while committing:", e);
-            }
+                    LOG.error("Exception while committing:", e);
+                }
 
-            LOG.info("Waiting for 60 seconds");
+                LOG.info("Waiting for 60 seconds");
+                Thread.sleep(60000);
+                LOG.info("Wait over");
+
+                LOG.info("Waiting for 120 seconds to update status");
+                GraphIndexStatusReport report = ManagementSystem
+                        .awaitGraphIndexStatus(graph, indexName)
+                        .status(toStatus)
+                        .timeout(120, ChronoUnit.SECONDS)
+                        .call();
+                LOG.info("SchemaStatus update report: {}", report);
+
+                if (!report.getSucceeded()) {
+                    LOG.error("SchemaStatus failed to update for index: {}, from {} to {}", indexName, fromStatus, toStatus);
+                    return -1;
+                }
+
+                if (!report.getConvergedKeys().isEmpty() && report.getConvergedKeys().containsKey(indexName)) {
+                    LOG.info("SchemaStatus updated for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
+
+                    count++;
+                } else if (!report.getNotConvergedKeys().isEmpty() && report.getNotConvergedKeys().containsKey(indexName)) {
+                    LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", indexName, fromStatus, toStatus);
+                }
+            } catch (Exception e) {
+                if (management != null) {
+                    management.rollback();
+                }
+            }
+            attempt++;
+
+            if (isDisabled(graph, indexName)) {
+                LOG.info("Index disabled successfully");
+                break;
+            }
+            LOG.info("Sleeping for 60 seconds before re-attempting");
             Thread.sleep(60000);
-            LOG.info("Wait over");
-
-            LOG.info("Waiting Forever to update status");
-            GraphIndexStatusReport report = ManagementSystem
-                    .awaitGraphIndexStatus(graph, indexName)
-                    .status(toStatus)
-                    .timeout(120, ChronoUnit.SECONDS)
-                    .call();
-            LOG.info("SchemaStatus update report: {}", report);
-
-            if (!report.getSucceeded()) {
-                LOG.error("SchemaStatus failed to update for index: {}, from {} to {}", indexName, fromStatus, toStatus);
-                return -1;
-            }
-
-            if (!report.getConvergedKeys().isEmpty() && report.getConvergedKeys().containsKey(indexName)) {
-                LOG.info("SchemaStatus updated for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
-
-                count++;
-            } else if (!report.getNotConvergedKeys().isEmpty() && report.getNotConvergedKeys().containsKey(indexName)) {
-                LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", indexName, fromStatus, toStatus);
-            }
-        } catch (Exception e) {
-            if (management != null) {
-                management.rollback();
-            }
         }
 
         return count;
+    }
+
+    private boolean isDisabled(StandardJanusGraph graph, String indexName) {
+        JanusGraphManagement management = graph.openManagement();
+
+        try {
+            JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
+            SchemaStatus status = indexToUpdate.getIndexStatus(indexToUpdate.getFieldKeys()[0]);
+
+            return status == DISABLED;
+        } finally {
+            management.commit();
+        }
     }
 
     private void closeOpenTransactions (StandardJanusGraph graph) {
