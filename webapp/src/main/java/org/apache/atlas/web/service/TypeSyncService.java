@@ -225,12 +225,14 @@ public class TypeSyncService {
                 management.commit();
                 //graph.tx().commit();
             } catch (Exception e) {
-                LOG.info("Exception while committing, class name: {}", e.getClass().getSimpleName());
-                if (e.getClass().getSimpleName().equals("PermanentLockingException")) {
+                //LOG.info("Exception while committing, class name: {}", e.getClass().getSimpleName());
+/*                if (e.getClass().getSimpleName().equals("PermanentLockingException")) {
                     LOG.info("Commit error! will pause and retry");
                     Thread.sleep(5000);
                     management.commit();
-                }
+                }*/
+
+                LOG.error("Exception while committing:", e);
             }
 
             LOG.info("Waiting for 60 seconds");
@@ -241,7 +243,7 @@ public class TypeSyncService {
             GraphIndexStatusReport report = ManagementSystem
                     .awaitGraphIndexStatus(graph, indexName)
                     .status(toStatus)
-                    .timeout(-1, ChronoUnit.SECONDS)
+                    .timeout(120, ChronoUnit.SECONDS)
                     .call();
             LOG.info("SchemaStatus update report: {}", report);
 
