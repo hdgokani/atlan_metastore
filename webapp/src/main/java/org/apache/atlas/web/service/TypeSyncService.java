@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -122,9 +123,14 @@ public class TypeSyncService {
             typeDefStore.updateTypesDef(toUpdate);
             LOG.info("### 17");
 
-            //report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).status(SchemaStatus.REGISTERED, SchemaStatus.ENABLED).call();
-            //LOG.info("report after update typesDef new index {}", report.toString());
+            LOG.info("Waiting for 120 seconds");
+            Thread.sleep(120000);
+            LOG.info("Wait over");
+
+            report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
+            LOG.info("report after update typesDef new index {}", report.toString());
             LOG.info("### 18");
+
 
         } catch (Exception e){
             setCurrentWriteVertexIndexName(getCurrentReadVertexIndexName());
@@ -141,7 +147,6 @@ public class TypeSyncService {
     }
 
     public void cleanupTypeSync(String traceId) throws InterruptedException {
-        Thread.sleep(20000);
         String oldIndexName = getCurrentReadVertexIndexName();
         String newIndexName = getCurrentWriteVertexIndexName();
 
@@ -151,6 +156,11 @@ public class TypeSyncService {
 
             try {
                 disableJanusgraphIndex(oldIndexName);
+
+                LOG.info("Waiting for 30 seconds");
+                Thread.sleep(30000);
+                LOG.info("Wait over");
+
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
 
                 LOG.info("Deleted old index {}", oldIndexName);
@@ -223,7 +233,12 @@ public class TypeSyncService {
                 }
             }
 
-            GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, indexName).status(toStatus).call();
+            LOG.info("Waiting Forever to update status");
+            GraphIndexStatusReport report = ManagementSystem
+                    .awaitGraphIndexStatus(graph, indexName)
+                    .status(toStatus)
+                    .timeout(-1, ChronoUnit.SECONDS)
+                    .call();
             LOG.info("SchemaStatus update report: {}", report);
 
             if (!report.getSucceeded()) {
