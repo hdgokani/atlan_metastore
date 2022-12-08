@@ -723,7 +723,7 @@ public class EntityGraphRetriever {
         ExecutorService executorService = Executors.newFixedThreadPool(AtlasConfiguration.GRAPH_TRAVERSAL_PARALLELISM.getInt(), threadFactory);
 
         //Add Source vertex to level 1
-        if (entityVertexStart != null && entityVertexStart.exists()) {
+        if (entityVertexStart != null) {
             verticesAtCurrentLevel.add(entityVertexStart.getIdForDisplay());
         }
         /*
@@ -739,9 +739,8 @@ public class EntityGraphRetriever {
                 3. After that insert verticesToVisitNextLevel into current level
            Continue the steps until all vertices are processed by checking if verticesAtCurrentLevel is empty
          */
-        try {
-            while (!verticesAtCurrentLevel.isEmpty()) {
-                Set<String> verticesToVisitNextLevel = new HashSet<>();
+        while (!verticesAtCurrentLevel.isEmpty()) {
+            Set<String> verticesToVisitNextLevel = new HashSet<>();
 
                 List<CompletableFuture<Set<String>>> futures = verticesAtCurrentLevel.stream()
                         .map(t -> {
