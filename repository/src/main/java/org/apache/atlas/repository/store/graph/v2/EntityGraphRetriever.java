@@ -625,7 +625,7 @@ public class EntityGraphRetriever {
         Map<String, AtlasVertex> resultsMap      = new HashMap<>();
         RequestContext requestContext = RequestContext.get();
 
-        if (entityVertexStart != null && entityVertexStart.exists()) {
+        if (entityVertexStart != null) {
             queue.add(entityVertexStart);
         }
 
@@ -723,7 +723,7 @@ public class EntityGraphRetriever {
         ExecutorService executorService = Executors.newFixedThreadPool(AtlasConfiguration.GRAPH_TRAVERSAL_PARALLELISM.getInt(), threadFactory);
 
         //Add Source vertex to level 1
-        if (entityVertexStart != null && entityVertexStart.exists()) {
+        if (entityVertexStart != null) {
             verticesAtCurrentLevel.add(entityVertexStart.getIdForDisplay());
         }
         /*
