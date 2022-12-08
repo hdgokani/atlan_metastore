@@ -157,9 +157,9 @@ public class TypeSyncService {
             try {
                 disableJanusgraphIndex(oldIndexName);
 
-                LOG.info("Waiting for 30 seconds");
-                Thread.sleep(30000);
-                LOG.info("Wait over");
+                //LOG.info("Waiting for 30 seconds");
+                //Thread.sleep(30000);
+                //LOG.info("Wait over");
 
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
 
@@ -223,7 +223,7 @@ public class TypeSyncService {
             management.updateIndex(indexToUpdate, toAction).get();
             try {
                 management.commit();
-                graph.tx().commit();
+                //graph.tx().commit();
             } catch (Exception e) {
                 LOG.info("Exception while committing, class name: {}", e.getClass().getSimpleName());
                 if (e.getClass().getSimpleName().equals("PermanentLockingException")) {
@@ -232,6 +232,10 @@ public class TypeSyncService {
                     management.commit();
                 }
             }
+
+            LOG.info("Waiting for 60 seconds");
+            Thread.sleep(60000);
+            LOG.info("Wait over");
 
             LOG.info("Waiting Forever to update status");
             GraphIndexStatusReport report = ManagementSystem
