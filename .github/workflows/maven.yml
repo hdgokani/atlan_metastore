@@ -86,7 +86,7 @@ jobs:
       - name: Check out into atlan repo
         uses: actions/checkout@v2
         with:
-          ref: ${{ steps.get_branch.outputs.branch }}
+          ref: lineageOnDemand
           repository: atlanhq/atlan
           token: ${{ secrets.my_pat }}
 
@@ -99,9 +99,9 @@ jobs:
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
-          branch: ${{ steps.get_branch.outputs.branch }}
+          branch: lineageOnDemand
           author_name: atlan-ci
           author_email: it@atlan.com
           message: '${{ github.event.repository.name }}'
           default_author: user_info
-          push: origin ${{ steps.get_branch.outputs.branch }}
+          push: origin lineageOnDemand
