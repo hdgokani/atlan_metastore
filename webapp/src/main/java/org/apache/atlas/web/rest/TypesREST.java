@@ -565,6 +565,7 @@ public class TypesREST {
     @Path("/cleanupTypeSync")
     public void cleanupTypeSync(@QueryParam("traceId") String traceId) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
+        RequestContext.get().setTraceId(traceId);
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {

@@ -164,7 +164,7 @@ public class TypeSyncService {
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
 
                 LOG.info("Deleted old index {}", oldIndexName);
-            } catch (InterruptedException | ExecutionException | IOException e) {
+            } catch (Exception e) {
                 LOG.error("Error while deleting index {}. Exception: {}", oldIndexName, e.toString());
             }
         }
@@ -270,14 +270,15 @@ public class TypeSyncService {
                     management.rollback();
                 }
             }
-            attempt++;
 
             if (isDisabled(graph, indexName)) {
                 LOG.info("Index disabled successfully");
                 break;
             }
+
             LOG.info("Sleeping for 60 seconds before re-attempting");
             Thread.sleep(60000);
+            attempt++;
         }
 
         return count;
