@@ -348,7 +348,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private void traverseEdgesOnDemand(AtlasVertex datasetVertex, boolean isInput, int depth, Set<String> visitedVertices, Map<String, LineageOnDemandConstraints> lineageConstraintsMap, AtlasLineageInfo ret) throws AtlasBaseException {
-        if (depth != 0) {
+        if (depth != 0) { // base condition of recursion
             // keep track of visited vertices to avoid circular loop
             visitedVertices.add(getId(datasetVertex));
 
