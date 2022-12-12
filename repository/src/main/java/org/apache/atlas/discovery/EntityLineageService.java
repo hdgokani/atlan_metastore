@@ -376,7 +376,7 @@ public class EntityLineageService implements AtlasLineageService {
                     AtlasVertex entityVertex = outgoingEdge.getInVertex();
 
                     if (entityVertex != null && !visitedVertices.contains(getId(entityVertex))) {
-                        traverseEdgesOnDemand(entityVertex, isInput, depth - 1, visitedVertices, lineageConstraintsMap, ret);
+                        traverseEdgesOnDemand(entityVertex, isInput, depth - 1, visitedVertices, lineageConstraintsMap, ret); // execute inner depth
                     }
                 }
             }
