@@ -72,56 +72,45 @@ public class TypeSyncService {
         try {
             if (haveIndexSettingsChanged) {
                 LOG.info("### 2");
-                newIndexName = elasticInstanceConfigService.updateCurrentIndexName();
-                LOG.info("### 3");
+                newIndexName = elasticInstanceConfigService.updateCurrentIndexName();LOG.info("### 3");
                 LOG.info("newIndexName: {}", newIndexName);
 
-                atlasMixedBackendIndexManager.createIndexIfNotExists(newIndexName);
-                LOG.info("### 4");
+                atlasMixedBackendIndexManager.createIndexIfNotExists(newIndexName);LOG.info("### 4");
+
                 setCurrentWriteVertexIndexName(newIndexName);
 
+                closeOpenTransactions(graph);LOG.info("### 5");
 
-                closeOpenTransactions(graph);
-                LOG.info("### 5");
-                //closeOpenInstances(graph);
-                LOG.info("### 6");
+                graph.tx().rollback();LOG.info("### 7");
 
-                graph.tx().rollback();
-                LOG.info("### 7");
-
-                defaultIndexCreator.createDefaultIndexes(atlasGraph);
-                LOG.info("### 8");
+                defaultIndexCreator.createDefaultIndexes(atlasGraph);LOG.info("### 8");
 
                 LOG.info("Waiting for 20 seconds");
                 Thread.sleep(20000);
                 LOG.info("Wait over");
             }
-            AtlasTypesDef toUpdate = newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions);
-            LOG.info("### 9");
-            AtlasTypesDef toCreate = newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions);
-            LOG.info("### 10");
+            AtlasTypesDef toUpdate = newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions);LOG.info("### 9");
+            AtlasTypesDef toCreate = newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions);LOG.info("### 10");
 
             GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
-            LOG.info("report after creating new index {}", report.toString());
-            LOG.info("### 11");
+            LOG.info("report after creating new index {}", report.toString());LOG.info("### 11");
 
-            typeDefStore.createTypesDef(toCreate);
-            LOG.info("### 12");
+            typeDefStore.createTypesDef(toCreate);LOG.info("### 12");
 
-            typeDefStore.updateTypesDef(toUpdate);
-            LOG.info("### 13");
+            typeDefStore.updateTypesDef(toUpdate);LOG.info("### 13");
 
             LOG.info("Waiting for 120 seconds");
             Thread.sleep(120000);
             LOG.info("Wait over");
 
             report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
-            LOG.info("report after update typesDef new index {}", report.toString());
-            LOG.info("### 14");
+            LOG.info("report after update typesDef new index {}", report.toString());LOG.info("### 14");
 
         } catch (Exception e) {
-            setCurrentWriteVertexIndexName(getCurrentReadVertexIndexName());
-            elasticInstanceConfigService.rollbackCurrentIndexName();
+            if (haveIndexSettingsChanged) {
+                setCurrentWriteVertexIndexName(getCurrentReadVertexIndexName());
+                elasticInstanceConfigService.rollbackCurrentIndexName();
+            }
             throw e;
         }
 
@@ -133,7 +122,7 @@ public class TypeSyncService {
         );
     }
 
-    public void cleanupTypeSync(String traceId) throws InterruptedException {
+    public void cleanupTypeSync(String traceId) throws AtlasBaseException {
         String oldIndexName = getCurrentReadVertexIndexName();
         String newIndexName = getCurrentWriteVertexIndexName();
 
@@ -147,6 +136,9 @@ public class TypeSyncService {
 
                 LOG.info("Deleted old index {}", oldIndexName);
             } catch (Exception e) {
+                setCurrentWriteVertexIndexName(oldIndexName);
+                setCurrentReadVertexIndexName(oldIndexName);
+                elasticInstanceConfigService.rollbackCurrentIndexName();
                 LOG.error("Error while deleting index {}. Exception: {}", oldIndexName, e.toString());
             }
         }
@@ -254,6 +246,7 @@ public class TypeSyncService {
             if (attempt == retry) {
                 LOG.error("All attempts exhausted, failed to Disable index");
                 throw new AtlasBaseException("All attempts exhausted, failed to Disable index");
+
             } else {
                 LOG.info("Sleeping for 60 seconds before re-attempting");
                 Thread.sleep(60000);
