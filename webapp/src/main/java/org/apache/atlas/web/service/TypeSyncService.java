@@ -122,7 +122,7 @@ public class TypeSyncService {
         );
     }
 
-    public void cleanupTypeSync(String traceId) throws AtlasBaseException {
+    public void cleanupTypeSync(String traceId) throws AtlasBaseException, InterruptedException {
         String oldIndexName = getCurrentReadVertexIndexName();
         String newIndexName = getCurrentWriteVertexIndexName();
 
@@ -136,10 +136,13 @@ public class TypeSyncService {
 
                 LOG.info("Deleted old index {}", oldIndexName);
             } catch (Exception e) {
+                LOG.error("Error while deleting index {}. Exception: {}", oldIndexName, e.toString());
+
                 setCurrentWriteVertexIndexName(oldIndexName);
                 setCurrentReadVertexIndexName(oldIndexName);
                 elasticInstanceConfigService.rollbackCurrentIndexName();
-                LOG.error("Error while deleting index {}. Exception: {}", oldIndexName, e.toString());
+
+                disableJanusgraphIndex(newIndexName);
             }
         }
     }
