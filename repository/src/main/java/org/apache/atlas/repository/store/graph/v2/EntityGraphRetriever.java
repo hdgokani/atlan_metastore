@@ -579,7 +579,6 @@ public class EntityGraphRetriever {
 
         return ret;
     }
-
     public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToExclude) {
         List<String> vertexIds = new ArrayList<>();
         traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, vertexIds, edgeLabelsToExclude);
