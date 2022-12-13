@@ -561,9 +561,6 @@ public class EntityLineageService implements AtlasLineageService {
                 ret.setHasMoreUpstreamVertices(true);
                 return true;
             } else if (!isInput && nonProcessEntityCount(ret) - inputVertexCount == lineageContext.getLimit()) {
-                ret.setHasMoreUpstreamVertices(true);
-                return true;
-            } else if (!isInput && nonProcessEntityCount(ret) - inputVertexCount == lineageContext.getLimit()) {
                 ret.setHasMoreDownstreamVertices(true);
                 return true;
             }
