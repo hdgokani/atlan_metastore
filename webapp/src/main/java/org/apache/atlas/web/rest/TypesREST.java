@@ -606,7 +606,7 @@ public class TypesREST {
             typeSyncService.disableJanusgraphIndex(indexName);
         } catch (InterruptedException e) {
             e.printStackTrace();
-        } catch (ExecutionException e) {
+        } catch (AtlasBaseException e) {
             e.printStackTrace();
         }
     }

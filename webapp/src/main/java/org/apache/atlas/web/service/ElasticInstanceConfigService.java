@@ -97,6 +97,13 @@ public class ElasticInstanceConfigService implements Service {
         return newIndexName;
     }
 
+    public void rollbackCurrentIndexName() throws AtlasBaseException {
+        AtlasEntityWithExtInfo instanceConfig = getInstanceConfigEntity().orElseThrow(() -> new AtlasBaseException("The instance config doesn't exist"));
+        instanceConfig.getEntity().setAttribute(ATTR_VERTEX_INDEX_NAME, ActiveIndexNameManager.getCurrentReadVertexIndexName());
+
+        atlasEntityStore.createOrUpdate(new AtlasEntityStream(instanceConfig), true);
+    }
+
     public boolean isTypeDefUpdatesLocked() throws AtlasBaseException {
         AtlasEntityWithExtInfo instanceConfig = getInstanceConfigEntity().orElseThrow(() -> new AtlasBaseException("The instance config doesn't exist"));
         return (boolean) instanceConfig.getEntity().getAttribute(ATTR_IS_UPDATE_LOCKED);

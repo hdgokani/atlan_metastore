@@ -105,23 +105,11 @@ public class TypeSyncService {
             LOG.info("report after creating new index {}", report.toString());
             LOG.info("### 11");
 
-/*            closeOpenTransactions(graph);
-            LOG.info("### 12");
-            closeOpenInstances(graph);
-            LOG.info("### 13");*/
-
             typeDefStore.createTypesDef(toCreate);
-            LOG.info("### 14");
-
-/*
-            closeOpenTransactions(graph);
-            LOG.info("### 15");
-            closeOpenInstances(graph);
-            LOG.info("### 16");
-*/
+            LOG.info("### 12");
 
             typeDefStore.updateTypesDef(toUpdate);
-            LOG.info("### 17");
+            LOG.info("### 13");
 
             LOG.info("Waiting for 120 seconds");
             Thread.sleep(120000);
@@ -129,12 +117,11 @@ public class TypeSyncService {
 
             report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
             LOG.info("report after update typesDef new index {}", report.toString());
-            LOG.info("### 18");
+            LOG.info("### 14");
 
-
-        } catch (Exception e){
+        } catch (Exception e) {
             setCurrentWriteVertexIndexName(getCurrentReadVertexIndexName());
-            //TODO: rollback instance config entity
+            elasticInstanceConfigService.rollbackCurrentIndexName();
             throw e;
         }
 
@@ -156,11 +143,6 @@ public class TypeSyncService {
 
             try {
                 disableJanusgraphIndex(oldIndexName);
-
-                //LOG.info("Waiting for 30 seconds");
-                //Thread.sleep(30000);
-                //LOG.info("Wait over");
-
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
 
                 LOG.info("Deleted old index {}", oldIndexName);
@@ -188,22 +170,23 @@ public class TypeSyncService {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (AtlasBaseException e) {
+            e.printStackTrace();
         }
     }
 
-    public void disableJanusgraphIndex(String oldIndexName) throws InterruptedException, ExecutionException {
+    public void disableJanusgraphIndex(String oldIndexName) throws InterruptedException, AtlasBaseException {
         updateIndexStatus(atlasGraph, oldIndexName, DISABLE_INDEX, DISABLED);
     }
 
     private int updateIndexStatus(AtlasJanusGraph atlasGraph, String indexName,
-                                  SchemaAction toAction, SchemaStatus toStatus) throws ExecutionException, InterruptedException {
+                                  SchemaAction toAction, SchemaStatus toStatus) throws InterruptedException, AtlasBaseException {
         int count = 0;
+        int retry = 3;
 
         StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
 
-        int attempt = 0;
-
-        while (attempt < 3) {
+        for (int attempt = 1; attempt <= retry; attempt++) {
             LOG.info("Disable index attempt {}", attempt);
             count = 0;
 
@@ -229,15 +212,7 @@ public class TypeSyncService {
                 management.updateIndex(indexToUpdate, toAction).get();
                 try {
                     management.commit();
-                    //graph.tx().commit();
                 } catch (Exception e) {
-                    //LOG.info("Exception while committing, class name: {}", e.getClass().getSimpleName());
-/*                if (e.getClass().getSimpleName().equals("PermanentLockingException")) {
-                    LOG.info("Commit error! will pause and retry");
-                    Thread.sleep(5000);
-                    management.commit();
-                }*/
-
                     LOG.error("Exception while committing:", e);
                 }
 
@@ -260,8 +235,8 @@ public class TypeSyncService {
 
                 if (!report.getConvergedKeys().isEmpty() && report.getConvergedKeys().containsKey(indexName)) {
                     LOG.info("SchemaStatus updated for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
-
                     count++;
+
                 } else if (!report.getNotConvergedKeys().isEmpty() && report.getNotConvergedKeys().containsKey(indexName)) {
                     LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", indexName, fromStatus, toStatus);
                 }
@@ -276,9 +251,13 @@ public class TypeSyncService {
                 break;
             }
 
-            LOG.info("Sleeping for 60 seconds before re-attempting");
-            Thread.sleep(60000);
-            attempt++;
+            if (attempt == retry) {
+                LOG.error("All attempts exhausted, failed to Disable index");
+                throw new AtlasBaseException("All attempts exhausted, failed to Disable index");
+            } else {
+                LOG.info("Sleeping for 60 seconds before re-attempting");
+                Thread.sleep(60000);
+            }
         }
 
         return count;
@@ -297,13 +276,16 @@ public class TypeSyncService {
         }
     }
 
-    private void closeOpenTransactions (StandardJanusGraph graph) {
+    private void closeOpenTransactions (StandardJanusGraph graph) throws AtlasBaseException {
         LOG.info("Open transactions {}", graph.getOpenTransactions().size());
 
-        //graph.getOpenTransactions().forEach(tx -> graph.closeTransaction((StandardJanusGraphTx) tx));
-        //graph.getOpenTransactions().forEach(JanusGraphTransaction::commit);
-        graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
-        graph.tx().commit();
+        try {
+            graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+            graph.tx().commit();
+        } catch (Exception e) {
+            LOG.error("Failed to close open transaction", e);
+            throw new AtlasBaseException(e);
+        }
 
         LOG.info("Open transactions after closing {}", graph.getOpenTransactions().size());
     }
