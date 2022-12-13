@@ -136,7 +136,7 @@ public class TypeSyncService {
 
                 LOG.info("Deleted old index {}", oldIndexName);
             } catch (Exception e) {
-                LOG.error("Error while deleting index {}. Exception: {}", oldIndexName, e.toString());
+                LOG.error("Error while disabling/deleting index {}. Exception: {}", oldIndexName, e.toString());
 
                 setCurrentWriteVertexIndexName(oldIndexName);
                 setCurrentReadVertexIndexName(oldIndexName);
@@ -209,6 +209,7 @@ public class TypeSyncService {
                     management.commit();
                 } catch (Exception e) {
                     LOG.error("Exception while committing:", e);
+                    throw new AtlasBaseException(e);
                 }
 
                 LOG.info("Waiting for 60 seconds");
@@ -236,9 +237,13 @@ public class TypeSyncService {
                     LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", indexName, fromStatus, toStatus);
                 }
             } catch (Exception e) {
+                LOG.error("Failed to updateIndexStatus");
+
                 if (management != null) {
                     management.rollback();
                 }
+
+                throw new AtlasBaseException(e);
             }
 
             if (isDisabled(graph, indexName)) {
@@ -272,7 +277,7 @@ public class TypeSyncService {
         }
     }
 
-    private void closeOpenTransactions (StandardJanusGraph graph) throws AtlasBaseException {
+    private void closeOpenTransactions(StandardJanusGraph graph) throws AtlasBaseException {
         LOG.info("Open transactions {}", graph.getOpenTransactions().size());
 
         try {
@@ -286,7 +291,7 @@ public class TypeSyncService {
         LOG.info("Open transactions after closing {}", graph.getOpenTransactions().size());
     }
 
-    private void closeOpenInstances(StandardJanusGraph graph) {
+    private void closeOpenInstances(StandardJanusGraph graph) throws AtlasBaseException {
         JanusGraphManagement management = graph.openManagement();
 
         try {
@@ -301,6 +306,9 @@ public class TypeSyncService {
                 openInstances.stream().filter(x -> !x.contains("current")).forEach(management::forceCloseInstance);
             }
             LOG.info("Closed all other instances");
+        } catch (Exception e) {
+            LOG.error("Failed to close open transaction", e);
+            throw new AtlasBaseException(e);
         } finally {
             management.commit();
         }
