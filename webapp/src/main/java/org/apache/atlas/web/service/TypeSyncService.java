@@ -107,10 +107,26 @@ public class TypeSyncService {
             LOG.info("report after update typesDef new index {}", report.toString());LOG.info("### 14");
 
         } catch (Exception e) {
+            LOG.error("Failed to sync typesDef: rollback needed:" + haveIndexSettingsChanged, e);
+
             if (haveIndexSettingsChanged) {
                 setCurrentWriteVertexIndexName(getCurrentReadVertexIndexName());
-                elasticInstanceConfigService.rollbackCurrentIndexName();
+
+                try {
+                    elasticInstanceConfigService.rollbackCurrentIndexName();
+                } catch (Exception e0) {
+                    LOG.error("Failed to rollback elastic Instance Config entity", e0);
+                }
+
+                try {
+                    atlasMixedBackendIndexManager.deleteIndex(newIndexName);
+                } catch (Exception e0) {
+                    LOG.error("Failed to delete elastic index", e0);
+                }
+
+                disableJanusgraphIndex(newIndexName);
             }
+
             throw e;
         }
 
@@ -122,7 +138,7 @@ public class TypeSyncService {
         );
     }
 
-    public void cleanupTypeSync(String traceId) throws AtlasBaseException, InterruptedException {
+    public boolean cleanupTypeSync(String traceId) throws AtlasBaseException, InterruptedException {
         String oldIndexName = getCurrentReadVertexIndexName();
         String newIndexName = getCurrentWriteVertexIndexName();
 
@@ -135,14 +151,27 @@ public class TypeSyncService {
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
 
                 LOG.info("Deleted old index {}", oldIndexName);
+                return true;
             } catch (Exception e) {
-                LOG.error("Error while disabling/deleting index {}. Exception: {}", oldIndexName, e.toString());
+                LOG.error("Error while disabling/deleting index {}. Exception: {}", oldIndexName, e);
 
                 setCurrentWriteVertexIndexName(oldIndexName);
                 setCurrentReadVertexIndexName(oldIndexName);
-                elasticInstanceConfigService.rollbackCurrentIndexName();
+
+                try {
+                    elasticInstanceConfigService.rollbackCurrentIndexName();
+                } catch (Exception e0) {
+                    LOG.error("Failed to rollback elastic Instance Config entity", e0);
+                }
+
+                try {
+                    atlasMixedBackendIndexManager.deleteIndex(newIndexName);
+                } catch (Exception e0) {
+                    LOG.error("Failed to delete elastic index", e0);
+                }
 
                 disableJanusgraphIndex(newIndexName);
+                throw new AtlasBaseException(e);
             }
         }
     }
@@ -191,9 +220,8 @@ public class TypeSyncService {
             try {
                 closeOpenInstances(graph);
 
-                LOG.info("Open transactions after opening new management {}", graph.getOpenTransactions().size());
-
                 management = graph.openManagement();
+                LOG.info("Open transactions after opening new management {}", graph.getOpenTransactions().size());
 
                 Set<String> openInstances = management.getOpenInstances();
                 LOG.info("Open instances after closing all other instance: {}", openInstances.size());
