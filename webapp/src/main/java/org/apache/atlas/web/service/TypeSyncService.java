@@ -174,6 +174,7 @@ public class TypeSyncService {
                 throw new AtlasBaseException(e);
             }
         }
+        return false;
     }
 
     public void testCreateIndex(String ndexName) throws InterruptedException, ExecutionException {
