@@ -350,7 +350,7 @@ public class TypeSyncService {
             LOG.info("Closed all other instances");
         } catch (Exception e) {
             LOG.error("Failed to close open instances", e);
-            throw new AtlasBaseException(e);
+            //throw new AtlasBaseException(e);
         } finally {
             management.commit();
         }
