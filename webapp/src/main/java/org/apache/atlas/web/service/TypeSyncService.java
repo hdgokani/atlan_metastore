@@ -89,7 +89,6 @@ public class TypeSyncService {
                 Thread.sleep(20000);
                 LOG.info("Wait over");
             }
-            
 
             if (haveIndexSettingsChanged) {
                 GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
@@ -237,6 +236,11 @@ public class TypeSyncService {
 
                 JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
                 SchemaStatus fromStatus = indexToUpdate.getIndexStatus(indexToUpdate.getFieldKeys()[0]);
+
+                if (fromStatus == toStatus) {
+                    LOG.warn("Skipping Index status update as index already in {}", fromStatus);
+                    return 0;
+                }
 
                 LOG.info("SchemaStatus updating for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
 
