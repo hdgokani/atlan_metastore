@@ -89,6 +89,7 @@ public class TypeSyncService {
                 Thread.sleep(20000);
                 LOG.info("Wait over");
             }
+            
 
             if (haveIndexSettingsChanged) {
                 GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
