@@ -156,7 +156,7 @@ public class TypeSyncService {
                 disableJanusgraphIndex(oldIndexName);
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
 
-                LOG.info("Deleted old index {}", oldIndexName);
+                //LOG.info("Deleted old index {}", oldIndexName);
                 return true;
             } catch (Exception e) {
                 LOG.error("Error while disabling/deleting index {}. Exception: {}", oldIndexName, e);
@@ -228,11 +228,11 @@ public class TypeSyncService {
                 closeOpenInstances(graph);
 
                 management = graph.openManagement();
-                LOG.info("Open transactions after opening new management {}", graph.getOpenTransactions().size());
+                //LOG.info("Open transactions after opening new management {}", graph.getOpenTransactions().size());
 
-                Set<String> openInstances = management.getOpenInstances();
-                LOG.info("Open instances after closing all other instance: {}", openInstances.size());
-                openInstances.forEach(LOG::info);
+                //Set<String> openInstances = management.getOpenInstances();
+                //LOG.info("Open instances after closing all other instance: {}", openInstances.size());
+                //openInstances.forEach(LOG::info);
 
                 JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
                 SchemaStatus fromStatus = indexToUpdate.getIndexStatus(indexToUpdate.getFieldKeys()[0]);
@@ -342,10 +342,10 @@ public class TypeSyncService {
         JanusGraphManagement management = graph.openManagement();
 
         try {
-            LOG.info("Open instances {}", management.getOpenInstances().size());
-            LOG.info("Open instances");
-
             Set<String> openInstances = management.getOpenInstances();
+
+            LOG.info("Open instances {}", openInstances.size());
+            LOG.info("Open instances");
 
             if (CollectionUtils.isNotEmpty(openInstances)) {
                 openInstances.forEach(LOG::info);
