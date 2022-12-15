@@ -89,22 +89,28 @@ public class TypeSyncService {
                 Thread.sleep(20000);
                 LOG.info("Wait over");
             }
-            AtlasTypesDef toUpdate = newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions);LOG.info("### 9");
-            AtlasTypesDef toCreate = newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions);LOG.info("### 10");
 
-            GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
-            LOG.info("report after creating new index {}", report.toString());LOG.info("### 11");
+            if (haveIndexSettingsChanged) {
+                GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
+                LOG.info("report after creating new index {}", report.toString());LOG.info("### 9");
+            }
+
+            AtlasTypesDef toUpdate = newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions);LOG.info("### 10");
+            AtlasTypesDef toCreate = newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions);LOG.info("### 11");
 
             typeDefStore.createTypesDef(toCreate);LOG.info("### 12");
 
             typeDefStore.updateTypesDef(toUpdate);LOG.info("### 13");
 
-            LOG.info("Waiting for 120 seconds");
-            Thread.sleep(120000);
-            LOG.info("Wait over");
+            if (haveIndexSettingsChanged) {
+                LOG.info("Waiting for 120 seconds");
+                Thread.sleep(120000);
+                LOG.info("Wait over");
 
-            report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
-            LOG.info("report after update typesDef new index {}", report.toString());LOG.info("### 14");
+                GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
+                LOG.info("report after update typesDef new index {}", report.toString());
+                LOG.info("### 14");
+            }
 
         } catch (Exception e) {
             LOG.error("Failed to sync typesDef: rollback needed:" + haveIndexSettingsChanged, e);
