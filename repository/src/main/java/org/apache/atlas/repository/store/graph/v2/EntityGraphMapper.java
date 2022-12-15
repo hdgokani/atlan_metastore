@@ -3525,7 +3525,7 @@ public class EntityGraphMapper {
 
         processClassificationDeleteOnlyPropagation(classificationVertex, null, isTermEntityEdge);
 
-        LOG.info("Deleted ");
+        LOG.info("Completed propagation removal via edge for classification {}", classificationId);
     }
 
 
