@@ -212,7 +212,6 @@ public class TypeSyncService {
 
     private int updateIndexStatus(AtlasJanusGraph atlasGraph, String indexName,
                                   SchemaAction toAction, SchemaStatus toStatus) throws InterruptedException, AtlasBaseException {
-        int count = 0;
         int retry = 3;
 
         StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
@@ -264,18 +263,6 @@ public class TypeSyncService {
                         .call();
                 LOG.info("SchemaStatus update report: {}", report);
 
-                if (!report.getSucceeded()) {
-                    LOG.error("SchemaStatus failed to update for index: {}, from {} to {}", indexName, fromStatus, toStatus);
-                    return -1;
-                }
-
-                if (!report.getConvergedKeys().isEmpty() && report.getConvergedKeys().containsKey(indexName)) {
-                    LOG.info("SchemaStatus updated for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
-                    count++;
-
-                } else if (!report.getNotConvergedKeys().isEmpty() && report.getNotConvergedKeys().containsKey(indexName)) {
-                    LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", indexName, fromStatus, toStatus);
-                }
             } catch (Exception e) {
                 LOG.error("Failed to updateIndexStatus");
 
