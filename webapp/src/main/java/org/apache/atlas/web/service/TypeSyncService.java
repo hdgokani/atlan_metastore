@@ -316,14 +316,21 @@ public class TypeSyncService {
         LOG.info("Open transactions {}", graph.getOpenTransactions().size());
 
         try {
-            graph.getOpenTransactions().forEach(JanusGraphTransaction::rollback);
+            graph.getOpenTransactions().forEach(this::rollbackTxn);
             graph.tx().commit();
         } catch (Exception e) {
             LOG.error("Failed to close open transaction", e);
-            throw new AtlasBaseException(e);
         }
 
         LOG.info("Open transactions after closing {}", graph.getOpenTransactions().size());
+    }
+
+    private void rollbackTxn(JanusGraphTransaction txn) {
+        try {
+            txn.rollback();
+        } catch (Exception e) {
+
+        }
     }
 
     private void closeOpenInstances(StandardJanusGraph graph) throws AtlasBaseException {
@@ -342,7 +349,7 @@ public class TypeSyncService {
             }
             LOG.info("Closed all other instances");
         } catch (Exception e) {
-            LOG.error("Failed to close open transaction", e);
+            LOG.error("Failed to close open instances", e);
             throw new AtlasBaseException(e);
         } finally {
             management.commit();

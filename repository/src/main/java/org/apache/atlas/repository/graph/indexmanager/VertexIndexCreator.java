@@ -30,23 +30,12 @@ public class VertexIndexCreator {
         String indexFieldName = null;
 
         if (propertyName != null) {
-            boolean logP = propertyName.equals("recordUser");
             AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
 
             if (propertyKey == null) {
                 propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
-                if (logP) {
-                    LOG.info("propertyKey: {}", propertyKey.toString());
-                }
             }
-
-            if (logP) {
-                LOG.info("getCurrentWriteVertexIndexName() {}", getCurrentWriteVertexIndexName());
-                if (management.getGraphIndex(getCurrentWriteVertexIndexName()) != null) {
-                    LOG.info("propertyKey exists: {}", !management.getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys().contains(propertyKey));
-                }
-            }
-
+            
             if (isIndexApplicable(propertyClass, cardinality) && !management.getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys().contains(propertyKey)) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Creating backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
