@@ -210,7 +210,7 @@ public class TypeSyncService {
         updateIndexStatus(atlasGraph, oldIndexName, DISABLE_INDEX, DISABLED);
     }
 
-    private int updateIndexStatus(AtlasJanusGraph atlasGraph, String indexName,
+    private void updateIndexStatus(AtlasJanusGraph atlasGraph, String indexName,
                                   SchemaAction toAction, SchemaStatus toStatus) throws InterruptedException, AtlasBaseException {
         int retry = 3;
 
@@ -218,7 +218,6 @@ public class TypeSyncService {
 
         for (int attempt = 1; attempt <= retry; attempt++) {
             LOG.info("Disable index attempt {}", attempt);
-            count = 0;
 
             closeOpenTransactions(graph);
 
@@ -238,7 +237,7 @@ public class TypeSyncService {
 
                 if (fromStatus == toStatus) {
                     LOG.warn("Skipping Index status update as index already in {}", fromStatus);
-                    return 0;
+                    return;
                 }
 
                 LOG.info("SchemaStatus updating for index: {}, from {} to {}.", indexName, fromStatus, toStatus);
@@ -287,8 +286,6 @@ public class TypeSyncService {
                 Thread.sleep(60000);
             }
         }
-
-        return count;
     }
 
     private boolean isDisabled(StandardJanusGraph graph, String indexName) {
