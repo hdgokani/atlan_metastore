@@ -124,7 +124,7 @@ public class AtlasTaskService implements TaskService {
         return map;
     }
 
-    private AtlasIndexQuery searchTask(TaskSearchParams searchParams) {
+    private AtlasIndexQuery searchTask(TaskSearchParams searchParams) throws AtlasBaseException {
         return graph.elasticsearchQuery(ActiveIndexNameManager.getCurrentReadVertexIndexName(), searchParams);
     }
 }

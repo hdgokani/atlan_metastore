@@ -624,7 +624,7 @@ public class EntityGraphRetriever {
         Map<String, AtlasVertex> resultsMap      = new HashMap<>();
         RequestContext requestContext = RequestContext.get();
 
-        if (entityVertexStart != null) {
+        if (entityVertexStart != null && entityVertexStart.exists()) {
             queue.add(entityVertexStart);
         }
 
@@ -722,7 +722,7 @@ public class EntityGraphRetriever {
         ExecutorService executorService = Executors.newFixedThreadPool(AtlasConfiguration.GRAPH_TRAVERSAL_PARALLELISM.getInt(), threadFactory);
 
         //Add Source vertex to level 1
-        if (entityVertexStart != null) {
+        if (entityVertexStart != null && entityVertexStart.exists()) {
             verticesAtCurrentLevel.add(entityVertexStart.getIdForDisplay());
         }
         /*
@@ -946,6 +946,7 @@ public class EntityGraphRetriever {
     }
 
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader");
         AtlasEntityHeader ret = new AtlasEntityHeader();
 
         String  typeName     = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
@@ -1011,7 +1012,7 @@ public class EntityGraphRetriever {
                 }
             }
         }
-
+        RequestContext.get().endMetricRecord(metric);
         return ret;
     }
 
@@ -1119,6 +1120,7 @@ public class EntityGraphRetriever {
     }
 
     public List<AtlasTermAssignmentHeader> mapAssignedTerms(AtlasVertex entityVertex) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("mapAssignedTerms");
         List<AtlasTermAssignmentHeader> ret = new ArrayList<>();
 
         Iterable edges = entityVertex.query().direction(AtlasEdgeDirection.IN).label(TERM_ASSIGNMENT_LABEL).edges();
@@ -1130,7 +1132,7 @@ public class EntityGraphRetriever {
                 }
             }
         }
-
+        RequestContext.get().endMetricRecord(metric);
         return ret;
     }
 
