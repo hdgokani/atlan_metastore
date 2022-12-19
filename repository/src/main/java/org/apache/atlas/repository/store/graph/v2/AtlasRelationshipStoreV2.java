@@ -127,7 +127,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== create({}): {}", relationship, ret);
         }
-
+        RequestContext.get().getCreatedRelationships().add(ret);
         return ret;
     }
 
@@ -205,11 +205,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         AtlasRelationship ret = updateRelationship(edge, relationship);
         sendNotifications(ret, OperationType.RELATIONSHIP_UPDATE);
-
+        RequestContext.get().getUpdatedRelationships().add(ret);
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== update({}): {}", relationship, ret);
         }
-
         return ret;
     }
 
@@ -240,9 +239,13 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             AtlasEdge existingEdge = getRelationshipEdge(end1Vertex, end2Vertex, relationshipLabel);
 
             if (existingEdge == null) {
-                ret.add(create(relationship));
+                AtlasRelationship createdRelationship = create(relationship);
+                ret.add(createdRelationship);
+                RequestContext.get().getCreatedRelationships().add(createdRelationship);
             } else {
-                ret.add(update(relationship));
+                AtlasRelationship updatedRelationship = update(relationship);
+                ret.add(updatedRelationship);
+                RequestContext.get().getUpdatedRelationships().add(updatedRelationship);
             }
         }
 
@@ -326,7 +329,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                 );
             }
         }
-
+        RequestContext.get().getDeletedRelationships().addAll(deletedRelationships);
         sendNotifications(deletedRelationships, OperationType.RELATIONSHIP_DELETE);
 
         if (LOG.isDebugEnabled()) {
@@ -374,8 +377,9 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                 );
             }
         }
-
-        sendNotifications(entityRetriever.mapEdgeToAtlasRelationship(edge), OperationType.RELATIONSHIP_DELETE);
+        AtlasRelationship deletedRelationship = entityRetriever.mapEdgeToAtlasRelationship(edge);
+        sendNotifications(deletedRelationship, OperationType.RELATIONSHIP_DELETE);
+        RequestContext.get().addToDeletedRelationships(deletedRelationship);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== deleteById({}): {}", guid);
@@ -507,7 +511,9 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
         }
 
-        sendNotifications(entityRetriever.mapEdgeToAtlasRelationship(ret), OperationType.RELATIONSHIP_CREATE);
+        AtlasRelationship createdRelationship = entityRetriever.mapEdgeToAtlasRelationship(ret);
+        sendNotifications(createdRelationship, OperationType.RELATIONSHIP_CREATE);
+        RequestContext.get().getCreatedRelationships().add(createdRelationship);
         return ret;
     }
 

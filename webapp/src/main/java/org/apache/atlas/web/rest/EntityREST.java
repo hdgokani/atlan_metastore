@@ -37,6 +37,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
+import org.apache.atlas.repository.graphdb.janus.AtlasESIndexService;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
@@ -97,12 +98,14 @@ public class EntityREST {
     private final AtlasTypeRegistry      typeRegistry;
     private final AtlasEntityStore       entitiesStore;
     private final ESBasedAuditRepository  esBasedAuditRepository;
+    private final AtlasESIndexService atlasESIndexService;
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository) {
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository, AtlasESIndexService atlasESIndexService) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
         this.esBasedAuditRepository = esBasedAuditRepository;
+        this.atlasESIndexService = atlasESIndexService;
     }
 
     /**
@@ -484,7 +487,9 @@ public class EntityREST {
             }
             validateAttributeLength(Lists.newArrayList(entity.getEntity()));
 
-            return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
+            EntityMutationResponse resp = entitiesStore.createOrUpdate(new AtlasEntityStream(entity), replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
+            atlasESIndexService.createRelationships(RequestContext.get().getCreatedRelationships());
+            return resp;
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -891,7 +896,9 @@ public class EntityREST {
 
             EntityStream entityStream = new AtlasEntityStream(entities);
 
-            return entitiesStore.createOrUpdate(entityStream, replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
+            EntityMutationResponse resp = entitiesStore.createOrUpdate(entityStream, replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
+            atlasESIndexService.createRelationships(RequestContext.get().getCreatedRelationships());
+            return resp;
         } finally {
             AtlasPerfTracer.log(perf);
         }

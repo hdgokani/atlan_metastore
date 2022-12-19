@@ -18,11 +18,8 @@
 
 package org.apache.atlas;
 
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
@@ -64,6 +61,10 @@ public class RequestContext {
     private final Set<String> onlyBAUpdateEntities = new HashSet<>();
     private final List<AtlasTask> queuedTasks = new ArrayList<>();
     private final Set<String> relationAttrsForSearch = new HashSet<>();
+
+    private final List<AtlasRelationship> createdRelationships = new ArrayList<>();
+    private final List<AtlasRelationship> updatedRelationships = new ArrayList<>();
+    private final List<AtlasRelationship> deletedRelationships = new ArrayList<>();
 
     private static String USERNAME = "";
     private final Map<String, List<Object>> removedElementsMap = new HashMap<>();
@@ -140,6 +141,9 @@ public class RequestContext {
         this.deletedEdgesIds.clear();
         this.requestContextHeaders.clear();
         this.currentTask = null;
+        this.createdRelationships.clear();
+        this.updatedRelationships.clear();
+        this.deletedRelationships.clear();
         setTraceId(null);
 
         if (metrics != null && !metrics.isEmpty()) {
@@ -610,4 +614,27 @@ public class RequestContext {
     public void setForwardedAddresses(List<String> forwardedAddresses) {
         this.forwardedAddresses = forwardedAddresses;
     }
+
+    public void addToCreatedRelationships(AtlasRelationship relationship) {
+        createdRelationships.add(relationship);
+    }
+    public void addToUpdatedRelationships(AtlasRelationship relationship) {
+        updatedRelationships.add(relationship);
+    }
+    public void addToDeletedRelationships(AtlasRelationship relationship) {
+        deletedRelationships.add(relationship);
+    }
+
+    public List<AtlasRelationship> getCreatedRelationships() {
+        return this.createdRelationships;
+    }
+
+    public List<AtlasRelationship> getUpdatedRelationships() {
+        return this.updatedRelationships;
+    }
+
+    public List<AtlasRelationship> getDeletedRelationships() {
+        return this.deletedRelationships;
+    }
+
 }
