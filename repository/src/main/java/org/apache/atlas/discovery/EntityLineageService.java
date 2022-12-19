@@ -176,6 +176,8 @@ public class EntityLineageService implements AtlasLineageService {
     @Override
     @GraphTransaction
     public AtlasLineageInfo getAtlasLineageInfo(String guid, Map<String, LineageOnDemandConstraints> lineageConstraintsMap) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getAtlasLineageInfo");
+
         AtlasLineageInfo ret;
 
         if (MapUtils.isEmpty(lineageConstraintsMap)) {
@@ -191,6 +193,8 @@ public class EntityLineageService implements AtlasLineageService {
 
         // filtering out on-demand relations which has input & output nodes within the limit
         cleanupRelationsOnDemand(ret);
+
+        RequestContext.get().endMetricRecord(metricRecorder);
 
         return ret;
     }
@@ -273,6 +277,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private AtlasLineageInfo getLineageInfoOnDemand(String guid, Map<String, LineageOnDemandConstraints> lineageConstraintsMap, boolean isDataSet) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getLineageInfoOnDemand");
 
         LineageOnDemandConstraints lineageConstraintsByGuid = getAndValidateLineageConstraintsByGuid(guid, lineageConstraintsMap);
 
@@ -320,6 +325,7 @@ public class EntityLineageService implements AtlasLineageService {
             }
 
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
 
         return ret;
     }
@@ -349,6 +355,8 @@ public class EntityLineageService implements AtlasLineageService {
 
     private void traverseEdgesOnDemand(AtlasVertex datasetVertex, boolean isInput, int depth, Set<String> visitedVertices, Map<String, LineageOnDemandConstraints> lineageConstraintsMap, AtlasLineageInfo ret) throws AtlasBaseException {
         if (depth != 0) { // base condition of recursion for depth
+            AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseEdgesOnDemand");
+
             // keep track of visited vertices to avoid circular loop
             visitedVertices.add(getId(datasetVertex));
 
@@ -380,6 +388,8 @@ public class EntityLineageService implements AtlasLineageService {
                     }
                 }
             }
+
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 
@@ -388,6 +398,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, Map<String, LineageOnDemandConstraints> lineageConstraintsMap, AtlasLineageInfo ret) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("incrementAndCheckIfRelationsLimitReached");
 
         if (lineageContainsEdge(ret, atlasEdge)) {
             return false;
@@ -424,6 +435,7 @@ public class EntityLineageService implements AtlasLineageService {
             ret.getRelationsOnDemand().put(inGuid, inLineageInfo);
             ret.getRelationsOnDemand().put(outGuid, outLineageInfo);
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
 
         return hasRelationsLimitReached;
     }
