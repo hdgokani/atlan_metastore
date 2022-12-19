@@ -540,7 +540,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
      * update the given vertex property, if the new value is not-blank
      */
     private void updateVertexProperty(AtlasVertex vertex, String propertyName, String newValue) {
-        if (StringUtils.isNotBlank(newValue)) {
+        if (newValue != null) {
             String currValue = vertex.getProperty(propertyName, String.class);
 
             if (!StringUtils.equals(currValue, newValue)) {

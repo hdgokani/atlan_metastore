@@ -40,6 +40,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static org.apache.atlas.accesscontrol.AccessControlUtil.ensureNonAccessControlRelType;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getTypeName;
+
 /**
  * REST interface for entity relationships.
  */
@@ -72,7 +75,8 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.create(" + relationship + ")");
             }
-
+            ensureNonAccessControlRelType(relationship.getTypeName());
+            
             AtlasRelationship atlasRelationship = relationshipStore.create(relationship);
             atlasESIndexService.createRelationships(Collections.singletonList(atlasRelationship));
             return atlasRelationship;
@@ -92,6 +96,10 @@ public class RelationshipREST {
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.createOrUpdate(" + relationships + ")");
+            }
+
+            for (AtlasRelationship relationship : relationships) {
+                ensureNonAccessControlRelType(relationship.getTypeName());
             }
 
             List<AtlasRelationship> atlasRelationships = relationshipStore.createOrUpdate(relationships);
@@ -114,6 +122,8 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.update(" + relationship + ")");
             }
+
+            ensureNonAccessControlRelType(relationship.getTypeName());
 
             return relationshipStore.update(relationship);
 
@@ -200,7 +210,7 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.deleteById(" + guids.size() + ")");
             }
-
+            
             relationshipStore.deleteByIds(guids);
         } finally {
             AtlasPerfTracer.log(perf);
