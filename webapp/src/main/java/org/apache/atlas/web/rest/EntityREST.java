@@ -37,7 +37,7 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
-import org.apache.atlas.repository.graphdb.janus.AtlasESIndexService;
+import org.apache.atlas.repository.graphdb.janus.AtlasRelationshipIndexerService;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
@@ -98,10 +98,10 @@ public class EntityREST {
     private final AtlasTypeRegistry      typeRegistry;
     private final AtlasEntityStore       entitiesStore;
     private final ESBasedAuditRepository  esBasedAuditRepository;
-    private final AtlasESIndexService atlasESIndexService;
+    private final AtlasRelationshipIndexerService atlasESIndexService;
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository, AtlasESIndexService atlasESIndexService) {
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository, AtlasRelationshipIndexerService atlasESIndexService) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
         this.esBasedAuditRepository = esBasedAuditRepository;

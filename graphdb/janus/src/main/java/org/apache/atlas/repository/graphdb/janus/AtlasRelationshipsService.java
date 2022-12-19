@@ -5,7 +5,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 
 import java.util.List;
 
-public interface AtlasRelationshipsIndexService {
+public interface AtlasRelationshipsService {
 
     void createRelationships(List<AtlasRelationship> relationships) throws AtlasBaseException;
 

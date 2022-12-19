@@ -15,15 +15,15 @@ import java.util.*;
 
 
 @Service
-public class AtlasESIndexService implements AtlasRelationshipsIndexService {
+public class AtlasRelationshipIndexerService implements AtlasRelationshipsService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasESIndexService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasRelationshipIndexerService.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("AtlasESIndexService");
 
     private final AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository;
 
     @Inject
-    public AtlasESIndexService(AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository) {
+    public AtlasRelationshipIndexerService(AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository) {
         this.atlasJanusVertexIndexRepository = atlasJanusVertexIndexRepository;
     }
 
