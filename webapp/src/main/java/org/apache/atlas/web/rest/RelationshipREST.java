@@ -76,7 +76,7 @@ public class RelationshipREST {
             ensureNonAccessControlRelType(relationship.getTypeName());
             
             AtlasRelationship atlasRelationship = relationshipStore.create(relationship);
-            atlasESIndexService.createRelationships(Collections.singletonList(atlasRelationship));
+            atlasESIndexService.createRelationships(Collections.singletonList(atlasRelationship), RequestContext.get().getRelationshipEndsToVertexIdMap());
             return atlasRelationship;
         } finally {
             AtlasPerfTracer.log(perf);
@@ -101,7 +101,7 @@ public class RelationshipREST {
             }
 
             List<AtlasRelationship> atlasRelationships = relationshipStore.createOrUpdate(relationships);
-            atlasESIndexService.createRelationships(RequestContext.get().getCreatedRelationships());
+            atlasESIndexService.createRelationships(RequestContext.get().getCreatedRelationships(), RequestContext.get().getRelationshipEndsToVertexIdMap());
             return atlasRelationships;
         } finally {
             AtlasPerfTracer.log(perf);
@@ -180,7 +180,7 @@ public class RelationshipREST {
 
             relationshipStore.deleteById(guid);
             if (CollectionUtils.isNotEmpty(RequestContext.get().getDeletedRelationships()))
-                atlasESIndexService.deleteRelationship(RequestContext.get().getDeletedRelationships().get(0));
+                atlasESIndexService.deleteRelationship(RequestContext.get().getDeletedRelationships().get(0), RequestContext.get().getRelationshipEndsToVertexIdMap());
         } finally {
             AtlasPerfTracer.log(perf);
         }

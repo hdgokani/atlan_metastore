@@ -88,6 +88,8 @@ public class RequestContext {
     private AtlasTask   currentTask;
     private String traceId;
 
+    private Map<AtlasObjectId, Object> relationshipEndsToVertexIdMap = new HashMap<>();
+
     private RequestContext() {
     }
 
@@ -625,16 +627,28 @@ public class RequestContext {
         deletedRelationships.add(relationship);
     }
 
+    public void addToDeletedRelationships(List<AtlasRelationship> relationships) {
+        deletedRelationships.addAll(relationships);
+    }
+
     public List<AtlasRelationship> getCreatedRelationships() {
-        return this.createdRelationships;
+        return new ArrayList<>(createdRelationships);
     }
 
     public List<AtlasRelationship> getUpdatedRelationships() {
-        return this.updatedRelationships;
+        return new ArrayList<>(updatedRelationships);
     }
 
     public List<AtlasRelationship> getDeletedRelationships() {
-        return this.deletedRelationships;
+        return new ArrayList<>(deletedRelationships);
+    }
+
+    public void addRelationshipEnd1ToVertexIdMapping(AtlasObjectId atlasObjectId, Object vertexId) {
+        this.relationshipEndsToVertexIdMap.put(atlasObjectId, vertexId);
+    }
+
+    public Map<AtlasObjectId, Object> getRelationshipEndsToVertexIdMap() {
+        return this.relationshipEndsToVertexIdMap;
     }
 
 }

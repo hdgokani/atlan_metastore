@@ -1,13 +1,13 @@
 package org.apache.atlas.repository.graphdb.janus;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.client.Response;
 
 public interface AtlasJanusVertexIndexRepository {
 
-    BulkByScrollResponse updateByQuerySync(UpdateByQueryRequest request, RequestOptions options) throws AtlasBaseException;
-    void updateByQueryAsync(UpdateByQueryRequest request, RequestOptions options, ActionListener<BulkByScrollResponse> listener) throws AtlasBaseException;
+    UpdateResponse updateDoc(UpdateRequest request, RequestOptions options) throws AtlasBaseException;
+    Response performRawRequest(String query) throws AtlasBaseException;
 }

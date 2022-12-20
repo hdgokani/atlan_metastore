@@ -488,7 +488,7 @@ public class EntityREST {
             validateAttributeLength(Lists.newArrayList(entity.getEntity()));
 
             EntityMutationResponse resp = entitiesStore.createOrUpdate(new AtlasEntityStream(entity), replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
-            atlasESIndexService.createRelationships(RequestContext.get().getCreatedRelationships());
+            atlasESIndexService.createRelationships(RequestContext.get().getCreatedRelationships(), RequestContext.get().getRelationshipEndsToVertexIdMap());
             return resp;
         } finally {
             AtlasPerfTracer.log(perf);
@@ -897,7 +897,7 @@ public class EntityREST {
             EntityStream entityStream = new AtlasEntityStream(entities);
 
             EntityMutationResponse resp = entitiesStore.createOrUpdate(entityStream, replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
-            atlasESIndexService.createRelationships(RequestContext.get().getCreatedRelationships());
+            atlasESIndexService.createRelationships(RequestContext.get().getCreatedRelationships(), RequestContext.get().getRelationshipEndsToVertexIdMap());
             return resp;
         } finally {
             AtlasPerfTracer.log(perf);

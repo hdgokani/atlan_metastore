@@ -1532,7 +1532,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         EntityGraphDiscoveryContext discoveryContext = graphDiscoverer.discoverEntities();
         EntityMutationContext       context          = new EntityMutationContext(discoveryContext);
         RequestContext              requestContext   = RequestContext.get();
-
         Map<String, String> referencedGuids = discoveryContext.getReferencedGuids();
         for (Map.Entry<String, String> element : referencedGuids.entrySet()) {
             String guid = element.getKey();
@@ -1638,7 +1637,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
             }
         }
-
         RequestContext.get().endMetricRecord(metric);
 
         return context;
