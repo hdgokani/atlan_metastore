@@ -944,7 +944,6 @@ public class EntityLineageService implements AtlasLineageService {
         List<AtlasEdge> edges = vertexEdgeCache.getEdges(processVertex, OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE)
                 .stream()
                 .filter(edge -> shouldProcessEdge(lineageContext, edge) && vertexMatchesEvaluation(edge.getInVertex(), lineageContext))
-                .sorted(Comparator.comparing(edge -> edge.getProperty("_r__guid", String.class)))
                 .collect(Collectors.toList());
         RequestContext.get().endMetricRecord(getEdgesOfProcess);
         return edges;
