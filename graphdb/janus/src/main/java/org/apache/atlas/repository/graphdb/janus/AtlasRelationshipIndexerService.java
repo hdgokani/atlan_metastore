@@ -81,7 +81,7 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
                 LOG.debug("==> deleteRelationship()");
 
             final String docId = encodeVertexIdToESDocId(end1ToVertexIdMap, relationship);
-            Map<String, Object> params = new HashMap<String, Object>() {{put(RELATIONSHIP_GUID_KEY, relationship.getGuid());}};
+            Map<String, Object> params = ImmutableMap.of(RELATIONSHIP_GUID_KEY, relationship.getGuid());
             UpdateRequest updateRequest = AtlasNestedRelationshipsESQueryBuilder.getRelationshipDeletionQuery(relationship, docId, params);
             UpdateResponse resp = atlasJanusVertexIndexRepository.updateDoc(updateRequest, RequestOptions.DEFAULT);
             if (LOG.isDebugEnabled())
