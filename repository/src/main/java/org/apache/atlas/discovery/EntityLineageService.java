@@ -846,7 +846,7 @@ public class EntityLineageService implements AtlasLineageService {
         List<Pair<AtlasEdge, String>> res = getEdgesOfProcess(isInput, lineageContext, processVertex)
                 .stream()
                 .map(processEdge -> Pair.of(processEdge, processEdge.getInVertex()))
-                .filter(pair -> pair.getRight() != null)
+                .filter(pair -> pair.getRight() != null && shouldProcessEdge(lineageContext, pair.getLeft()) && vertexMatchesEvaluation(pair.getRight(), lineageContext))
                 .map(pair -> Pair.of(pair.getLeft(), pair.getRight().getIdForDisplay()))
                 .filter(pair -> !paginationCalculatedVertices.contains(pair.getRight()))
                 .collect(Collectors.toList());
@@ -952,10 +952,7 @@ public class EntityLineageService implements AtlasLineageService {
             return Collections.emptyList();
         }
 
-        List<AtlasEdge> edges = vertexEdgeCache.getEdges(processVertex, OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE)
-                .stream()
-                .filter(edge -> shouldProcessEdge(lineageContext, edge) && vertexMatchesEvaluation(edge.getInVertex(), lineageContext))
-                .collect(Collectors.toList());
+        List<AtlasEdge> edges = vertexEdgeCache.getEdges(processVertex, OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE);
         RequestContext.get().endMetricRecord(getEdgesOfProcess);
         return edges;
     }
