@@ -375,9 +375,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
         addAtlasObjectIdToVertexIdMappingForEndVertices(edge);
         AtlasRelationship deletedRelationship = entityRetriever.mapEdgeToAtlasRelationship(edge);
-        sendNotifications(deletedRelationship, OperationType.RELATIONSHIP_DELETE);
         RequestContext.get().addToDeletedRelationships(deletedRelationship);
-
+        sendNotifications(deletedRelationship, OperationType.RELATIONSHIP_DELETE);
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== deleteById({}): {}", guid);
         }

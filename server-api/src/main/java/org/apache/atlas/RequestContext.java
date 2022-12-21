@@ -62,9 +62,9 @@ public class RequestContext {
     private final List<AtlasTask> queuedTasks = new ArrayList<>();
     private final Set<String> relationAttrsForSearch = new HashSet<>();
 
-    private final List<AtlasRelationship> createdRelationships = new ArrayList<>();
-    private final List<AtlasRelationship> updatedRelationships = new ArrayList<>();
-    private final List<AtlasRelationship> deletedRelationships = new ArrayList<>();
+    private final List<AtlasRelationship> createdRelationships = new ArrayList<>(0);
+    private final List<AtlasRelationship> updatedRelationships = new ArrayList<>(0);
+    private final List<AtlasRelationship> deletedRelationships = new ArrayList<>(0);
 
     private static String USERNAME = "";
     private final Map<String, List<Object>> removedElementsMap = new HashMap<>();

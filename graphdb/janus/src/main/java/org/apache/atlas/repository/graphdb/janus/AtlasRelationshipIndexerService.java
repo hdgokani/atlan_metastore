@@ -1,5 +1,6 @@
 package org.apache.atlas.repository.graphdb.janus;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
@@ -125,12 +126,7 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
 
 
     private static Map<String, String> buildNestedRelationshipDoc(AtlasRelationship r) {
-        return new HashMap<String, String>() {{
-            put(RELATIONSHIP_GUID_KEY, r.getGuid());
-            put(RELATIONSHIPS_TYPENAME_KEY, r.getTypeName());
-            put(GUID_KEY, r.getEnd2().getGuid());
-            put(END2_TYPENAME, r.getEnd2().getTypeName());
-        }};
+        return ImmutableMap.of(RELATIONSHIP_GUID_KEY, r.getGuid(), RELATIONSHIPS_TYPENAME_KEY, r.getTypeName(), GUID_KEY, r.getEnd2().getGuid(), END2_TYPENAME, r.getEnd2().getTypeName());
     }
 
 }

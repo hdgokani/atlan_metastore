@@ -25,7 +25,7 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasJanusVertexIndexESRepositoryImpl.class);
     private final RestHighLevelClient elasticSearchClient = getClient();
-    private final RestClient lowLevelClient = getLowLevelClient();
+    private final RestClient elasticSearchLowLevelClient = getLowLevelClient();
     private static final int MAX_RETRIES = 3;
     private static final int RETRY_TIME_IN_MILLIS = 1000;
 
@@ -49,7 +49,7 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
                     LOG.warn("Retry interrupted during edge creation ");
                     throw new AtlasBaseException("Retry interrupted during nested __relationship creation", ex);
                 }
-                if (++count == MAX_RETRIES) throw new AtlasBaseException(e);
+                if (++count == MAX_RETRIES) throw new AtlasBaseException("All ES retries for relationships exhausted", e);
             }
         }
     }
@@ -66,7 +66,7 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
                 request.addParameters(Collections.emptyMap());
                 HttpEntity entity = new StringEntity(queryJson, ContentType.APPLICATION_JSON);
                 request.setEntity(entity);
-                return lowLevelClient.performRequest(request);
+                return elasticSearchLowLevelClient.performRequest(request);
             } catch (IOException e) {
                 LOG.error(ExceptionUtils.getStackTrace(e));
                 LOG.info("Retrying with delay of {} ms ", RETRY_TIME_IN_MILLIS);
@@ -76,7 +76,7 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
                     LOG.warn("Retry interrupted during ES relationship creation/deletion");
                     throw new AtlasBaseException("Retry interrupted during nested __relationship creation/deletion", ex);
                 }
-                if (++count == MAX_RETRIES) throw new AtlasBaseException(e);
+                if (++count == MAX_RETRIES) throw new AtlasBaseException("All ES retries for relationships exhausted", e);
             }
         }
     }

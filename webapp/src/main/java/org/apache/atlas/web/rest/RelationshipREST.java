@@ -25,6 +25,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
 import org.apache.atlas.repository.graphdb.janus.AtlasRelationshipIndexerService;
+import org.apache.atlas.repository.graphdb.janus.AtlasRelationshipsService;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
@@ -53,12 +54,12 @@ public class RelationshipREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.RelationshipREST");
 
     private final AtlasRelationshipStore relationshipStore;
-    private final AtlasRelationshipIndexerService atlasESIndexService;
+    private final AtlasRelationshipsService atlasRelationshipsService;
 
     @Inject
-    public RelationshipREST(AtlasRelationshipStore relationshipStore, AtlasRelationshipIndexerService atlasESIndexService) {
+    public RelationshipREST(AtlasRelationshipStore relationshipStore, AtlasRelationshipsService atlasRelationshipsService) {
         this.relationshipStore = relationshipStore;
-        this.atlasESIndexService = atlasESIndexService;
+        this.atlasRelationshipsService = atlasRelationshipsService;
     }
 
     /**
@@ -76,7 +77,7 @@ public class RelationshipREST {
             ensureNonAccessControlRelType(relationship.getTypeName());
             
             AtlasRelationship atlasRelationship = relationshipStore.create(relationship);
-            atlasESIndexService.createRelationships(Collections.singletonList(atlasRelationship), RequestContext.get().getRelationshipEndsToVertexIdMap());
+            atlasRelationshipsService.createRelationships(Collections.singletonList(atlasRelationship), RequestContext.get().getRelationshipEndsToVertexIdMap());
             return atlasRelationship;
         } finally {
             AtlasPerfTracer.log(perf);
@@ -101,7 +102,7 @@ public class RelationshipREST {
             }
 
             List<AtlasRelationship> atlasRelationships = relationshipStore.createOrUpdate(relationships);
-            atlasESIndexService.createRelationships(RequestContext.get().getCreatedRelationships(), RequestContext.get().getRelationshipEndsToVertexIdMap());
+            atlasRelationshipsService.createRelationships(RequestContext.get().getCreatedRelationships(), RequestContext.get().getRelationshipEndsToVertexIdMap());
             return atlasRelationships;
         } finally {
             AtlasPerfTracer.log(perf);
@@ -180,7 +181,7 @@ public class RelationshipREST {
 
             relationshipStore.deleteById(guid);
             if (CollectionUtils.isNotEmpty(RequestContext.get().getDeletedRelationships()))
-                atlasESIndexService.deleteRelationship(RequestContext.get().getDeletedRelationships().get(0), RequestContext.get().getRelationshipEndsToVertexIdMap());
+                atlasRelationshipsService.deleteRelationship(RequestContext.get().getDeletedRelationships().get(0), RequestContext.get().getRelationshipEndsToVertexIdMap());
         } finally {
             AtlasPerfTracer.log(perf);
         }
