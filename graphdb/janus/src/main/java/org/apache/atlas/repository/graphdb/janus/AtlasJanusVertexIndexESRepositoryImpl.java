@@ -49,7 +49,7 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
                     Thread.sleep(RETRY_TIME_IN_MILLIS);
                 } catch (InterruptedException ex) {
                     LOG.warn("Retry interrupted during edge creation ");
-                    throw new AtlasBaseException("Retry interrupted during nested __relationship creation", ex);
+                    throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, ex);
                 }
                 if (++count == MAX_RETRIES) {
                     if (++count == MAX_RETRIES) {
@@ -82,7 +82,7 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
                     Thread.sleep(RETRY_TIME_IN_MILLIS);
                 } catch (InterruptedException ex) {
                     LOG.warn("Retry interrupted during ES relationship creation/deletion");
-                    throw new AtlasBaseException("Retry interrupted during nested __relationship creation/deletion", ex);
+                    throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, ex);
                 }
                 if (++count == MAX_RETRIES) {
                     LOG.error("Failed to execute direct update on ES {}", e.getMessage());
