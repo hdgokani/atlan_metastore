@@ -1,5 +1,6 @@
 package org.apache.atlas.repository.graphdb.janus;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.http.HttpEntity;
@@ -28,6 +29,7 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
     private final RestClient elasticSearchLowLevelClient = getLowLevelClient();
     private static final int MAX_RETRIES = 3;
     private static final int RETRY_TIME_IN_MILLIS = 1000;
+    private static final String INDEX = INDEX_PREFIX + VERTEX_INDEX;
 
     // TODO: can async ES call
     @Override
@@ -49,20 +51,26 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
                     LOG.warn("Retry interrupted during edge creation ");
                     throw new AtlasBaseException("Retry interrupted during nested __relationship creation", ex);
                 }
-                if (++count == MAX_RETRIES) throw new AtlasBaseException("All ES retries for relationships exhausted", e);
+                if (++count == MAX_RETRIES) {
+                    if (++count == MAX_RETRIES) {
+                        LOG.error("Failed to execute direct update on ES {}", e.getMessage());
+                        throw new AtlasBaseException(AtlasErrorCode.ES_DIRECT_UPDATE_FAILED, e.getMessage());
+                    }
+                }
             }
         }
     }
 
     @Override
-    public Response performRawRequest(String queryJson) throws AtlasBaseException {
+    public Response performRawRequest(String queryJson, String docId) throws AtlasBaseException {
         Objects.requireNonNull(queryJson, "query");
         int count = 0;
         while(true) {
+            final String endPoint = "/" + INDEX + "/_update" + "/" + docId + "?retry_on_conflict=5";
             try {
                 Request request = new Request(
                         "POST",
-                        "/"+ INDEX_PREFIX + VERTEX_INDEX + "/_update_by_query");
+                        endPoint);
                 request.addParameters(Collections.emptyMap());
                 HttpEntity entity = new StringEntity(queryJson, ContentType.APPLICATION_JSON);
                 request.setEntity(entity);
@@ -76,7 +84,10 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
                     LOG.warn("Retry interrupted during ES relationship creation/deletion");
                     throw new AtlasBaseException("Retry interrupted during nested __relationship creation/deletion", ex);
                 }
-                if (++count == MAX_RETRIES) throw new AtlasBaseException("All ES retries for relationships exhausted", e);
+                if (++count == MAX_RETRIES) {
+                    LOG.error("Failed to execute direct update on ES {}", e.getMessage());
+                    throw new AtlasBaseException(AtlasErrorCode.ES_DIRECT_UPDATE_FAILED, e.getMessage());
+                }
             }
         }
     }

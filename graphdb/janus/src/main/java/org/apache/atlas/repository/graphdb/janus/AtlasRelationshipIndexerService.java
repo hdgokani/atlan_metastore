@@ -1,15 +1,18 @@
 package org.apache.atlas.repository.graphdb.janus;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.http.util.EntityUtils;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.Response;
 import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,15 +58,12 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
             for (String docId : end1DocIdToRelationshipsMap.keySet()) {
                 if (LOG.isDebugEnabled())
                     LOG.debug("==> creating relationships for ES _id: {}", docId);
-
-                UpdateRequest updateRequest = AtlasNestedRelationshipsESQueryBuilder.getQueryForAppendingNestedRelationships(docId, getScriptParamsMap(end1DocIdToRelationshipsMap, docId));
-                UpdateResponse resp = atlasJanusVertexIndexRepository.updateDoc(updateRequest, RequestOptions.DEFAULT);
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("==> ES update resp: {}", resp);
+                String json = AtlasNestedRelationshipsESQueryBuilder.getJsonQueryForAppendingNestedRelationships(getScriptParamsMap(end1DocIdToRelationshipsMap, docId));
+                Response resp = atlasJanusVertexIndexRepository.performRawRequest(json, docId);
+                LOG.info("ES _update resp -------------------> {}", EntityUtils.toString(resp.getEntity()));
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, e);
         } finally {
             AtlasPerfTracer.log(perf);
         }

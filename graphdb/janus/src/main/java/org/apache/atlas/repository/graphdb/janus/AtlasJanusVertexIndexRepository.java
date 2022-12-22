@@ -9,5 +9,5 @@ import org.elasticsearch.client.Response;
 public interface AtlasJanusVertexIndexRepository {
 
     UpdateResponse updateDoc(UpdateRequest request, RequestOptions options) throws AtlasBaseException;
-    Response performRawRequest(String query) throws AtlasBaseException;
+    Response performRawRequest(String query, String docId) throws AtlasBaseException;
 }
