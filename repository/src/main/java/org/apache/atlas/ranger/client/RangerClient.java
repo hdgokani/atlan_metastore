@@ -79,8 +79,9 @@ public class RangerClient {
     public static final  String POLICY_GET_BY_NAME = "public/v2/api/service/%s/policy/%s";
     public static final  String POLICY_GET_BY_ID = "service/plugins/policies/%s";
     public static final  String POLICY_DELETE_BY_ID = "service/plugins/policies/%s";
+    public static final  String GET_USER_BY_NAME = "service/xusers/users";
     public static final  String CREATE_ROLE = "service/roles/roles";
-    public static final  String GET_ROLE_BY_NAME = "service/roles/lookup/roles";
+    public static final  String GET_ROLE_BY_LOOKUP = "service/roles/lookup/roles";
     public static final  String UPDATE_ROLE = "service/roles/roles/%s";
     public static final  String DELETE_ROLE = "service/roles/roles/%s";
     public static final  String CREATE_POLICY = "service/public/v2/api/policy";
@@ -155,6 +156,17 @@ public class RangerClient {
         return callAPI(api, String.class, null);
     }
 
+    public String getUserByUserName(String userName) throws AtlasServiceException {
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("name", userName);
+
+        MultivaluedMap<String, String> queryParams = toQueryParams(attrs, null);
+
+        AtlasBaseClient.API api = new AtlasBaseClient.API(GET_USER_BY_NAME, GET, Response.Status.OK);
+
+        return callAPI(api, String.class, queryParams);
+    }
+
     public RangerRole createRole(RangerRole rangerRole) throws AtlasServiceException {
 
         AtlasBaseClient.API api = new AtlasBaseClient.API(CREATE_ROLE, POST, Response.Status.OK);
@@ -168,7 +180,18 @@ public class RangerClient {
 
         MultivaluedMap<String, String> queryParams = toQueryParams(attrs, null);
 
-        AtlasBaseClient.API api = new AtlasBaseClient.API(GET_ROLE_BY_NAME, GET, Response.Status.OK);
+        AtlasBaseClient.API api = new AtlasBaseClient.API(GET_ROLE_BY_LOOKUP, GET, Response.Status.OK);
+
+        return callAPI(api, RangerRoleList.class, queryParams);
+    }
+
+    public RangerRoleList getRole(long roleId) throws AtlasServiceException {
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("roleId", String.valueOf(roleId));
+
+        MultivaluedMap<String, String> queryParams = toQueryParams(attrs, null);
+
+        AtlasBaseClient.API api = new AtlasBaseClient.API(GET_ROLE_BY_LOOKUP, GET, Response.Status.OK);
 
         return callAPI(api, RangerRoleList.class, queryParams);
     }

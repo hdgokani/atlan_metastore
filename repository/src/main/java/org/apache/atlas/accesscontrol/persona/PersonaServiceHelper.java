@@ -22,6 +22,7 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.ranger.AtlasRangerService;
+import org.apache.atlas.ranger.RangerUser;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -97,7 +98,25 @@ import static org.apache.atlas.repository.Constants.CONNECTION_ENTITY_TYPE;
 
 public class PersonaServiceHelper {
     private static final Logger LOG = LoggerFactory.getLogger(PersonaServiceHelper.class);
+    private static RangerRole adminRole;
 
+    static {
+        getAdminRole();
+    }
+
+    public static RangerRole getAdminRole() {
+        if (adminRole == null) {
+            LOG.info("Fetching Admin role from Ranger");
+            AtlasRangerService atlasRangerService = new AtlasRangerService();
+            try {
+                adminRole = atlasRangerService.getRangerRole(1);
+            } catch (AtlasBaseException e) {
+                LOG.error("Admin Role not found");
+            }
+        }
+
+        return adminRole;
+    }
 
     public static void validatePersonaPolicy(PersonaContext context, EntityGraphRetriever entityRetriever,
                                              AtlasRangerService atlasRangerService) throws AtlasBaseException {
@@ -167,12 +186,21 @@ public class PersonaServiceHelper {
                 context.setConnection(connection);
             }
 
+            // case 0: all admins true
+            List<String> adminRoles = (List<String>) connection.getAttribute("adminRoles");
+            if (CollectionUtils.isNotEmpty(adminRoles) && adminRoles.contains(adminRole.getName())) {
+                //valid user
+                return;
+            }
+
+            // case 1: connection admins role
+            String currentUserName = AtlasAuthorizationUtils.getCurrentUserName();
             String connectionRoleName = "connection_admins_" + connectionGuid;
             RangerRole connectionAdminRole = atlasRangerService.getRangerRole(connectionRoleName);
 
             List<String> users = connectionAdminRole.getUsers().stream().map(x -> x.getName()).collect(Collectors.toList());
-            if (!users.contains(AtlasAuthorizationUtils.getCurrentUserName())) {
-                throw new AtlasBaseException(UNAUTHORIZED_CONNECTION_ADMIN, AtlasAuthorizationUtils.getCurrentUserName(), connectionGuid);
+            if (!users.contains(currentUserName)) {
+                throw new AtlasBaseException(UNAUTHORIZED_CONNECTION_ADMIN, currentUserName, connectionGuid);
             }
         }
     }
