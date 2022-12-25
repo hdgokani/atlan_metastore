@@ -52,10 +52,8 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
                     throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, ex);
                 }
                 if (++count == MAX_RETRIES) {
-                    if (++count == MAX_RETRIES) {
-                        LOG.error("Failed to execute direct update on ES {}", e.getMessage());
-                        throw new AtlasBaseException(AtlasErrorCode.ES_DIRECT_UPDATE_FAILED, e.getMessage());
-                    }
+                    LOG.error("Failed to execute direct update on ES {}", e.getMessage());
+                    throw new AtlasBaseException(AtlasErrorCode.ES_DIRECT_UPDATE_FAILED, e.getMessage());
                 }
             }
         }
