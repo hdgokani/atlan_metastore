@@ -28,6 +28,7 @@ import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.service.Service;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -51,6 +52,9 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final Statistics                statistics;
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
     private final ICuratorFactory curatorFactory;
+    private static final String HOST_NAME = "HOSTNAME";
+    private static final String currentHostName = System.getenv(HOST_NAME);
+    private static final String taskExecutionPodName = AtlasConfiguration.TASK_EXECUTION_POD_HOST_NAME.getString();
 
     private Thread watcherThread = null;
 
@@ -257,6 +261,11 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             return;
         }
 
+        if (tasksToBeExecutedInDedicatedInstance() && !tasksToBeExecutedInCurrentInstance()) {
+            LOG.warn("Not starting task Queue watcher in this instance! It will be started at host {} ", AtlasConfiguration.TASK_EXECUTION_POD_HOST_NAME.getString());
+            return;
+        }
+
         try {
             startWatcherThread();
         } catch (Exception e) {
@@ -285,6 +294,14 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private void stopQueueWatcher() {
         taskExecutor.stopQueueWatcher();
         watcherThread = null;
+    }
+
+    public static boolean tasksToBeExecutedInDedicatedInstance() {
+        return StringUtils.isNotEmpty(taskExecutionPodName) && StringUtils.isNotEmpty(currentHostName);
+    }
+
+    public static boolean tasksToBeExecutedInCurrentInstance() {
+        return tasksToBeExecutedInDedicatedInstance() ? taskExecutionPodName.equals(currentHostName) : false;
     }
 
     static class Statistics {

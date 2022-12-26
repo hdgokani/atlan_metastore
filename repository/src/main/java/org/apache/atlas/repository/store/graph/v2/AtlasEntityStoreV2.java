@@ -96,6 +96,7 @@ import java.util.stream.Collectors;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.ensureNonAccessControlEntityType;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
@@ -658,6 +659,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
 
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
+            ensureNonAccessControlEntityType(Collections.singletonList(entityHeader.getTypeName()));
 
             AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
 
@@ -683,7 +685,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
         }
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE), "purge entity: guids=", guids);
         Collection<AtlasVertex> purgeCandidates = new ArrayList<>();
 
         for (String guid : guids) {
@@ -696,6 +697,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                 continue;
             }
+
+            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
 
             purgeCandidates.add(vertex);
         }
@@ -1530,7 +1535,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         EntityGraphDiscoveryContext discoveryContext = graphDiscoverer.discoverEntities();
         EntityMutationContext       context          = new EntityMutationContext(discoveryContext);
         RequestContext              requestContext   = RequestContext.get();
-
         Map<String, String> referencedGuids = discoveryContext.getReferencedGuids();
         for (Map.Entry<String, String> element : referencedGuids.entrySet()) {
             String guid = element.getKey();
@@ -1636,7 +1640,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
             }
         }
-
         RequestContext.get().endMetricRecord(metric);
 
         return context;
@@ -1677,12 +1680,18 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         EntityMutationResponse response = new EntityMutationResponse();
         RequestContext         req      = RequestContext.get();
 
-        Collection<AtlasVertex> categories = new ArrayList<>();
+        Collection<AtlasVertex> categories = new ArrayList<>(); // for force HARD delete
         Collection<AtlasVertex> others = new ArrayList<>();
 
         MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
         for (AtlasVertex vertex : deletionCandidates) {
             String typeName = getTypeName(vertex);
+
+            PreProcessor preProcessor = entityGraphMapper.getPreProcessor(typeName);
+            if (preProcessor != null) {
+                preProcessor.processDelete(vertex);
+            }
+
             if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.equals(typeName)) {
                 categories.add(vertex);
             } else {
@@ -1697,7 +1706,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         if (CollectionUtils.isNotEmpty(others)) {
-
             deleteDelegate.getHandler().removeHasLineageOnDelete(others);
             deleteDelegate.getHandler().deleteEntities(others);
         }
