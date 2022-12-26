@@ -87,6 +87,21 @@ public class RequestContext {
     private AtlasTask   currentTask;
     private String traceId;
 
+    private String thName = Thread.currentThread().getName();
+    private long thId = Thread.currentThread().getId();
+
+    public static Set<RequestContext> getActiveRequests() {
+        return ACTIVE_REQUESTS;
+    }
+
+    public String getThName() {
+        return thName;
+    }
+
+    public long getThId() {
+        return thId;
+    }
+
     private RequestContext() {
     }
 

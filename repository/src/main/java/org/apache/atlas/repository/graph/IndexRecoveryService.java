@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ICuratorFactory;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -38,6 +39,7 @@ import javax.inject.Inject;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -76,6 +78,8 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         final boolean isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
         this.recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis, curatorFactory, zkRoot, isActiveActiveHAEnabled);
         this.indexHealthMonitor = new Thread(recoveryThread, INDEX_HEALTH_MONITOR_THREAD_NAME);
+
+        new Thread(new ActiveRequestsLogger()).start();
     }
 
     private long getRecoveryStartTimeFromConfig(Configuration config) {
@@ -149,6 +153,30 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         } else {
             LOG.info("IndexRecoveryService: Starting new thread.");
             indexHealthMonitor.start();
+        }
+    }
+
+    private static class ActiveRequestsLogger implements Runnable {
+
+        @Override
+        public void run() {
+            while (true) {
+                Set<RequestContext> activeRequests = RequestContext.getActiveRequests();
+
+                StringBuilder sb = new StringBuilder();
+
+                for (RequestContext acReq : activeRequests) {
+                    sb.append("thId: ").append(acReq.getThId()).append(", thName: ").append(acReq.getThName());
+                }
+
+                LOG.info("activeRequests: {}", sb.toString());
+
+                try {
+                    Thread.sleep(60000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
