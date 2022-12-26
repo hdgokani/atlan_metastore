@@ -44,7 +44,8 @@ public class TypeCacheRefresher {
     public enum RefreshOperation {
         ONLY_TYPE(0),
         TYPE_WRITE_INDEX(1),
-        READ_INDEX(2);
+        READ_INDEX(2),
+        WAIT_COMPLETE_REQUESTS(3);
 
         int id;
 

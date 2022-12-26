@@ -1,16 +1,19 @@
 package org.apache.atlas.web.service;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.repository.graph.TypeCacheRefresher;
 import org.apache.atlas.repository.graph.indexmanager.DefaultIndexCreator;
 import org.apache.atlas.repository.graphdb.AtlasMixedBackendIndexManager;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.web.dto.TypeSyncResponse;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
@@ -61,8 +64,46 @@ public class TypeSyncService {
         this.elasticInstanceConfigService = elasticInstanceConfigService;
     }
 
+    public static void waitAllRequestsToComplete(String traceId) {
+        LOG.info("Waiting for all active requests until done");
+        RequestContext.setIsTypeSyncMode(true);
+
+        while (true) {
+            Set<RequestContext> activeRequests = RequestContext.getActiveRequests();
+
+            if (activeRequests.size() == 2) {
+                int vTh = 0;
+
+                for (RequestContext req : activeRequests) {
+                    if (req.getThId() == 1 || req.getThId() == RequestContext.get().getThId()) {
+                        vTh++;
+                    }
+                }
+
+                if (vTh ==2) {
+                    break;
+                }
+            }
+
+            StringBuilder sb = new StringBuilder();
+
+            for (RequestContext acReq : activeRequests) {
+                sb.append("thId: ").append(acReq.getThId()).append(", thName: ").append(acReq.getThName()).append(", ");
+            }
+
+            LOG.info("activeRequests({}): {}", activeRequests.size(), sb.toString());
+
+            try {
+                LOG.info("Sleeping for 15 seconds to check for Active requests");
+                Thread.sleep(15000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     //@GraphTransaction
-    public TypeSyncResponse syncTypes(AtlasTypesDef newTypeDefinitions) throws AtlasBaseException, IndexException, RepositoryException, IOException, InterruptedException {
+    public TypeSyncResponse syncTypes(AtlasTypesDef newTypeDefinitions, final TypeCacheRefresher typeCacheRefresher) throws Exception {
         AtlasTypesDef existingTypeDefinitions = typeDefStore.searchTypesDef(new SearchFilter());
         boolean haveIndexSettingsChanged = existingTypeDefinitions.haveIndexSettingsChanged(newTypeDefinitions);
         String newIndexName = null;
@@ -71,6 +112,12 @@ public class TypeSyncService {
 
         try {
             if (haveIndexSettingsChanged) {
+
+                RequestContext.setIsTypeSyncMode(true);
+                typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.WAIT_COMPLETE_REQUESTS.getId());
+                waitAllRequestsToComplete(RequestContext.get().getTraceId());
+
+
                 LOG.info("### 2");
                 newIndexName = elasticInstanceConfigService.updateCurrentIndexName();LOG.info("### 3");
                 LOG.info("newIndexName: {}", newIndexName);
@@ -118,19 +165,24 @@ public class TypeSyncService {
             if (haveIndexSettingsChanged) {
                 setCurrentWriteVertexIndexName(getCurrentReadVertexIndexName());
 
+                RequestContext.setIsTypeSyncMode(false);
+                typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.READ_INDEX.getId());
+
                 try {
                     elasticInstanceConfigService.rollbackCurrentIndexName();
                 } catch (Exception e0) {
                     LOG.error("Failed to rollback elastic Instance Config entity", e0);
                 }
 
-                try {
-                    atlasMixedBackendIndexManager.deleteIndex(newIndexName);
-                } catch (Exception e0) {
-                    LOG.error("Failed to delete elastic index", e0);
-                }
+                if (StringUtils.isNotEmpty(newIndexName)) {
+                    try {
+                        atlasMixedBackendIndexManager.deleteIndex(newIndexName);
+                    } catch (Exception e0) {
+                        LOG.error("Failed to delete elastic index", e0);
+                    }
 
-                disableJanusgraphIndex(newIndexName);
+                    disableJanusgraphIndex(newIndexName);
+                }
             }
 
             throw e;
@@ -144,7 +196,7 @@ public class TypeSyncService {
         );
     }
 
-    public boolean cleanupTypeSync(String traceId) throws AtlasBaseException, InterruptedException {
+    public boolean cleanupTypeSync(String traceId, TypeCacheRefresher typeCacheRefresher) throws AtlasBaseException, InterruptedException {
         String oldIndexName = getCurrentReadVertexIndexName();
         String newIndexName = getCurrentWriteVertexIndexName();
 
@@ -157,6 +209,7 @@ public class TypeSyncService {
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
 
                 //LOG.info("Deleted old index {}", oldIndexName);
+                RequestContext.setIsTypeSyncMode(false);
                 return true;
             } catch (Exception e) {
                 LOG.error("Error while disabling/deleting index {}. Exception: {}", oldIndexName, e);

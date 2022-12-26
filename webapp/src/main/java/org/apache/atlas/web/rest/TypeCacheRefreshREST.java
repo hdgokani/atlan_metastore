@@ -1,5 +1,6 @@
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.RepositoryException;
@@ -11,6 +12,7 @@ import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.web.service.AtlasHealthStatus;
 import org.apache.atlas.web.service.ElasticInstanceConfigService;
 import org.apache.atlas.web.service.ServiceState;
+import org.apache.atlas.web.service.TypeSyncService;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +22,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+
+import java.util.Set;
 
 import static org.apache.atlas.AtlasErrorCode.FAILED_TO_REFRESH_TYPE_DEF_CACHE;
 import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
@@ -77,6 +81,8 @@ public class TypeCacheRefreshREST {
                 refreshWriteIndexName(traceId);
             } else if (operationId == RefreshOperation.READ_INDEX.getId()) {
                 refreshReadIndexName(traceId);
+            } else if (operationId == RefreshOperation.WAIT_COMPLETE_REQUESTS.getId()) {
+                TypeSyncService.waitAllRequestsToComplete(traceId);
             }
 
         } catch (Exception e) {
@@ -135,6 +141,7 @@ public class TypeCacheRefreshREST {
 
     private void refreshReadIndexName(final String traceId) {
         LOG.info("Refreshing read index name of ES :: traceId {}", traceId);
+        RequestContext.setIsTypeSyncMode(false);
 
         String newIndexName = elasticInstanceConfigService.getCurrentIndexName();
         ActiveIndexNameManager.setCurrentReadVertexIndexName(newIndexName);

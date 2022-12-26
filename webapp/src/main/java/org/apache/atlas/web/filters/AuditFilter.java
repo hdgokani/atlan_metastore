@@ -23,6 +23,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.DeleteType;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.web.util.DateTimeHelper;
 import org.apache.atlas.web.util.Servlets;
@@ -46,6 +47,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.apache.atlas.AtlasConfiguration.*;
+import static org.apache.atlas.AtlasErrorCode.TYPEDEF_SYNC_IN_PROGRESS;
 
 /**
  * This records audit information as part of the filter after processing the request
@@ -72,10 +74,18 @@ public class AuditFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
     throws IOException, ServletException {
-        final long                startTime          = System.currentTimeMillis();
-        final Date                requestTime         = new Date();
+
         final HttpServletRequest  httpRequest        = (HttpServletRequest) request;
         final HttpServletResponse httpResponse       = (HttpServletResponse) response;
+
+        if (RequestContext.isIsTypeSyncMode()) {
+            if (!httpRequest.getRequestURI().endsWith("cleanupTypeSync")) {
+                throw new ServletException(new AtlasBaseException(TYPEDEF_SYNC_IN_PROGRESS));
+            }
+        }
+
+        final long                startTime          = System.currentTimeMillis();
+        final Date                requestTime         = new Date();
         final String              requestId          = UUID.randomUUID().toString();
         final Thread              currentThread      = Thread.currentThread();
         final String              oldName            = currentThread.getName();

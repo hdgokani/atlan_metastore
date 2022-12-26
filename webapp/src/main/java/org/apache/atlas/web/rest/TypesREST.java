@@ -541,11 +541,11 @@ public class TypesREST {
             }
 
             lock = attemptAcquiringLock();
-            ret = typeSyncService.syncTypes(newTypeDefinitions);
+            ret = typeSyncService.syncTypes(newTypeDefinitions, typeCacheRefresher);
 
-            String traceId = typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.TYPE_WRITE_INDEX.getId());
+            //String traceId = typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.TYPE_WRITE_INDEX.getId());
 
-            ret.setTraceId(traceId);
+            ret.setTraceId(RequestContext.get().getTraceId());
 
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.syncTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
@@ -573,7 +573,7 @@ public class TypesREST {
             }
             typeCacheRefresher.verifyCacheRefresherHealth();
 
-            typeSyncService.cleanupTypeSync(traceId);
+            typeSyncService.cleanupTypeSync(traceId, typeCacheRefresher);
 
             typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.READ_INDEX.getId());
         } catch (AtlasBaseException e) {

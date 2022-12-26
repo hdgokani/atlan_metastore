@@ -41,6 +41,8 @@ public class RequestContext {
     private static final Logger METRICS = LoggerFactory.getLogger("METRICS");
     private static final Logger LOG = LoggerFactory.getLogger(RequestContext.class);
 
+    private static boolean isTypeSyncMode = false;
+
     private static final ThreadLocal<RequestContext> CURRENT_CONTEXT = new ThreadLocal<>();
     private static final Set<RequestContext>         ACTIVE_REQUESTS = new HashSet<>();
     private static final boolean                     isMetricsEnabled = METRICS.isDebugEnabled();
@@ -87,6 +89,9 @@ public class RequestContext {
     private AtlasTask   currentTask;
     private String traceId;
 
+    private long thId = Thread.currentThread().getId();
+    private String thName = Thread.currentThread().getName();
+
     private RequestContext() {
     }
 
@@ -122,6 +127,8 @@ public class RequestContext {
     }
 
     public void clearCache() {
+        this.thId = -1;
+        this.thName = null;
         this.updatedEntities.clear();
         this.deletedEntities.clear();
         this.entityCache.clear();
@@ -151,6 +158,26 @@ public class RequestContext {
         if (this.entityGuidInRequest != null) {
             this.entityGuidInRequest.clear();
         }
+    }
+
+    public static Set<RequestContext> getActiveRequests() {
+        return ACTIVE_REQUESTS;
+    }
+
+    public long getThId() {
+        return thId;
+    }
+
+    public String getThName() {
+        return thName;
+    }
+
+    public static boolean isIsTypeSyncMode() {
+        return isTypeSyncMode;
+    }
+
+    public static void setIsTypeSyncMode(boolean isTypeSyncMode) {
+        RequestContext.isTypeSyncMode = isTypeSyncMode;
     }
 
     public Set<String> getRelationAttrsForSearch() {
