@@ -6,25 +6,23 @@ import org.apache.atlas.model.lineage.LineageOnDemandRequest;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.Predicate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class AtlasLineageOnDemandContext {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasLineageContext.class);
-
     private Map<String, LineageOnDemandConstraints> constraints;
     private Predicate                               predicate;
     private Set<String>                             attributes;
     private Set<String>                             relationAttributes;
+    private boolean                                 hideProcess;
 
     public AtlasLineageOnDemandContext(LineageOnDemandRequest lineageOnDemandRequest, AtlasTypeRegistry typeRegistry) {
         this.constraints = lineageOnDemandRequest.getConstraints();
         this.attributes = lineageOnDemandRequest.getAttributes();
         this.relationAttributes = lineageOnDemandRequest.getRelationAttributes();
+        this.hideProcess = lineageOnDemandRequest.isHideProcess();
         this.predicate = constructInMemoryPredicate(typeRegistry, lineageOnDemandRequest.getTraversalFilters());
     }
 
@@ -58,6 +56,14 @@ public class AtlasLineageOnDemandContext {
 
     public void setRelationAttributes(Set<String> relationAttributes) {
         this.relationAttributes = relationAttributes;
+    }
+
+    public boolean isHideProcess() {
+        return hideProcess;
+    }
+
+    public void setHideProcess(boolean hideProcess) {
+        this.hideProcess = hideProcess;
     }
 
     protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, List<SearchParameters.FilterCriteria> filterCriteriaList) {
