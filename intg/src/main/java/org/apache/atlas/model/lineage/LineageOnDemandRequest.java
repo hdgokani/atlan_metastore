@@ -19,6 +19,7 @@ public class LineageOnDemandRequest {
     private List<SearchParameters.FilterCriteria>   traversalFilters;
     private Set<String>                             attributes;
     private Set<String>                             relationAttributes;
+    private boolean                                 hideProcess;
 
     public LineageOnDemandRequest() {
         this.attributes = new HashSet<>();
@@ -31,11 +32,12 @@ public class LineageOnDemandRequest {
         this.relationAttributes = new HashSet<>();
     }
 
-    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, List<SearchParameters.FilterCriteria> traversalFilters, Set<String> attributes, Set<String> relationAttributes) {
+    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, List<SearchParameters.FilterCriteria> traversalFilters, Set<String> attributes, Set<String> relationAttributes, boolean hideProcess) {
         this.constraints        = constraints;
         this.traversalFilters   = traversalFilters;
         this.attributes         = attributes;
         this.relationAttributes = relationAttributes;
+        this.hideProcess        = hideProcess;
     }
 
     public Map<String, LineageOnDemandConstraints> getConstraints() {
@@ -68,5 +70,13 @@ public class LineageOnDemandRequest {
 
     public void setRelationAttributes(Set<String> relationAttributes) {
         this.relationAttributes = relationAttributes;
+    }
+
+    public boolean isHideProcess() {
+        return hideProcess;
+    }
+
+    public void setHideProcess(boolean hideProcess) {
+        this.hideProcess = hideProcess;
     }
 }
