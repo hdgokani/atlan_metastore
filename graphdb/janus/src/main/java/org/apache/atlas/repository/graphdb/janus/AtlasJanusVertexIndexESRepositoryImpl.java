@@ -6,6 +6,8 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.*;
@@ -31,15 +33,14 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
     private static final int RETRY_TIME_IN_MILLIS = 1000;
     private static final String INDEX = INDEX_PREFIX + VERTEX_INDEX;
 
-    // TODO: can async ES call
+
     @Override
     public UpdateResponse updateDoc(UpdateRequest request, RequestOptions options) throws AtlasBaseException {
         int count = 0;
         while(true) {
             try {
-                if (LOG.isDebugEnabled()) {
+                if (LOG.isDebugEnabled())
                     LOG.debug("Updating entity in ES with req {}", request.toString());
-                }
                 return elasticSearchClient.update(request, options);
             } catch (IOException e) {
                 LOG.warn(String.format("Exception while trying to create nested relationship for req %s. Retrying",
@@ -54,6 +55,31 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
                 if (++count == MAX_RETRIES) {
                     LOG.error("Failed to execute direct update on ES {}", e.getMessage());
                     throw new AtlasBaseException(AtlasErrorCode.ES_DIRECT_UPDATE_FAILED, e.getMessage());
+                }
+            }
+        }
+    }
+
+    @Override
+    public BulkResponse updateDocsInBulk(BulkRequest bulkRequest) throws AtlasBaseException {
+        int count = 0;
+        while(true) {
+            try {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Updating {} requests in ES", bulkRequest.requests().size());
+                return elasticSearchClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+            } catch (IOException e) {
+                LOG.error("Exception while trying to update in bulk for req. Retrying", e);
+                LOG.info("Retrying with delay of {} ms ", RETRY_TIME_IN_MILLIS);
+                try {
+                    Thread.sleep(RETRY_TIME_IN_MILLIS);
+                } catch (InterruptedException ex) {
+                    LOG.warn("Retry interrupted during bulk update request");
+                    throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, ex);
+                }
+                if (++count == MAX_RETRIES) {
+                    LOG.error("Failed to execute bulk update request on ES {}", e.getMessage());
+                    throw new AtlasBaseException(AtlasErrorCode.ES_BULK_UPDATE_FAILED, e.getMessage());
                 }
             }
         }
