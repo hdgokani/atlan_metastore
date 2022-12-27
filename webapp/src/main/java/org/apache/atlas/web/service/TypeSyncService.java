@@ -65,7 +65,7 @@ public class TypeSyncService {
     }
 
     public static void waitAllRequestsToComplete(String traceId) {
-        
+
         LOG.info("Waiting for all active requests until done");
         RequestContext.setIsTypeSyncMode(true);
 
@@ -82,6 +82,7 @@ public class TypeSyncService {
                 }
 
                 if (vTh ==2) {
+                    LOG.info("No other active request found!!");
                     break;
                 }
             }

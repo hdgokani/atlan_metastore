@@ -23,6 +23,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAdminAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
@@ -422,6 +423,9 @@ public class AdminResource {
         }
 
         Map<String, HealthStatus> result = new HashMap<>();
+        if (RequestContext.isIsTypeSyncMode()) {
+            result.put("cassandra", new HealthStatus("cassandra", "ok", true, new Date().toString(), ""));
+        }
 
         AtlasGraph<Object, Object> graph = AtlasGraphProvider.getGraphInstance();
 
