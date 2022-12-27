@@ -3,8 +3,6 @@ package org.apache.atlas.repository.graphdb.janus;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 
 import java.util.List;
 import java.util.Map;

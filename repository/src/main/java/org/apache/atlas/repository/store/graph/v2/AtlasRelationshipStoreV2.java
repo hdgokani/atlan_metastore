@@ -119,7 +119,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             LOG.debug("<== create({}): {}", relationship, ret);
         }
         RequestContext.get().addToCreatedRelationships(ret);
-        RequestContext.get().addRelationshipEnd1ToVertexIdMapping(relationship.getEnd1(), end1Vertex.getId());
+        RequestContext.get().addRelationshipEndToVertexIdMapping(relationship.getEnd1(), end1Vertex.getId());
+        RequestContext.get().addRelationshipEndToVertexIdMapping(relationship.getEnd2(), end2Vertex.getId());
         return ret;
     }
 
@@ -330,8 +331,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     private void addAtlasObjectIdToVertexIdMappingForEndVertices(AtlasEdge edge) throws AtlasBaseException {
         AtlasVertex outgoingVertex = edge.getOutVertex();
         AtlasVertex incomingVertex = edge.getInVertex();
-        RequestContext.get().addRelationshipEnd1ToVertexIdMapping(entityRetriever.toAtlasObjectId(outgoingVertex), outgoingVertex.getId());
-        RequestContext.get().addRelationshipEnd1ToVertexIdMapping(entityRetriever.toAtlasObjectId(incomingVertex), incomingVertex.getId());
+        RequestContext.get().addRelationshipEndToVertexIdMapping(entityRetriever.toAtlasObjectId(outgoingVertex), outgoingVertex.getId());
+        RequestContext.get().addRelationshipEndToVertexIdMapping(entityRetriever.toAtlasObjectId(incomingVertex), incomingVertex.getId());
     }
 
     @Override
@@ -418,7 +419,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             relationshipEdge = createRelationship(end1Vertex, end2Vertex, relationship, false);
             AtlasRelationship createdRelationship = entityRetriever.mapEdgeToAtlasRelationship(relationshipEdge);
             RequestContext.get().addToCreatedRelationships(createdRelationship);
-            RequestContext.get().addRelationshipEnd1ToVertexIdMapping(createdRelationship.getEnd1(), end1Vertex.getId());
+            RequestContext.get().addRelationshipEndToVertexIdMapping(createdRelationship.getEnd1(), end1Vertex.getId());
+            RequestContext.get().addRelationshipEndToVertexIdMapping(createdRelationship.getEnd2(), end2Vertex.getId());
         }
 
         if (relationshipEdge != null){
@@ -509,7 +511,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasRelationship atlasRelationship = entityRetriever.mapEdgeToAtlasRelationship(ret);
         sendNotifications(atlasRelationship, OperationType.RELATIONSHIP_CREATE);
         RequestContext.get().addToCreatedRelationships(atlasRelationship);
-        RequestContext.get().addRelationshipEnd1ToVertexIdMapping(atlasRelationship.getEnd1(), end1Vertex.getId());
+        RequestContext.get().addRelationshipEndToVertexIdMapping(atlasRelationship.getEnd1(), end1Vertex.getId());
+        RequestContext.get().addRelationshipEndToVertexIdMapping(atlasRelationship.getEnd2(), end2Vertex.getId());
         return ret;
     }
 

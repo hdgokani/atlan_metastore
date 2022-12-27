@@ -643,7 +643,7 @@ public class RequestContext {
         return new ArrayList<>(deletedRelationships);
     }
 
-    public void addRelationshipEnd1ToVertexIdMapping(AtlasObjectId atlasObjectId, Object vertexId) {
+    public void addRelationshipEndToVertexIdMapping(AtlasObjectId atlasObjectId, Object vertexId) {
         this.relationshipEndsToVertexIdMap.put(atlasObjectId, vertexId);
     }
 
