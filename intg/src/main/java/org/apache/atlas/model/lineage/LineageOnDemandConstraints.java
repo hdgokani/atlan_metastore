@@ -42,6 +42,7 @@ public class LineageOnDemandConstraints implements Serializable {
     private int              inputRelationsLimit;
     private int              outputRelationsLimit;
     private int              depth;
+    private int              from;
 
     private static final int LINEAGE_ON_DEMAND_DEFAULT_DEPTH      = 3;
 
@@ -58,6 +59,14 @@ public class LineageOnDemandConstraints implements Serializable {
         this.inputRelationsLimit  = inputRelationsLimit;
         this.outputRelationsLimit = outputRelationsLimit;
         this.depth                = depth;
+    }
+
+    public LineageOnDemandConstraints(LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth, int from) {
+        this.direction            = direction;
+        this.inputRelationsLimit  = inputRelationsLimit;
+        this.outputRelationsLimit = outputRelationsLimit;
+        this.depth                = depth;
+        this.from                 = from;
     }
 
     public LineageDirection getDirection() {
@@ -92,4 +101,11 @@ public class LineageOnDemandConstraints implements Serializable {
         this.depth = depth;
     }
 
+    public int getFrom() {
+        return from;
+    }
+
+    public void setFrom(int from) {
+        this.from = from;
+    }
 }
