@@ -23,7 +23,11 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.lineage.AtlasLineageRequest;
+import org.apache.atlas.model.lineage.LineageOnDemandConstraints;
+import org.apache.atlas.model.lineage.LineageOnDemandRequest;
 import org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
+
+import java.util.Map;
 
 public interface AtlasLineageService {
     /**
@@ -65,4 +69,12 @@ public interface AtlasLineageService {
      * @return Schema as JSON
      */
     SchemaDetails getSchemaForHiveTableByGuid(String guid) throws AtlasBaseException;
+
+    /**
+     * @param entityGuid unique ID of the entity
+     * @param lineageOnDemandRequest lineage on demand request object
+     * @return AtlasLineageInfo
+     */
+    AtlasLineageInfo getAtlasLineageInfo(String entityGuid, LineageOnDemandRequest lineageOnDemandRequest) throws AtlasBaseException;
+
 }
