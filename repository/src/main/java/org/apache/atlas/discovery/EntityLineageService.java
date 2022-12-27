@@ -386,8 +386,17 @@ public class EntityLineageService implements AtlasLineageService {
                 Iterable<AtlasEdge> outgoingEdges = processVertex.getEdges(OUT, isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE);
                 RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesOut);
 
+                int verticalCounter = 0;
+
                 for (AtlasEdge outgoingEdge : outgoingEdges) {
                     AtlasVertex entityVertex = outgoingEdge.getInVertex();
+
+                    LineageOnDemandConstraints processConstraints = getAndValidateLineageConstraintsByGuid(getGuid(processVertex), atlasLineageOnDemandContext);
+
+                    if (processConstraints.getFrom() != 0 && verticalCounter < processConstraints.getFrom()) {
+                        verticalCounter += 1;
+                        continue;
+                    }
 
                     if (!vertexMatchesEvaluation(entityVertex, atlasLineageOnDemandContext)) {
                         continue;
