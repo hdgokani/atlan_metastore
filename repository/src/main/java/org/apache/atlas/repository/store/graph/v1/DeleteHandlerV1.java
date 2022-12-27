@@ -177,15 +177,11 @@ public abstract class DeleteHandlerV1 {
 
         for (AtlasEdge edge : edges) {
             boolean isInternal = isInternalType(edge.getInVertex()) && isInternalType(edge.getOutVertex());
-            boolean needToSkip = !isInternal && (getState(edge) == (isPurgeRequested ? ACTIVE : DELETED));
+            boolean needToSkip = !isInternal && (!isPurgeRequested && DELETED.equals(getState(edge)));
 
             if (needToSkip) {
                 if (LOG.isDebugEnabled()) {
-                    if(isPurgeRequested) {
-                        LOG.debug("Skipping purging of edge={} as it is active or already purged", getIdFromEdge(edge));
-                    } else{
-                        LOG.debug("Skipping deletion of edge={} as it is already deleted", getIdFromEdge(edge));
-                    }
+                    LOG.debug("Skipping deletion of edge={} as it is already deleted", getIdFromEdge(edge));
                 }
 
                 continue;
@@ -212,6 +208,12 @@ public abstract class DeleteHandlerV1 {
 
         while (vertices.size() > 0) {
             AtlasVertex        vertex = vertices.pop();
+            AtlasEntity.Status state  = getState(vertex);
+
+            //If the vertex marked for deletion, if we are not purging, skip it
+            if (!isPurgeRequested && DELETED.equals(state)) {
+                continue;
+            }
 
             String guid = GraphHelper.getGuid(vertex);
 
@@ -253,7 +255,7 @@ public abstract class DeleteHandlerV1 {
                     } else {
                         AtlasEdge edge = graphHelper.getEdgeForLabel(vertex, edgeLabel);
 
-                        if (edge == null || (getState(edge) == (isPurgeRequested ? ACTIVE : DELETED))) {
+                        if (edge == null || (!isPurgeRequested && DELETED.equals(getState(edge)))) {
                             continue;
                         }
 
@@ -311,7 +313,7 @@ public abstract class DeleteHandlerV1 {
 
                         if (CollectionUtils.isNotEmpty(edges)) {
                             for (AtlasEdge edge : edges) {
-                                if (edge == null || (getState(edge) == (isPurgeRequested ? ACTIVE : DELETED))) {
+                                if (edge == null || (!isPurgeRequested && DELETED.equals(getState(edge)))) {
                                     continue;
                                 }
 
@@ -1093,7 +1095,7 @@ public abstract class DeleteHandlerV1 {
      */
     private void deleteAllClassifications(AtlasVertex instanceVertex) throws AtlasBaseException {
         // If instance is deleted no need to operate classification deleted
-        if (getState(instanceVertex).equals(DELETED))
+        if (!ACTIVE.equals(getState(instanceVertex)))
             return;
 
         List<AtlasEdge> classificationEdges = getAllClassificationEdges(instanceVertex);
