@@ -27,6 +27,7 @@ on:
       - master
       - staging
       - lineageondemand
+      - typedefsyncv1
 
 jobs:
   build:
