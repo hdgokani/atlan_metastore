@@ -20,10 +20,15 @@ public class AtlasNestedRelationshipsESQueryBuilder {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasNestedRelationshipsESQueryBuilder.class);
     private static final String INDEX_NAME = INDEX_PREFIX + VERTEX_INDEX;
+    private static final int RETRY_ON_CONFLICT = 5;
+    private static final String BULK_REQUEST_TIMEOUT_MINUTES = "2m";
     private static final Gson gson = new Gson();
 
     public static UpdateRequest getQueryForAppendingNestedRelationships(String docId, Map<String, Object> paramsMap) throws IOException {
-        return new UpdateRequest().index(INDEX_NAME).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE).id(docId)
+        return new UpdateRequest().index(INDEX_NAME)
+                .id(docId)
+                .retryOnConflict(RETRY_ON_CONFLICT)
+                .timeout(BULK_REQUEST_TIMEOUT_MINUTES)
                 .script(new Script(
                         ScriptType.INLINE, "painless",
                         "if(!ctx._source.containsKey('__relationships')) \n" +

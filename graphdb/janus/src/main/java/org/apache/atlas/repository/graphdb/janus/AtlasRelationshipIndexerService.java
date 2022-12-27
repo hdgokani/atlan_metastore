@@ -8,11 +8,12 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.apache.http.util.EntityUtils;
+import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.Response;
 import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,13 +56,13 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
                 LOG.debug("==> createRelationships()");
 
             Map<String, List<AtlasRelationship>> end1DocIdToRelationshipsMap = buildDocIdToRelationshipsMap(relationships, end1ToVertexIdMap);
+            BulkRequest request = new BulkRequest();
             for (String docId : end1DocIdToRelationshipsMap.keySet()) {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("==> creating relationships for ES _id: {}", docId);
-                String json = AtlasNestedRelationshipsESQueryBuilder.getJsonQueryForAppendingNestedRelationships(getScriptParamsMap(end1DocIdToRelationshipsMap, docId));
-                Response resp = atlasJanusVertexIndexRepository.performRawRequest(json, docId);
-                LOG.info("ES _update resp -------------------> {}", EntityUtils.toString(resp.getEntity()));
+                UpdateRequest updateRequest = AtlasNestedRelationshipsESQueryBuilder.getQueryForAppendingNestedRelationships(docId, getScriptParamsMap(end1DocIdToRelationshipsMap, docId));
+                request.add(updateRequest);
             }
+            BulkResponse response = atlasJanusVertexIndexRepository.updateDocsInBulk(request);
+            handleBulkResponseFailures(response);
         } catch (IOException e) {
             throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, e);
         } finally {
@@ -129,4 +130,13 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
         return ImmutableMap.of(RELATIONSHIP_GUID_KEY, r.getGuid(), RELATIONSHIPS_TYPENAME_KEY, r.getTypeName(), GUID_KEY, r.getEnd2().getGuid(), END2_TYPENAME, r.getEnd2().getTypeName());
     }
 
+    private static void handleBulkResponseFailures(BulkResponse response) {
+        for (BulkItemResponse bulkItemResponse : response) {
+            if (bulkItemResponse.isFailed()) {
+                BulkItemResponse.Failure failure =
+                        bulkItemResponse.getFailure();
+                LOG.error("Update failed for id: {}", failure.getId());
+            }
+        }
+    }
 }

@@ -269,6 +269,7 @@ public enum AtlasErrorCode {
     CINV_UNHEALTHY(500, "ATLAS-500-00-21", "Unable to process type-definition operations"),
     RUNTIME_EXCEPTION(500, "ATLAS-500-00-020", "Runtime exception {0}"),
     ES_DIRECT_UPDATE_FAILED(500, "ATLAS-500-00-021", "Error occurred while running _update query on ES: {0}"),
+    ES_BULK_UPDATE_FAILED(500, "ATLAS-500-00-022", "Error occurred while running bulk update on ES: {0}"),
     CLASSIFICATION_CURRENTLY_BEING_PROPAGATED(400, "ATLAS-400-00-105", "Classification {0} is currently being propagated."),
     TASK_STATUS_NOT_APPROPRIATE(400, "ATLAS-400-00-106", "Unable to restart the task with guid {0} whose status is {1}. "),
 
