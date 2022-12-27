@@ -79,8 +79,8 @@ public class AuditFilter implements Filter {
         final HttpServletResponse httpResponse       = (HttpServletResponse) response;
 
         if (RequestContext.isIsTypeSyncMode()) {
-            if (!httpRequest.getRequestURI().endsWith("cleanupTypeSync") ||
-                    !httpRequest.getRequestURI().endsWith("status") ||
+            if (!httpRequest.getRequestURI().endsWith("cleanupTypeSync") &&
+                    !httpRequest.getRequestURI().endsWith("status") &&
                     !httpRequest.getRequestURI().endsWith("health") ) {
                 throw new ServletException(new AtlasBaseException(TYPEDEF_SYNC_IN_PROGRESS));
             }
