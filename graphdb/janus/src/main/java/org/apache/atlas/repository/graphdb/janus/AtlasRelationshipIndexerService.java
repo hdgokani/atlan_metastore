@@ -5,6 +5,8 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -36,15 +38,16 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
     private static final String RELATIONSHIPS_TYPENAME_KEY = "relationshipTypeName";
 
     private final AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository;
-
+    private final AtlasTypeRegistry typeRegistry;
     @Inject
-    public AtlasRelationshipIndexerService(AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository) {
+    public AtlasRelationshipIndexerService(AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository, AtlasTypeRegistry typeRegistry) {
         this.atlasJanusVertexIndexRepository = atlasJanusVertexIndexRepository;
+        this.typeRegistry = typeRegistry;
     }
 
     @Override
-    public void createRelationships(List<AtlasRelationship> relationships, Map<AtlasObjectId, Object> end1ToVertexIdMap) throws AtlasBaseException {
-        if (CollectionUtils.isEmpty(relationships) || MapUtils.isEmpty(end1ToVertexIdMap))
+    public void createRelationships(List<AtlasRelationship> relationships, Map<AtlasObjectId, Object> relationshipEndToVertexIdMap) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(relationships) || MapUtils.isEmpty(relationshipEndToVertexIdMap))
             return;
 
         AtlasPerfTracer perf = null;
@@ -55,10 +58,10 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
             if (LOG.isDebugEnabled())
                 LOG.debug("==> createRelationships()");
 
-            Map<String, List<AtlasRelationship>> end1DocIdToRelationshipsMap = buildDocIdToRelationshipsMap(relationships, end1ToVertexIdMap);
+            Map<String, List<AtlasRelationship>> vertexDocIdToRelationshipsMap = buildDocIdToRelationshipsMap(relationships, relationshipEndToVertexIdMap);
             BulkRequest request = new BulkRequest();
-            for (String docId : end1DocIdToRelationshipsMap.keySet()) {
-                UpdateRequest updateRequest = AtlasNestedRelationshipsESQueryBuilder.getQueryForAppendingNestedRelationships(docId, getScriptParamsMap(end1DocIdToRelationshipsMap, docId));
+            for (String docId : vertexDocIdToRelationshipsMap.keySet()) {
+                UpdateRequest updateRequest = AtlasNestedRelationshipsESQueryBuilder.getQueryForAppendingNestedRelationships(docId, getScriptParamsMap(vertexDocIdToRelationshipsMap, docId));
                 request.add(updateRequest);
             }
             BulkResponse response = atlasJanusVertexIndexRepository.updateDocsInBulk(request);
@@ -92,10 +95,10 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
         }
     }
 
-    private static Map<String, List<AtlasRelationship>> buildDocIdToRelationshipsMap(List<AtlasRelationship> relationships, Map<AtlasObjectId, Object> end1ToVertexIdMap) {
+    private Map<String, List<AtlasRelationship>> buildDocIdToRelationshipsMap(List<AtlasRelationship> relationships, Map<AtlasObjectId, Object> endEntityToVertexIdMap) {
         Map<String, List<AtlasRelationship>> docIdToRelationshipsMap = new HashMap<>();
         for (AtlasRelationship r : relationships) {
-            final String id = encodeVertexIdToESDocId(end1ToVertexIdMap, r);
+            final String id = encodeVertexIdToESDocId(endEntityToVertexIdMap, r);
             List<AtlasRelationship> existingRelationshipsForDocId = docIdToRelationshipsMap.getOrDefault(id, new ArrayList<>());
             existingRelationshipsForDocId.add(r);
             docIdToRelationshipsMap.put(id, existingRelationshipsForDocId);
@@ -103,10 +106,19 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
         return docIdToRelationshipsMap;
     }
 
-    private static String encodeVertexIdToESDocId(Map<AtlasObjectId, Object> end1ToVertexIdMap, AtlasRelationship r) {
-        Object end1VertexId = end1ToVertexIdMap.get(r.getEnd1());
-        Objects.requireNonNull(end1VertexId);
-        return LongEncoding.encode(Long.parseLong(end1VertexId.toString()));
+    private String encodeVertexIdToESDocId(Map<AtlasObjectId, Object> endToVertexIdMap, AtlasRelationship r) {
+        AtlasRelationshipDef relationshipDef = this.typeRegistry.getRelationshipDefByName(r.getTypeName());
+        Object vertex;
+        if (relationshipDef.getEndDef1().getIsContainer()) {
+            vertex = endToVertexIdMap.get(r.getEnd1());
+        } else if (relationshipDef.getEndDef2().getIsContainer()) {
+            vertex = endToVertexIdMap.get(r.getEnd2());
+        } else {
+            // Case: In case of ASSOCIATION, by default take end1 as container
+            vertex = endToVertexIdMap.get(r.getEnd1());
+        }
+        Objects.requireNonNull(vertex);
+        return LongEncoding.encode(Long.parseLong(vertex.toString()));
     }
 
     private static Map<String, Object> getScriptParamsMap(Map<String, List<AtlasRelationship>> end1DocIdRelationshipsMap, String docId) {
@@ -130,6 +142,7 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
         return ImmutableMap.of(RELATIONSHIP_GUID_KEY, r.getGuid(), RELATIONSHIPS_TYPENAME_KEY, r.getTypeName(), GUID_KEY, r.getEnd2().getGuid(), END2_TYPENAME, r.getEnd2().getTypeName());
     }
 
+    // TODO: Failure retries
     private static void handleBulkResponseFailures(BulkResponse response) {
         for (BulkItemResponse bulkItemResponse : response) {
             if (bulkItemResponse.isFailed()) {
