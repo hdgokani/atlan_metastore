@@ -179,7 +179,7 @@ public class EntityLineageService implements AtlasLineageService {
 
         if (MapUtils.isEmpty(lineageOnDemandRequest.getConstraints())) {
             Map<String, LineageOnDemandConstraints> lineageConstraintsMap = new HashMap<>();
-            lineageConstraintsMap.put(guid, getDefaultLineageConstraints(guid));
+            lineageConstraintsMap.put(guid, getLineageConstraints(guid, lineageOnDemandRequest.getDefaultParams()));
             lineageOnDemandRequest.setConstraints(lineageConstraintsMap);
         }
 
@@ -218,24 +218,26 @@ public class EntityLineageService implements AtlasLineageService {
         return isDataSet;
     }
 
-    private LineageOnDemandConstraints getDefaultLineageConstraints(String guid) {
+    private LineageOnDemandConstraints getLineageConstraints(String guid, LineageOnDemandDefaultParams defaultParams) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("No lineage on-demand constraints provided for guid: {}, configuring with default values direction: {}, inputRelationsLimit: {}, outputRelationsLimit: {}, depth: {}",
-                    guid, BOTH, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT, LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
+                    guid, BOTH, defaultParams.getInputRelationsLimit(), defaultParams.getOutputRelationsLimit(), LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
         }
 
-        return new LineageOnDemandConstraints();
+        return new LineageOnDemandConstraints(defaultParams);
     }
 
-    private LineageOnDemandConstraints getAndValidateLineageConstraintsByGuid(String guid, Map<String, LineageOnDemandConstraints> lineageConstraintsMap) {
+    private LineageOnDemandConstraints getAndValidateLineageConstraintsByGuid(String guid, AtlasLineageOnDemandContext context) {
+        Map<String, LineageOnDemandConstraints> lineageConstraintsMap = context.getConstraints();
+        LineageOnDemandDefaultParams defaultParams = context.getDefaultParams();
 
         if (lineageConstraintsMap == null || !lineageConstraintsMap.containsKey(guid)) {
-            return getDefaultLineageConstraints(guid);
+            return getLineageConstraints(guid, defaultParams);
         }
 
         LineageOnDemandConstraints lineageConstraintsByGuid = lineageConstraintsMap.get(guid);;
         if (lineageConstraintsByGuid == null) {
-            return getDefaultLineageConstraints(guid);
+            return getLineageConstraints(guid, defaultParams);
         }
 
         if (Objects.isNull(lineageConstraintsByGuid.getDirection())) {
@@ -280,7 +282,7 @@ public class EntityLineageService implements AtlasLineageService {
     private AtlasLineageInfo getLineageInfoOnDemand(String guid, AtlasLineageOnDemandContext atlasLineageOnDemandContext, boolean isDataSet) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getLineageInfoOnDemand");
 
-        LineageOnDemandConstraints lineageConstraintsByGuid = getAndValidateLineageConstraintsByGuid(guid, atlasLineageOnDemandContext.getConstraints());
+        LineageOnDemandConstraints lineageConstraintsByGuid = getAndValidateLineageConstraintsByGuid(guid, atlasLineageOnDemandContext);
 
         if (lineageConstraintsByGuid == null) {
             throw new AtlasBaseException(AtlasErrorCode.NO_LINEAGE_CONSTRAINTS_FOR_GUID, guid);
@@ -335,7 +337,7 @@ public class EntityLineageService implements AtlasLineageService {
         for (AtlasEdge processEdge : processEdges) {
             boolean isInputEdge  = processEdge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
-            if (incrementAndCheckIfRelationsLimitReached(processEdge, isInputEdge, atlasLineageOnDemandContext.getConstraints(), ret, depth == 1)) {
+            if (incrementAndCheckIfRelationsLimitReached(processEdge, isInputEdge, atlasLineageOnDemandContext, ret, depth == 1)) {
                 break;
             } else {
                 addEdgeToResult(processEdge, ret, atlasLineageOnDemandContext);
@@ -344,7 +346,7 @@ public class EntityLineageService implements AtlasLineageService {
             AtlasVertex datasetVertex = processEdge.getInVertex();
 
             String inGuid = AtlasGraphUtilsV2.getIdFromVertex(datasetVertex);
-            LineageOnDemandConstraints inGuidLineageConstrains = getAndValidateLineageConstraintsByGuid(inGuid, atlasLineageOnDemandContext.getConstraints());
+            LineageOnDemandConstraints inGuidLineageConstrains = getAndValidateLineageConstraintsByGuid(inGuid, atlasLineageOnDemandContext);
 
             if (!ret.getRelationsOnDemand().containsKey(inGuid)) {
                 ret.getRelationsOnDemand().put(inGuid, new LineageInfoOnDemand(inGuidLineageConstrains));
@@ -361,8 +363,6 @@ public class EntityLineageService implements AtlasLineageService {
             // keep track of visited vertices to avoid circular loop
             visitedVertices.add(getId(datasetVertex));
 
-            Map<String, LineageOnDemandConstraints> lineageConstraintsMap = atlasLineageOnDemandContext.getConstraints();
-
             AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdgesIn = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdgesIn");
             Iterable<AtlasEdge> incomingEdges = datasetVertex.getEdges(IN, isInput ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE);
             RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesIn);
@@ -374,7 +374,7 @@ public class EntityLineageService implements AtlasLineageService {
                     continue;
                 }
 
-                if (incrementAndCheckIfRelationsLimitReached(incomingEdge, !isInput, lineageConstraintsMap, ret, false)) {
+                if (incrementAndCheckIfRelationsLimitReached(incomingEdge, !isInput, atlasLineageOnDemandContext, ret, false)) {
                     break;
                 } else {
                     if (! atlasLineageOnDemandContext.isHideProcess()) {
@@ -393,7 +393,7 @@ public class EntityLineageService implements AtlasLineageService {
                         continue;
                     }
 
-                    if (incrementAndCheckIfRelationsLimitReached(outgoingEdge, isInput, lineageConstraintsMap, ret, depth == 1)) {
+                    if (incrementAndCheckIfRelationsLimitReached(outgoingEdge, isInput, atlasLineageOnDemandContext, ret, depth == 1)) {
                         break;
                     } else {
                         if (! atlasLineageOnDemandContext.isHideProcess()) {
@@ -417,7 +417,7 @@ public class EntityLineageService implements AtlasLineageService {
         return vertex.getIdForDisplay();
     }
 
-    private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, Map<String, LineageOnDemandConstraints> lineageConstraintsMap, AtlasLineageInfo ret, boolean checkForChildren) {
+    private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageInfo ret, boolean checkForChildren) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("incrementAndCheckIfRelationsLimitReached");
 
         if (lineageContainsEdge(ret, atlasEdge)) {
@@ -428,11 +428,11 @@ public class EntityLineageService implements AtlasLineageService {
 
         AtlasVertex                inVertex                 = isInput ? atlasEdge.getOutVertex() : atlasEdge.getInVertex();
         String                     inGuid                   = AtlasGraphUtilsV2.getIdFromVertex(inVertex);
-        LineageOnDemandConstraints inGuidLineageConstraints = getAndValidateLineageConstraintsByGuid(inGuid, lineageConstraintsMap);
+        LineageOnDemandConstraints inGuidLineageConstraints = getAndValidateLineageConstraintsByGuid(inGuid, atlasLineageOnDemandContext);
 
         AtlasVertex                outVertex                 = isInput ? atlasEdge.getInVertex() : atlasEdge.getOutVertex();
         String                     outGuid                   = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
-        LineageOnDemandConstraints outGuidLineageConstraints = getAndValidateLineageConstraintsByGuid(outGuid, lineageConstraintsMap);
+        LineageOnDemandConstraints outGuidLineageConstraints = getAndValidateLineageConstraintsByGuid(outGuid, atlasLineageOnDemandContext);
 
         LineageInfoOnDemand inLineageInfo = ret.getRelationsOnDemand().containsKey(inGuid) ? ret.getRelationsOnDemand().get(inGuid) : new LineageInfoOnDemand(inGuidLineageConstraints);
         LineageInfoOnDemand outLineageInfo = ret.getRelationsOnDemand().containsKey(outGuid) ? ret.getRelationsOnDemand().get(outGuid) : new LineageInfoOnDemand(outGuidLineageConstraints);
@@ -694,7 +694,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private void addRelationToResult(AtlasEdge incomingEdge, AtlasEdge outgoingEdge, AtlasLineageInfo lineageInfo, AtlasLineageOnDemandContext atlasLineageOnDemandContext) throws AtlasBaseException {
-        if (!lineageContainsEdge(lineageInfo, incomingEdge) && !lineageContainsEdge(lineageInfo, outgoingEdge) && !lineageMaxNodeCountReached(lineageInfo.getRelations())) {
+        if (!lineageContainsEdge(lineageInfo, outgoingEdge) && !lineageMaxNodeCountReached(lineageInfo.getRelations())) {
             processRelation(incomingEdge, outgoingEdge, lineageInfo, atlasLineageOnDemandContext);
         }
     }

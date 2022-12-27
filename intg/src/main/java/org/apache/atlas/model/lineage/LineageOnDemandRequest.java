@@ -20,24 +20,29 @@ public class LineageOnDemandRequest {
     private Set<String>                             attributes;
     private Set<String>                             relationAttributes;
     private boolean                                 hideProcess;
+    private LineageOnDemandDefaultParams            defaultParams;
 
     public LineageOnDemandRequest() {
         this.attributes = new HashSet<>();
         this.relationAttributes = new HashSet<>();
+        this.defaultParams = new LineageOnDemandDefaultParams();
     }
 
     public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints) {
         this.constraints = constraints;
         this.attributes = new HashSet<>();
         this.relationAttributes = new HashSet<>();
+        this.defaultParams = new LineageOnDemandDefaultParams();
     }
 
-    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, List<SearchParameters.FilterCriteria> traversalFilters, Set<String> attributes, Set<String> relationAttributes, boolean hideProcess) {
+    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, List<SearchParameters.FilterCriteria> traversalFilters,
+                                  Set<String> attributes, Set<String> relationAttributes, boolean hideProcess, LineageOnDemandDefaultParams defaultParams) {
         this.constraints        = constraints;
         this.traversalFilters   = traversalFilters;
         this.attributes         = attributes;
         this.relationAttributes = relationAttributes;
         this.hideProcess        = hideProcess;
+        this.defaultParams      = defaultParams;
     }
 
     public Map<String, LineageOnDemandConstraints> getConstraints() {
@@ -74,6 +79,14 @@ public class LineageOnDemandRequest {
 
     public boolean isHideProcess() {
         return hideProcess;
+    }
+
+    public LineageOnDemandDefaultParams getDefaultParams() {
+        return defaultParams;
+    }
+
+    public void setDefaultParams(LineageOnDemandDefaultParams defaultParams) {
+        this.defaultParams = defaultParams;
     }
 
     public void setHideProcess(boolean hideProcess) {
