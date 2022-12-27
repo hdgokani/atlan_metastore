@@ -2,6 +2,7 @@ package org.apache.atlas.repository.graphdb.janus;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
@@ -32,6 +33,7 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
     private static final int MAX_RETRIES = 3;
     private static final int RETRY_TIME_IN_MILLIS = 1000;
     private static final String INDEX = INDEX_PREFIX + VERTEX_INDEX;
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("AtlasJanusVertexIndexESRepositoryImpl");
 
 
     @Override
@@ -62,26 +64,32 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
 
     @Override
     public BulkResponse updateDocsInBulk(BulkRequest bulkRequest) throws AtlasBaseException {
-        int count = 0;
-        while(true) {
-            try {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Updating {} requests in ES", bulkRequest.requests().size());
-                return elasticSearchClient.bulk(bulkRequest, RequestOptions.DEFAULT);
-            } catch (IOException e) {
-                LOG.error("Exception while trying to update in bulk for req. Retrying", e);
-                LOG.info("Retrying with delay of {} ms ", RETRY_TIME_IN_MILLIS);
+        AtlasPerfTracer perf = null;
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "updateDocsInBulk()");
+        try {
+            int count = 0;
+            while(true) {
                 try {
-                    Thread.sleep(RETRY_TIME_IN_MILLIS);
-                } catch (InterruptedException ex) {
-                    LOG.warn("Retry interrupted during bulk update request");
-                    throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, ex);
-                }
-                if (++count == MAX_RETRIES) {
-                    LOG.error("Failed to execute bulk update request on ES {}", e.getMessage());
-                    throw new AtlasBaseException(AtlasErrorCode.ES_BULK_UPDATE_FAILED, e.getMessage());
+                    LOG.info("Updating {} requests in ES", bulkRequest.requests().size());
+                    return elasticSearchClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+                } catch (IOException e) {
+                    LOG.error("Exception while trying to update in bulk for req. Retrying", e);
+                    LOG.info("Retrying with delay of {} ms ", RETRY_TIME_IN_MILLIS);
+                    try {
+                        Thread.sleep(RETRY_TIME_IN_MILLIS);
+                    } catch (InterruptedException ex) {
+                        LOG.warn("Retry interrupted during bulk update request");
+                        throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, ex);
+                    }
+                    if (++count == MAX_RETRIES) {
+                        LOG.error("Failed to execute bulk update request on ES {}", e.getMessage());
+                        throw new AtlasBaseException(AtlasErrorCode.ES_BULK_UPDATE_FAILED, e.getMessage());
+                    }
                 }
             }
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 
