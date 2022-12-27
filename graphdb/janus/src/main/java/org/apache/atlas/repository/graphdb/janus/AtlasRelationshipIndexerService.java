@@ -28,7 +28,7 @@ import java.util.*;
 public class AtlasRelationshipIndexerService implements AtlasRelationshipsService {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasRelationshipIndexerService.class);
-    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("AtlasESIndexService");
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("AtlasRelationshipIndexerService");
     private static final String GUID_KEY = "__guid";
     private static final String END2_TYPENAME = "__typeName";
     private static final String RELATIONSHIPS_PARAMS_KEY = "relationships";
@@ -135,7 +135,7 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
             if (bulkItemResponse.isFailed()) {
                 BulkItemResponse.Failure failure =
                         bulkItemResponse.getFailure();
-                LOG.error("Update failed for id: {}", failure.getId());
+                LOG.info("------- Update failed for id: {} -------", failure.getId());
             }
         }
     }
