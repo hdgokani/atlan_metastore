@@ -278,8 +278,7 @@ public enum AtlasErrorCode {
     JSON_ERROR(400, "ATLAS-400-00-109", "Error occurred putting object into JSONObject: {0}"),
     RANGER_ROLE_MUTATION_FAILED(400, "ATLAS-400-00-110", "Failed to {0} Ranger role {1}: {2}"),
     RANGER_POLICY_MUTATION_FAILED(400, "ATLAS-400-00-111", "Failed to {0} Ranger policy: {1}"),
-    RANGER_POLICY_FIND_FAILED(400, "ATLAS-400-00-112", "Failed to find Ranger policy by {0}: {1}");
-    TASK_STATUS_NOT_APPROPRIATE(400, "ATLAS-400-00-106", "Unable to restart the task with guid {0} whose status is {1}. "),
+    RANGER_POLICY_FIND_FAILED(400, "ATLAS-400-00-112", "Failed to find Ranger policy by {0}: {1}"),
     NO_LINEAGE_CONSTRAINTS_FOR_GUID(404, "ATLAS-404-00-016", "No lineage constraints found for requested entity with guid : {0}"),
     LINEAGE_ON_DEMAND_NOT_ENABLED(400, "ATLAS-400-00-100", "Lineage on demand config: {0} is not enabled");
 
