@@ -946,7 +946,7 @@ public class EntityGraphRetriever {
     }
 
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader");
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader");
         AtlasEntityHeader ret = new AtlasEntityHeader();
 
         String  typeName     = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
@@ -1012,7 +1012,7 @@ public class EntityGraphRetriever {
                 }
             }
         }
-        RequestContext.get().endMetricRecord(metric);
+        RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
     }
 
