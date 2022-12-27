@@ -21,13 +21,13 @@ package org.apache.atlas.model.lineage;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 
 import java.io.Serializable;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static org.apache.atlas.model.lineage.LineageOnDemandDefaultParams.LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
@@ -42,12 +42,16 @@ public class LineageOnDemandConstraints implements Serializable {
     private int              inputRelationsLimit;
     private int              outputRelationsLimit;
     private int              depth;
+    private int              from;
 
-    private static final int LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT = AtlasConfiguration.LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT.getInt();
     private static final int LINEAGE_ON_DEMAND_DEFAULT_DEPTH      = 3;
 
     public LineageOnDemandConstraints() {
         this(LineageDirection.BOTH, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT, LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
+    }
+
+    public LineageOnDemandConstraints(LineageOnDemandDefaultParams defaultParams) {
+        this(LineageDirection.BOTH, defaultParams.getInputRelationsLimit(), defaultParams.getOutputRelationsLimit(), LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
     }
 
     public LineageOnDemandConstraints(LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth) {
@@ -55,6 +59,14 @@ public class LineageOnDemandConstraints implements Serializable {
         this.inputRelationsLimit  = inputRelationsLimit;
         this.outputRelationsLimit = outputRelationsLimit;
         this.depth                = depth;
+    }
+
+    public LineageOnDemandConstraints(LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth, int from) {
+        this.direction            = direction;
+        this.inputRelationsLimit  = inputRelationsLimit;
+        this.outputRelationsLimit = outputRelationsLimit;
+        this.depth                = depth;
+        this.from                 = from;
     }
 
     public LineageDirection getDirection() {
@@ -89,4 +101,11 @@ public class LineageOnDemandConstraints implements Serializable {
         this.depth = depth;
     }
 
+    public int getFrom() {
+        return from;
+    }
+
+    public void setFrom(int from) {
+        this.from = from;
+    }
 }

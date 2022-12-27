@@ -2,6 +2,7 @@ package org.apache.atlas.discovery;
 
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.lineage.LineageOnDemandConstraints;
+import org.apache.atlas.model.lineage.LineageOnDemandDefaultParams;
 import org.apache.atlas.model.lineage.LineageOnDemandRequest;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -17,12 +18,14 @@ public class AtlasLineageOnDemandContext {
     private Set<String>                             attributes;
     private Set<String>                             relationAttributes;
     private boolean                                 hideProcess;
+    private LineageOnDemandDefaultParams            defaultParams;
 
     public AtlasLineageOnDemandContext(LineageOnDemandRequest lineageOnDemandRequest, AtlasTypeRegistry typeRegistry) {
         this.constraints = lineageOnDemandRequest.getConstraints();
         this.attributes = lineageOnDemandRequest.getAttributes();
         this.relationAttributes = lineageOnDemandRequest.getRelationAttributes();
         this.hideProcess = lineageOnDemandRequest.isHideProcess();
+        this.defaultParams = lineageOnDemandRequest.getDefaultParams();
         this.predicate = constructInMemoryPredicate(typeRegistry, lineageOnDemandRequest.getTraversalFilters());
     }
 
@@ -64,6 +67,14 @@ public class AtlasLineageOnDemandContext {
 
     public void setHideProcess(boolean hideProcess) {
         this.hideProcess = hideProcess;
+    }
+
+    public LineageOnDemandDefaultParams getDefaultParams() {
+        return defaultParams;
+    }
+
+    public void setDefaultParams(LineageOnDemandDefaultParams defaultParams) {
+        this.defaultParams = defaultParams;
     }
 
     protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, List<SearchParameters.FilterCriteria> filterCriteriaList) {
