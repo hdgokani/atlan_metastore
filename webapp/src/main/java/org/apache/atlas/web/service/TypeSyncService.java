@@ -65,6 +65,7 @@ public class TypeSyncService {
     }
 
     public static void waitAllRequestsToComplete(String traceId) {
+        
         LOG.info("Waiting for all active requests until done");
         RequestContext.setIsTypeSyncMode(true);
 
