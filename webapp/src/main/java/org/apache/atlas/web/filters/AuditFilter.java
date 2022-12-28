@@ -150,7 +150,7 @@ public class AuditFilter implements Filter {
 
 
     private boolean allowedUriInTypeSyncMode(String uri) {
-        return uri.endsWith("status") || uri.endsWith("health") || uri.endsWith("indexeswebapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java") ||
+        return uri.endsWith("status") || uri.endsWith("health") || uri.endsWith("indexes") ||
                 uri.endsWith("refresh") || uri.endsWith("cleanupTypeSync");
     }
 

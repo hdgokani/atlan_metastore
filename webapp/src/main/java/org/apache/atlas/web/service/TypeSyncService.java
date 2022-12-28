@@ -130,8 +130,6 @@ public class TypeSyncService {
 
                 closeOpenTransactions(graph);LOG.info("### 5");
 
-                closeOpenInstances(graph);
-
                 graph.tx().rollback();LOG.info("### 7");
 
                 defaultIndexCreator.createDefaultIndexes(atlasGraph);LOG.info("### 8");
