@@ -1,7 +1,6 @@
 package org.apache.atlas.repository.graphdb.janus;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
@@ -10,9 +9,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -22,8 +19,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
-import java.io.IOException;
 import java.util.*;
+
+import static org.apache.atlas.repository.graphdb.janus.AtlasNestedRelationshipsESQueryBuilder.getQueryForAppendingNestedRelationships;
+import static org.apache.atlas.repository.graphdb.janus.AtlasNestedRelationshipsESQueryBuilder.getRelationshipDeletionQuery;
+import static org.apache.atlas.repository.graphdb.janus.AtlasRelationshipIndexResponseHandler.getBulkUpdateActionListener;
+import static org.apache.atlas.repository.graphdb.janus.AtlasRelationshipIndexResponseHandler.getUpdateResponseListener;
 
 
 @Service
@@ -46,7 +47,7 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
     }
 
     @Override
-    public void createRelationships(List<AtlasRelationship> relationships, Map<AtlasObjectId, Object> relationshipEndToVertexIdMap) throws AtlasBaseException {
+    public void createRelationships(List<AtlasRelationship> relationships, Map<AtlasObjectId, Object> relationshipEndToVertexIdMap) {
         if (CollectionUtils.isEmpty(relationships) || MapUtils.isEmpty(relationshipEndToVertexIdMap))
             return;
 
@@ -59,19 +60,16 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
                 LOG.debug("==> createRelationships()");
 
             Map<String, List<AtlasRelationship>> vertexDocIdToRelationshipsMap = buildDocIdToRelationshipsMap(relationships, relationshipEndToVertexIdMap);
-            BulkRequest request = new BulkRequest();
             for (String docId : vertexDocIdToRelationshipsMap.keySet()) {
-                UpdateRequest updateRequest = AtlasNestedRelationshipsESQueryBuilder.getQueryForAppendingNestedRelationships(docId, getScriptParamsMap(vertexDocIdToRelationshipsMap, docId));
-                request.add(updateRequest);
+                UpdateRequest request = getQueryForAppendingNestedRelationships(docId, getScriptParamsMap(vertexDocIdToRelationshipsMap, docId));
+                atlasJanusVertexIndexRepository.updateDocAsync(request, RequestOptions.DEFAULT, getUpdateResponseListener(atlasJanusVertexIndexRepository, request));
             }
-            BulkResponse response = atlasJanusVertexIndexRepository.updateDocsInBulk(request);
-            handleBulkResponseFailures(response);
-        } catch (IOException e) {
-            throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, e);
         } finally {
             AtlasPerfTracer.log(perf);
         }
     }
+
+
 
     @Override
     public void deleteRelationship(AtlasRelationship relationship, Map<AtlasObjectId, Object> end1ToVertexIdMap) throws AtlasBaseException {
@@ -86,13 +84,22 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
 
             final String docId = encodeVertexIdToESDocId(end1ToVertexIdMap, relationship);
             Map<String, Object> params = ImmutableMap.of(RELATIONSHIP_GUID_KEY, relationship.getGuid());
-            UpdateRequest updateRequest = AtlasNestedRelationshipsESQueryBuilder.getRelationshipDeletionQuery(relationship, docId, params);
+            UpdateRequest updateRequest = getRelationshipDeletionQuery(docId, params);
             UpdateResponse resp = atlasJanusVertexIndexRepository.updateDoc(updateRequest, RequestOptions.DEFAULT);
             if (LOG.isDebugEnabled())
                 LOG.debug("==> ES update resp: {}", resp);
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    private void bulkUpdateRelationships(Map<String, List<AtlasRelationship>> vertexDocIdToRelationshipsMap) {
+        BulkRequest request = new BulkRequest();
+        for (String docId : vertexDocIdToRelationshipsMap.keySet()) {
+            UpdateRequest updateRequest = getQueryForAppendingNestedRelationships(docId, getScriptParamsMap(vertexDocIdToRelationshipsMap, docId));
+            request.add(updateRequest);
+        }
+        atlasJanusVertexIndexRepository.updateDocsInBulkAsync(request, getBulkUpdateActionListener(atlasJanusVertexIndexRepository));
     }
 
     private Map<String, List<AtlasRelationship>> buildDocIdToRelationshipsMap(List<AtlasRelationship> relationships, Map<AtlasObjectId, Object> endEntityToVertexIdMap) {
@@ -137,19 +144,7 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
         return relationshipNestedPayloadList;
     }
 
-
     private static Map<String, String> buildNestedRelationshipDoc(AtlasRelationship r) {
         return ImmutableMap.of(RELATIONSHIP_GUID_KEY, r.getGuid(), RELATIONSHIPS_TYPENAME_KEY, r.getTypeName(), GUID_KEY, r.getEnd2().getGuid(), END2_TYPENAME, r.getEnd2().getTypeName());
-    }
-
-    // TODO: Failure retries
-    private static void handleBulkResponseFailures(BulkResponse response) {
-        for (BulkItemResponse bulkItemResponse : response) {
-            if (bulkItemResponse.isFailed()) {
-                BulkItemResponse.Failure failure =
-                        bulkItemResponse.getFailure();
-                LOG.info("------- Update failed for id: {} -------", failure.getId());
-            }
-        }
     }
 }

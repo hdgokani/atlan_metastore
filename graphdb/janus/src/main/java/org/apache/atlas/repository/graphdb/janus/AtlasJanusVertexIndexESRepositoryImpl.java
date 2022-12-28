@@ -7,6 +7,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -63,6 +64,18 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
     }
 
     @Override
+    public void updateDocAsync(UpdateRequest request, RequestOptions options, ActionListener<UpdateResponse> listener) {
+        AtlasPerfTracer perf = null;
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "updateDocAsync()");
+        try {
+            elasticSearchClient.updateAsync(request, options, listener);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @Override
     public BulkResponse updateDocsInBulk(BulkRequest bulkRequest) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
@@ -94,18 +107,26 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
     }
 
     @Override
+    public void updateDocsInBulkAsync(BulkRequest bulkRequest, ActionListener<BulkResponse> listener) {
+        AtlasPerfTracer perf = null;
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "updateDocsInBulkAsync()");
+        try {
+            LOG.info("Updating {} requests in ES", bulkRequest.requests().size());
+            elasticSearchClient.bulkAsync(bulkRequest, RequestOptions.DEFAULT, listener);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @Override
     public Response performRawRequest(String queryJson, String docId) throws AtlasBaseException {
         Objects.requireNonNull(queryJson, "query");
         int count = 0;
         while(true) {
             final String endPoint = "/" + INDEX + "/_update" + "/" + docId + "?retry_on_conflict=5";
             try {
-                Request request = new Request(
-                        "POST",
-                        endPoint);
-                request.addParameters(Collections.emptyMap());
-                HttpEntity entity = new StringEntity(queryJson, ContentType.APPLICATION_JSON);
-                request.setEntity(entity);
+                final Request request = buildHttpRequest(queryJson, endPoint);
                 return elasticSearchLowLevelClient.performRequest(request);
             } catch (IOException e) {
                 LOG.error(ExceptionUtils.getStackTrace(e));
@@ -122,5 +143,30 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
                 }
             }
         }
+    }
+
+    @Override
+    public void performRawRequestAsync(String queryJson, String docId, ResponseListener listener) {
+        Objects.requireNonNull(queryJson, "query");
+        AtlasPerfTracer perf = null;
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "performRawRequestAsync()");
+        try {
+            final String endPoint = "/" + INDEX + "/_update" + "/" + docId + "?retry_on_conflict=5";
+            final Request request = buildHttpRequest(queryJson, endPoint);
+            elasticSearchLowLevelClient.performRequestAsync(request, listener);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    private static Request buildHttpRequest(String queryJson, String endPoint) {
+        Request request = new Request(
+                "POST",
+                endPoint);
+        request.addParameters(Collections.emptyMap());
+        HttpEntity entity = new StringEntity(queryJson, ContentType.APPLICATION_JSON);
+        request.setEntity(entity);
+        return request;
     }
 }
