@@ -130,6 +130,8 @@ public class TypeSyncService {
 
                 closeOpenTransactions(graph);LOG.info("### 5");
 
+                closeOpenInstances(graph);
+
                 graph.tx().rollback();LOG.info("### 7");
 
                 defaultIndexCreator.createDefaultIndexes(atlasGraph);LOG.info("### 8");
@@ -201,6 +203,7 @@ public class TypeSyncService {
     public boolean cleanupTypeSync(String traceId, TypeCacheRefresher typeCacheRefresher) throws AtlasBaseException, InterruptedException {
         String oldIndexName = getCurrentReadVertexIndexName();
         String newIndexName = getCurrentWriteVertexIndexName();
+        LOG.info("cleanupTypeSync: oldIndexName:{}, newIndexName:{}", oldIndexName, newIndexName);
 
         if (!oldIndexName.equals(newIndexName)) {
             setCurrentReadVertexIndexName(newIndexName);
@@ -241,29 +244,6 @@ public class TypeSyncService {
         return false;
     }
 
-    public void testCreateIndex(String ndexName) throws InterruptedException, ExecutionException {
-        try {
-
-            atlasMixedBackendIndexManager.createIndexIfNotExists(ndexName); //ES index creation
-            setCurrentWriteVertexIndexName(ndexName); //set static variable
-
-            StandardJanusGraph graph = (StandardJanusGraph) atlasGraph.getGraph();
-            closeOpenTransactions(graph);
-            closeOpenInstances(graph);
-
-            graph.tx().rollback();
-            defaultIndexCreator.createDefaultIndexes(atlasGraph);
-        } catch (RepositoryException e) {
-            e.printStackTrace();
-        } catch (IndexException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (AtlasBaseException e) {
-            e.printStackTrace();
-        }
-    }
-
     public void disableJanusgraphIndex(String oldIndexName) throws InterruptedException, AtlasBaseException {
         updateIndexStatus(atlasGraph, oldIndexName, DISABLE_INDEX, DISABLED);
     }
@@ -284,11 +264,6 @@ public class TypeSyncService {
                 closeOpenInstances(graph);
 
                 management = graph.openManagement();
-                //LOG.info("Open transactions after opening new management {}", graph.getOpenTransactions().size());
-
-                //Set<String> openInstances = management.getOpenInstances();
-                //LOG.info("Open instances after closing all other instance: {}", openInstances.size());
-                //openInstances.forEach(LOG::info);
 
                 JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
                 SchemaStatus fromStatus = indexToUpdate.getIndexStatus(indexToUpdate.getFieldKeys()[0]);
@@ -397,7 +372,6 @@ public class TypeSyncService {
             LOG.info("Closed all other instances");
         } catch (Exception e) {
             LOG.error("Failed to close open instances", e);
-            //throw new AtlasBaseException(e);
         } finally {
             management.commit();
         }

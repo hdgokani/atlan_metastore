@@ -587,31 +587,6 @@ public class TypesREST {
         }
     }
 
-    @POST
-    @Path("/testcreateindex")
-    public void testcreateindex(@QueryParam("indexName") String indexName) throws AtlasBaseException {
-        try {
-            typeSyncService.testCreateIndex(indexName);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @POST
-    @Path("/testdisableindex")
-    public void testdisableindex(@QueryParam("indexName") String indexName) throws AtlasBaseException {
-        try {
-            typeSyncService.disableJanusgraphIndex(indexName);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (AtlasBaseException e) {
-            e.printStackTrace();
-        }
-    }
-
-
     /**
      * Bulk update API for all types, changes detected in the type definitions would be persisted
      *

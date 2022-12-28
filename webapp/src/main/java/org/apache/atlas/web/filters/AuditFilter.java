@@ -79,8 +79,9 @@ public class AuditFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
     throws IOException, ServletException {
+        RequestContext.setIsTypeSyncMode(true); //TOOO : remove this
 
-        final HttpServletRequest  httpRequest  = (HttpServletRequest) request;
+        final HttpServletRequest httpRequest = (HttpServletRequest) request;
         final HttpServletResponse httpResponse = (HttpServletResponse) response;
 
         if (RequestContext.isIsTypeSyncMode()) {
@@ -150,7 +151,7 @@ public class AuditFilter implements Filter {
 
 
     private boolean allowedUriInTypeSyncMode(String uri) {
-        return uri.endsWith("status") || uri.endsWith("health") ||
+        return uri.endsWith("status") || uri.endsWith("health") || uri.endsWith("indexeswebapp/src/main/java/org/apache/atlas/web/rest/TypesREST.java") ||
                 uri.endsWith("refresh") || uri.endsWith("cleanupTypeSync");
     }
 
