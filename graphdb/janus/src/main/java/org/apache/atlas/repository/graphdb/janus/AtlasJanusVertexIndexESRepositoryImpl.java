@@ -76,7 +76,7 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
     }
 
     @Override
-    public BulkResponse updateDocsInBulk(BulkRequest bulkRequest) throws AtlasBaseException {
+    public BulkResponse performBulkAsync(BulkRequest bulkRequest) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "updateDocsInBulk()");
