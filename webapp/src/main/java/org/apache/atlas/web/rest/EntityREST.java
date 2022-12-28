@@ -897,11 +897,11 @@ public class EntityREST {
             EntityStream entityStream = new AtlasEntityStream(entities);
 
             EntityMutationResponse resp = entitiesStore.createOrUpdate(entityStream, replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
-            //metric = RequestContext.get().startMetricRecord("createRelationships");
-            //atlasRelationshipsService.createRelationships(RequestContext.get().getCreatedRelationships(), RequestContext.get().getRelationshipEndsToVertexIdMap());
+            metric = RequestContext.get().startMetricRecord("createRelationships");
+            atlasRelationshipsService.createRelationships(RequestContext.get().getCreatedRelationships(), RequestContext.get().getRelationshipEndsToVertexIdMap());
             return resp;
         } finally {
-            //RequestContext.get().endMetricRecord(metric);
+            RequestContext.get().endMetricRecord(metric);
             AtlasPerfTracer.log(perf);
         }
     }

@@ -12,7 +12,7 @@ import org.elasticsearch.client.ResponseListener;
 
 public interface AtlasJanusVertexIndexRepository {
 
-    BulkResponse updateDocsInBulk(BulkRequest bulkRequest) throws AtlasBaseException;
+    BulkResponse performBulkAsync(BulkRequest bulkRequest) throws AtlasBaseException;
 
     UpdateResponse updateDoc(UpdateRequest request, RequestOptions options) throws AtlasBaseException;
 
@@ -23,4 +23,5 @@ public interface AtlasJanusVertexIndexRepository {
     Response performRawRequest(String query, String docId) throws AtlasBaseException;
 
     void performRawRequestAsync(String query, String docId, ResponseListener listener);
+
 }

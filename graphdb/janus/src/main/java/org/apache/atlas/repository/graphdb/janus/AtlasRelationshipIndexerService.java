@@ -6,7 +6,6 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -24,8 +23,7 @@ import java.util.*;
 
 import static org.apache.atlas.repository.graphdb.janus.AtlasNestedRelationshipsESQueryBuilder.getQueryForAppendingNestedRelationships;
 import static org.apache.atlas.repository.graphdb.janus.AtlasNestedRelationshipsESQueryBuilder.getRelationshipDeletionQuery;
-import static org.apache.atlas.repository.graphdb.janus.AtlasRelationshipIndexResponseHandler.getBulkUpdateActionListener;
-import static org.apache.atlas.repository.graphdb.janus.AtlasRelationshipIndexResponseHandler.getUpdateResponseListener;
+import static org.apache.atlas.repository.graphdb.janus.AtlasRelationshipIndexIOHandler.getBulkUpdateActionListener;
 
 
 @Service
@@ -60,15 +58,11 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
                 LOG.debug("==> createRelationships()");
 
             Map<String, List<AtlasRelationship>> vertexDocIdToRelationshipsMap = buildDocIdToRelationshipsMap(relationships, relationshipEndToVertexIdMap);
-            for (String docId : vertexDocIdToRelationshipsMap.keySet()) {
-                UpdateRequest request = getQueryForAppendingNestedRelationships(docId, getScriptParamsMap(vertexDocIdToRelationshipsMap, docId));
-                atlasJanusVertexIndexRepository.updateDocAsync(request, RequestOptions.DEFAULT, getUpdateResponseListener(atlasJanusVertexIndexRepository, request));
-            }
+            bulkUpdateRelationships(vertexDocIdToRelationshipsMap);
         } finally {
             AtlasPerfTracer.log(perf);
         }
     }
-
 
 
     @Override
@@ -99,7 +93,7 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
             UpdateRequest updateRequest = getQueryForAppendingNestedRelationships(docId, getScriptParamsMap(vertexDocIdToRelationshipsMap, docId));
             request.add(updateRequest);
         }
-        atlasJanusVertexIndexRepository.updateDocsInBulkAsync(request, getBulkUpdateActionListener(atlasJanusVertexIndexRepository));
+        atlasJanusVertexIndexRepository.updateDocsInBulkAsync(request, getBulkUpdateActionListener(atlasJanusVertexIndexRepository, request));
     }
 
     private Map<String, List<AtlasRelationship>> buildDocIdToRelationshipsMap(List<AtlasRelationship> relationships, Map<AtlasObjectId, Object> endEntityToVertexIdMap) {

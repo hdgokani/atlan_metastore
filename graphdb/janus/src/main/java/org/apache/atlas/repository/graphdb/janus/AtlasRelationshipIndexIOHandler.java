@@ -1,43 +1,41 @@
 package org.apache.atlas.repository.graphdb.janus;
 
-import org.apache.http.util.EntityUtils;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 
-public class AtlasRelationshipIndexResponseHandler {
+/**
+ * The requests will be executed in async manner,
+ * this class provides all callback logic for responses
+ * to handle failures and retries.
+ * The listener provides methods to access to the response and the failure events.
+ */
+public class AtlasRelationshipIndexIOHandler {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasRelationshipIndexResponseHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasRelationshipIndexIOHandler.class);
 
     public static ActionListener<UpdateResponse> getUpdateResponseListener(AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository, UpdateRequest request) {
 
         return new ActionListener<UpdateResponse>() {
             @Override
-            public void onResponse(UpdateResponse updateResponse) {
-                //LOG.info("------- async update response received for id: {} -------", updateResponse.getId());
-            }
+            public void onResponse(UpdateResponse updateResponse) {}
             @Override
-            public void onFailure(Exception e) {
-                LOG.info("------- async update response failed -------");
-                // TODO: Handle retries
-            }
+            public void onFailure(Exception e) {} // TODO: Handle retries
         };
     }
 
-    public static ActionListener<BulkResponse> getBulkUpdateActionListener(AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository) {
+    public static ActionListener<BulkResponse> getBulkUpdateActionListener(AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository, BulkRequest bulkRequest) {
         return new ActionListener<BulkResponse>() {
             @Override
             public void onResponse(BulkResponse bulkResponse) {
-                //LOG.info("------- bulk update response received: {} -------", bulkResponse.getItems().length);
                 handleBulkResponseFailures(bulkResponse);
             }
             @Override
@@ -50,18 +48,9 @@ public class AtlasRelationshipIndexResponseHandler {
     private ResponseListener getNewResponseListener(AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository) {
         return new ResponseListener() {
             @Override
-            public void onSuccess(Response response) {
-                try {
-                    LOG.info("------- async raw update response {} -------", EntityUtils.toString(response.getEntity()));
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            public void onSuccess(Response response) {}
             @Override
-            public void onFailure(Exception exception) {
-                LOG.error("------- async raw update response failed ------- ", exception);
-                // TODO: Handle retries
-            }
+            public void onFailure(Exception exception) {}
         };
     }
 
