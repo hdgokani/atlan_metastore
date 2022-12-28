@@ -885,7 +885,7 @@ public class EntityREST {
                                                  @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
                                                  @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-
+        AtlasPerfMetrics.MetricRecorder metric = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" +
@@ -897,9 +897,11 @@ public class EntityREST {
             EntityStream entityStream = new AtlasEntityStream(entities);
 
             EntityMutationResponse resp = entitiesStore.createOrUpdate(entityStream, replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
+            metric = RequestContext.get().startMetricRecord("createRelationships");
             atlasRelationshipsService.createRelationships(RequestContext.get().getCreatedRelationships(), RequestContext.get().getRelationshipEndsToVertexIdMap());
             return resp;
         } finally {
+            RequestContext.get().endMetricRecord(metric);
             AtlasPerfTracer.log(perf);
         }
     }
