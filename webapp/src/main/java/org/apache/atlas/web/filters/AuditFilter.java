@@ -83,19 +83,15 @@ public class AuditFilter implements Filter {
         final HttpServletRequest httpRequest = (HttpServletRequest) request;
         final HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-        if (RequestContext.isIsTypeSyncMode()) {
-            String uri = httpRequest.getRequestURI();
+        if (RequestContext.isIsTypeSyncMode() && !allowedUriInTypeSyncMode(httpRequest.getRequestURI())) {
+            Map<String, String> ret = new HashMap<>();
+            ret.put("errorCode", TYPEDEF_SYNC_IN_PROGRESS.getErrorCode());
+            ret.put("errorMessage", TYPEDEF_SYNC_IN_PROGRESS.getFormattedErrorMessage());
 
-            if (!allowedUriInTypeSyncMode(uri)) {
+            httpResponse.setHeader("Content-Type", ContentType.APPLICATION_JSON.toString());
+            httpResponse.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            httpResponse.getWriter().write(AtlasType.toJson(ret));
 
-                Map<String, String> ret = new HashMap<>();
-                ret.put("errorCode", TYPEDEF_SYNC_IN_PROGRESS.getErrorCode());
-                ret.put("errorMessage", TYPEDEF_SYNC_IN_PROGRESS.getFormattedErrorMessage());
-
-                httpResponse.setHeader("Content-Type", ContentType.APPLICATION_JSON.toString());
-                httpResponse.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                httpResponse.getWriter().write(AtlasType.toJson(ret));
-            }
         } else {
 
             final long startTime = System.currentTimeMillis();
