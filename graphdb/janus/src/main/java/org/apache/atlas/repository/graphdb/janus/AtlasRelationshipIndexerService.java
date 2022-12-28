@@ -6,6 +6,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -54,7 +55,6 @@ public class AtlasRelationshipIndexerService implements AtlasRelationshipsServic
         AtlasPerfTracer perf = null;
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "createRelationships()");
-
         try {
             if (LOG.isDebugEnabled())
                 LOG.debug("==> createRelationships()");
