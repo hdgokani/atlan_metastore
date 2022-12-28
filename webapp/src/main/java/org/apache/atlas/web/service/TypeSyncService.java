@@ -231,6 +231,9 @@ public class TypeSyncService {
                     LOG.error("Failed to delete elastic index", e0);
                 }
 
+                //RequestContext.setIsTypeSyncMode(false);
+                //typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.READ_INDEX.getId());
+
                 disableJanusgraphIndex(newIndexName);
                 throw new AtlasBaseException(e);
             }

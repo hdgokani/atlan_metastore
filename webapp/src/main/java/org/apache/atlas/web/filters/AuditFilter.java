@@ -24,11 +24,13 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.web.util.DateTimeHelper;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -43,6 +45,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -75,64 +80,78 @@ public class AuditFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
     throws IOException, ServletException {
 
-        final HttpServletRequest  httpRequest        = (HttpServletRequest) request;
-        final HttpServletResponse httpResponse       = (HttpServletResponse) response;
+        final HttpServletRequest  httpRequest  = (HttpServletRequest) request;
+        final HttpServletResponse httpResponse = (HttpServletResponse) response;
 
         if (RequestContext.isIsTypeSyncMode()) {
-            if (!httpRequest.getRequestURI().endsWith("cleanupTypeSync") &&
-                    !httpRequest.getRequestURI().endsWith("refresh") &&
-                    !httpRequest.getRequestURI().endsWith("status") &&
-                    !httpRequest.getRequestURI().endsWith("health") ) {
-                throw new ServletException(new AtlasBaseException(TYPEDEF_SYNC_IN_PROGRESS));
+            String uri = httpRequest.getRequestURI();
+
+            if (!allowedUriInTypeSyncMode(uri)) {
+
+                Map<String, String> ret = new HashMap<>();
+                ret.put("errorCode", TYPEDEF_SYNC_IN_PROGRESS.getErrorCode());
+                ret.put("errorMessage", TYPEDEF_SYNC_IN_PROGRESS.getFormattedErrorMessage());
+
+                httpResponse.setHeader("Content-Type", ContentType.APPLICATION_JSON.toString());
+                httpResponse.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                httpResponse.getWriter().write(AtlasType.toJson(ret));
             }
-        }
+        } else {
 
-        final long                startTime          = System.currentTimeMillis();
-        final Date                requestTime         = new Date();
-        final String              requestId          = UUID.randomUUID().toString();
-        final Thread              currentThread      = Thread.currentThread();
-        final String              oldName            = currentThread.getName();
-        final String              user               = AtlasAuthorizationUtils.getCurrentUserName();
-        final Set<String>         userGroups         = AtlasAuthorizationUtils.getCurrentUserGroups();
-        final String              deleteType         = httpRequest.getParameter("deleteType");
-        final boolean             skipFailedEntities = Boolean.parseBoolean(httpRequest.getParameter("skipFailedEntities"));
+            final long startTime = System.currentTimeMillis();
+            final Date requestTime = new Date();
+            final String requestId = UUID.randomUUID().toString();
+            final Thread currentThread = Thread.currentThread();
+            final String oldName = currentThread.getName();
+            final String user = AtlasAuthorizationUtils.getCurrentUserName();
+            final Set<String> userGroups = AtlasAuthorizationUtils.getCurrentUserGroups();
+            final String deleteType = httpRequest.getParameter("deleteType");
+            final boolean skipFailedEntities = Boolean.parseBoolean(httpRequest.getParameter("skipFailedEntities"));
 
-        try {
-            currentThread.setName(formatName(oldName, requestId));
+            try {
+                currentThread.setName(formatName(oldName, requestId));
 
-            RequestContext.clear();
-            RequestContext requestContext = RequestContext.get();
-            requestContext.setUser(user, userGroups);
-            requestContext.setClientIPAddress(AtlasAuthorizationUtils.getRequestIpAddress(httpRequest));
-            requestContext.setCreateShellEntityForNonExistingReference(createShellEntityForNonExistingReference);
-            requestContext.setForwardedAddresses(AtlasAuthorizationUtils.getForwardedAddressesFromRequest(httpRequest));
-            requestContext.setSkipFailedEntities(skipFailedEntities);
+                RequestContext.clear();
+                RequestContext requestContext = RequestContext.get();
+                requestContext.setUser(user, userGroups);
+                requestContext.setClientIPAddress(AtlasAuthorizationUtils.getRequestIpAddress(httpRequest));
+                requestContext.setCreateShellEntityForNonExistingReference(createShellEntityForNonExistingReference);
+                requestContext.setForwardedAddresses(AtlasAuthorizationUtils.getForwardedAddressesFromRequest(httpRequest));
+                requestContext.setSkipFailedEntities(skipFailedEntities);
 
-            if (StringUtils.isNotEmpty(deleteType)) {
-                if (deleteTypeOverrideEnabled) {
-                    requestContext.setDeleteType(DeleteType.from(deleteType));
-                } else {
-                    LOG.warn("Override of deleteType is not enabled. Ignoring parameter deleteType={}, in request from user={}", deleteType, user);
+                if (StringUtils.isNotEmpty(deleteType)) {
+                    if (deleteTypeOverrideEnabled) {
+                        requestContext.setDeleteType(DeleteType.from(deleteType));
+                    } else {
+                        LOG.warn("Override of deleteType is not enabled. Ignoring parameter deleteType={}, in request from user={}", deleteType, user);
+                    }
                 }
+
+                HeadersUtil.setRequestContextHeaders((HttpServletRequest) request);
+
+                filterChain.doFilter(request, response);
+
+            } finally {
+                long timeTaken = System.currentTimeMillis() - startTime;
+
+                recordAudit(httpRequest, requestTime, user, httpResponse.getStatus(), timeTaken);
+
+                // put the request id into the response so users can trace logs for this request
+                httpResponse.setHeader(AtlasClient.REQUEST_ID, requestId);
+                currentThread.setName(oldName);
+                RequestContext.clear();
             }
-
-            HeadersUtil.setRequestContextHeaders((HttpServletRequest)request);
-
-            filterChain.doFilter(request, response);
-        } finally {
-            long timeTaken = System.currentTimeMillis() - startTime;
-
-            recordAudit(httpRequest, requestTime, user, httpResponse.getStatus(), timeTaken);
-
-            // put the request id into the response so users can trace logs for this request
-            httpResponse.setHeader(AtlasClient.REQUEST_ID, requestId);
-            currentThread.setName(oldName);
-            RequestContext.clear();
         }
     }
 
     private String formatName(String oldName, String requestId) {
         return oldName + " - " + requestId;
+    }
+
+
+    private boolean allowedUriInTypeSyncMode(String uri) {
+        return uri.endsWith("status") || uri.endsWith("health") ||
+                uri.endsWith("refresh") || uri.endsWith("cleanupTypeSync");
     }
 
     private void recordAudit(HttpServletRequest httpRequest, Date when, String who, int httpStatus, long timeTaken) {
