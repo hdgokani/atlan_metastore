@@ -2903,9 +2903,12 @@ public class EntityGraphMapper {
 
             return propagatedEntitiesGuid;
         } catch (Exception e) {
-            LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): error while propagating classification", entityGuid, classificationVertexId, e);
+            if (!RequestContext.isIsTypeSyncMode()) {
+                LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): error while propagating classification", entityGuid, classificationVertexId, e);
 
-            throw new AtlasBaseException(e);
+                throw new AtlasBaseException(e);
+            }
+            return null;
         }
     }
 
