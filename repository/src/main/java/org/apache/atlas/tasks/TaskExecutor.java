@@ -152,6 +152,10 @@ public class TaskExecutor {
                 LOG.info(String.format("Finished task with guid: %s", task.getGuid()));
 
             } catch (InterruptedException exception) {
+                if (RequestContext.isIsTypeSyncMode()) {
+                    LOG.info("Interrupted task to perform typeDef sync, setting status to PENDING");
+                    task.setStatus(AtlasTask.Status.PENDING);
+                }
                 registry.updateStatus(taskVertex, task);
                 TASK_LOG.error("{}: {}: Interrupted!", task, exception);
 

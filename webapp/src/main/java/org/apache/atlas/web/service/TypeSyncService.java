@@ -11,6 +11,7 @@ import org.apache.atlas.repository.graph.TypeCacheRefresher;
 import org.apache.atlas.repository.graph.indexmanager.DefaultIndexCreator;
 import org.apache.atlas.repository.graphdb.AtlasMixedBackendIndexManager;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.web.dto.TypeSyncResponse;
@@ -50,6 +51,7 @@ public class TypeSyncService {
 
     private final AtlasTypeDefStore typeDefStore;
     private final AtlasJanusGraph atlasGraph;
+    private final EntityGraphRetriever graphRetriever;
     private final AtlasMixedBackendIndexManager atlasMixedBackendIndexManager;
     private final DefaultIndexCreator defaultIndexCreator;
     private final ElasticInstanceConfigService elasticInstanceConfigService;
@@ -58,12 +60,14 @@ public class TypeSyncService {
     @Inject
     public TypeSyncService(AtlasTypeDefStore typeDefStore,
                            AtlasJanusGraph atlasGraph,
+                           EntityGraphRetriever graphRetriever,
                            AtlasMixedBackendIndexManager atlasMixedBackendIndexManager,
                            DefaultIndexCreator defaultIndexCreator,
                            ElasticInstanceConfigService elasticInstanceConfigService,
                            TaskManagement taskManagement) {
         this.typeDefStore = typeDefStore;
         this.atlasGraph = atlasGraph;
+        this.graphRetriever = graphRetriever;
         this.atlasMixedBackendIndexManager = atlasMixedBackendIndexManager;
         this.defaultIndexCreator = defaultIndexCreator;
         this.elasticInstanceConfigService = elasticInstanceConfigService;
@@ -83,6 +87,7 @@ public class TypeSyncService {
                 //List<AtlasTask> tasks = taskManagement.getInProgressTasks();
                 try {
                     taskManagement.terminateInProgressTasks();
+                    graphRetriever.terminateInProgressTraversalsForTasks();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

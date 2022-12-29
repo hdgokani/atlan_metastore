@@ -121,7 +121,6 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -149,6 +148,7 @@ public class EntityGraphRetriever {
 
     private final boolean ignoreRelationshipAttr;
     private final AtlasGraph graph;
+    private ExecutorService graphTraversalExecutorServiceForTasks;
 
     @Inject
     public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
@@ -616,6 +616,12 @@ public class EntityGraphRetriever {
         return ret;
     }
 
+    public void terminateInProgressTraversalsForTasks() {
+        if (RequestContext.isIsTypeSyncMode()) {
+            graphTraversalExecutorServiceForTasks.shutdownNow();
+        }
+    }
+
     private void traverseImpactedVertices(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
                                           final String classificationId, final List<AtlasVertex> result, List<String> edgeLabelsToExclude) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseImpactedVertices");
@@ -715,11 +721,11 @@ public class EntityGraphRetriever {
         RequestContext              requestContext            = RequestContext.get();
 
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("Tasks-BFS-%d")
+                .setNameFormat(TASK_TRAVERSAL_TH_NAME_PERFIX)
                 .setDaemon(true)
                 .build();
 
-        ExecutorService executorService = Executors.newFixedThreadPool(AtlasConfiguration.GRAPH_TRAVERSAL_PARALLELISM.getInt(), threadFactory);
+        graphTraversalExecutorServiceForTasks = Executors.newFixedThreadPool(AtlasConfiguration.GRAPH_TRAVERSAL_PARALLELISM.getInt(), threadFactory);
 
         //Add Source vertex to level 1
         if (entityVertexStart != null && entityVertexStart.exists()) {
@@ -747,7 +753,7 @@ public class EntityGraphRetriever {
                             AtlasVertex entityVertex = graph.getVertex(t);
                             visitedVerticesIds.add(entityVertex.getIdForDisplay());
                             return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, classificationId,
-                                    relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds), executorService);
+                                    relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds), graphTraversalExecutorServiceForTasks);
                         }).collect(Collectors.toList());
 
                 futures.stream().map(CompletableFuture::join).forEach(x -> {
@@ -759,7 +765,7 @@ public class EntityGraphRetriever {
                 verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
             }
         }finally {
-            executorService.shutdown();
+            graphTraversalExecutorServiceForTasks.shutdown();
         }
 
         result.addAll(traversedVerticesIds);

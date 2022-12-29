@@ -159,6 +159,8 @@ public final class Constants {
 
     public static String[] PROCESS_EDGE_LABELS = {PROCESS_OUTPUTS, PROCESS_INPUTS};
 
+    public static String TASK_TRAVERSAL_TH_NAME_PERFIX = "Tasks-BFS-%d";
+
     /**
      * The homeId field is used when saving into Atlas a copy of an object that is being imported from another
      * repository. The homeId will be set to a String that identifies the other repository. The specific format
