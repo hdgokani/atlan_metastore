@@ -776,8 +776,10 @@ public class EntityGraphRetriever {
             }
         }finally {
             if (RequestContext.isIsTypeSyncMode()) {
+                LOG.info("graphTraversalExecutorServiceForTasks shutdownNow");
                 graphTraversalExecutorServiceForTasks.shutdownNow();
             } else {
+                LOG.info("graphTraversalExecutorServiceForTasks shutdown");
                 graphTraversalExecutorServiceForTasks.shutdown();
             }
         }
