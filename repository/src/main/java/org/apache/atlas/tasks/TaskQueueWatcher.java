@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TaskQueueWatcher implements Runnable {
@@ -66,6 +67,15 @@ public class TaskQueueWatcher implements Runnable {
     public void shutdown() {
         shouldRun.set(false);
         LOG.info("TaskQueueWatcher: Shutdown");
+    }
+
+    public void shutdownNow() throws InterruptedException {
+        //shouldRun.set(false);
+        LOG.info("<<< TaskQueueWatcher: ShutdownNow");
+        executorService.shutdownNow();
+
+        executorService.awaitTermination(60, TimeUnit.SECONDS);
+        LOG.info(">>> TaskQueueWatcher: ShutdownNow");
     }
 
     @Override

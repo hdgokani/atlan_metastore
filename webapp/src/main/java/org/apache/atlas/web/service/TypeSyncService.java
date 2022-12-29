@@ -3,6 +3,7 @@ package org.apache.atlas.web.service;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
@@ -11,6 +12,7 @@ import org.apache.atlas.repository.graph.indexmanager.DefaultIndexCreator;
 import org.apache.atlas.repository.graphdb.AtlasMixedBackendIndexManager;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.web.dto.TypeSyncResponse;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -30,6 +32,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -50,27 +53,40 @@ public class TypeSyncService {
     private final AtlasMixedBackendIndexManager atlasMixedBackendIndexManager;
     private final DefaultIndexCreator defaultIndexCreator;
     private final ElasticInstanceConfigService elasticInstanceConfigService;
+    private final TaskManagement taskManagement;
 
     @Inject
     public TypeSyncService(AtlasTypeDefStore typeDefStore,
                            AtlasJanusGraph atlasGraph,
                            AtlasMixedBackendIndexManager atlasMixedBackendIndexManager,
                            DefaultIndexCreator defaultIndexCreator,
-                           ElasticInstanceConfigService elasticInstanceConfigService) {
+                           ElasticInstanceConfigService elasticInstanceConfigService,
+                           TaskManagement taskManagement) {
         this.typeDefStore = typeDefStore;
         this.atlasGraph = atlasGraph;
         this.atlasMixedBackendIndexManager = atlasMixedBackendIndexManager;
         this.defaultIndexCreator = defaultIndexCreator;
         this.elasticInstanceConfigService = elasticInstanceConfigService;
+        this.taskManagement = taskManagement;
     }
 
-    public static void waitAllRequestsToComplete(String traceId) {
+    public void waitAllRequestsToComplete(String traceId) {
 
         LOG.info("Waiting for all active requests until done");
         RequestContext.setIsTypeSyncMode(true);
 
         while (true) {
             Set<RequestContext> activeRequests = RequestContext.getActiveRequests();
+
+            //kill in progress task
+            if (taskManagement != null) {
+                //List<AtlasTask> tasks = taskManagement.getInProgressTasks();
+                try {
+                    taskManagement.terminateInProgressTasks();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
 
             if (activeRequests.size() == 2) {
                 int vTh = 0;

@@ -41,16 +41,19 @@ public class TypeCacheRefreshREST {
     private final IAtlasGraphProvider provider;
     private final ServiceState serviceState;
     private final AtlasHealthStatus atlasHealthStatus;
+    private final TypeSyncService typeSyncService;
     private final ElasticInstanceConfigService elasticInstanceConfigService;
 
     @Inject
     public TypeCacheRefreshREST(AtlasTypeDefStore typeDefStore, IAtlasGraphProvider provider,
                                 ServiceState serviceState, AtlasHealthStatus atlasHealthStatus,
+                                TypeSyncService typeSyncService,
                                 ElasticInstanceConfigService elasticInstanceConfigService) {
         this.typeDefStore = typeDefStore;
         this.provider = provider;
         this.serviceState = serviceState;
         this.atlasHealthStatus = atlasHealthStatus;
+        this.typeSyncService = typeSyncService;
         this.elasticInstanceConfigService = elasticInstanceConfigService;
     }
 
@@ -82,7 +85,7 @@ public class TypeCacheRefreshREST {
             } else if (operationId == RefreshOperation.READ_INDEX.getId()) {
                 refreshReadIndexName(traceId);
             } else if (operationId == RefreshOperation.WAIT_COMPLETE_REQUESTS.getId()) {
-                TypeSyncService.waitAllRequestsToComplete(traceId);
+                typeSyncService.waitAllRequestsToComplete(traceId);
             }
 
         } catch (Exception e) {

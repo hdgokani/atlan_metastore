@@ -81,6 +81,12 @@ public class TaskExecutor {
         }
     }
 
+    public void terminateInProgressTasks() throws InterruptedException {
+        if (watcher != null) {
+            watcher.shutdownNow();
+        }
+    }
+
     static class TaskConsumer implements Runnable {
         private static final int MAX_ATTEMPT_COUNT = 3;
 

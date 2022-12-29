@@ -296,6 +296,11 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         watcherThread = null;
     }
 
+    public void terminateInProgressTasks() throws InterruptedException {
+        taskExecutor.terminateInProgressTasks();
+        //watcherThread = null;
+    }
+
     public static boolean tasksToBeExecutedInDedicatedInstance() {
         return StringUtils.isNotEmpty(taskExecutionPodName) && StringUtils.isNotEmpty(currentHostName);
     }

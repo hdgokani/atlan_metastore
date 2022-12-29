@@ -543,7 +543,7 @@ public class TypesREST {
             lock = attemptAcquiringLock();
             ret = typeSyncService.syncTypes(newTypeDefinitions, typeCacheRefresher);
 
-            //String traceId = typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.TYPE_WRITE_INDEX.getId());
+            String traceId = typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.TYPE_WRITE_INDEX.getId());
 
             ret.setTraceId(RequestContext.get().getTraceId());
 
