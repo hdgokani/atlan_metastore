@@ -775,7 +775,11 @@ public class EntityGraphRetriever {
                 verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
             }
         }finally {
-            graphTraversalExecutorServiceForTasks.shutdown();
+            if (RequestContext.isIsTypeSyncMode()) {
+                graphTraversalExecutorServiceForTasks.shutdownNow();
+            } else {
+                graphTraversalExecutorServiceForTasks.shutdown();
+            }
         }
 
         result.addAll(traversedVerticesIds);
