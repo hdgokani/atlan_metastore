@@ -150,6 +150,7 @@ public class EntityGraphRetriever {
     private final boolean ignoreRelationshipAttr;
     private final AtlasGraph graph;
     private ExecutorService graphTraversalExecutorServiceForTasks;
+    private List<CompletableFuture<Set<String>>> futures;
 
     @Inject
     public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
@@ -618,6 +619,11 @@ public class EntityGraphRetriever {
     }
 
     public void terminateInProgressTraversalsForTasks() throws InterruptedException {
+        LOG.info("futures {}", futures != null);
+        if ( CollectionUtils.isNotEmpty(futures) && RequestContext.isIsTypeSyncMode()) {
+            futures.forEach(x -> x.cancel(true));
+        }
+
         LOG.info("graphTraversalExecutorServiceForTasks {}, {}", graphTraversalExecutorServiceForTasks != null, RequestContext.isIsTypeSyncMode());
         if (graphTraversalExecutorServiceForTasks != null && RequestContext.isIsTypeSyncMode()) {
             LOG.info("Shutting down graphTraversalExecutorServiceForTasks now");
@@ -758,7 +764,7 @@ public class EntityGraphRetriever {
             while (!verticesAtCurrentLevel.isEmpty()) {
                 Set<String> verticesToVisitNextLevel = new HashSet<>();
 
-                List<CompletableFuture<Set<String>>> futures = verticesAtCurrentLevel.stream()
+                futures = verticesAtCurrentLevel.stream()
                         .map(t -> {
                             AtlasVertex entityVertex = graph.getVertex(t);
                             visitedVerticesIds.add(entityVertex.getIdForDisplay());
