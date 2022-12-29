@@ -617,7 +617,7 @@ public class EntityGraphRetriever {
     }
 
     public void terminateInProgressTraversalsForTasks() {
-        if (RequestContext.isIsTypeSyncMode()) {
+        if (graphTraversalExecutorServiceForTasks != null && RequestContext.isIsTypeSyncMode()) {
             graphTraversalExecutorServiceForTasks.shutdownNow();
         }
     }

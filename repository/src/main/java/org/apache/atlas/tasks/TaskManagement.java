@@ -297,7 +297,9 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     }
 
     public void terminateInProgressTasks() throws InterruptedException {
-        taskExecutor.terminateInProgressTasks();
+        if (taskExecutor != null) {
+            taskExecutor.terminateInProgressTasks();
+        }
         //watcherThread = null;
     }
 

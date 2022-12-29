@@ -72,9 +72,11 @@ public class TaskQueueWatcher implements Runnable {
     public void shutdownNow() throws InterruptedException {
         //shouldRun.set(false);
         LOG.info("<<< TaskQueueWatcher: ShutdownNow");
-        executorService.shutdownNow();
+        if (executorService != null) {
+            executorService.shutdownNow();
+            executorService.awaitTermination(60, TimeUnit.SECONDS);
+        }
 
-        executorService.awaitTermination(60, TimeUnit.SECONDS);
         LOG.info(">>> TaskQueueWatcher: ShutdownNow");
     }
 
