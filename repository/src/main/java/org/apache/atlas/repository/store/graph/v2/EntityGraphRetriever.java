@@ -622,8 +622,12 @@ public class EntityGraphRetriever {
             LOG.info("Shutting down graphTraversalExecutorServiceForTasks now");
             graphTraversalExecutorServiceForTasks.shutdownNow();
 
-            graphTraversalExecutorServiceForTasks.awaitTermination(60, TimeUnit.SECONDS);
-            LOG.info("Shut down graphTraversalExecutorServiceForTasks!");
+            boolean terminated = graphTraversalExecutorServiceForTasks.awaitTermination(60, TimeUnit.SECONDS);
+            if (terminated) {
+                LOG.info("Shut down graphTraversalExecutorServiceForTasks!");
+            } else {
+                LOG.warn("Failed to Shut down graphTraversalExecutorServiceForTasks!");
+            }
         }
     }
 
