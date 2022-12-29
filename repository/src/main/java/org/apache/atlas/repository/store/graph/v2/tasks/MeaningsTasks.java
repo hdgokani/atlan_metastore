@@ -1,4 +1,5 @@
 package org.apache.atlas.repository.store.graph.v2.tasks;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -22,8 +23,13 @@ public class MeaningsTasks {
             String currentTermName  = (String) parameters.get(PARAM_CURRENT_TERM_NAME);
             String updatedTermName  = (String) parameters.get(PARAM_UPDATED_TERM_NAME);
 
-            preprocessor.updateMeaningsNamesInEntitiesOnTermUpdate(currentTermName, updatedTermName, termQName, termGuid);
-
+            try {
+                preprocessor.updateMeaningsNamesInEntitiesOnTermUpdate(currentTermName, updatedTermName, termQName, termGuid);
+            } catch (AtlasBaseException e) {
+                if (!RequestContext.isIsTypeSyncMode()) {
+                    throw e;
+                }
+            }
         }
     }
 
@@ -39,9 +45,13 @@ public class MeaningsTasks {
             String termQName    = (String) parameters.get(PARAM_ENTITY_QUALIFIED_NAME);
             String termName     = (String) parameters.get(PARAM_CURRENT_TERM_NAME);
 
-
-            entityStoreV2.updateMeaningsNamesInEntitiesOnTermDelete(termName, termQName, termGuid);
-
+            try {
+                entityStoreV2.updateMeaningsNamesInEntitiesOnTermDelete(termName, termQName, termGuid);
+            } catch (AtlasBaseException e) {
+                if (!RequestContext.isIsTypeSyncMode()) {
+                    throw e;
+                }
+            }
         }
     }
 }
