@@ -64,11 +64,13 @@ public abstract class MeaningsTask extends AbstractTask {
 
                 setStatus(COMPLETE);
             } catch (Exception e) {
-                LOG.error("Task: {}: Error performing task!", getTaskGuid(), e);
-
-                setStatus(FAILED);
-
-                throw e;
+                if (RequestContext.isIsTypeSyncMode()) {
+                    setStatus(PENDING);
+                } else {
+                    LOG.error("Task: {}: Error performing task!", getTaskGuid(), e);
+                    setStatus(FAILED);
+                    throw e;
+                }
             } finally {
                 graph.commit();
             }

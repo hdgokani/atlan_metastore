@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.store.graph.v2.tasks;
 
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.tasks.AtlasTask;
@@ -44,13 +43,7 @@ public class ClassificationPropagationTasks {
             String relationshipGuid         = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
             Boolean previousRestrictPropagationThroughLineage = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
 
-            try {
-                entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage);
-            } catch (AtlasBaseException e) {
-                if (!RequestContext.isIsTypeSyncMode()) {
-                    throw e;
-                }
-            }
+            entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage);
         }
     }
 
@@ -64,13 +57,7 @@ public class ClassificationPropagationTasks {
             String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
             String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
 
-            try {
-                entityGraphMapper.deleteClassificationPropagation(entityGuid, classificationVertexId);
-            } catch (AtlasBaseException e) {
-                if (!RequestContext.isIsTypeSyncMode()) {
-                    throw e;
-                }
-            }
+            entityGraphMapper.deleteClassificationPropagation(entityGuid, classificationVertexId);
         }
     }
 
@@ -87,14 +74,7 @@ public class ClassificationPropagationTasks {
             } else {
                 String deletedEdgeId          =  (String) parameters.get(PARAM_DELETED_EDGE_ID);
                 String classificationVertexId =  (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-
-                try {
-                    entityGraphMapper.deleteClassificationOnlyPropagation(deletedEdgeId, classificationVertexId);
-                } catch (AtlasBaseException e) {
-                    if (!RequestContext.isIsTypeSyncMode()) {
-                        throw e;
-                    }
-                }
+                entityGraphMapper.deleteClassificationOnlyPropagation(deletedEdgeId, classificationVertexId);
             }
         }
     }
@@ -110,13 +90,7 @@ public class ClassificationPropagationTasks {
             String referencedVertexId = (String) parameters.get(PARAM_REFERENCED_VERTEX_ID);
             boolean isTermEntityEdge = (boolean) parameters.get(PARAM_IS_TERM_ENTITY_EDGE);
 
-            try {
-                entityGraphMapper.deleteClassificationOnlyPropagation(classificationVertexId, referencedVertexId, isTermEntityEdge);
-            } catch (AtlasBaseException e) {
-                if (!RequestContext.isIsTypeSyncMode()) {
-                    throw e;
-                }
-            }
+            entityGraphMapper.deleteClassificationOnlyPropagation(classificationVertexId, referencedVertexId, isTermEntityEdge);
         }
     }
 
@@ -130,13 +104,7 @@ public class ClassificationPropagationTasks {
             String            relationshipEdgeId = (String) parameters.get(PARAM_RELATIONSHIP_EDGE_ID);
             AtlasRelationship relationship       = AtlasType.fromJson((String) parameters.get(PARAM_RELATIONSHIP_OBJECT), AtlasRelationship.class);
 
-            try {
-                entityGraphMapper.updateTagPropagations(relationshipEdgeId, relationship);
-            } catch (AtlasBaseException e) {
-                if (!RequestContext.isIsTypeSyncMode()) {
-                    throw e;
-                }
-            }
+            entityGraphMapper.updateTagPropagations(relationshipEdgeId, relationship);
         }
     }
 }
