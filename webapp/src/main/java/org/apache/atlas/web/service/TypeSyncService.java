@@ -115,6 +115,7 @@ public class TypeSyncService {
             }
 
             LOG.info("activeRequests({}): {}", activeRequests.size(), sb.toString());
+            LOG.info("current thread id: {}", RequestContext.get().getThId());
 
             try {
                 LOG.info("Sleeping for 15 seconds to check for Active requests");

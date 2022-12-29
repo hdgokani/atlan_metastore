@@ -155,9 +155,10 @@ public class TaskExecutor {
                 if (RequestContext.isIsTypeSyncMode()) {
                     LOG.info("Interrupted task to perform typeDef sync, setting status to PENDING");
                     task.setStatus(AtlasTask.Status.PENDING);
+                } else {
+                    TASK_LOG.error("{}: {}: Interrupted!", task, exception);
                 }
                 registry.updateStatus(taskVertex, task);
-                TASK_LOG.error("{}: {}: Interrupted!", task, exception);
 
                 statistics.error();
             } catch (Exception exception) {

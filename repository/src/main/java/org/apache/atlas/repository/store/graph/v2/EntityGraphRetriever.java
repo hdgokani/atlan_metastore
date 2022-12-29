@@ -92,6 +92,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
@@ -616,9 +617,13 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    public void terminateInProgressTraversalsForTasks() {
+    public void terminateInProgressTraversalsForTasks() throws InterruptedException {
         if (graphTraversalExecutorServiceForTasks != null && RequestContext.isIsTypeSyncMode()) {
+            LOG.info("Shutting down graphTraversalExecutorServiceForTasks now");
             graphTraversalExecutorServiceForTasks.shutdownNow();
+
+            graphTraversalExecutorServiceForTasks.awaitTermination(60, TimeUnit.SECONDS);
+            LOG.info("Shut down graphTraversalExecutorServiceForTasks!");
         }
     }
 
