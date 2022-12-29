@@ -618,6 +618,7 @@ public class EntityGraphRetriever {
     }
 
     public void terminateInProgressTraversalsForTasks() throws InterruptedException {
+        LOG.info("graphTraversalExecutorServiceForTasks {}, {}", graphTraversalExecutorServiceForTasks != null, RequestContext.isIsTypeSyncMode());
         if (graphTraversalExecutorServiceForTasks != null && RequestContext.isIsTypeSyncMode()) {
             LOG.info("Shutting down graphTraversalExecutorServiceForTasks now");
             graphTraversalExecutorServiceForTasks.shutdownNow();
