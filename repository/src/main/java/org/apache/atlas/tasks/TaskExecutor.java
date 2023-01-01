@@ -179,7 +179,7 @@ public class TaskExecutor {
                 }
 
                 latch.countDown();
-                RequestContext.get().clearCache();
+                RequestContext.clear();
                 AtlasPerfTracer.log(perf);
             }
         }

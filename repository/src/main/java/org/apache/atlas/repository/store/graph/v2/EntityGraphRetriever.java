@@ -737,7 +737,7 @@ public class EntityGraphRetriever {
         RequestContext              requestContext            = RequestContext.get();
 
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat(TASK_TRAVERSAL_TH_NAME_PERFIX)
+                .setNameFormat(TASK_TRAVERSAL_TH_NAME_PERFIX + "%d")
                 .setDaemon(true)
                 .build();
 
@@ -769,7 +769,7 @@ public class EntityGraphRetriever {
                             AtlasVertex entityVertex = graph.getVertex(t);
                             visitedVerticesIds.add(entityVertex.getIdForDisplay());
                             return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, classificationId,
-                                    relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds), graphTraversalExecutorServiceForTasks);
+                                    relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds, requestContext), graphTraversalExecutorServiceForTasks);
                         }).collect(Collectors.toList());
 
                 futures.stream().map(CompletableFuture::join).forEach(x -> {
@@ -796,12 +796,12 @@ public class EntityGraphRetriever {
     }
 
     private Set<String> getAdjacentVerticesIds(AtlasVertex entityVertex,final String classificationId, final String relationshipGuidToExclude
-            ,List<String> edgeLabelsToExclude, Set<String> visitedVerticesIds) {
+            ,List<String> edgeLabelsToExclude, Set<String> visitedVerticesIds, RequestContext requestContext) {
 
         AtlasEntityType         entityType          = typeRegistry.getEntityTypeByName(getTypeName(entityVertex));
         String[]                tagPropagationEdges = entityType != null ? entityType.getTagPropagationEdgesArray() : null;
         Set<String>             ret                 = new HashSet<>();
-        RequestContext          requestContext      = RequestContext.get();
+
 
         if (tagPropagationEdges == null) {
             return null;

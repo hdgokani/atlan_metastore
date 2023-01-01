@@ -87,7 +87,7 @@ public class TypeSyncService {
                 //List<AtlasTask> tasks = taskManagement.getInProgressTasks();
                 try {
                     taskManagement.terminateInProgressTasks();
-                    graphRetriever.terminateInProgressTraversalsForTasks();
+                    //graphRetriever.terminateInProgressTraversalsForTasks();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
