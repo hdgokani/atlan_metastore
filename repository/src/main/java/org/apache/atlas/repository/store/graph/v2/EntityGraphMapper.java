@@ -2828,6 +2828,11 @@ public class EntityGraphMapper {
 
     public List<String> propagateClassification(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean previousRestrictPropagationThroughLineage) throws AtlasBaseException {
         try {
+            boolean brea = false;
+            while (!brea) {
+
+            }
+
             if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(classificationVertexId)) {
                 LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): entityGuid and/or classification vertex id is empty", entityGuid, classificationVertexId);
 

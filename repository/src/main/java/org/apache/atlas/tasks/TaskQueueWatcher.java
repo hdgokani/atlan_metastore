@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.tasks;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.RequestContext;
@@ -31,8 +32,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.apache.atlas.tasks.TaskExecutor.TASK_NAME_FORMAT;
 
 public class TaskQueueWatcher implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(TaskQueueWatcher.class);
@@ -41,7 +45,7 @@ public class TaskQueueWatcher implements Runnable {
     private final boolean isActiveActiveHAEnabled;
 
     private TaskRegistry registry;
-    private final ExecutorService executorService;
+    private ExecutorService executorService;
     private final Map<String, TaskFactory> taskTypeFactoryMap;
     private final TaskManagement.Statistics statistics;
     private final ICuratorFactory curatorFactory;
@@ -74,7 +78,13 @@ public class TaskQueueWatcher implements Runnable {
         LOG.info("<<< TaskQueueWatcher: ShutdownNow");
         if (executorService != null) {
             executorService.shutdownNow();
-            executorService.awaitTermination(60, TimeUnit.SECONDS);
+            boolean terminated = executorService.awaitTermination(60, TimeUnit.SECONDS);
+            if (terminated) {
+                LOG.info("Shut down TaskQueueWatcher!");
+            } else {
+                LOG.warn("Failed to Shut down TaskQueueWatcher!");
+            }
+
         }
 
         LOG.info(">>> TaskQueueWatcher: ShutdownNow");
@@ -156,6 +166,14 @@ public class TaskQueueWatcher implements Runnable {
     }
     private void submitAll(List<AtlasTask> tasks, CountDownLatch latch) {
         if (CollectionUtils.isNotEmpty(tasks)) {
+
+            if (this.executorService.isTerminated()) {
+                LOG.info("Re initiating task executorService as it was terminated");
+                executorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
+                        .build());
+            }
 
             for (AtlasTask task : tasks) {
                 if (task != null) {

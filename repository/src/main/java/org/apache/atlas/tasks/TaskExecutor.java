@@ -37,7 +37,6 @@ public class TaskExecutor {
     private static final Logger     PERF_LOG         = AtlasPerfTracer.getPerfLogger("atlas.task");
     private static final Logger     LOG              = LoggerFactory.getLogger(TaskExecutor.class);
     private static final TaskLogger TASK_LOG         = TaskLogger.getLogger();
-    private static final String     TASK_NAME_FORMAT = "atlas-task-%d-";
 
     private static final boolean perfEnabled = AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG);
 
@@ -51,6 +50,8 @@ public class TaskExecutor {
 
     private TaskQueueWatcher watcher;
     private Thread watcherThread;
+
+    protected static final String TASK_NAME_FORMAT = "atlas-task-%d-";
 
     public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
                         ICuratorFactory curatorFactory,final String zkRoot, boolean isActiveActiveHAEnabled) {
