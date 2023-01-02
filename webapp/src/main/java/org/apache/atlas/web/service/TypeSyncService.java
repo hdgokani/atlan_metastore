@@ -139,7 +139,6 @@ public class TypeSyncService {
                 typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.WAIT_COMPLETE_REQUESTS.getId());
                 waitAllRequestsToComplete(RequestContext.get().getTraceId());
 
-
                 LOG.info("### 2");
                 newIndexName = elasticInstanceConfigService.updateCurrentIndexName();LOG.info("### 3");
                 LOG.info("newIndexName: {}", newIndexName);
@@ -154,12 +153,10 @@ public class TypeSyncService {
 
                 defaultIndexCreator.createDefaultIndexes(atlasGraph);LOG.info("### 8");
 
-                LOG.info("Waiting for 20 seconds");
+                /*LOG.info("Waiting for 20 seconds");
                 Thread.sleep(20000);
-                LOG.info("Wait over");
-            }
+                LOG.info("Wait over");*/
 
-            if (haveIndexSettingsChanged) {
                 GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
                 LOG.info("report after creating new index {}", report.toString());LOG.info("### 9");
             }
@@ -326,8 +323,8 @@ public class TypeSyncService {
             }
 
             if (attempt == retry) {
-                LOG.error("All attempts exhausted, failed to Disable index");
-                throw new AtlasBaseException("All attempts exhausted, failed to Disable index");
+                LOG.error("All attempts exhausted, failed to Disable index {}", indexName);
+                throw new AtlasBaseException("All attempts exhausted, failed to Disable index " + indexName);
 
             } else {
                 LOG.info("Sleeping for 60 seconds before re-attempting");
@@ -370,7 +367,7 @@ public class TypeSyncService {
         }
     }
 
-    private void closeOpenInstances(StandardJanusGraph graph) throws AtlasBaseException {
+    private void closeOpenInstances(StandardJanusGraph graph) {
         JanusGraphManagement management = graph.openManagement();
 
         try {
