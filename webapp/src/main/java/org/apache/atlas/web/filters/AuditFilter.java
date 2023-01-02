@@ -23,7 +23,6 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.DeleteType;
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.web.util.DateTimeHelper;
@@ -46,7 +45,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -94,15 +92,15 @@ public class AuditFilter implements Filter {
 
         } else {
 
-            final long startTime = System.currentTimeMillis();
-            final Date requestTime = new Date();
-            final String requestId = UUID.randomUUID().toString();
-            final Thread currentThread = Thread.currentThread();
-            final String oldName = currentThread.getName();
-            final String user = AtlasAuthorizationUtils.getCurrentUserName();
-            final Set<String> userGroups = AtlasAuthorizationUtils.getCurrentUserGroups();
-            final String deleteType = httpRequest.getParameter("deleteType");
-            final boolean skipFailedEntities = Boolean.parseBoolean(httpRequest.getParameter("skipFailedEntities"));
+            final long                startTime          = System.currentTimeMillis();
+            final Date                requestTime         = new Date();
+            final String              requestId          = UUID.randomUUID().toString();
+            final Thread              currentThread      = Thread.currentThread();
+            final String              oldName            = currentThread.getName();
+            final String              user               = AtlasAuthorizationUtils.getCurrentUserName();
+            final Set<String>         userGroups         = AtlasAuthorizationUtils.getCurrentUserGroups();
+            final String              deleteType         = httpRequest.getParameter("deleteType");
+            final boolean             skipFailedEntities = Boolean.parseBoolean(httpRequest.getParameter("skipFailedEntities"));
 
             try {
                 currentThread.setName(formatName(oldName, requestId));
@@ -117,6 +115,9 @@ public class AuditFilter implements Filter {
 
                 if (StringUtils.isNotEmpty(deleteType)) {
                     if (deleteTypeOverrideEnabled) {
+                        if(DeleteType.PURGE.name().equals(deleteType)) {
+                            requestContext.setPurgeRequested(true);
+                        }
                         requestContext.setDeleteType(DeleteType.from(deleteType));
                     } else {
                         LOG.warn("Override of deleteType is not enabled. Ignoring parameter deleteType={}, in request from user={}", deleteType, user);

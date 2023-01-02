@@ -3515,7 +3515,7 @@ public class EntityGraphMapper {
              some other task was created before it to remove propagations. No need to execute this task.
          */
         if (referenceVertex == null) {
-            LOG.warn("Reference Vertex is deleted {}", referenceVertexId, classificationId);
+            LOG.warn("Reference Vertex {} is deleted", referenceVertexId);
             return;
         }
 
