@@ -149,8 +149,6 @@ public class EntityGraphRetriever {
 
     private final boolean ignoreRelationshipAttr;
     private final AtlasGraph graph;
-    private ExecutorService graphTraversalExecutorServiceForTasks;
-    private List<CompletableFuture<Set<String>>> futures;
 
     @Inject
     public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
@@ -618,26 +616,6 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    public void terminateInProgressTraversalsForTasks() throws InterruptedException {
-        LOG.info("futures {}", futures != null);
-        if ( CollectionUtils.isNotEmpty(futures) && RequestContext.isIsTypeSyncMode()) {
-            futures.forEach(x -> x.cancel(true));
-        }
-
-        LOG.info("graphTraversalExecutorServiceForTasks {}, {}", graphTraversalExecutorServiceForTasks != null, RequestContext.isIsTypeSyncMode());
-        if (graphTraversalExecutorServiceForTasks != null && RequestContext.isIsTypeSyncMode()) {
-            LOG.info("Shutting down graphTraversalExecutorServiceForTasks now");
-            graphTraversalExecutorServiceForTasks.shutdownNow();
-
-            boolean terminated = graphTraversalExecutorServiceForTasks.awaitTermination(60, TimeUnit.SECONDS);
-            if (terminated) {
-                LOG.info("Shut down graphTraversalExecutorServiceForTasks!");
-            } else {
-                LOG.warn("Failed to Shut down graphTraversalExecutorServiceForTasks!");
-            }
-        }
-    }
-
     private void traverseImpactedVertices(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
                                           final String classificationId, final List<AtlasVertex> result, List<String> edgeLabelsToExclude) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseImpactedVertices");
@@ -741,7 +719,7 @@ public class EntityGraphRetriever {
                 .setDaemon(true)
                 .build();
 
-        graphTraversalExecutorServiceForTasks = Executors.newFixedThreadPool(AtlasConfiguration.GRAPH_TRAVERSAL_PARALLELISM.getInt(), threadFactory);
+        ExecutorService executorService = Executors.newFixedThreadPool(AtlasConfiguration.GRAPH_TRAVERSAL_PARALLELISM.getInt(), threadFactory);
 
         //Add Source vertex to level 1
         if (entityVertexStart != null && entityVertexStart.exists()) {
@@ -764,12 +742,12 @@ public class EntityGraphRetriever {
             while (!verticesAtCurrentLevel.isEmpty()) {
                 Set<String> verticesToVisitNextLevel = new HashSet<>();
 
-                futures = verticesAtCurrentLevel.stream()
+                List<CompletableFuture<Set<String>>> futures = verticesAtCurrentLevel.stream()
                         .map(t -> {
                             AtlasVertex entityVertex = graph.getVertex(t);
                             visitedVerticesIds.add(entityVertex.getIdForDisplay());
                             return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, classificationId,
-                                    relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds, requestContext), graphTraversalExecutorServiceForTasks);
+                                    relationshipGuidToExclude, edgeLabelsToExclude, visitedVerticesIds, requestContext), executorService);
                         }).collect(Collectors.toList());
 
                 futures.stream().map(CompletableFuture::join).forEach(x -> {
@@ -783,10 +761,10 @@ public class EntityGraphRetriever {
         }finally {
             if (RequestContext.isIsTypeSyncMode()) {
                 LOG.info("graphTraversalExecutorServiceForTasks shutdownNow");
-                graphTraversalExecutorServiceForTasks.shutdownNow();
+                executorService.shutdownNow();
             } else {
                 LOG.info("graphTraversalExecutorServiceForTasks shutdown");
-                graphTraversalExecutorServiceForTasks.shutdown();
+                executorService.shutdown();
             }
         }
 

@@ -300,7 +300,6 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         if (taskExecutor != null) {
             taskExecutor.terminateInProgressTasks();
         }
-        //watcherThread = null;
     }
 
     public static boolean tasksToBeExecutedInDedicatedInstance() {

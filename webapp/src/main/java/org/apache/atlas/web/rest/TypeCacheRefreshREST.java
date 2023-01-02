@@ -144,11 +144,15 @@ public class TypeCacheRefreshREST {
 
     private void refreshReadIndexName(final String traceId) {
         LOG.info("Refreshing read index name of ES :: traceId {}", traceId);
-        RequestContext.setIsTypeSyncMode(false);
+        try {
+            RequestContext.setIsTypeSyncMode(false);
 
-        String newIndexName = elasticInstanceConfigService.getCurrentIndexName();
-        ActiveIndexNameManager.setCurrentReadVertexIndexName(newIndexName);
+            String newIndexName = elasticInstanceConfigService.getCurrentIndexName();
+            ActiveIndexNameManager.setCurrentReadVertexIndexName(newIndexName);
 
-        LOG.info("Refreshed read index name of ES :: traceId {}, newReadIndexName {}", traceId, newIndexName);
+            LOG.info("Refreshed read index name of ES :: traceId {}, newReadIndexName {}", traceId, newIndexName);
+        } finally {
+            RequestContext.setIsTypeSyncMode(false);
+        }
     }
 }

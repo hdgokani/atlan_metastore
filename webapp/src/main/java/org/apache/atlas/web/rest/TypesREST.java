@@ -575,7 +575,7 @@ public class TypesREST {
 
             typeSyncService.cleanupTypeSync(traceId, typeCacheRefresher);
 
-            typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.READ_INDEX.getId());
+
         } catch (AtlasBaseException e) {
             LOG.error("TypesREST.cleanupTypeSync:: " + e.getMessage(), e);
             throw e;
@@ -584,6 +584,11 @@ public class TypesREST {
             throw new AtlasBaseException("Error while syncing types");
         } finally {
             AtlasPerfTracer.log(perf);
+            try {
+                typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.READ_INDEX.getId());
+            } catch (Exception e) {
+                LOG.error("Error while refresh Read index after clean up");
+            }
         }
     }
 

@@ -84,10 +84,8 @@ public class TypeSyncService {
 
             //kill in progress task
             if (taskManagement != null) {
-                //List<AtlasTask> tasks = taskManagement.getInProgressTasks();
                 try {
                     taskManagement.terminateInProgressTasks();
-                    //graphRetriever.terminateInProgressTraversalsForTasks();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -232,9 +230,7 @@ public class TypeSyncService {
             try {
                 disableJanusgraphIndex(oldIndexName);
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
-
-                //LOG.info("Deleted old index {}", oldIndexName);
-                RequestContext.setIsTypeSyncMode(false);
+                
                 return true;
             } catch (Exception e) {
                 LOG.error("Error while disabling/deleting index {}. Exception: {}", oldIndexName, e);
@@ -254,11 +250,10 @@ public class TypeSyncService {
                     LOG.error("Failed to delete elastic index", e0);
                 }
 
-                //RequestContext.setIsTypeSyncMode(false);
-                //typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.READ_INDEX.getId());
-
                 disableJanusgraphIndex(newIndexName);
                 throw new AtlasBaseException(e);
+            } finally {
+                RequestContext.setIsTypeSyncMode(false);
             }
         }
         return false;
