@@ -153,9 +153,9 @@ public class TypeSyncService {
 
                 defaultIndexCreator.createDefaultIndexes(atlasGraph);LOG.info("### 8");
 
-                LOG.info("Waiting for 20 seconds");
+                /*LOG.info("Waiting for 20 seconds");
                 Thread.sleep(20000);
-                LOG.info("Wait over");
+                LOG.info("Wait over");*/
 
                 GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
                 LOG.info("report after creating new index {}", report.toString());LOG.info("### 9");
