@@ -169,9 +169,9 @@ public class TypeSyncService {
             typeDefStore.updateTypesDef(toUpdate);LOG.info("### 13");
 
             if (haveIndexSettingsChanged) {
-                LOG.info("Waiting for 120 seconds");
+                /*LOG.info("Waiting for 120 seconds");
                 Thread.sleep(120000);
-                LOG.info("Wait over");
+                LOG.info("Wait over");*/
 
                 GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
                 LOG.info("report after update typesDef new index {}", report.toString());
