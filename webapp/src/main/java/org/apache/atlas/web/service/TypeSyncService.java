@@ -287,9 +287,9 @@ public class TypeSyncService {
                     throw new AtlasBaseException(e);
                 }
 
-                /*LOG.info("Waiting for 20 seconds");
-                Thread.sleep(20000);
-                LOG.info("Wait over");*/
+                LOG.info("Waiting for 10 seconds");
+                Thread.sleep(10000);
+                LOG.info("Wait over");
 
                 LOG.info("Waiting for 120 seconds to update status");
                 GraphIndexStatusReport report = ManagementSystem
