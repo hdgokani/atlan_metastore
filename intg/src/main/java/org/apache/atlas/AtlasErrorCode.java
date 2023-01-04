@@ -271,6 +271,8 @@ public enum AtlasErrorCode {
     RUNTIME_EXCEPTION(500, "ATLAS-500-00-020", "Runtime exception {0}"),
     CLASSIFICATION_CURRENTLY_BEING_PROPAGATED(400, "ATLAS-400-00-105", "Classification {0} is currently being propagated."),
     TASK_STATUS_NOT_APPROPRIATE(400, "ATLAS-400-00-106", "Unable to restart the task with guid {0} whose status is {1}. "),
+    NO_LINEAGE_CONSTRAINTS_FOR_GUID(404, "ATLAS-404-00-016", "No lineage constraints found for requested entity with guid : {0}"),
+    LINEAGE_ON_DEMAND_NOT_ENABLED(400, "ATLAS-400-00-100", "Lineage on demand config: {0} is not enabled"),
 
     INDEX_SEARCH_FAILED(400, "ATLAS-400-00-107", "Error occurred while running direct index query on ES: {0}"),
     INDEX_ALIAS_FAILED(400, "ATLAS-400-00-108", "Error occurred while {0} ES alias: {1}"),

@@ -91,7 +91,11 @@ public enum AtlasConfiguration {
     TASKS_GRAPH_COMMIT_CHUNK_SIZE("atlas.tasks.graph.commit.chunk.size", 1000),
     RANGER_ATLAS_SERVICE_TYPE("atlas.ranger.service.type.atlas", "atlas"),
     RANGER_HEKA_SERVICE_TYPE("atlas.ranger.service.type.heka", "heka"),
-    GRAPH_TRAVERSAL_PARALLELISM("atlas.graph.traverse.bucket.size",10);
+    GRAPH_TRAVERSAL_PARALLELISM("atlas.graph.traverse.bucket.size",10),
+    LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", true),
+    LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT("atlas.lineage.on.demand.default.node.count", 3),
+    LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 9000);
+
 
 
     private static final Configuration APPLICATION_PROPERTIES;
