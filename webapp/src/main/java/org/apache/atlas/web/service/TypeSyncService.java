@@ -170,7 +170,7 @@ public class TypeSyncService {
 
             if (haveIndexSettingsChanged) {
                 /*LOG.info("Waiting for 120 seconds");
-                Thread.sleep(120000); 
+                Thread.sleep(120000);
                 LOG.info("Wait over");*/
 
                 GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
@@ -295,9 +295,9 @@ public class TypeSyncService {
                     throw new AtlasBaseException(e);
                 }
 
-                LOG.info("Waiting for 60 seconds");
+                /*LOG.info("Waiting for 60 seconds");
                 Thread.sleep(60000);
-                LOG.info("Wait over");
+                LOG.info("Wait over");*/
 
                 LOG.info("Waiting for 120 seconds to update status");
                 GraphIndexStatusReport report = ManagementSystem
