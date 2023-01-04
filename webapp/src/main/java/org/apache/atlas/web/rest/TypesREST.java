@@ -469,7 +469,7 @@ public class TypesREST {
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
             AtlasTypesDef atlasTypesDef = typeDefStore.createTypesDef(typesDef);
-            typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.ONLY_TYPE.getId());
+            typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.TYPES_DEF.getId());
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.createAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
@@ -543,7 +543,9 @@ public class TypesREST {
             lock = attemptAcquiringLock();
             ret = typeSyncService.syncTypes(newTypeDefinitions, typeCacheRefresher);
 
-            String traceId = typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.TYPE_WRITE_INDEX.getId());
+            String traceId = typeCacheRefresher.refreshAllHostCache(
+                    TypeCacheRefresher.RefreshOperation.TYPES_DEF.getId(),
+                    TypeCacheRefresher.RefreshOperation.WRITE_INDEX.getId());
 
             ret.setTraceId(RequestContext.get().getTraceId());
 
@@ -638,7 +640,7 @@ public class TypesREST {
                 classificationDef.setRandomNameForNewAttributeDefs(existingClassificationDef);
             }
             AtlasTypesDef atlasTypesDef = typeDefStore.updateTypesDef(typesDef);
-            typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.ONLY_TYPE.getId());
+            typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.TYPES_DEF.getId());
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.updateAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
@@ -675,7 +677,7 @@ public class TypesREST {
             }
             lock = attemptAcquiringLock();
             typeDefStore.deleteTypesDef(typesDef);
-            typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.ONLY_TYPE.getId());
+            typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.TYPES_DEF.getId());
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.deleteAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
             throw atlasBaseException;
@@ -709,7 +711,7 @@ public class TypesREST {
             }
             lock = attemptAcquiringLock();
             typeDefStore.deleteTypeByName(typeName);
-            typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.ONLY_TYPE.getId());
+            typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.TYPES_DEF.getId());
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.deleteAtlasTypeByName:: " + atlasBaseException.getMessage(), atlasBaseException);
             throw atlasBaseException;

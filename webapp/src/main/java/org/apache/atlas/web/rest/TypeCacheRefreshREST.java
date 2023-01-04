@@ -23,6 +23,8 @@ import javax.inject.Singleton;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.apache.atlas.AtlasErrorCode.FAILED_TO_REFRESH_TYPE_DEF_CACHE;
@@ -67,24 +69,31 @@ public class TypeCacheRefreshREST {
     @POST
     @Path("/refresh")
     @Timed
-    public void refreshCache(@QueryParam("operationId") @DefaultValue("0") int operationId,
+    public void refreshCache(@QueryParam("operationId") @DefaultValue("0") List<String> operationIds,
                              @QueryParam("expectedFieldKeys") int expectedFieldKeys,
                              @QueryParam("traceId") String traceId) throws AtlasBaseException {
         try {
             if (serviceState.getState() != ServiceState.ServiceStateValue.ACTIVE) {
-                LOG.warn("Node is in {} state. skipping refreshing type-def-cache :: traceId {}, operationId {}",
-                        serviceState.getState(), traceId, operationId);
+                LOG.warn("Node is in {} state. skipping refreshing type-def-cache :: traceId {}, operationIds {}",
+                        serviceState.getState(), traceId, operationIds);
                 return;
             }
 
-            if (operationId == RefreshOperation.ONLY_TYPE.getId()) {
+            Set<String> distinctOperationIds = new HashSet<>(operationIds);
+
+            if (distinctOperationIds.contains(RefreshOperation.TYPES_DEF.getId())) {
                 refreshTypeDef(expectedFieldKeys, traceId);
-            } else if (operationId == RefreshOperation.TYPE_WRITE_INDEX.getId()) {
-                refreshTypeDef(expectedFieldKeys, traceId);
+            }
+
+            if (distinctOperationIds.contains(RefreshOperation.WRITE_INDEX.getId())) {
                 refreshWriteIndexName(traceId);
-            } else if (operationId == RefreshOperation.READ_INDEX.getId()) {
+            }
+
+            if (distinctOperationIds.contains(RefreshOperation.READ_INDEX.getId())) {
                 refreshReadIndexName(traceId);
-            } else if (operationId == RefreshOperation.WAIT_COMPLETE_REQUESTS.getId()) {
+            }
+
+            if (distinctOperationIds.contains(RefreshOperation.WAIT_COMPLETE_REQUESTS.getId())) {
                 typeSyncService.waitAllRequestsToComplete(traceId);
             }
 

@@ -230,7 +230,7 @@ public class TypeSyncService {
                 
                 return true;
             } catch (Exception e) {
-                LOG.error("Error while disabling/deleting index {}. Exception: {}", oldIndexName, e);
+                LOG.error("Error while disabling/deleting index {}. Exception: {}, Rolling back...", oldIndexName, e);
 
                 setCurrentWriteVertexIndexName(oldIndexName);
                 setCurrentReadVertexIndexName(oldIndexName);

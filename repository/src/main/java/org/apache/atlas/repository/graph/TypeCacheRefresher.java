@@ -11,6 +11,7 @@ import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -26,6 +27,8 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -42,18 +45,18 @@ public class TypeCacheRefresher {
     private boolean isActiveActiveHAEnabled;
 
     public enum RefreshOperation {
-        ONLY_TYPE(0),
-        TYPE_WRITE_INDEX(1),
-        READ_INDEX(2),
-        WAIT_COMPLETE_REQUESTS(3);
+        TYPES_DEF("0"),
+        WRITE_INDEX("1"),
+        READ_INDEX("2"),
+        WAIT_COMPLETE_REQUESTS("3");
 
-        int id;
+        String id;
 
-        RefreshOperation(int id) {
+        RefreshOperation(String id) {
             this.id = id;
         }
 
-        public int getId() {
+        public String getId() {
             return id;
         }
     }
@@ -91,7 +94,7 @@ public class TypeCacheRefresher {
         }
     }
 
-    public String refreshAllHostCache(int operationId) throws IOException, URISyntaxException, RepositoryException, AtlasBaseException {
+    public String refreshAllHostCache(String... operationIds) throws IOException, URISyntaxException, RepositoryException, AtlasBaseException {
         final String traceId = RequestContext.get().getTraceId();
         if(StringUtils.isBlank(cacheRefresherEndpoint) || !isActiveActiveHAEnabled) {
             LOG.info("Skipping type-def cache refresh :: traceId {}", traceId);
@@ -103,11 +106,11 @@ public class TypeCacheRefresher {
             management = provider.get().getManagementSystem();
             int totalFieldKeys = management.getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys().size();
             LOG.info("Found {} totalFieldKeys to be expected in other nodes :: traceId {}", totalFieldKeys, traceId);
-            refreshCache(operationId, totalFieldKeys, traceId);
+            refreshCache(totalFieldKeys, traceId, operationIds);
         } catch (IOException | URISyntaxException | RepositoryException e) {
             throw e;
         } catch (Exception e) {
-            LOG.error("Failed to refresh all host cache: operationId: {}, reason: {}", operationId, e.getMessage());
+            LOG.error("Failed to refresh all host cache: operationId: {}, reason: {}", operationIds, e.getMessage());
             throw new AtlasBaseException(e.getCause());
         } finally {
             if (management != null) {
@@ -118,14 +121,16 @@ public class TypeCacheRefresher {
         return traceId;
     }
 
-    private void refreshCache(final int operationId, final int totalFieldKeys, final String traceId) throws IOException, URISyntaxException {
+    private void refreshCache(final int totalFieldKeys, final String traceId,
+                              final String... operationIds) throws IOException, URISyntaxException {
         URIBuilder builder = new URIBuilder(cacheRefresherEndpoint);
 
         if (totalFieldKeys != -1) {
             builder.setParameter("expectedFieldKeys", String.valueOf(totalFieldKeys));
         }
 
-        builder.setParameter("operationId", String.valueOf(operationId));
+        //builder.setParameter("operationId", operationIds);
+        Arrays.stream(operationIds).forEach(x -> builder.addParameter("operationId", x));
         builder.setParameter("traceId", traceId);
 
         final HttpPost httpPost = new HttpPost(builder.build());
