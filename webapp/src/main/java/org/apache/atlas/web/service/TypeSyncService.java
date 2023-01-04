@@ -206,7 +206,7 @@ public class TypeSyncService {
         );
     }
 
-    public boolean cleanupTypeSync(String traceId, TypeCacheRefresher typeCacheRefresher) throws AtlasBaseException, InterruptedException {
+    public void cleanupTypeSync(String traceId, TypeCacheRefresher typeCacheRefresher) throws AtlasBaseException, InterruptedException {
         String oldIndexName = getCurrentReadVertexIndexName();
         String newIndexName = getCurrentWriteVertexIndexName();
         LOG.info("cleanupTypeSync: oldIndexName:{}, newIndexName:{}", oldIndexName, newIndexName);
@@ -218,8 +218,6 @@ public class TypeSyncService {
             try {
                 disableJanusgraphIndex(oldIndexName);
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
-                
-                return true;
             } catch (Exception e) {
                 LOG.error("Error while disabling/deleting index {}. Exception: {}, Rolling back...", oldIndexName, e);
 
@@ -244,7 +242,6 @@ public class TypeSyncService {
                 RequestContext.setIsTypeSyncMode(false);
             }
         }
-        return false;
     }
 
     public void disableJanusgraphIndex(String oldIndexName) throws InterruptedException, AtlasBaseException {
@@ -286,9 +283,9 @@ public class TypeSyncService {
                     throw new AtlasBaseException(e);
                 }
 
-                /*LOG.info("Waiting for 60 seconds");
-                Thread.sleep(60000);
-                LOG.info("Wait over");*/
+                LOG.info("Waiting for 20 seconds");
+                Thread.sleep(20000);
+                LOG.info("Wait over");
 
                 LOG.info("Waiting for 120 seconds to update status");
                 GraphIndexStatusReport report = ManagementSystem
