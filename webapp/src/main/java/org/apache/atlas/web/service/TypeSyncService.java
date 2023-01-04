@@ -170,7 +170,7 @@ public class TypeSyncService {
 
             if (haveIndexSettingsChanged) {
                 /*LOG.info("Waiting for 120 seconds");
-                Thread.sleep(120000);
+                Thread.sleep(120000); 
                 LOG.info("Wait over");*/
 
                 GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
