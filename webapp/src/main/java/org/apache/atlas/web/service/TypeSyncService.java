@@ -3,10 +3,7 @@ package org.apache.atlas.web.service;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
-import org.apache.atlas.model.tasks.AtlasTask;
-import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.repository.IndexException;
-import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.model.typedef.AtlasTypesDef;;
 import org.apache.atlas.repository.graph.TypeCacheRefresher;
 import org.apache.atlas.repository.graph.indexmanager.DefaultIndexCreator;
 import org.apache.atlas.repository.graphdb.AtlasMixedBackendIndexManager;
@@ -25,24 +22,18 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.management.GraphIndexStatusReport;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.io.IOException;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 import static org.apache.atlas.service.ActiveIndexNameManager.*;
+import static org.apache.atlas.repository.graph.TypeCacheRefresher.RefreshOperation.WAIT_COMPLETE_REQUESTS;
 import static org.janusgraph.core.schema.SchemaAction.DISABLE_INDEX;
 import static org.janusgraph.core.schema.SchemaStatus.DISABLED;
-import static org.janusgraph.core.schema.SchemaStatus.ENABLED;
-import static org.janusgraph.graphdb.database.management.ManagementSystem.awaitGraphIndexStatus;
 
 @Component
 public class TypeSyncService {
@@ -136,7 +127,7 @@ public class TypeSyncService {
             if (haveIndexSettingsChanged) {
 
                 RequestContext.setIsTypeSyncMode(true);
-                typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.WAIT_COMPLETE_REQUESTS.getId());
+                typeCacheRefresher.refreshAllHostCache(WAIT_COMPLETE_REQUESTS.getId());
                 waitAllRequestsToComplete(RequestContext.get().getTraceId());
 
                 LOG.info("### 2");

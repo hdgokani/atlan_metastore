@@ -24,8 +24,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.*;
-import org.apache.atlas.repository.IndexException;
-import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.TypeCacheRefresher;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -50,14 +48,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import static org.apache.atlas.repository.graph.TypeCacheRefresher.RefreshOperation.TYPES_DEF;
+import static org.apache.atlas.repository.graph.TypeCacheRefresher.RefreshOperation.READ_INDEX;
+import static org.apache.atlas.repository.graph.TypeCacheRefresher.RefreshOperation.WRITE_INDEX;
 
 /**
  * REST interface for CRUD operations on type definitions
@@ -469,7 +468,7 @@ public class TypesREST {
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
             AtlasTypesDef atlasTypesDef = typeDefStore.createTypesDef(typesDef);
-            typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.TYPES_DEF.getId());
+            typeCacheRefresher.refreshAllHostCache(TYPES_DEF.getId());
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.createAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
@@ -543,9 +542,7 @@ public class TypesREST {
             lock = attemptAcquiringLock();
             ret = typeSyncService.syncTypes(newTypeDefinitions, typeCacheRefresher);
 
-            String traceId = typeCacheRefresher.refreshAllHostCache(
-                    TypeCacheRefresher.RefreshOperation.TYPES_DEF.getId(),
-                    TypeCacheRefresher.RefreshOperation.WRITE_INDEX.getId());
+            String traceId = typeCacheRefresher.refreshAllHostCache(TYPES_DEF.getId(), WRITE_INDEX.getId());
 
             ret.setTraceId(RequestContext.get().getTraceId());
 
@@ -568,6 +565,7 @@ public class TypesREST {
     public void cleanupTypeSync(@QueryParam("traceId") String traceId) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         RequestContext.get().setTraceId(traceId);
+        boolean success = false;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -576,7 +574,7 @@ public class TypesREST {
             typeCacheRefresher.verifyCacheRefresherHealth();
 
             typeSyncService.cleanupTypeSync(traceId, typeCacheRefresher);
-
+            success = true;
 
         } catch (AtlasBaseException e) {
             LOG.error("TypesREST.cleanupTypeSync:: " + e.getMessage(), e);
@@ -587,7 +585,11 @@ public class TypesREST {
         } finally {
             AtlasPerfTracer.log(perf);
             try {
-                typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.READ_INDEX.getId());
+                if (success) {
+                    typeCacheRefresher.refreshAllHostCache(READ_INDEX.getId());
+                } else {
+                    typeCacheRefresher.refreshAllHostCache(READ_INDEX.getId(), WRITE_INDEX.getId());
+                }
             } catch (Exception e) {
                 LOG.error("Error while refresh Read index after clean up");
             }
@@ -640,7 +642,7 @@ public class TypesREST {
                 classificationDef.setRandomNameForNewAttributeDefs(existingClassificationDef);
             }
             AtlasTypesDef atlasTypesDef = typeDefStore.updateTypesDef(typesDef);
-            typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.TYPES_DEF.getId());
+            typeCacheRefresher.refreshAllHostCache(TYPES_DEF.getId());
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.updateAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
@@ -677,7 +679,7 @@ public class TypesREST {
             }
             lock = attemptAcquiringLock();
             typeDefStore.deleteTypesDef(typesDef);
-            typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.TYPES_DEF.getId());
+            typeCacheRefresher.refreshAllHostCache(TYPES_DEF.getId());
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.deleteAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
             throw atlasBaseException;
@@ -711,7 +713,7 @@ public class TypesREST {
             }
             lock = attemptAcquiringLock();
             typeDefStore.deleteTypeByName(typeName);
-            typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.TYPES_DEF.getId());
+            typeCacheRefresher.refreshAllHostCache(TYPES_DEF.getId());
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.deleteAtlasTypeByName:: " + atlasBaseException.getMessage(), atlasBaseException);
             throw atlasBaseException;
