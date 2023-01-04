@@ -1,6 +1,7 @@
 package org.apache.atlas.web.service;
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasTypesDef;;
@@ -115,7 +116,7 @@ public class TypeSyncService {
         }
     }
 
-    //@GraphTransaction
+    @GraphTransaction
     public TypeSyncResponse syncTypes(AtlasTypesDef newTypeDefinitions, final TypeCacheRefresher typeCacheRefresher) throws Exception {
         AtlasTypesDef existingTypeDefinitions = typeDefStore.searchTypesDef(new SearchFilter());
         boolean haveIndexSettingsChanged = existingTypeDefinitions.haveIndexSettingsChanged(newTypeDefinitions);
