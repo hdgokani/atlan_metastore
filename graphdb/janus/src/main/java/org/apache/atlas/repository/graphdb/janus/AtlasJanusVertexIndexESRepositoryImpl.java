@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 import static org.apache.atlas.repository.Constants.INDEX_PREFIX;
@@ -32,10 +33,74 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
     private final RestHighLevelClient elasticSearchClient = getClient();
     private final RestClient elasticSearchLowLevelClient = getLowLevelClient();
     private static final int MAX_RETRIES = 3;
-    private static final int RETRY_TIME_IN_MILLIS = 1000;
+    private static final int RETRY_TIME_IN_MILLIS = 500;
     private static final String INDEX = INDEX_PREFIX + VERTEX_INDEX;
+    private static final String BULK_REQUEST_TIMEOUT_MINUTES = "2m";
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("AtlasJanusVertexIndexESRepositoryImpl");
 
+
+    @Override
+    public BulkResponse performBulk(BulkRequest bulkRequest) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "updateDocsInBulk()");
+        try {
+            int count = 0;
+            int retryTime = RETRY_TIME_IN_MILLIS;
+            while(true) {
+                try {
+                    LOG.info("Updating {} requests in ES", bulkRequest.requests().size());
+                    return elasticSearchClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+                } catch (IOException e) {
+                    LOG.error("Exception while trying to update in bulk for req. Retrying", e);
+                    try {
+                        retryTime *= 2; // exponential backoff
+                        LOG.info("Retrying with delay of {} ms ", retryTime);
+                        Thread.sleep(retryTime);
+                    } catch (InterruptedException ex) {
+                        LOG.error("Retry interrupted during bulk update request");
+                        throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, ex);
+                    }
+                    if (++count == MAX_RETRIES) {
+                        LOG.error("Retries exhausted. Failed to execute bulk update request on ES {}", e.getMessage());
+                        throw new AtlasBaseException(AtlasErrorCode.ES_BULK_UPDATE_FAILED, e.getMessage());
+                    }
+                }
+            }
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @Override
+    public void performBulkAsyncV2(List<UpdateRequest> updateRequests) {
+        int count = 0;
+        int batch = 1000;
+        BulkRequest bulkRequest = buildBulkRequestInstance();
+        for (UpdateRequest updateRequest : updateRequests) {
+            count++;
+            bulkRequest.add(updateRequest);
+            if(count % batch == 0) {
+                elasticSearchClient.bulkAsync(bulkRequest, RequestOptions.DEFAULT, new AtlasRelationshipIndexIOHandler(bulkRequest, this).getListener());
+                bulkRequest = buildBulkRequestInstance();
+            }
+        }
+        if (bulkRequest.numberOfActions() > 0)
+            elasticSearchClient.bulkAsync(bulkRequest, RequestOptions.DEFAULT, new AtlasRelationshipIndexIOHandler(bulkRequest, this).getListener());
+    }
+
+    @Override
+    public void performBulkAsync(BulkRequest bulkRequest, ActionListener<BulkResponse> listener) {
+        AtlasPerfTracer perf = null;
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "updateDocsInBulkAsync()");
+        try {
+            LOG.info("Updating {} requests in ES", bulkRequest.requests().size());
+            elasticSearchClient.bulkAsync(bulkRequest, RequestOptions.DEFAULT, listener);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
 
     @Override
     public UpdateResponse updateDoc(UpdateRequest request, RequestOptions options) throws AtlasBaseException {
@@ -70,50 +135,6 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "updateDocAsync()");
         try {
             elasticSearchClient.updateAsync(request, options, listener);
-        } finally {
-            AtlasPerfTracer.log(perf);
-        }
-    }
-
-    @Override
-    public BulkResponse performBulkAsync(BulkRequest bulkRequest) throws AtlasBaseException {
-        AtlasPerfTracer perf = null;
-        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
-            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "updateDocsInBulk()");
-        try {
-            int count = 0;
-            while(true) {
-                try {
-                    LOG.info("Updating {} requests in ES", bulkRequest.requests().size());
-                    return elasticSearchClient.bulk(bulkRequest, RequestOptions.DEFAULT);
-                } catch (IOException e) {
-                    LOG.error("Exception while trying to update in bulk for req. Retrying", e);
-                    LOG.info("Retrying with delay of {} ms ", RETRY_TIME_IN_MILLIS);
-                    try {
-                        Thread.sleep(RETRY_TIME_IN_MILLIS);
-                    } catch (InterruptedException ex) {
-                        LOG.warn("Retry interrupted during bulk update request");
-                        throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, ex);
-                    }
-                    if (++count == MAX_RETRIES) {
-                        LOG.error("Failed to execute bulk update request on ES {}", e.getMessage());
-                        throw new AtlasBaseException(AtlasErrorCode.ES_BULK_UPDATE_FAILED, e.getMessage());
-                    }
-                }
-            }
-        } finally {
-            AtlasPerfTracer.log(perf);
-        }
-    }
-
-    @Override
-    public void updateDocsInBulkAsync(BulkRequest bulkRequest, ActionListener<BulkResponse> listener) {
-        AtlasPerfTracer perf = null;
-        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
-            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "updateDocsInBulkAsync()");
-        try {
-            LOG.info("Updating {} requests in ES", bulkRequest.requests().size());
-            elasticSearchClient.bulkAsync(bulkRequest, RequestOptions.DEFAULT, listener);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -169,4 +190,9 @@ public class AtlasJanusVertexIndexESRepositoryImpl implements AtlasJanusVertexIn
         request.setEntity(entity);
         return request;
     }
+
+    private static BulkRequest buildBulkRequestInstance() {
+        return new BulkRequest().timeout(BULK_REQUEST_TIMEOUT_MINUTES);
+    }
+
 }

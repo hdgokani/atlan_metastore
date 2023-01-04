@@ -10,18 +10,16 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseListener;
 
+import java.util.List;
+
 public interface AtlasJanusVertexIndexRepository {
 
-    BulkResponse performBulkAsync(BulkRequest bulkRequest) throws AtlasBaseException;
-
     UpdateResponse updateDoc(UpdateRequest request, RequestOptions options) throws AtlasBaseException;
-
     void updateDocAsync(UpdateRequest request, RequestOptions options, ActionListener<UpdateResponse> listener);
-
-    void updateDocsInBulkAsync(BulkRequest bulkRequest, ActionListener<BulkResponse> listener);
-
     Response performRawRequest(String query, String docId) throws AtlasBaseException;
-
     void performRawRequestAsync(String query, String docId, ResponseListener listener);
+    BulkResponse performBulk(BulkRequest bulkRequest) throws AtlasBaseException;
+    void performBulkAsync(BulkRequest bulkRequest, ActionListener<BulkResponse> listener);
+    void performBulkAsyncV2(List<UpdateRequest> updateRequests);
 
 }

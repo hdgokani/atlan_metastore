@@ -1,65 +1,63 @@
 package org.apache.atlas.repository.graphdb.janus;
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.DocWriteRequest;
+import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.ResponseListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 /**
- * The requests will be executed in async manner,
- * this class provides all callback logic for responses
+ * This class provides all callback logic for responses
  * to handle failures and retries.
  * The listener provides methods to access to the response and the failure events.
  */
 public class AtlasRelationshipIndexIOHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasRelationshipIndexIOHandler.class);
+    private final BulkRequest bulkRequest;
+    private final AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository;
+    private final ActionListener<BulkResponse> listener;
 
-    public static ActionListener<UpdateResponse> getUpdateResponseListener(AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository, UpdateRequest request) {
-
-        return new ActionListener<UpdateResponse>() {
-            @Override
-            public void onResponse(UpdateResponse updateResponse) {}
-            @Override
-            public void onFailure(Exception e) {} // TODO: Handle retries
-        };
+    public AtlasRelationshipIndexIOHandler(BulkRequest bulkRequest, AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository) {
+        this.bulkRequest = bulkRequest;
+        this.atlasJanusVertexIndexRepository = atlasJanusVertexIndexRepository;
+        this.listener = new ActionListener<BulkResponse>() {
+                @Override
+                public void onResponse(BulkResponse bulkResponse) {
+                    handleBulkResponseFailures(bulkResponse);
+                }
+                @Override
+                public void onFailure(Exception e) {
+                    LOG.error("------- bulk update failed -------", e);
+                    try {
+                        atlasJanusVertexIndexRepository.performBulk(bulkRequest);
+                    } catch (AtlasBaseException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+            };
     }
 
-    public static ActionListener<BulkResponse> getBulkUpdateActionListener(AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository, BulkRequest bulkRequest) {
-        return new ActionListener<BulkResponse>() {
-            @Override
-            public void onResponse(BulkResponse bulkResponse) {
-                handleBulkResponseFailures(bulkResponse);
-            }
-            @Override
-            public void onFailure(Exception e) {
-                LOG.error("------- bulk update failed -------", e); // TODO: Retry handling
-            }
-        };
-    }
-
-    private ResponseListener getNewResponseListener(AtlasJanusVertexIndexRepository atlasJanusVertexIndexRepository) {
-        return new ResponseListener() {
-            @Override
-            public void onSuccess(Response response) {}
-            @Override
-            public void onFailure(Exception exception) {}
-        };
+    public ActionListener<BulkResponse> getListener() {
+        return listener;
     }
 
     private static void handleBulkResponseFailures(BulkResponse response) {
-        for (BulkItemResponse bulkItemResponse : response) {
-            if (bulkItemResponse.isFailed()) {
-                BulkItemResponse.Failure failure =
-                        bulkItemResponse.getFailure();
-                LOG.info("------- Update failed for id: {} -------", failure.getId());
+        if (response.hasFailures()) {
+            for (BulkItemResponse bulkItemResponse : response) {
+                if (bulkItemResponse.isFailed()) {
+                    DocWriteResponse itemResponse = bulkItemResponse.getResponse();
+                    if (bulkItemResponse.getOpType() == DocWriteRequest.OpType.UPDATE) {
+                        UpdateResponse updateResponse = (UpdateResponse) itemResponse;
+                        // TODO:
+                    }
+                }
             }
         }
     }
