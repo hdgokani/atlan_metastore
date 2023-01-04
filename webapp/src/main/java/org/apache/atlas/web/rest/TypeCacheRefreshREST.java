@@ -79,6 +79,8 @@ public class TypeCacheRefreshREST {
                 return;
             }
 
+            LOG.info("operationIds {}", operationIds);
+
             Set<String> distinctOperationIds = new HashSet<>(operationIds);
 
             if (distinctOperationIds.contains(RefreshOperation.TYPES_DEF.getId())) {
