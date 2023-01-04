@@ -116,7 +116,9 @@ public class TypeSyncService {
         }
     }
 
-    @GraphTransaction
+    //@GraphTransaction
+    //enabling this caused elasticInstanceConfigService.updateCurrentIndexName not to commit __InstanceCOnfig entity
+    //This causes write index refresh failure on other pods
     public TypeSyncResponse syncTypes(AtlasTypesDef newTypeDefinitions, final TypeCacheRefresher typeCacheRefresher) throws Exception {
         AtlasTypesDef existingTypeDefinitions = typeDefStore.searchTypesDef(new SearchFilter());
         boolean haveIndexSettingsChanged = existingTypeDefinitions.haveIndexSettingsChanged(newTypeDefinitions);
