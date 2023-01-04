@@ -281,14 +281,15 @@ public class TypeSyncService {
                 management.updateIndex(indexToUpdate, toAction).get();
                 try {
                     management.commit();
+                    graph.tx().commit();
                 } catch (Exception e) {
                     LOG.error("Exception while committing:", e);
                     throw new AtlasBaseException(e);
                 }
 
-                LOG.info("Waiting for 20 seconds");
+                /*LOG.info("Waiting for 20 seconds");
                 Thread.sleep(20000);
-                LOG.info("Wait over");
+                LOG.info("Wait over");*/
 
                 LOG.info("Waiting for 120 seconds to update status");
                 GraphIndexStatusReport report = ManagementSystem
