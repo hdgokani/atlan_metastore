@@ -154,8 +154,8 @@ public class TypeSyncService {
                 Thread.sleep(20000);
                 LOG.info("Wait over");*/
 
-                GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
-                LOG.info("report after creating new index {}", report.toString());LOG.info("### 9");
+                //GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
+                //LOG.info("report after creating new index {}", report.toString());LOG.info("### 9");
 
                 RequestContext.setIsTypeSyncMode(false);
                 typeCacheRefresher.refreshAllHostCache(DISABLE_TYPE_SYNC_MODE.getId());
