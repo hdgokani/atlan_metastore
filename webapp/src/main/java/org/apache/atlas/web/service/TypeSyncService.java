@@ -296,7 +296,6 @@ public class TypeSyncService {
                 management.updateIndex(indexToUpdate, toAction).get();
                 try {
                     management.commit();
-                    graph.tx().commit();
                 } catch (Exception e) {
                     LOG.error("Exception while committing:", e);
                     throw new AtlasBaseException(e);
