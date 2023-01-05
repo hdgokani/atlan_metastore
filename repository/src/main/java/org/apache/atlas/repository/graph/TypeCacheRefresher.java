@@ -48,7 +48,8 @@ public class TypeCacheRefresher {
         TYPES_DEF("0"),
         WRITE_INDEX("1"),
         READ_INDEX("2"),
-        WAIT_COMPLETE_REQUESTS("3");
+        WAIT_COMPLETE_REQUESTS("3"),
+        DISABLE_TYPE_SYNC_MODE("4");
 
         String id;
 

@@ -12,6 +12,7 @@ import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.tasks.TaskManagement;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.web.dto.TypeSyncResponse;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -31,6 +32,8 @@ import javax.inject.Inject;
 import java.time.temporal.ChronoUnit;
 import java.util.Set;
 
+import static org.apache.atlas.repository.graph.TypeCacheRefresher.RefreshOperation.READ_INDEX;
+import static org.apache.atlas.repository.graph.TypeCacheRefresher.RefreshOperation.DISABLE_TYPE_SYNC_MODE;
 import static org.apache.atlas.service.ActiveIndexNameManager.*;
 import static org.apache.atlas.repository.graph.TypeCacheRefresher.RefreshOperation.WAIT_COMPLETE_REQUESTS;
 import static org.janusgraph.core.schema.SchemaAction.DISABLE_INDEX;
@@ -128,7 +131,7 @@ public class TypeSyncService {
 
         try {
             if (haveIndexSettingsChanged) {
-
+                AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("createNewIndex");
                 RequestContext.setIsTypeSyncMode(true);
                 typeCacheRefresher.refreshAllHostCache(WAIT_COMPLETE_REQUESTS.getId());
                 waitAllRequestsToComplete(RequestContext.get().getTraceId());
@@ -153,7 +156,13 @@ public class TypeSyncService {
 
                 GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
                 LOG.info("report after creating new index {}", report.toString());LOG.info("### 9");
+
+                RequestContext.setIsTypeSyncMode(false);
+                typeCacheRefresher.refreshAllHostCache(DISABLE_TYPE_SYNC_MODE.getId());
+                RequestContext.get().endMetricRecord(metricRecorder);
             }
+
+            AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("createOrUpdateTypes");
 
             AtlasTypesDef toUpdate = newTypeDefinitions.getUpdatedTypesDef(existingTypeDefinitions);LOG.info("### 10");
             AtlasTypesDef toCreate = newTypeDefinitions.getCreatedOrDeletedTypesDef(existingTypeDefinitions);LOG.info("### 11");
@@ -167,10 +176,12 @@ public class TypeSyncService {
                 Thread.sleep(120000);
                 LOG.info("Wait over");*/
 
+                //TODO: remove this await, it can reduce 1 minute
                 GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
                 LOG.info("report after update typesDef new index {}", report.toString());
                 LOG.info("### 14");
             }
+            RequestContext.get().endMetricRecord(metricRecorder);
 
         } catch (Exception e) {
             LOG.error("Failed to sync typesDef: rollback needed:" + haveIndexSettingsChanged, e);
@@ -179,7 +190,7 @@ public class TypeSyncService {
                 setCurrentWriteVertexIndexName(getCurrentReadVertexIndexName());
 
                 RequestContext.setIsTypeSyncMode(false);
-                typeCacheRefresher.refreshAllHostCache(TypeCacheRefresher.RefreshOperation.READ_INDEX.getId());
+                typeCacheRefresher.refreshAllHostCache(READ_INDEX.getId(), DISABLE_TYPE_SYNC_MODE.getId());
 
                 try {
                     elasticInstanceConfigService.rollbackCurrentIndexName();
@@ -219,6 +230,10 @@ public class TypeSyncService {
             LOG.info("Redirected ES reads to new index {}", newIndexName);
 
             try {
+                RequestContext.setIsTypeSyncMode(true);
+                typeCacheRefresher.refreshAllHostCache(WAIT_COMPLETE_REQUESTS.getId());
+                waitAllRequestsToComplete(RequestContext.get().getTraceId());
+
                 disableJanusgraphIndex(oldIndexName);
                 atlasMixedBackendIndexManager.deleteIndex(oldIndexName);
             } catch (Exception e) {

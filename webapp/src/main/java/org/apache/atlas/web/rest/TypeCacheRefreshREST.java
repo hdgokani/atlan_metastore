@@ -99,6 +99,10 @@ public class TypeCacheRefreshREST {
                 typeSyncService.waitAllRequestsToComplete(traceId);
             }
 
+            if (distinctOperationIds.contains(RefreshOperation.DISABLE_TYPE_SYNC_MODE.getId())) {
+                RequestContext.setIsTypeSyncMode(false);
+            }
+
         } catch (Exception e) {
             LOG.error("Error during refreshing cache  :: traceId " + traceId + " " + e.getMessage(), e);
             serviceState.setState(ServiceState.ServiceStateValue.PASSIVE, true);
@@ -156,14 +160,12 @@ public class TypeCacheRefreshREST {
     private void refreshReadIndexName(final String traceId) {
         LOG.info("Refreshing read index name of ES :: traceId {}", traceId);
         try {
-            RequestContext.setIsTypeSyncMode(false);
-
             String newIndexName = elasticInstanceConfigService.getCurrentIndexName();
             ActiveIndexNameManager.setCurrentReadVertexIndexName(newIndexName);
 
             LOG.info("Refreshed read index name of ES :: traceId {}, newReadIndexName {}", traceId, newIndexName);
         } finally {
-            RequestContext.setIsTypeSyncMode(false);
+            
         }
     }
 }

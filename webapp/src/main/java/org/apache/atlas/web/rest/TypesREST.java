@@ -54,6 +54,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.atlas.repository.graph.TypeCacheRefresher.RefreshOperation.DISABLE_TYPE_SYNC_MODE;
 import static org.apache.atlas.repository.graph.TypeCacheRefresher.RefreshOperation.TYPES_DEF;
 import static org.apache.atlas.repository.graph.TypeCacheRefresher.RefreshOperation.READ_INDEX;
 import static org.apache.atlas.repository.graph.TypeCacheRefresher.RefreshOperation.WRITE_INDEX;
@@ -586,9 +587,9 @@ public class TypesREST {
             AtlasPerfTracer.log(perf);
             try {
                 if (success) {
-                    typeCacheRefresher.refreshAllHostCache(READ_INDEX.getId());
+                    typeCacheRefresher.refreshAllHostCache(READ_INDEX.getId(), DISABLE_TYPE_SYNC_MODE.getId());
                 } else {
-                    typeCacheRefresher.refreshAllHostCache(READ_INDEX.getId(), WRITE_INDEX.getId());
+                    typeCacheRefresher.refreshAllHostCache(READ_INDEX.getId(), WRITE_INDEX.getId(), DISABLE_TYPE_SYNC_MODE.getId());
                 }
             } catch (Exception e) {
                 LOG.error("Error while refresh Read index after clean up");
