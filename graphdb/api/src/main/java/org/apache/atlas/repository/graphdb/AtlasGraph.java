@@ -215,8 +215,6 @@ public interface AtlasGraph<V, E> {
 
     AtlasIndexQuery elasticsearchQuery(String indexName) throws AtlasBaseException;
 
-    AtlasIndexQuery elasticsearchQuery(String indexName);
-
     /**
      * Gets the management object associated with this graph and opens a transaction
      * for changes that are made.
