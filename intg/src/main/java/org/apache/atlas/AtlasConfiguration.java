@@ -93,7 +93,8 @@ public enum AtlasConfiguration {
     LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT("atlas.lineage.on.demand.default.node.count", 3),
     LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 9000),
     RANGER_ATLAS_SERVICE_TYPE("atlas.ranger.service.type.atlas", "atlas"),
-    RANGER_HEKA_SERVICE_TYPE("atlas.ranger.service.type.heka", "heka");
+    RANGER_HEKA_SERVICE_TYPE("atlas.ranger.service.type.heka", "heka"),
+    ENABLE_SEARCH_LOGGING("atlas.enable.search.logging", true);
 
 
     private static final Configuration APPLICATION_PROPERTIES;

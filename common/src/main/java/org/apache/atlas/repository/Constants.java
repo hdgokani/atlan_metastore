@@ -298,6 +298,8 @@ public final class Constants {
     public static final String TASK_START_TIME        = encodePropertyKey(TASK_PREFIX + "startTime");
     public static final String TASK_END_TIME          = encodePropertyKey(TASK_PREFIX + "endTime");
     public static final String TASK_TIME_TAKEN_IN_SECONDS          = encodePropertyKey(TASK_PREFIX + "timeTakenInSeconds");
+    public static final String TASK_UNIQUE_PARAMETER  = encodePropertyKey(TASK_PREFIX + "uniqueParameter");
+    public static final String TASK_REFERENCE_ID      = encodePropertyKey(TASK_PREFIX + "referenceId");
     public static final String ACTIVE_STATE_VALUE = "ACTIVE";
 
     /**
@@ -363,6 +365,9 @@ public final class Constants {
         )));
         put(CLASSIFICATION_PROPAGATION_MODE_DEFAULT, null);
     }};
+
+    public static final String REQUEST_HEADER_USER_AGENT = "User-Agent";
+    public static final String REQUEST_HEADER_HOST = "Host";
 
     private Constants() {
     }
