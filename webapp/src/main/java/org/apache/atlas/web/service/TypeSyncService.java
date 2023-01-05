@@ -177,9 +177,9 @@ public class TypeSyncService {
                 LOG.info("Wait over");*/
 
                 //TODO: remove this await, it can reduce 1 minute
-                GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
-                LOG.info("report after update typesDef new index {}", report.toString());
-                LOG.info("### 14");
+                //GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, newIndexName).call();
+                //LOG.info("report after update typesDef new index {}", report.toString());
+                //LOG.info("### 14");
             }
             RequestContext.get().endMetricRecord(metricRecorder);
 
