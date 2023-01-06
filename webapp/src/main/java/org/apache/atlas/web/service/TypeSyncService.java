@@ -97,6 +97,9 @@ public class TypeSyncService {
 
                 if (vTh ==2) {
                     LOG.info("No other active request found!!");
+                    /*if (graph.isOpen() && graph.tx().isOpen()) {
+                        graph.tx().rollback();LOG.info("### 7");
+                    }*/
                     break;
                 }
             }
@@ -145,8 +148,11 @@ public class TypeSyncService {
                 setCurrentWriteVertexIndexName(newIndexName);
 
                 closeOpenTransactions(graph);LOG.info("### 5");
+                closeOpenInstances(graph);LOG.info("### 6");
 
-                graph.tx().rollback();LOG.info("### 7");
+                if (graph.isOpen() && graph.tx().isOpen()) {
+                    graph.tx().rollback();LOG.info("### 7");
+                }
 
                 defaultIndexCreator.createDefaultIndexes(atlasGraph);LOG.info("### 8");
 
@@ -316,7 +322,7 @@ public class TypeSyncService {
             } catch (Exception e) {
                 LOG.error("Failed to updateIndexStatus");
 
-                if (management != null) {
+                if (management != null && management.isOpen()) {
                     management.rollback();
                 }
 
