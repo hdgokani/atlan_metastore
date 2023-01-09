@@ -218,4 +218,9 @@ public interface AtlasGraphManagement {
      * @param txRecoveryObject
      */
     void printIndexRecoveryStats(Object txRecoveryObject);
+
+    /**
+     * Returns whether management is open
+     */
+    boolean isOpen();
 }

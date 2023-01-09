@@ -507,6 +507,11 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         }
     }
 
+    @Override
+    public boolean isOpen() {
+        return management.isOpen();
+    }
+
     private void reindexElement(ManagementSystem managementSystem, IndexSerializer indexSerializer, MixedIndexType indexType, List<AtlasElement> elements) throws Exception {
         Map<String, Map<String, List<IndexEntry>>> documentsPerStore = new HashMap<>();
         StandardJanusGraphTx tx = managementSystem.getWrappedTx();

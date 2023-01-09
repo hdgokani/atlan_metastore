@@ -123,7 +123,7 @@ public class TypeSyncService {
     }
 
     //@GraphTransaction
-    //enabling this caused elasticInstanceConfigService.updateCurrentIndexName not to commit __InstanceCOnfig entity
+    //enabling this caused elasticInstanceConfigService.updateCurrentIndexName not to commit __InstanceConfig entity
     //This causes write index refresh failure on other pods
     public TypeSyncResponse syncTypes(AtlasTypesDef newTypeDefinitions, final TypeCacheRefresher typeCacheRefresher) throws Exception {
         AtlasTypesDef existingTypeDefinitions = typeDefStore.searchTypesDef(new SearchFilter());
@@ -148,11 +148,11 @@ public class TypeSyncService {
                 setCurrentWriteVertexIndexName(newIndexName);
 
                 closeOpenTransactions(graph);LOG.info("### 5");
-                closeOpenInstances(graph);LOG.info("### 6");
+                //closeOpenInstances(graph);LOG.info("### 6");
 
-                if (graph.isOpen() && graph.tx().isOpen()) {
+                /*if (graph.isOpen() && graph.tx().isOpen()) {
                     graph.tx().rollback();LOG.info("### 7");
-                }
+                }*/
 
                 defaultIndexCreator.createDefaultIndexes(atlasGraph);LOG.info("### 8");
 
@@ -302,6 +302,7 @@ public class TypeSyncService {
                 management.updateIndex(indexToUpdate, toAction).get();
                 try {
                     management.commit();
+                    graph.tx().commit();
                 } catch (Exception e) {
                     LOG.error("Exception while committing:", e);
                     throw new AtlasBaseException(e);

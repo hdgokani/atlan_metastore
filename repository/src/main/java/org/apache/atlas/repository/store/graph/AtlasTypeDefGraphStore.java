@@ -1143,6 +1143,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
                 for (TypeDefChangeListener changeListener : typeDefChangeListeners) {
                     try {
                         changeListener.onChange(changedTypeDefs);
+
+                        LOG.info("OnChange completed for listener {}", changeListener.getClass().getName());
                     } catch (Throwable t) {
                         LOG.error("OnChange failed for listener {}", changeListener.getClass().getName(), t);
                     }
