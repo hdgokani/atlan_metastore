@@ -65,8 +65,6 @@ public class DefaultIndexCreator extends GraphTransactionManager {
                 management.createVertexMixedIndex(getCurrentWriteVertexIndexName(), BACKING_INDEX, Collections.emptyList());
 
                 LOG.info("Created index : {}", getCurrentWriteVertexIndexName());
-
-                LOG.info("Created index exists? : {}", management.getGraphIndex(getCurrentWriteVertexIndexName()) != null);
             }
 
             if (management.getGraphIndex(EDGE_INDEX) == null) {

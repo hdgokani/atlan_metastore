@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.AtlasErrorCode.CINV_UNHEALTHY;
+import static org.apache.atlas.repository.graph.TypeCacheRefresher.RefreshOperation.TYPES_DEF;
 import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentReadVertexIndexName;
 import static org.apache.atlas.service.ActiveIndexNameManager.getCurrentWriteVertexIndexName;
 
@@ -105,8 +106,12 @@ public class TypeCacheRefresher {
         AtlasGraphManagement management = null;
         try {
             management = provider.get().getManagementSystem();
-            int totalFieldKeys = management.getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys().size();
-            LOG.info("Found {} totalFieldKeys to be expected in other nodes :: traceId {}", totalFieldKeys, traceId);
+            int totalFieldKeys = -1;
+            if (Arrays.asList(operationIds).contains(TYPES_DEF.getId())) {
+                totalFieldKeys = management.getGraphIndex(getCurrentWriteVertexIndexName()).getFieldKeys().size();
+                LOG.info("Found {} totalFieldKeys to be expected in other nodes :: traceId {}", totalFieldKeys, traceId);
+            }
+
             refreshCache(totalFieldKeys, traceId, operationIds);
         } catch (IOException | URISyntaxException | RepositoryException e) {
             throw e;
@@ -129,8 +134,6 @@ public class TypeCacheRefresher {
         if (totalFieldKeys != -1) {
             builder.setParameter("expectedFieldKeys", String.valueOf(totalFieldKeys));
         }
-
-        //builder.setParameter("operationId", operationIds);
         Arrays.stream(operationIds).forEach(x -> builder.addParameter("operationId", x));
         builder.setParameter("traceId", traceId);
 

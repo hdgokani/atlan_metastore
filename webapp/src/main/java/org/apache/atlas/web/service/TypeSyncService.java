@@ -150,9 +150,9 @@ public class TypeSyncService {
                 closeOpenTransactions(graph);LOG.info("### 5");
                 //closeOpenInstances(graph);LOG.info("### 6");
 
-                /*if (graph.isOpen() && graph.tx().isOpen()) {
+                if (graph.isOpen() && graph.tx().isOpen()) {
                     graph.tx().rollback();LOG.info("### 7");
-                }*/
+                }
 
                 defaultIndexCreator.createDefaultIndexes(atlasGraph);LOG.info("### 8");
 
