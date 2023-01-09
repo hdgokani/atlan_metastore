@@ -47,9 +47,9 @@ jobs:
       run: |
         branch_name=${{ steps.get_branch.outputs.branch }} 
         if [[ $branch_name == 'main' || $branch_name == 'master' || $branch_name == 'lineageondemand' ]]
-          then
-            chmod +x ./build_without_dashboard.sh && ./build_without_dashboard.sh
-          else
+        then
+            chmod +x ./build.sh && ./build.sh build_without_dashboard
+        else
             chmod +x ./build.sh && ./build.sh
         fi
 
