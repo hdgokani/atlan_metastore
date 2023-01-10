@@ -29,7 +29,7 @@ else
   mvn -T 100 -pl '!addons/hdfs-model,!addons/hive-bridge,!addons/hive-bridge-shim,!addons/falcon-bridge-shim,!addons/falcon-bridge,!addons/sqoop-bridge,!addons/sqoop-bridge-shim,!addons/hbase-bridge,!addons/hbase-bridge-shim,!addons/kafka-bridge' -Dmaven.test.skip -DskipTests -Drat.skip=true package -Pdist
 fi
 
-echo "[DEBUG listing distro/target"
+echo "[DEBUG] listing distro/target"
 ls distro/target
 
 echo "[DEBUG] listing local directory"
