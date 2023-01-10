@@ -771,7 +771,7 @@
         <tinkerpop.version>3.5.1</tinkerpop.version>
         <woodstox-core.version>5.0.3</woodstox-core.version>
         <zookeeper.version>3.4.6</zookeeper.version>
-        <skipDashboard>true</skipDashboard>
+        <skipDashboard>false</skipDashboard>
     </properties>
 
     <modules>
