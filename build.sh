@@ -24,7 +24,7 @@ unzip -o keycloak-15.0.2.1.zip -d ~/.m2/repository/org
 echo "Maven Building"
 
 if [ "$1" == "build_without_dashboard" ]; then
-  mvn -T 100 -pl '!addons/hdfs-model,!addons/hive-bridge,!addons/hive-bridge-shim,!addons/falcon-bridge-shim,!addons/falcon-bridge,!addons/sqoop-bridge,!addons/sqoop-bridge-shim,!addons/hbase-bridge,!addons/hbase-bridge-shim,!addons/kafka-bridge,!dashboardv2,!dashboardv3' -Dmaven.test.skip -DskipTests -Drat.skip=true package -Pdist
+  mvn -T 100 -pl '!addons/hdfs-model,!addons/hive-bridge,!addons/hive-bridge-shim,!addons/falcon-bridge-shim,!addons/falcon-bridge,!addons/sqoop-bridge,!addons/sqoop-bridge-shim,!addons/hbase-bridge,!addons/hbase-bridge-shim,!addons/kafka-bridge,!dashboardv2,!dashboardv3' -Dmaven.test.skip -DskipTests -Drat.skip=true -DskipOverlay=true package -Pdist
 else
   mvn -T 100 -pl '!addons/hdfs-model,!addons/hive-bridge,!addons/hive-bridge-shim,!addons/falcon-bridge-shim,!addons/falcon-bridge,!addons/sqoop-bridge,!addons/sqoop-bridge-shim,!addons/hbase-bridge,!addons/hbase-bridge-shim,!addons/kafka-bridge' -Dmaven.test.skip -DskipTests -Drat.skip=true package -Pdist
 fi

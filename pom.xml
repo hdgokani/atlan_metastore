@@ -757,6 +757,7 @@
         <skipSite>true</skipSite>
         <skipTests>false</skipTests>
         <skipUTs>false</skipUTs>
+        <skipOverlay>false</skipOverlay>
         <slf4j.version>1.7.30</slf4j.version>
         <solr-test-framework.version>8.6.3</solr-test-framework.version>
         <solr.version>8.6.3</solr.version>
@@ -785,8 +786,6 @@
         <module>graphdb</module>
         <module>repository</module>
         <module>authorization</module>
-        <module>dashboardv2</module>
-        <module>dashboardv3</module>
         <module>webapp</module>
         <module>docs</module>
 
