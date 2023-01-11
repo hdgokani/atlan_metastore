@@ -48,6 +48,10 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/build.sh') }}
           restore-keys: ${{ runner.os }}-m2
 
+      - name: Get branch name
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: get_branch
+
       - name: Build with Maven
         run: |
           branch_name=${{ steps.get_branch.outputs.branch }} 
@@ -59,10 +63,6 @@ jobs:
               echo "build with dashboard"
               chmod +x ./build.sh && ./build.sh
           fi
-
-      - name: Get branch name
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        id: get_branch
 
       - run:   echo "REPOSITORY_NAME=`echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//"`" >> $GITHUB_ENV
         shell: bash
