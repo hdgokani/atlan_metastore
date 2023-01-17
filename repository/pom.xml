@@ -214,7 +214,7 @@
         <dependency>
             <groupId>com.google.inject.extensions</groupId>
             <artifactId>guice-multibindings</artifactId>
-            <version>4.1.0</version>
+            <version>4.2.3</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
