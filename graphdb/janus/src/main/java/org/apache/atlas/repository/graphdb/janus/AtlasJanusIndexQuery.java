@@ -19,6 +19,7 @@ package org.apache.atlas.repository.graphdb.janus;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -138,6 +139,21 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
         @Override
         public double getScore() {
             return source.getScore();
+        }
+
+        @Override
+        public Set<String> getCollapseKeys() {
+            return null;
+        }
+
+        @Override
+        public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> getCollapseVertices(String key) {
+            return null;
+        }
+
+        @Override
+        public Integer getCollapseVerticesCount(String key) {
+            return null;
         }
     }
 }

@@ -47,12 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 
@@ -258,6 +253,21 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         public double getScore() {
             return hit.getScore();
         }
+
+        @Override
+        public Set<String> getCollapseKeys() {
+            return null;
+        }
+
+        @Override
+        public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> getCollapseVertices(String key) {
+            return null;
+        }
+
+        @Override
+        public Integer getCollapseVerticesCount(String key) {
+            return null;
+        }
     }
 
 
@@ -272,6 +282,43 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getVertex() {
             long vertexId = LongEncoding.decode(String.valueOf(hit.get("_id")));
             return graph.getVertex(String.valueOf(vertexId));
+        }
+
+        @Override
+        public Set<String> getCollapseKeys() {
+            DirectIndexQueryResult result = new DirectIndexQueryResult();
+            Set<String> collapseKeys = new HashSet<>();
+            Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(AtlasType.toJson(hit.get("inner_hits")), Map.class);
+            if (responseMap != null) {
+                collapseKeys = responseMap.keySet();
+            }
+            return collapseKeys;
+        }
+
+        @Override
+        public DirectIndexQueryResult getCollapseVertices(String key) {
+            DirectIndexQueryResult result = new DirectIndexQueryResult();
+            Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(AtlasType.toJson(hit.get("inner_hits")), Map.class);
+            if (responseMap != null) {
+                responseMap = AtlasType.fromJson(AtlasType.toJson(responseMap.get(key)), Map.class);
+                Map<String, LinkedHashMap> hits_0 = AtlasType.fromJson(AtlasType.toJson(responseMap.get("hits")), Map.class);
+                List<LinkedHashMap> hits_1 = AtlasType.fromJson(AtlasType.toJson(hits_0.get("hits")), List.class);
+                Stream<Result<AtlasJanusVertex, AtlasJanusEdge>> resultStream = hits_1.stream().map(ResultImplDirect::new);
+                result.setIterator(resultStream.iterator());
+                return result;
+            }
+            return null;
+        }
+
+        @Override
+        public Integer getCollapseVerticesCount(String key) {
+            Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(AtlasType.toJson(hit.get("inner_hits")), Map.class);
+            if (responseMap != null) {
+                responseMap = AtlasType.fromJson(AtlasType.toJson(responseMap.get(key)), Map.class);
+                Map<String, LinkedHashMap> hits_0 = AtlasType.fromJson(AtlasType.toJson(responseMap.get("hits")), Map.class);
+                return (Integer) hits_0.get("total").get("value");
+            }
+            return null;
         }
 
         @Override

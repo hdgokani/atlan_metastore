@@ -1028,6 +1028,19 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
 
+            prepareSearchResult(ret, indexQueryResult, resultAttributes, true);
+
+            ret.setAggregations(indexQueryResult.getAggregationMap());
+            ret.setApproximateCount(indexQuery.vertexTotals());
+        } catch (Exception e) {
+            throw e;
+        }
+        return ret;
+    }
+
+    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
+        SearchParams searchParams = ret.getSearchParameters();
+        try {
             Iterator<Result> iterator = indexQueryResult.getIterator();
             boolean showSearchScore = searchParams.getShowSearchScore();
 
@@ -1045,17 +1058,38 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 if (showSearchScore) {
                     ret.addEntityScore(header.getGuid(), result.getScore());
                 }
+                if (fetchCollapsedResults) {
+                    Map<String, AtlasSearchResult> collapse = new HashMap<>();
+
+                    Set<String> collapseKeys = result.getCollapseKeys();
+                    for (String collapseKey : collapseKeys) {
+                        AtlasSearchResult collapseRet = new AtlasSearchResult();
+                        collapseRet.setSearchParameters(ret.getSearchParameters());
+
+                        Set<String> collapseResultAttributes = new HashSet<>();
+                        if (CollectionUtils.isNotEmpty(searchParams.getCollapseAttributes())) {
+                            collapseResultAttributes.addAll(searchParams.getCollapseAttributes());
+                        } else {
+                            collapseResultAttributes = resultAttributes;
+                        }
+
+                        collapseRet.setApproximateCount(result.getCollapseVerticesCount(collapseKey));
+
+                        DirectIndexQueryResult indexQueryCollapsedResult = result.getCollapseVertices(collapseKey);
+                        prepareSearchResult(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false);
+
+                        collapseRet.setSearchParameters(null);
+                        collapse.put(collapseKey, collapseRet);
+                    }
+                    header.setCollapse(collapse);
+                }
+
                 ret.addEntity(header);
             }
-
-            ret.setAggregations(indexQueryResult.getAggregationMap());
-            ret.setApproximateCount(indexQuery.vertexTotals());
         } catch (Exception e) {
-            throw e;
+                throw e;
         }
-
         scrubSearchResults(ret, searchParams.getSuppressLogs());
-        return ret;
     }
 
     @Override
