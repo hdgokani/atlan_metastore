@@ -19,10 +19,12 @@ public class LineageOnDemandRequest {
     private List<SearchParameters.FilterCriteria>   traversalFilters;
     private Set<String>                             attributes;
     private Set<String>                             relationAttributes;
+    private LineageOnDemandBaseParams               defaultParams;
 
     public LineageOnDemandRequest() {
         this.attributes = new HashSet<>();
         this.relationAttributes = new HashSet<>();
+        this.defaultParams = new LineageOnDemandBaseParams();
     }
 
     public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints) {
@@ -32,6 +34,18 @@ public class LineageOnDemandRequest {
     }
 
     public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, List<SearchParameters.FilterCriteria> traversalFilters, Set<String> attributes, Set<String> relationAttributes) {
+        this.defaultParams = new LineageOnDemandBaseParams();
+    }
+
+    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, LineageOnDemandBaseParams defaultParams) {
+        this.constraints = constraints;
+        this.attributes = new HashSet<>();
+        this.relationAttributes = new HashSet<>();
+        this.defaultParams = defaultParams;
+    }
+
+    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, List<SearchParameters.FilterCriteria> traversalFilters,
+                                  Set<String> attributes, Set<String> relationAttributes, LineageOnDemandBaseParams defaultParams) {
         this.constraints        = constraints;
         this.traversalFilters   = traversalFilters;
         this.attributes         = attributes;
@@ -68,5 +82,13 @@ public class LineageOnDemandRequest {
 
     public void setRelationAttributes(Set<String> relationAttributes) {
         this.relationAttributes = relationAttributes;
+    }
+
+    public LineageOnDemandBaseParams getDefaultParams() {
+        return defaultParams;
+    }
+
+    public void setDefaultParams(LineageOnDemandBaseParams defaultParams) {
+        this.defaultParams = defaultParams;
     }
 }
