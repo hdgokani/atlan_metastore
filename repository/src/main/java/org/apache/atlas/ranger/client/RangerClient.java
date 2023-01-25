@@ -196,6 +196,17 @@ public class RangerClient {
         return callAPI(api, RangerRoleList.class, queryParams);
     }
 
+    public RangerRoleList getAllRolesByUserName(String userName) throws AtlasServiceException {
+        Map<String, String> attrs = new HashMap<>();
+        attrs.put("userName", userName);
+
+        MultivaluedMap<String, String> queryParams = toQueryParams(attrs, null);
+
+        AtlasBaseClient.API api = new AtlasBaseClient.API(GET_ROLE_BY_LOOKUP, GET, Response.Status.OK);
+
+        return callAPI(api, RangerRoleList.class, queryParams);
+    }
+
     public RangerRole updateRole(RangerRole rangerRole) throws AtlasServiceException {
 
         AtlasBaseClient.API api = new AtlasBaseClient.API(String.format(UPDATE_ROLE, rangerRole.getId()), PUT, Response.Status.OK);
