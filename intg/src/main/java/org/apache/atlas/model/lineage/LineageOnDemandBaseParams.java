@@ -11,18 +11,18 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class LineageOnDemandDefaultParams {
+public class LineageOnDemandBaseParams {
     private int              inputRelationsLimit;
     private int              outputRelationsLimit;
 
     public static final int LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT = AtlasConfiguration.LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT.getInt();
 
-    public LineageOnDemandDefaultParams(){
+    public LineageOnDemandBaseParams() {
         this.inputRelationsLimit = LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT;
         this.outputRelationsLimit = LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT;
     }
 
-    public LineageOnDemandDefaultParams(int inputRelationsLimit, int outputRelationsLimit) {
+    public LineageOnDemandBaseParams(int inputRelationsLimit, int outputRelationsLimit) {
         this.inputRelationsLimit = inputRelationsLimit;
         this.outputRelationsLimit = outputRelationsLimit;
     }
