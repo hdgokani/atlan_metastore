@@ -274,6 +274,10 @@ public class AtlasLineageInfo implements Serializable {
         int                        outputRelationsCount;
         boolean                    isInputRelationsReachedLimit;
         boolean                    isOutputRelationsReachedLimit;
+        @JsonProperty
+        boolean                    hasUpstream;
+        @JsonProperty
+        boolean                    hasDownstream;
         LineageOnDemandConstraints onDemandConstraints;
         @JsonIgnore
         int                        offsetCount;
@@ -288,19 +292,8 @@ public class AtlasLineageInfo implements Serializable {
             this.outputRelationsCount          = 0;
             this.isInputRelationsReachedLimit  = false;
             this.isOutputRelationsReachedLimit = false;
-            this.offsetCount                   = 0;
-        }
-
-        public int getOffsetCount() {
-            return offsetCount;
-        }
-
-        public int incrementOffsetCount() {
-            return offsetCount++;
-        }
-
-        public void setOffsetCount(int offsetCount) {
-            this.offsetCount = offsetCount;
+            this.hasUpstream                   = false;
+            this.hasDownstream                 = false;
         }
 
         public boolean isInputRelationsReachedLimit() {
@@ -333,6 +326,34 @@ public class AtlasLineageInfo implements Serializable {
 
         public void setHasMoreOutputs(boolean hasMoreOutputs) {
             this.hasMoreOutputs = hasMoreOutputs;
+        }
+
+        public boolean hasUpstream() {
+            return hasUpstream;
+        }
+
+        public void setHasUpstream(boolean hasUpstream) {
+            this.hasUpstream = hasUpstream;
+        }
+
+        public boolean hasDownstream() {
+            return hasDownstream;
+        }
+
+        public void setHasDownstream(boolean hasDownstream) {
+            this.hasDownstream = hasDownstream;
+        }
+
+        public int getOffsetCount() {
+            return offsetCount;
+        }
+
+        public int incrementOffsetCount() {
+            return offsetCount++;
+        }
+
+        public void setOffsetCount(int offsetCount) {
+            this.offsetCount = offsetCount;
         }
 
         public int getInputRelationsCount() {
@@ -386,6 +407,8 @@ public class AtlasLineageInfo implements Serializable {
                     ", hasMoreOutputs='" + hasMoreOutputs + '\'' +
                     ", inputRelationsCount='" + inputRelationsCount + '\'' +
                     ", outputRelationsCount='" + outputRelationsCount + '\'' +
+                    ", hasUpstream='" + hasUpstream + '\'' +
+                    ", hasDownstream='" + hasDownstream + '\'' +
                     '}';
         }
 
