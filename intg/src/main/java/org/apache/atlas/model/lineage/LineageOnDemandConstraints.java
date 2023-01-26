@@ -27,7 +27,6 @@ import java.io.Serializable;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-import static org.apache.atlas.model.lineage.LineageOnDemandDefaultParams.LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
@@ -69,14 +68,6 @@ public class LineageOnDemandConstraints extends LineageOnDemandBaseParams implem
     public LineageOnDemandConstraints(LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth, int from) {
         super(inputRelationsLimit, outputRelationsLimit);
         this.direction            = direction;
-        this.depth                = depth;
-        this.from                 = from;
-    }
-
-    public LineageOnDemandConstraints(LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth, int from) {
-        this.direction            = direction;
-        this.inputRelationsLimit  = inputRelationsLimit;
-        this.outputRelationsLimit = outputRelationsLimit;
         this.depth                = depth;
         this.from                 = from;
     }
