@@ -180,6 +180,8 @@ public class EntityLineageService implements AtlasLineageService {
             Map<String, LineageOnDemandConstraints> lineageConstraintsMap = new HashMap<>();
             lineageConstraintsMap.put(guid, getLineageConstraints(guid, lineageOnDemandRequest.getDefaultParams()));
             lineageOnDemandRequest.setConstraints(lineageConstraintsMap);
+        } else {
+            handleDefaultParams(lineageOnDemandRequest);
         }
 
         AtlasLineageOnDemandContext atlasLineageOnDemandContext = new AtlasLineageOnDemandContext(lineageOnDemandRequest, atlasTypeRegistry);
@@ -196,6 +198,31 @@ public class EntityLineageService implements AtlasLineageService {
         RequestContext.get().endMetricRecord(metricRecorder);
 
         return ret;
+    }
+
+    private void handleDefaultParams(LineageOnDemandRequest lineageOnDemandRequest) {
+        for (Map.Entry<String, LineageOnDemandConstraints> constraintEntry : lineageOnDemandRequest.getConstraints().entrySet()) {
+            if (constraintEntry.getValue().getInputRelationsLimit() == 0) {
+                constraintEntry.setValue(
+                        new LineageOnDemandConstraints(
+                                constraintEntry.getValue().getDirection(),
+                                lineageOnDemandRequest.getDefaultParams().getInputRelationsLimit(),
+                                constraintEntry.getValue().getOutputRelationsLimit(),
+                                constraintEntry.getValue().getDepth()
+                        )
+                );
+            }
+            if (constraintEntry.getValue().getOutputRelationsLimit() == 0) {
+                constraintEntry.setValue(
+                        new LineageOnDemandConstraints(
+                                constraintEntry.getValue().getDirection(),
+                                constraintEntry.getValue().getInputRelationsLimit(),
+                                lineageOnDemandRequest.getDefaultParams().getOutputRelationsLimit(),
+                                constraintEntry.getValue().getDepth()
+                        )
+                );
+            }
+        }
     }
 
     private boolean validateEntityTypeAndCheckIfDataSet(String guid) throws AtlasBaseException {

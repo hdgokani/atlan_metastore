@@ -46,11 +46,15 @@ public class LineageOnDemandConstraints extends LineageOnDemandBaseParams implem
     private static final int LINEAGE_ON_DEMAND_DEFAULT_DEPTH      = 3;
 
     public LineageOnDemandConstraints() {
-        this(LineageDirection.BOTH, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT, LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
+        this(LineageDirection.BOTH, 0, 0, LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
     }
 
     public LineageOnDemandConstraints(LineageOnDemandBaseParams baseParams) {
         this(LineageDirection.BOTH, baseParams.getInputRelationsLimit(), baseParams.getOutputRelationsLimit(), LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
+    }
+
+    public LineageOnDemandConstraints(LineageDirection direction, LineageOnDemandBaseParams baseParams, int depth) {
+        this(direction, baseParams.getInputRelationsLimit(), baseParams.getOutputRelationsLimit(), depth);
     }
 
     public LineageOnDemandConstraints(LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth) {
