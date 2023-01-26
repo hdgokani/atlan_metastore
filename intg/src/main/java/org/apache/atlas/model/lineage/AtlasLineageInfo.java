@@ -348,12 +348,8 @@ public class AtlasLineageInfo implements Serializable {
             return offsetCount;
         }
 
-        public int incrementOffsetCount() {
-            return offsetCount++;
-        }
-
-        public void setOffsetCount(int offsetCount) {
-            this.offsetCount = offsetCount;
+        public void incrementOffsetCount() {
+            offsetCount++;
         }
 
         public int getInputRelationsCount() {
