@@ -35,7 +35,7 @@ public enum AtlasConfiguration {
     QUERY_PARAM_MAX_LENGTH("atlas.query.param.max.length", 4*1024),
 
     REST_API_ENABLE_DELETE_TYPE_OVERRIDE("atlas.rest.enable.delete.type.override", false),
-    NOTIFICATION_RELATIONSHIPS_ENABLED("atlas.notification.relationships.enabled", false),
+    NOTIFICATION_RELATIONSHIPS_ENABLED("atlas.notification.relationships.enabled", true),
 
     NOTIFICATION_HOOK_TOPIC_NAME("atlas.notification.hook.topic.name", "ATLAS_HOOK"),
     NOTIFICATION_ENTITIES_TOPIC_NAME("atlas.notification.entities.topic.name", "ATLAS_ENTITIES"),
@@ -86,12 +86,15 @@ public enum AtlasConfiguration {
     TASKS_QUEUE_SIZE("atlas.tasks.queue.size", 1000),
     SESSION_TIMEOUT_SECS("atlas.session.timeout.secs", -1),
     UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true),
-    TASKS_GRAPH_COMMIT_CHUNK_SIZE("atlas.tasks.graph.commit.chunk.size", 1000),
+    TASKS_GRAPH_COMMIT_CHUNK_SIZE("atlas.tasks.graph.commit.chunk.size", 100),
     MAX_NUMBER_OF_RETRIES("atlas.tasks.graph.retry.count", 3),
     GRAPH_TRAVERSAL_PARALLELISM("atlas.graph.traverse.bucket.size",10),
     LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", true),
     LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT("atlas.lineage.on.demand.default.node.count", 3),
-    LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 9000);
+    LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 9000),
+    ENABLE_SEARCH_LOGGING("atlas.enable.search.logging", true),
+    RANGER_ATLAS_SERVICE_TYPE("atlas.ranger.service.type.atlas", "atlas"),
+    RANGER_HEKA_SERVICE_TYPE("atlas.ranger.service.type.heka", "heka");
 
 
     private static final Configuration APPLICATION_PROPERTIES;

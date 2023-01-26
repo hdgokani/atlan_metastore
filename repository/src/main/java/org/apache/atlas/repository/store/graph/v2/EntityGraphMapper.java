@@ -19,10 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.GraphTransactionInterceptor;
-import org.apache.atlas.RequestContext;
+import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
@@ -58,6 +55,8 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.AccessControlPolicyPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.AccessControlPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
@@ -150,7 +149,6 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getId
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
@@ -209,12 +207,13 @@ public class EntityGraphMapper {
     private final IFullTextMapper           fullTextMapperV2;
     private final TaskManagement            taskManagement;
     private final TransactionInterceptHelper   transactionInterceptHelper;
+    private final AtlasRelationshipStore atlasRelationshipStore;
 
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
                              AtlasRelationshipStore relationshipStore, IAtlasEntityChangeNotifier entityChangeNotifier,
                              AtlasInstanceConverter instanceConverter, IFullTextMapper fullTextMapperV2,
-                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper) {
+                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper, AtlasRelationshipStore atlasRelationshipStore) {
         this.restoreHandlerV1 = restoreHandlerV1;
         this.graphHelper          = new GraphHelper(graph);
         this.deleteDelegate       = deleteDelegate;
@@ -223,6 +222,7 @@ public class EntityGraphMapper {
         this.relationshipStore    = relationshipStore;
         this.entityChangeNotifier = entityChangeNotifier;
         this.instanceConverter    = instanceConverter;
+        this.atlasRelationshipStore = atlasRelationshipStore;
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
@@ -550,7 +550,7 @@ public class EntityGraphMapper {
         exception.setEntityGuid(guid);
     }
 
-    private PreProcessor getPreProcessor(String typeName) throws AtlasBaseException {
+    public PreProcessor getPreProcessor(String typeName) throws AtlasBaseException {
         PreProcessor preProcessor = null;
 
         switch (typeName) {
@@ -576,6 +576,15 @@ public class EntityGraphMapper {
 
             case QUERY_COLLECTION_ENTITY_TYPE:
                 preProcessor = new QueryCollectionPreProcessor(typeRegistry, entityRetriever);
+                break;
+
+            case PERSONA_ENTITY_TYPE:
+            case PURPOSE_ENTITY_TYPE:
+                preProcessor = new AccessControlPreProcessor(typeRegistry, graph, entityRetriever);
+                break;
+
+            case POLICY_ENTITY_TYPE:
+                preProcessor = new AccessControlPolicyPreProcessor(typeRegistry, graph, entityRetriever);
                 break;
 
         }
@@ -1839,6 +1848,7 @@ public class EntityGraphMapper {
             }
 
             if(newEntry != null) {
+
                 newElementsCreated.add(newEntry);
             }
         }
@@ -1851,7 +1861,6 @@ public class EntityGraphMapper {
                 allArrayElements = unionCurrentAndNewElements(attribute, (List) currentElements, (List) newElementsCreated);
             } else {
                 removedElements = removeUnusedArrayEntries(attribute, (List) currentElements, (List) newElementsCreated, ctx);
-
                 allArrayElements = unionCurrentAndNewElements(attribute, removedElements, (List) newElementsCreated);
             }
         } else {
@@ -2589,7 +2598,6 @@ public class EntityGraphMapper {
 
                         boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
                                 true, attribute.getRelationshipEdgeDirection(), entityVertex);
-
                         if (!deleted) {
                             additionalElements.add(edge);
                         }
@@ -3654,7 +3662,14 @@ public class EntityGraphMapper {
         try {
             do {
                 toIndex = ((offset + CHUNK_SIZE > propagatedVerticesSize) ? propagatedVerticesSize : (offset + CHUNK_SIZE));
-                List<AtlasVertex> updatedVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex, VerticesToRemoveTag.subList(offset, toIndex));
+                List<AtlasVertex> verticesChunkToRemoveTag = VerticesToRemoveTag.subList(offset, toIndex);
+
+                List<String> impactedGuids = verticesChunkToRemoveTag.stream()
+                        .map(entityVertex -> GraphHelper.getGuid(entityVertex))
+                        .collect(Collectors.toList());
+                GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
+
+                List<AtlasVertex> updatedVertices = deleteDelegate.getHandler().removeTagPropagation(classificationVertex, verticesChunkToRemoveTag);
                 List<AtlasEntity> updatedEntities = updateClassificationText(classification, updatedVertices);
                 entityChangeNotifier.onClassificationsDeletedFromEntities(updatedEntities, Collections.singletonList(classification));
 
@@ -3662,7 +3677,7 @@ public class EntityGraphMapper {
 
                 transactionInterceptHelper.intercept();
 
-            }while (offset < propagatedVerticesSize);
+            } while (offset < propagatedVerticesSize);
         } catch (AtlasBaseException exception) {
             LOG.error("Error while removing classification from vertices with classification vertex id {}", classificationVertex.getIdForDisplay());
             throw exception;

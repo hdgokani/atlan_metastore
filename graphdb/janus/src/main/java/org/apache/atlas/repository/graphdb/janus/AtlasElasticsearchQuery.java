@@ -19,6 +19,7 @@ package org.apache.atlas.repository.graphdb.janus;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -46,11 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 
@@ -82,6 +79,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         this.index = index;
         this.graph = graph;
         searchResponse = null;
+    }
+
+    public AtlasElasticsearchQuery(AtlasJanusGraph graph, String index, RestClient restClient) {
+        this(graph, restClient, index, null);
     }
 
     private SearchRequest getSearchRequest(String index, SearchSourceBuilder sourceBuilder) {
@@ -116,7 +117,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         try {
 
-            String responseString =  performDirectIndexQuery(searchParams.getQuery());
+            String responseString =  performDirectIndexQuery(searchParams.getQuery(), false);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("runQueryWithLowLevelClient.response : {}", responseString);
             }
@@ -131,10 +132,42 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         return result;
     }
 
-    private String performDirectIndexQuery(String query) throws IOException {
-        HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
+    private Map<String, Object> runQueryWithLowLevelClient(String query) throws AtlasBaseException {
+        Map<String, Object> ret = new HashMap<>();
+        try {
+            String responseString = performDirectIndexQuery(query, true);
 
-        String endPoint = index + "/_search?_source=false";
+            Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(responseString, Map.class);
+            Map<String, LinkedHashMap> hits_0 = AtlasType.fromJson(AtlasType.toJson(responseMap.get("hits")), Map.class);
+
+            ret.put("total", hits_0.get("total").get("value"));
+
+            List<LinkedHashMap> hits_1 = AtlasType.fromJson(AtlasType.toJson(hits_0.get("hits")), List.class);
+            ret.put("data", hits_1);
+
+            Map<String, Object> aggregationsMap = (Map<String, Object>) responseMap.get("aggregations");
+
+            if (MapUtils.isNotEmpty(aggregationsMap)) {
+                ret.put("aggregations", aggregationsMap);
+            }
+
+            return ret;
+
+        } catch (IOException e) {
+            LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
+        }
+    }
+
+    private String performDirectIndexQuery(String query, boolean source) throws IOException {
+        HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
+        String endPoint;
+
+        if (source) {
+            endPoint = index + "/_search";
+        } else {
+            endPoint = index + "/_search?_source=false";
+        }
 
         Request request = new Request("GET", endPoint);
         request.setEntity(entity);
@@ -169,6 +202,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     @Override
     public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> vertices(SearchParams searchParams) throws AtlasBaseException {
         return runQueryWithLowLevelClient(searchParams);
+    }
+
+    @Override
+    public Map<String, Object> directIndexQuery(String query) throws AtlasBaseException {
+        return runQueryWithLowLevelClient(query);
     }
 
     @Override
@@ -215,6 +253,21 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         public double getScore() {
             return hit.getScore();
         }
+
+        @Override
+        public Set<String> getCollapseKeys() {
+            return null;
+        }
+
+        @Override
+        public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> getCollapseVertices(String key) {
+            return null;
+        }
+
+        @Override
+        public Integer getCollapseVerticesCount(String key) {
+            return null;
+        }
     }
 
 
@@ -229,6 +282,43 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getVertex() {
             long vertexId = LongEncoding.decode(String.valueOf(hit.get("_id")));
             return graph.getVertex(String.valueOf(vertexId));
+        }
+
+        @Override
+        public Set<String> getCollapseKeys() {
+            DirectIndexQueryResult result = new DirectIndexQueryResult();
+            Set<String> collapseKeys = new HashSet<>();
+            Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(AtlasType.toJson(hit.get("inner_hits")), Map.class);
+            if (responseMap != null) {
+                collapseKeys = responseMap.keySet();
+            }
+            return collapseKeys;
+        }
+
+        @Override
+        public DirectIndexQueryResult getCollapseVertices(String key) {
+            DirectIndexQueryResult result = new DirectIndexQueryResult();
+            Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(AtlasType.toJson(hit.get("inner_hits")), Map.class);
+            if (responseMap != null) {
+                responseMap = AtlasType.fromJson(AtlasType.toJson(responseMap.get(key)), Map.class);
+                Map<String, LinkedHashMap> hits_0 = AtlasType.fromJson(AtlasType.toJson(responseMap.get("hits")), Map.class);
+                List<LinkedHashMap> hits_1 = AtlasType.fromJson(AtlasType.toJson(hits_0.get("hits")), List.class);
+                Stream<Result<AtlasJanusVertex, AtlasJanusEdge>> resultStream = hits_1.stream().map(ResultImplDirect::new);
+                result.setIterator(resultStream.iterator());
+                return result;
+            }
+            return null;
+        }
+
+        @Override
+        public Integer getCollapseVerticesCount(String key) {
+            Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(AtlasType.toJson(hit.get("inner_hits")), Map.class);
+            if (responseMap != null) {
+                responseMap = AtlasType.fromJson(AtlasType.toJson(responseMap.get(key)), Map.class);
+                Map<String, LinkedHashMap> hits_0 = AtlasType.fromJson(AtlasType.toJson(responseMap.get("hits")), Map.class);
+                return (Integer) hits_0.get("total").get("value");
+            }
+            return null;
         }
 
         @Override

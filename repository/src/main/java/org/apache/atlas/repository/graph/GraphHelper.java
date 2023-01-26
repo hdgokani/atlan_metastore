@@ -21,7 +21,6 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.sun.tools.javac.util.GraphUtils;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -35,6 +34,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -393,25 +393,28 @@ public final class GraphHelper {
     public static boolean isClassificationAttached(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
         AtlasPerfMetrics.MetricRecorder isClassificationAttachedMetricRecorder  = RequestContext.get().startMetricRecord("isClassificationAttached");
         String                          classificationId                        = classificationVertex.getIdForDisplay();
-        Iterator<AtlasVertex> vertices = entityVertex.query()
-                .direction(AtlasEdgeDirection.OUT)
-                .label(CLASSIFICATION_LABEL)
-                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
-                .vertices().iterator();
+        try {
+            Iterator<AtlasVertex> vertices = entityVertex.query()
+                    .direction(AtlasEdgeDirection.OUT)
+                    .label(CLASSIFICATION_LABEL)
+                    .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
+                    .vertices().iterator();
 
-        if (vertices != null) {
-            while (vertices.hasNext()) {
-                AtlasVertex vertex = vertices.next();
-                if (vertex != null) {
-                    if (vertex.getIdForDisplay().equals(classificationId)) {
-                        return true;
+            if (vertices != null) {
+                while (vertices.hasNext()) {
+                    AtlasVertex vertex = vertices.next();
+                    if (vertex != null) {
+                        if (vertex.getIdForDisplay().equals(classificationId)) {
+                            return true;
+                        }
                     }
                 }
             }
+        } catch (Exception err) {
+            throw err;
+        } finally {
+            RequestContext.get().endMetricRecord(isClassificationAttachedMetricRecorder);
         }
-
-        RequestContext.get().endMetricRecord(isClassificationAttachedMetricRecorder);
-
         return false;
     }
 

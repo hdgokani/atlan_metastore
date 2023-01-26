@@ -37,6 +37,7 @@ public class LineageOnDemandRequest {
         this.constraints = constraints;
         this.attributes = new HashSet<>();
         this.relationAttributes = new HashSet<>();
+        this.defaultParams = new LineageOnDemandDefaultParams();
     }
 
     public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, List<SearchParameters.FilterCriteria> traversalFilters, Set<String> attributes, Set<String> relationAttributes) {
@@ -63,6 +64,7 @@ public class LineageOnDemandRequest {
         this.traversalFilters   = traversalFilters;
         this.attributes         = attributes;
         this.relationAttributes = relationAttributes;
+        this.defaultParams      = defaultParams;
     }
 
     public Map<String, LineageOnDemandConstraints> getConstraints() {
@@ -96,7 +98,7 @@ public class LineageOnDemandRequest {
     public void setRelationAttributes(Set<String> relationAttributes) {
         this.relationAttributes = relationAttributes;
     }
-
+    
     public LineageOnDemandBaseParams getDefaultParams() {
         return defaultParams;
     }

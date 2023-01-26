@@ -1,15 +1,25 @@
 package org.apache.atlas.model.discovery;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.Set;
 
-public abstract class SearchParams {
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown=true)
+public class SearchParams {
 
     Set<String> attributes;
     Set<String> relationAttributes;
+    Set<String> collapseAttributes;
+    Set<String> collapseRelationAttributes;
+    Set<String> utmTags;
     boolean showSearchScore;
     boolean suppressLogs;
 
-    public abstract String getQuery();
+    public String getQuery() {
+        return getQuery();
+    }
 
     public Set<String> getAttributes() {
         return attributes;
@@ -25,6 +35,30 @@ public abstract class SearchParams {
 
     public void setRelationAttributes(Set<String> relationAttributes) {
         this.relationAttributes = relationAttributes;
+    }
+
+    public Set<String> getCollapseAttributes() {
+        return collapseAttributes;
+    }
+
+    public void setCollapseAttributes(Set<String> collapseAttributes) {
+        this.collapseAttributes = collapseAttributes;
+    }
+
+    public Set<String> getCollapseRelationAttributes() {
+        return collapseRelationAttributes;
+    }
+
+    public void setCollapseRelationAttributes(Set<String> collapseRelationAttributes) {
+        this.collapseRelationAttributes = collapseRelationAttributes;
+    }
+
+    public Set<String> getUtmTags() {
+        return utmTags;
+    }
+
+    public void setUtmTags(Set<String> utmTags) {
+        this.utmTags = utmTags;
     }
 
     public boolean getShowSearchScore() {

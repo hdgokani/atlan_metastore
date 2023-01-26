@@ -3,6 +3,7 @@ package org.apache.atlas.discovery;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.lineage.LineageOnDemandBaseParams;
 import org.apache.atlas.model.lineage.LineageOnDemandConstraints;
+import org.apache.atlas.model.lineage.LineageOnDemandDefaultParams;
 import org.apache.atlas.model.lineage.LineageOnDemandRequest;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -27,6 +28,7 @@ public class AtlasLineageOnDemandContext {
         this.constraints = lineageOnDemandRequest.getConstraints();
         this.attributes = lineageOnDemandRequest.getAttributes();
         this.relationAttributes = lineageOnDemandRequest.getRelationAttributes();
+        this.defaultParams = lineageOnDemandRequest.getDefaultParams();
         this.predicate = constructInMemoryPredicate(typeRegistry, lineageOnDemandRequest.getTraversalFilters());
     }
 
