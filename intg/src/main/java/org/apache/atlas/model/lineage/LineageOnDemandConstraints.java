@@ -35,25 +35,19 @@ import static org.apache.atlas.model.lineage.LineageOnDemandDefaultParams.LINEAG
 /**
  * This is the root class representing the input for lineage search on-demand.
  */
-public class LineageOnDemandConstraints extends LineageOnDemandBaseParams implements Serializable {
+public class LineageOnDemandConstraints implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private LineageDirection direction;
+    private int              inputRelationsLimit;
+    private int              outputRelationsLimit;
     private int              depth;
     private int              from;
 
     private static final int LINEAGE_ON_DEMAND_DEFAULT_DEPTH      = 3;
 
     public LineageOnDemandConstraints() {
-        this(LineageDirection.BOTH, 0, 0, LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
-    }
-
-    public LineageOnDemandConstraints(LineageOnDemandBaseParams baseParams) {
-        this(LineageDirection.BOTH, baseParams.getInputRelationsLimit(), baseParams.getOutputRelationsLimit(), LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
-    }
-
-    public LineageOnDemandConstraints(LineageDirection direction, LineageOnDemandBaseParams baseParams, int depth) {
-        this(direction, baseParams.getInputRelationsLimit(), baseParams.getOutputRelationsLimit(), depth);
+        this(LineageDirection.BOTH, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT, LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT, LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
     }
 
     public LineageOnDemandConstraints(LineageOnDemandDefaultParams defaultParams) {
@@ -61,16 +55,10 @@ public class LineageOnDemandConstraints extends LineageOnDemandBaseParams implem
     }
 
     public LineageOnDemandConstraints(LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth) {
-        super(inputRelationsLimit, outputRelationsLimit);
         this.direction            = direction;
+        this.inputRelationsLimit  = inputRelationsLimit;
+        this.outputRelationsLimit = outputRelationsLimit;
         this.depth                = depth;
-    }
-
-    public LineageOnDemandConstraints(LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth, int from) {
-        super(inputRelationsLimit, outputRelationsLimit);
-        this.direction            = direction;
-        this.depth                = depth;
-        this.from                 = from;
     }
 
     public LineageOnDemandConstraints(LineageDirection direction, int inputRelationsLimit, int outputRelationsLimit, int depth, int from) {
@@ -87,6 +75,22 @@ public class LineageOnDemandConstraints extends LineageOnDemandBaseParams implem
 
     public void setDirection(LineageDirection direction) {
         this.direction = direction;
+    }
+
+    public int getInputRelationsLimit() {
+        return inputRelationsLimit;
+    }
+
+    public void setInputRelationsLimit(int inputRelationsLimit) {
+        this.inputRelationsLimit = inputRelationsLimit;
+    }
+
+    public int getOutputRelationsLimit() {
+        return outputRelationsLimit;
+    }
+
+    public void setOutputRelationsLimit(int outputRelationsLimit) {
+        this.outputRelationsLimit = outputRelationsLimit;
     }
 
     public int getDepth() {
