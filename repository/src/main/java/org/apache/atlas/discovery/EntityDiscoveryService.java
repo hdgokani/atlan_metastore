@@ -101,9 +101,8 @@ import static org.apache.atlas.SortOrder.ASCENDING;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.ASSET_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.INDEX_PREFIX;
 import static org.apache.atlas.repository.Constants.OWNER_ATTRIBUTE;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
+import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.BASIC_SEARCH_STATE_FILTER;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TO_RANGE_LIST;
 
@@ -1054,7 +1053,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     private String getIndexName(IndexSearchParams params) throws AtlasBaseException {
         if (StringUtils.isEmpty(params.getPersona()) && StringUtils.isEmpty(params.getPurpose())) {
-            return INDEX_PREFIX + VERTEX_INDEX;
+            return VERTEX_INDEX_NAME;
         }
 
         String qualifiedName = "";

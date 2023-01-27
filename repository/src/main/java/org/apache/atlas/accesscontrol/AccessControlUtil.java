@@ -61,6 +61,16 @@ public class AccessControlUtil {
 
     public static final String LINK_ASSET_ACTION = "link-assets";
 
+    public static final String ATTR_POLICY_ACTIONS  = "policyActions";
+    public static final String ATTR_DATA_MASKING    = "dataMaskingOption";
+    public static final String ATTR_POLICY_TYPE     = "accessControlPolicyType";
+    public static final String ATTR_ALL_USERS       = "applyPolicyToAllUsers";
+    public static final String ATTR_POLICY_CATEGORY = "accessControlPolicyCategory";
+    public static final String ATTR_PURPOSE_TAGS    = "purposeClassifications";
+
+    public static final String REL_ATTR_ACCESS_CONTROL  = "accessControl";
+    public static final String REL_ATTR_POLICIES        = "policies";
+
     public static final String RANGER_MASK_REDACT    = "MASK_REDACT";
     public static final String RANGER_MASK_LAST_4    = "MASK_SHOW_LAST_4";
     public static final String RANGER_MASK_FIRST_4   = "MASK_SHOW_FIRST_4";
@@ -128,7 +138,7 @@ public class AccessControlUtil {
     }
 
     public static List<AtlasEntity> getPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        List<AtlasObjectId> policies = (List<AtlasObjectId>) entityWithExtInfo.getEntity().getRelationshipAttribute("policies");
+        List<AtlasObjectId> policies = (List<AtlasObjectId>) entityWithExtInfo.getEntity().getRelationshipAttribute(REL_ATTR_POLICIES);
 
         return objectToEntityList(entityWithExtInfo, policies);
     }
@@ -161,11 +171,11 @@ public class AccessControlUtil {
     }
 
     public static String getPolicyType(AtlasEntity policyEntity) {
-        return (String) policyEntity.getAttribute("accessControlPolicyType");
+        return (String) policyEntity.getAttribute(ATTR_POLICY_TYPE);
     }
 
     public static String getPolicyCategory(AtlasEntity policyEntity) {
-        return (String) policyEntity.getAttribute("accessControlPolicyCategory");
+        return (String) policyEntity.getAttribute(ATTR_POLICY_CATEGORY);
     }
 
     public static List<AtlasEntity> objectToEntityList(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, List<AtlasObjectId> policies) {
@@ -182,11 +192,11 @@ public class AccessControlUtil {
     }
 
     public static List<String> getActions(AtlasEntity policyEntity) {
-        return (List<String>) policyEntity.getAttribute("policyActions");
+        return (List<String>) policyEntity.getAttribute(ATTR_POLICY_ACTIONS);
     }
 
     public static String getDataPolicyMaskType(AtlasEntity dataPolicy) {
-        return (String) dataPolicy.getAttribute("dataMaskingOption");
+        return (String) dataPolicy.getAttribute(ATTR_DATA_MASKING);
     }
 
     public static void validateUniquenessByName(AtlasGraph graph, String name, String typeName) throws AtlasBaseException {
@@ -217,7 +227,7 @@ public class AccessControlUtil {
         while (iterator.hasNext()) {
             AtlasVertex vertex = iterator.next().getVertex();
             if (vertex != null) {
-                List<String> tags = (List<String>) vertex.getPropertyValues("purposeClassifications", String.class);
+                List<String> tags = (List<String>) vertex.getPropertyValues(ATTR_PURPOSE_TAGS, String.class);
 
                 //TODO: handle via ES query if possible -> match exact tags list
                 if (CollectionUtils.isEqualCollection(tags, newTags)) {

@@ -51,11 +51,6 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
     }
 
     @Override
-    public Map<String, Object> directIndexQuery(String query) throws AtlasBaseException {
-        return null;
-    }
-
-    @Override
     public Iterator<Result<AtlasJanusVertex, AtlasJanusEdge>> vertices() {
         Iterator<JanusGraphIndexQuery.Result<JanusGraphVertex>> results = query.vertices().iterator();
 

@@ -41,14 +41,6 @@ public interface AtlasIndexQuery<V, E> {
 
     DirectIndexQueryResult<V, E> vertices(SearchParams searchParams)  throws AtlasBaseException ;
 
-
-    /**
-     * Gets the query results form index
-     *
-     * @return Map of indexQuery result
-     */
-    Map<String, Object> directIndexQuery(String query) throws AtlasBaseException;
-
     /**
      * Gets the query results.
      *
