@@ -20,6 +20,10 @@ import static org.apache.atlas.repository.Constants.POLICY_TYPE_GLOSSARY;
 
 public class AtlasPersonaUtil extends AccessControlUtil {
 
+    public static final String ATTR_RANGER_ROLE_ID      = "rangerRoleId";
+    public static final String ATTR_PERSONA_GROUPS      = "personaGroups";
+    public static final String ATTR_PERSONA_USERS       = "personaUsers";
+
     public static final String RESOURCE_KEY_ENTITY   = "entity";
     public static final String RESOURCE_ENTITY_TYPE  = "entity-type";
     public static final String RESOURCE_ENTITY_CLASS = "entity-classification";
@@ -71,7 +75,7 @@ public class AtlasPersonaUtil extends AccessControlUtil {
     }
 
     public static long getPersonaRoleId(AtlasEntity entity) throws AtlasBaseException {
-        String roleId = (String) entity.getAttribute("rangerRoleId");
+        String roleId = (String) entity.getAttribute(ATTR_RANGER_ROLE_ID);
         if (roleId == null) {
             throw new AtlasBaseException("rangerRoleId not found for Persona with GUID " + entity.getGuid());
         }
@@ -91,15 +95,15 @@ public class AtlasPersonaUtil extends AccessControlUtil {
     }
 
     public static List<String> getPersonaGroups(AtlasEntity entity) {
-        return (List<String>) entity.getAttribute("personaGroups");
+        return (List<String>) entity.getAttribute(ATTR_PERSONA_GROUPS);
     }
 
     public static List<String> getPersonaUsers(AtlasEntity entity) {
-        return (List<String>) entity.getAttribute("personaUsers");
+        return (List<String>) entity.getAttribute(ATTR_PERSONA_USERS);
     }
 
     public static String getPersonaGuid(AtlasEntity personaPolicyEntity) {
-        Object persona = personaPolicyEntity.getRelationshipAttribute("accessControl");
+        Object persona = personaPolicyEntity.getRelationshipAttribute(REL_ATTR_ACCESS_CONTROL);
         if (persona instanceof AtlasObjectId) {
             return ((AtlasObjectId) persona).getGuid();
         } else if (persona instanceof Map) {

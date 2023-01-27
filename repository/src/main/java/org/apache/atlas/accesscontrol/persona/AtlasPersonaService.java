@@ -74,6 +74,7 @@ import static org.apache.atlas.accesscontrol.AccessControlUtil.getUUID;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.isDataPolicy;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.submitCallablesAndWaitToFinish;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.validateUniquenessByName;
+import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.ATTR_RANGER_ROLE_ID;
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.CLASSIFICATION_ACTIONS;
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.ENTITY_ACTIONS;
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.LABEL_ACTIONS;
@@ -125,7 +126,7 @@ public class AtlasPersonaService {
             entityWithExtInfo.getEntity().setAttribute("enabled", true);
 
             RangerRole rangerRole = atlasRangerService.createRangerRole(context);
-            context.getPersona().getAttributes().put("rangerRoleId", rangerRole.getId());
+            context.getPersona().getAttributes().put(ATTR_RANGER_ROLE_ID, rangerRole.getId());
 
             aliasStore.createAlias(context);
         } finally {
@@ -147,7 +148,7 @@ public class AtlasPersonaService {
             }
 
             if (getPersonaRoleId(persona) != getPersonaRoleId(existingPersonaEntity)) {
-                throw new AtlasBaseException(ATTRIBUTE_UPDATE_NOT_SUPPORTED, PERSONA_ENTITY_TYPE, "rangerRoleId");
+                throw new AtlasBaseException(ATTRIBUTE_UPDATE_NOT_SUPPORTED, PERSONA_ENTITY_TYPE, ATTR_RANGER_ROLE_ID);
             }
 
             if (getIsEnabled(existingPersonaEntity) != getIsEnabled(persona)) {
