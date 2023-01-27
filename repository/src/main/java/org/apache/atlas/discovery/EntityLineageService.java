@@ -180,8 +180,6 @@ public class EntityLineageService implements AtlasLineageService {
             Map<String, LineageOnDemandConstraints> lineageConstraintsMap = new HashMap<>();
             lineageConstraintsMap.put(guid, getLineageConstraints(guid, lineageOnDemandRequest.getDefaultParams()));
             lineageOnDemandRequest.setConstraints(lineageConstraintsMap);
-        } else {
-            handleDefaultParams(lineageOnDemandRequest);
         }
 
         AtlasLineageOnDemandContext atlasLineageOnDemandContext = new AtlasLineageOnDemandContext(lineageOnDemandRequest, atlasTypeRegistry);
@@ -198,31 +196,6 @@ public class EntityLineageService implements AtlasLineageService {
         RequestContext.get().endMetricRecord(metricRecorder);
 
         return ret;
-    }
-
-    private void handleDefaultParams(LineageOnDemandRequest lineageOnDemandRequest) {
-        for (Map.Entry<String, LineageOnDemandConstraints> constraintEntry : lineageOnDemandRequest.getConstraints().entrySet()) {
-            if (constraintEntry.getValue().getInputRelationsLimit() == 0) {
-                constraintEntry.setValue(
-                        new LineageOnDemandConstraints(
-                                constraintEntry.getValue().getDirection(),
-                                lineageOnDemandRequest.getDefaultParams().getInputRelationsLimit(),
-                                constraintEntry.getValue().getOutputRelationsLimit(),
-                                constraintEntry.getValue().getDepth()
-                        )
-                );
-            }
-            if (constraintEntry.getValue().getOutputRelationsLimit() == 0) {
-                constraintEntry.setValue(
-                        new LineageOnDemandConstraints(
-                                constraintEntry.getValue().getDirection(),
-                                constraintEntry.getValue().getInputRelationsLimit(),
-                                lineageOnDemandRequest.getDefaultParams().getOutputRelationsLimit(),
-                                constraintEntry.getValue().getDepth()
-                        )
-                );
-            }
-        }
     }
 
     private boolean validateEntityTypeAndCheckIfDataSet(String guid) throws AtlasBaseException {
@@ -244,7 +217,7 @@ public class EntityLineageService implements AtlasLineageService {
         return isDataSet;
     }
 
-    private LineageOnDemandConstraints getLineageConstraints(String guid, LineageOnDemandBaseParams defaultParams) {
+    private LineageOnDemandConstraints getLineageConstraints(String guid, LineageOnDemandDefaultParams defaultParams) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("No lineage on-demand constraints provided for guid: {}, configuring with default values direction: {}, inputRelationsLimit: {}, outputRelationsLimit: {}, depth: {}",
                     guid, BOTH, defaultParams.getInputRelationsLimit(), defaultParams.getOutputRelationsLimit(), LINEAGE_ON_DEMAND_DEFAULT_DEPTH);
@@ -255,7 +228,7 @@ public class EntityLineageService implements AtlasLineageService {
 
     private LineageOnDemandConstraints getAndValidateLineageConstraintsByGuid(String guid, AtlasLineageOnDemandContext context) {
         Map<String, LineageOnDemandConstraints> lineageConstraintsMap = context.getConstraints();
-        LineageOnDemandBaseParams defaultParams = context.getDefaultParams();
+        LineageOnDemandDefaultParams defaultParams = context.getDefaultParams();
 
         if (lineageConstraintsMap == null || !lineageConstraintsMap.containsKey(guid)) {
             return getLineageConstraints(guid, defaultParams);
@@ -310,10 +283,6 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getLineageInfoOnDemand");
 
         LineageOnDemandConstraints lineageConstraintsByGuid = getAndValidateLineageConstraintsByGuid(guid, atlasLineageOnDemandContext);
-
-        if (lineageConstraintsByGuid == null) {
-            throw new AtlasBaseException(AtlasErrorCode.NO_LINEAGE_CONSTRAINTS_FOR_GUID, guid);
-        }
 
         LineageDirection direction = lineageConstraintsByGuid.getDirection();
         int              depth     = lineageConstraintsByGuid.getDepth();
@@ -397,10 +366,6 @@ public class EntityLineageService implements AtlasLineageService {
             for (AtlasEdge incomingEdge : incomingEdges) {
                 AtlasVertex         processVertex = incomingEdge.getOutVertex();
 
-                if (checkForOffset(datasetVertex, atlasLineageOnDemandContext, ret)) {
-                    continue;
-                }
-
                 if (!vertexMatchesEvaluation(processVertex, atlasLineageOnDemandContext)) {
                     continue;
                 }
@@ -449,17 +414,6 @@ public class EntityLineageService implements AtlasLineageService {
 
     private static String getId(AtlasVertex vertex) {
         return vertex.getIdForDisplay();
-    }
-
-    private boolean checkForOffset(AtlasVertex entityVertex, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageInfo ret) {
-        String entityGuid = getGuid(entityVertex);
-        LineageOnDemandConstraints entityConstraints = getAndValidateLineageConstraintsByGuid(entityGuid, atlasLineageOnDemandContext);
-        LineageInfoOnDemand entityLineageInfo = ret.getRelationsOnDemand().containsKey(entityGuid) ? ret.getRelationsOnDemand().get(entityGuid) : new LineageInfoOnDemand(entityConstraints);
-        if (entityConstraints.getFrom() != 0 && entityLineageInfo.getOffsetCount() < entityConstraints.getFrom()) {
-            entityLineageInfo.incrementOffsetCount();
-            return true;
-        }
-        return false;
     }
 
     private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageInfo ret, boolean checkForChildren) {

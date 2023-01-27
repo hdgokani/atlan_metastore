@@ -1,7 +1,6 @@
 package org.apache.atlas.discovery;
 
 import org.apache.atlas.model.discovery.SearchParameters;
-import org.apache.atlas.model.lineage.LineageOnDemandBaseParams;
 import org.apache.atlas.model.lineage.LineageOnDemandConstraints;
 import org.apache.atlas.model.lineage.LineageOnDemandDefaultParams;
 import org.apache.atlas.model.lineage.LineageOnDemandRequest;
@@ -22,7 +21,7 @@ public class AtlasLineageOnDemandContext {
     private Predicate                               predicate;
     private Set<String>                             attributes;
     private Set<String>                             relationAttributes;
-    private LineageOnDemandBaseParams               defaultParams;
+    private LineageOnDemandDefaultParams            defaultParams;
 
     public AtlasLineageOnDemandContext(LineageOnDemandRequest lineageOnDemandRequest, AtlasTypeRegistry typeRegistry) {
         this.constraints = lineageOnDemandRequest.getConstraints();
@@ -64,11 +63,11 @@ public class AtlasLineageOnDemandContext {
         this.relationAttributes = relationAttributes;
     }
 
-    public LineageOnDemandBaseParams getDefaultParams() {
+    public LineageOnDemandDefaultParams getDefaultParams() {
         return defaultParams;
     }
 
-    public void setDefaultParams(LineageOnDemandBaseParams defaultParams) {
+    public void setDefaultParams(LineageOnDemandDefaultParams defaultParams) {
         this.defaultParams = defaultParams;
     }
 

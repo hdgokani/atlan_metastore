@@ -19,18 +19,12 @@ public class LineageOnDemandRequest {
     private List<SearchParameters.FilterCriteria>   traversalFilters;
     private Set<String>                             attributes;
     private Set<String>                             relationAttributes;
-    private LineageOnDemandBaseParams               defaultParams;
+    private LineageOnDemandDefaultParams            defaultParams;
 
     public LineageOnDemandRequest() {
         this.attributes = new HashSet<>();
         this.relationAttributes = new HashSet<>();
-        this.defaultParams = new LineageOnDemandBaseParams();
-    }
-
-    public LineageOnDemandRequest(LineageOnDemandBaseParams defaultParams) {
-        this.attributes = new HashSet<>();
-        this.relationAttributes = new HashSet<>();
-        this.defaultParams = defaultParams;
+        this.defaultParams = new LineageOnDemandDefaultParams();
     }
 
     public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints) {
@@ -40,26 +34,8 @@ public class LineageOnDemandRequest {
         this.defaultParams = new LineageOnDemandDefaultParams();
     }
 
-    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, List<SearchParameters.FilterCriteria> traversalFilters, Set<String> attributes, Set<String> relationAttributes) {
-        this.defaultParams = new LineageOnDemandBaseParams();
-    }
-
-    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, LineageOnDemandBaseParams defaultParams) {
-        this.constraints = constraints;
-        this.attributes = new HashSet<>();
-        this.relationAttributes = new HashSet<>();
-        this.defaultParams = defaultParams;
-    }
-
-    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, List<SearchParameters.FilterCriteria> traversalFilters, LineageOnDemandBaseParams defaultParams) {
-        this.constraints = constraints;
-        this.attributes = new HashSet<>();
-        this.relationAttributes = new HashSet<>();
-        this.defaultParams = defaultParams;
-    }
-
     public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, List<SearchParameters.FilterCriteria> traversalFilters,
-                                  Set<String> attributes, Set<String> relationAttributes, LineageOnDemandBaseParams defaultParams) {
+                                  Set<String> attributes, Set<String> relationAttributes, LineageOnDemandDefaultParams defaultParams) {
         this.constraints        = constraints;
         this.traversalFilters   = traversalFilters;
         this.attributes         = attributes;
@@ -98,12 +74,12 @@ public class LineageOnDemandRequest {
     public void setRelationAttributes(Set<String> relationAttributes) {
         this.relationAttributes = relationAttributes;
     }
-    
-    public LineageOnDemandBaseParams getDefaultParams() {
+
+    public LineageOnDemandDefaultParams getDefaultParams() {
         return defaultParams;
     }
 
-    public void setDefaultParams(LineageOnDemandBaseParams defaultParams) {
+    public void setDefaultParams(LineageOnDemandDefaultParams defaultParams) {
         this.defaultParams = defaultParams;
     }
 }
