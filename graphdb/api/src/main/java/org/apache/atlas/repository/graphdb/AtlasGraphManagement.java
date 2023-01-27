@@ -18,6 +18,8 @@
 
 package org.apache.atlas.repository.graphdb;
 
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +29,13 @@ import java.util.List;
  *
  */
 public interface AtlasGraphManagement {
+
+    /**
+     * Removes type vertex
+     *
+     * @param typeDef
+     */
+    void removeTypeVertex(AtlasBaseTypeDef typeDef);
 
     /**
      * Checks whether a property with the given key has been defined in the graph schema.

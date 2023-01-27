@@ -19,16 +19,14 @@ package org.apache.atlas.repository.graphdb.janus;
 
 import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.repository.graphdb.AtlasCardinality;
-import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
-import org.apache.atlas.repository.graphdb.AtlasEdgeLabel;
-import org.apache.atlas.repository.graphdb.AtlasElement;
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.*;
 
 import org.apache.commons.collections.MapUtils;
 
-import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
-import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
-import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.commons.lang.StringUtils;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -281,6 +279,28 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         LOG.info("property '{}' is encoded to '{}'.", propertyKey.getName(), encodedName);
 
         return encodedName;
+    }
+
+
+    public void removeTypeVertex(AtlasBaseTypeDef typeDef){
+        AtlasVertex vertexToDelete = graph.getVertex(typeDef.getVertexId());
+        Iterator<AtlasEdge> inEdges = vertexToDelete.getEdges(AtlasEdgeDirection.IN).iterator();
+
+        if (inEdges.hasNext()) {
+            String name        = vertexToDelete.getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class);
+            try {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, name);
+            } catch (AtlasBaseException e) {
+                e.printStackTrace();
+            }
+        }
+
+        Iterable<AtlasEdge> edges = vertexToDelete.getEdges(AtlasEdgeDirection.OUT);
+
+        for (AtlasEdge edge : edges) {
+            graph.removeEdge(edge);
+        }
+        graph.removeVertex(vertexToDelete);
     }
 
     @Override
