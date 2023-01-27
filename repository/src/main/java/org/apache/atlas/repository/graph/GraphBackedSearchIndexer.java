@@ -664,7 +664,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                     createVertexIndex(attributeDef, management, propertyName, UniqueKind.NONE, primitiveClassType, cardinality, isIndexable, false, isStringField, indexTypeESConfig, indexTypeESFields);
 
                     if (uniqPropName != null) {
-                        createVertexIndex(attributeDef, management, propertyName, UniqueKind.NONE, primitiveClassType, cardinality, isIndexable, false, isStringField, indexTypeESConfig, indexTypeESFields);
+                        createVertexIndex(attributeDef, management, uniqPropName, UniqueKind.PER_TYPE_UNIQUE, primitiveClassType, cardinality, isIndexable, true, isStringField);
                     }
 
                 }
