@@ -33,7 +33,11 @@ public class AtlasPurposeUtil extends AccessControlUtil {
     }
 
     public static boolean getIsAllUsers(AtlasEntity policy) {
-        return (boolean) policy.getAttribute(ATTR_ALL_USERS);
+        if (policy.hasAttribute(ATTR_ALL_USERS)) {
+            return (boolean) policy.getAttribute(ATTR_ALL_USERS);
+        } else {
+            return false;
+        }
     }
 
     public static String getPurposeLabel(String purposeGuid) {
