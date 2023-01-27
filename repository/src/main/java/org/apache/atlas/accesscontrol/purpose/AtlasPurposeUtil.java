@@ -25,15 +25,19 @@ public class AtlasPurposeUtil extends AccessControlUtil {
 
 
     public static List<String> getTags(AtlasEntity purpose) {
-        return (List<String>) purpose.getAttribute("purposeClassifications");
+        return (List<String>) purpose.getAttribute(ATTR_PURPOSE_TAGS);
     }
 
     public static List<String> getTags(AtlasEntityHeader purpose) {
-        return (List<String>) purpose.getAttribute("purposeClassifications");
+        return (List<String>) purpose.getAttribute(ATTR_PURPOSE_TAGS);
     }
 
     public static boolean getIsAllUsers(AtlasEntity policy) {
-        return (boolean) policy.getAttribute("applyPolicyToAllUsers");
+        if (policy.hasAttribute(ATTR_ALL_USERS)) {
+            return (boolean) policy.getAttribute(ATTR_ALL_USERS);
+        } else {
+            return false;
+        }
     }
 
     public static String getPurposeLabel(String purposeGuid) {
@@ -61,7 +65,7 @@ public class AtlasPurposeUtil extends AccessControlUtil {
     }
 
     protected static String getPurposeGuid(AtlasEntity policyEntity) {
-        Object purpose = policyEntity.getRelationshipAttribute("accessControl");
+        Object purpose = policyEntity.getRelationshipAttribute(REL_ATTR_ACCESS_CONTROL);
         if (purpose instanceof AtlasObjectId) {
             return ((AtlasObjectId) purpose).getGuid();
         } else if (purpose instanceof Map) {
@@ -78,9 +82,9 @@ public class AtlasPurposeUtil extends AccessControlUtil {
         List mustClauseList = new ArrayList();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
         mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
-        mustClauseList.add(mapOf("terms", mapOf("purposeClassifications", tags)));
+        mustClauseList.add(mapOf("terms", mapOf(ATTR_PURPOSE_TAGS, tags)));
 
-        Map<String, Object> scriptMap = mapOf("inline", "doc['purposeClassifications'].length == params.list_length");
+        Map<String, Object> scriptMap = mapOf("inline", "doc['" + ATTR_PURPOSE_TAGS + "'].length == params.list_length");
         scriptMap.put("lang", "painless");
         scriptMap.put("params", mapOf("list_length", tags.size()));
 
