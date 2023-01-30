@@ -1072,9 +1072,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                             collapseResultAttributes = resultAttributes;
                         }
 
-                        collapseRet.setApproximateCount(result.getCollapseVerticesCount(collapseKey));
-
                         DirectIndexQueryResult indexQueryCollapsedResult = result.getCollapseVertices(collapseKey);
+                        collapseRet.setApproximateCount(indexQueryCollapsedResult.getApproximateCount());
                         prepareSearchResult(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false);
 
                         collapseRet.setSearchParameters(null);
