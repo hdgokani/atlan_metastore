@@ -161,7 +161,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
     private String  typeVersion;
     private String  serviceType;
     private Map<String, String> options;
-    private boolean  IndexCreated = true;
+    private boolean  indexFailed;
 
     protected AtlasBaseTypeDef(TypeCategory category, String name, String description, String typeVersion,
                                String serviceType, Map<String, String> options) {
@@ -214,12 +214,12 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         }
     }
 
-    public boolean getIndexCreated() {
-        return IndexCreated;
+    public boolean isIndexFailed() {
+        return indexFailed;
     }
 
-    public void setIndexCreated(Boolean IndexCreated) {
-        this.IndexCreated = IndexCreated;
+    public void setIndexFailed(boolean indexFailed) {
+        this.indexFailed = indexFailed;
     }
 
     public TypeCategory getCategory() { return category; }

@@ -1163,6 +1163,57 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
     }
 
+    public void isIndexCreationFailed(AtlasTypesDef typesDef) throws AtlasBaseException{
+
+        if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
+            for (AtlasBaseTypeDef typedef : typesDef.getEntityDefs()) {
+                if (typedef.isIndexFailed()) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Typedef not created in ES...");
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
+            for (AtlasBaseTypeDef typedef : typesDef.getEnumDefs()) {
+                if (typedef.isIndexFailed()) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Typedef not created in ES...");
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
+            for (AtlasBaseTypeDef typedef : typesDef.getStructDefs()) {
+                if (typedef.isIndexFailed()) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Typedef not created in ES...");
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
+            for (AtlasBaseTypeDef typedef : typesDef.getClassificationDefs()) {
+                if (typedef.isIndexFailed()) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Typedef not created in ES...");
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
+            for (AtlasBaseTypeDef typedef : typesDef.getRelationshipDefs()) {
+                if (typedef.isIndexFailed()) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Typedef not created in ES...");
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
+            for (AtlasBaseTypeDef typedef : typesDef.getBusinessMetadataDefs()) {
+                if (typedef.isIndexFailed()) {
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Typedef not created in ES...");
+                }
+            }
+        }
+    }
+
     private void tryUpdateByName(String name, AtlasBaseTypeDef typeDef, AtlasTransientTypeRegistry ttr) throws AtlasBaseException {
         try {
             ttr.updateTypeByName(name, typeDef);
