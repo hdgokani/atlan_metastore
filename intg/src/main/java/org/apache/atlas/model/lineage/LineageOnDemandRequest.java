@@ -19,28 +19,23 @@ public class LineageOnDemandRequest {
     private List<SearchParameters.FilterCriteria>   traversalFilters;
     private Set<String>                             attributes;
     private Set<String>                             relationAttributes;
-    private LineageOnDemandDefaultParams            defaultParams;
 
     public LineageOnDemandRequest() {
         this.attributes = new HashSet<>();
         this.relationAttributes = new HashSet<>();
-        this.defaultParams = new LineageOnDemandDefaultParams();
     }
 
     public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints) {
         this.constraints = constraints;
         this.attributes = new HashSet<>();
         this.relationAttributes = new HashSet<>();
-        this.defaultParams = new LineageOnDemandDefaultParams();
     }
 
-    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, List<SearchParameters.FilterCriteria> traversalFilters,
-                                  Set<String> attributes, Set<String> relationAttributes, LineageOnDemandDefaultParams defaultParams) {
+    public LineageOnDemandRequest(Map<String, LineageOnDemandConstraints> constraints, List<SearchParameters.FilterCriteria> traversalFilters, Set<String> attributes, Set<String> relationAttributes) {
         this.constraints        = constraints;
         this.traversalFilters   = traversalFilters;
         this.attributes         = attributes;
         this.relationAttributes = relationAttributes;
-        this.defaultParams      = defaultParams;
     }
 
     public Map<String, LineageOnDemandConstraints> getConstraints() {
@@ -73,13 +68,5 @@ public class LineageOnDemandRequest {
 
     public void setRelationAttributes(Set<String> relationAttributes) {
         this.relationAttributes = relationAttributes;
-    }
-
-    public LineageOnDemandDefaultParams getDefaultParams() {
-        return defaultParams;
-    }
-
-    public void setDefaultParams(LineageOnDemandDefaultParams defaultParams) {
-        this.defaultParams = defaultParams;
     }
 }
