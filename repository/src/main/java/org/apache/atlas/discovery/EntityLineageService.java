@@ -475,8 +475,9 @@ public class EntityLineageService implements AtlasLineageService {
         String                     outGuid                   = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
         LineageOnDemandConstraints outGuidLineageConstraints = getAndValidateLineageConstraintsByGuid(outGuid, atlasLineageOnDemandContext);
 
-        boolean outVisitedFlag = ret.getRelationsOnDemand().containsKey(outGuid);
-        boolean inVisitedFlag = ret.getRelationsOnDemand().containsKey(inGuid);
+        // Keep track of already visited vertices for horizontal pagination to not process it again
+        boolean isOutVertexVisited = ret.getRelationsOnDemand().containsKey(outGuid);
+        boolean isInVertexVisited = ret.getRelationsOnDemand().containsKey(inGuid);
 
         LineageInfoOnDemand inLineageInfo = ret.getRelationsOnDemand().containsKey(inGuid) ? ret.getRelationsOnDemand().get(inGuid) : new LineageInfoOnDemand(inGuidLineageConstraints);
         LineageInfoOnDemand outLineageInfo = ret.getRelationsOnDemand().containsKey(outGuid) ? ret.getRelationsOnDemand().get(outGuid) : new LineageInfoOnDemand(outGuidLineageConstraints);
@@ -496,10 +497,10 @@ public class EntityLineageService implements AtlasLineageService {
         }
 
         // Handle horizontal pagination
-        if (checkForChildren) {
-            if (isInput && ! outVisitedFlag) {
+        if (depth == 1) { // is the vertex a leaf?
+            if (isInput && ! isOutVertexVisited) {
                 outLineageInfo.setHasUpstream(outVertex.getEdges(IN, PROCESS_OUTPUTS_EDGE).iterator().hasNext());
-            } else if (! isInput && ! inVisitedFlag) {
+            } else if (! isInput && ! isInVertexVisited) {
                 inLineageInfo.setHasDownstream(inVertex.getEdges(IN, PROCESS_INPUTS_EDGE).iterator().hasNext());
             }
         }
