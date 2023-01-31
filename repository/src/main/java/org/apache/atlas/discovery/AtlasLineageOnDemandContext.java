@@ -71,7 +71,7 @@ public class AtlasLineageOnDemandContext {
         this.defaultParams = defaultParams;
     }
 
-    protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, List<SearchParameters.FilterCriteria> filterCriteriaList) {
+    protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteriaList) {
         LineageSearchProcessor lineageSearchProcessor = new LineageSearchProcessor();
         return lineageSearchProcessor.constructInMemoryPredicate(typeRegistry, filterCriteriaList);
     }
