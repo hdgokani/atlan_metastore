@@ -818,6 +818,47 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 cardinality, createCompositeIndex,createCompositeIndexWithTypeAndSuperTypes, isStringField, new HashMap<>(), new HashMap<>());
     }
 
+    public String createVertexIndex(AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class propertyClass,
+                                    AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes, boolean isStringField, HashMap<String, Object> indexTypeESConfig, HashMap<String, HashMap<String, Object>> indexTypeESFields) {
+        String indexFieldName = null;
+
+        if (propertyName != null) {
+            AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
+
+            if (propertyKey == null) {
+                propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
+            }
+
+            if (isIndexApplicable(propertyClass, cardinality) && !management.getGraphIndex(VERTEX_INDEX).getFieldKeys().contains(propertyKey)) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Creating backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
+                }
+
+                indexFieldName = management.addMixedIndex(VERTEX_INDEX, propertyKey, isStringField, indexTypeESConfig, indexTypeESFields);
+                LOG.info("Created backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
+            }
+
+            if(indexFieldName == null && isIndexApplicable(propertyClass, cardinality)) {
+                indexFieldName = management.getIndexFieldName(VERTEX_INDEX, propertyKey, isStringField);
+            }
+
+            if (propertyKey != null) {
+                if (createCompositeIndex || uniqueKind == UniqueKind.GLOBAL_UNIQUE || uniqueKind == UniqueKind.PER_TYPE_UNIQUE) {
+                    createVertexCompositeIndex(management, propertyClass, propertyKey, uniqueKind == UniqueKind.GLOBAL_UNIQUE);
+                }
+
+                if (createCompositeIndexWithTypeAndSuperTypes) {
+                    createVertexCompositeIndexWithTypeName(management, propertyClass, propertyKey, uniqueKind == UniqueKind.PER_TYPE_UNIQUE);
+                    createVertexCompositeIndexWithSuperTypeName(management, propertyClass, propertyKey);
+                }
+            } else {
+                LOG.warn("Index not created for {}: propertyKey is null", propertyName);
+            }
+        }
+
+        return indexFieldName;
+    }
+
     public String createVertexIndex(AtlasAttributeDef attributeDef, AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class propertyClass,
                                   AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes, boolean isStringField, HashMap<String, Object> indexTypeESConfig, HashMap<String, HashMap<String, Object>> indexTypeESFields) {
         String indexFieldName = null;
@@ -843,46 +884,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 LOG.info("Backing Index for vertex property {} is not created", propertyName);
                 attributeDef.setIndexFailed(false);
                 return indexFieldName;
-            }
-
-            if(indexFieldName == null && isIndexApplicable(propertyClass, cardinality)) {
-                indexFieldName = management.getIndexFieldName(VERTEX_INDEX, propertyKey, isStringField);
-            }
-
-            if (propertyKey != null) {
-                if (createCompositeIndex || uniqueKind == UniqueKind.GLOBAL_UNIQUE || uniqueKind == UniqueKind.PER_TYPE_UNIQUE) {
-                    createVertexCompositeIndex(management, propertyClass, propertyKey, uniqueKind == UniqueKind.GLOBAL_UNIQUE);
-                }
-
-                if (createCompositeIndexWithTypeAndSuperTypes) {
-                    createVertexCompositeIndexWithTypeName(management, propertyClass, propertyKey, uniqueKind == UniqueKind.PER_TYPE_UNIQUE);
-                    createVertexCompositeIndexWithSuperTypeName(management, propertyClass, propertyKey);
-                }
-            } else {
-                LOG.warn("Index not created for {}: propertyKey is null", propertyName);
-            }
-        }
-
-        return indexFieldName;
-    }
-
-    public String createVertexIndex(AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class propertyClass,
-                                    AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes, boolean isStringField, HashMap<String, Object> indexTypeESConfig, HashMap<String, HashMap<String, Object>> indexTypeESFields) {
-        String indexFieldName = null;
-
-        if (propertyName != null) {
-            AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
-
-            if (propertyKey == null) {
-                propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
-            }
-
-            if (isIndexApplicable(propertyClass, cardinality) && !management.getGraphIndex(VERTEX_INDEX).getFieldKeys().contains(propertyKey)) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Creating backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
-                }
-                indexFieldName = management.addMixedIndex(VERTEX_INDEX, propertyKey, isStringField, indexTypeESConfig, indexTypeESFields);
-                LOG.info("Created backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
             }
 
             if(indexFieldName == null && isIndexApplicable(propertyClass, cardinality)) {
