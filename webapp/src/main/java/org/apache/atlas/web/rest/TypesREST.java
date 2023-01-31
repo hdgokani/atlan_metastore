@@ -31,7 +31,6 @@ import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.service.CuratorFactory;
 import org.apache.atlas.web.util.Servlets;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.http.annotation.Experimental;
@@ -412,7 +411,7 @@ public class TypesREST {
                 LOG.info("successfully released type-def lock :: traceId {}", traceId);
             }
         } catch (Exception e) {
-            throw new AtlasBaseException(e.getMessage(),e);
+          throw new AtlasBaseException(e.getMessage(),e);
         }
     }
 
