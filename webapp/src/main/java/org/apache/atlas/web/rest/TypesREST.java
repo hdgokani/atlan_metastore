@@ -31,6 +31,7 @@ import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.service.CuratorFactory;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.http.annotation.Experimental;
@@ -445,6 +446,8 @@ public class TypesREST {
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
             AtlasTypesDef atlasTypesDef = typeDefStore.createTypesDef(typesDef);
             typeCacheRefresher.refreshAllHostCache();
+            AtlasBaseException BaseException = checkIndexing(typesDef);
+            if(BaseException!=null) throw BaseException;
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.createAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
@@ -457,6 +460,58 @@ public class TypesREST {
             releaseLock(lock);
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    private AtlasBaseException checkIndexing(AtlasTypesDef typesDef) throws AtlasBaseException {
+
+
+        if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
+            for (AtlasBaseTypeDef typedef : typesDef.getEntityDefs()) {
+                if (!typedef.getIndexCreated()) {
+                    return new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Typedef not created in ES...");
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
+            for (AtlasBaseTypeDef typedef : typesDef.getEnumDefs()) {
+                if (!typedef.getIndexCreated()) {
+                    return new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Typedef not created in ES...");
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
+            for (AtlasBaseTypeDef typedef : typesDef.getStructDefs()) {
+                if (!typedef.getIndexCreated()) {
+                    return new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Typedef not created in ES...");
+                }
+            }
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
+            for (AtlasBaseTypeDef typedef : typesDef.getClassificationDefs()) {
+                if (!typedef.getIndexCreated()) {
+                    return new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Typedef not created in ES...");
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
+            for (AtlasBaseTypeDef typedef : typesDef.getRelationshipDefs()) {
+                if (!typedef.getIndexCreated()) {
+                    return new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Typedef not created in ES...");
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
+            for (AtlasBaseTypeDef typedef : typesDef.getBusinessMetadataDefs()) {
+                if (!typedef.getIndexCreated()) {
+                    return new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Typedef not created in ES...");
+                }
+            }
+        }
+        return null;
     }
 
     /**
