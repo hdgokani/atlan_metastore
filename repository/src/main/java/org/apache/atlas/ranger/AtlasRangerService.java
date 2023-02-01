@@ -96,27 +96,6 @@ public class AtlasRangerService {
         return ret;
     }
 
-    private RangerUser filterUser(String responseString, String userName) throws AtlasBaseException {
-        RangerUser user = new RangerUser();
-        List<LinkedHashMap> users = (List<LinkedHashMap>) AtlasType.fromJson(responseString, Map.class).get("vXUsers");
-
-        if (CollectionUtils.isNotEmpty(users)) {
-            Optional<LinkedHashMap> userMap = users.stream().filter(x -> ((LinkedHashMap) x).get("name").equals(userName)).findFirst();
-
-            if (userMap.isPresent()) {
-                user = toRangerUser(userMap.get());
-            } else {
-                throw new AtlasBaseException(RANGER_USER_NOT_FOUND, "userName", userName);
-            }
-        }
-
-        return user;
-    }
-
-    private RangerUser toRangerUser(LinkedHashMap userMap) {
-        return new RangerUser(userMap);
-    }
-
     public RangerRole getRangerRole(String roleName) throws AtlasBaseException {
         RangerRoleList roles;
         RangerRole ret;
@@ -175,6 +154,20 @@ public class AtlasRangerService {
         return ret;
     }
 
+    /*
+    * Returns all roles associated to this user
+    * */
+    public RangerRoleList getAllRolesByUserName(String userName) throws AtlasBaseException {
+        try {
+            return client.getAllRolesByUserName(userName);
+        } catch (Exception e) {
+            throw new AtlasBaseException(RANGER_ROLE_NOT_FOUND, "for userName: " + userName, e.getMessage());
+        }
+    }
+
+    /*
+     * Deletes Ranger role by role id
+     * */
     public void deleteRangerRole(long roleId) throws AtlasBaseException {
         try {
             client.deleteRole(roleId);
@@ -255,5 +248,26 @@ public class AtlasRangerService {
         }
 
         return ret;
+    }
+
+    private RangerUser filterUser(String responseString, String userName) throws AtlasBaseException {
+        RangerUser user = new RangerUser();
+        List<LinkedHashMap> users = (List<LinkedHashMap>) AtlasType.fromJson(responseString, Map.class).get("vXUsers");
+
+        if (CollectionUtils.isNotEmpty(users)) {
+            Optional<LinkedHashMap> userMap = users.stream().filter(x -> ((LinkedHashMap) x).get("name").equals(userName)).findFirst();
+
+            if (userMap.isPresent()) {
+                user = toRangerUser(userMap.get());
+            } else {
+                throw new AtlasBaseException(RANGER_USER_NOT_FOUND, "userName", userName);
+            }
+        }
+
+        return user;
+    }
+
+    private RangerUser toRangerUser(LinkedHashMap userMap) {
+        return new RangerUser(userMap);
     }
 }

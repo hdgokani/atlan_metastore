@@ -18,11 +18,13 @@
 
 package org.apache.atlas.repository.graphdb;
 
+import com.sun.tools.javac.util.Pair;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 
 import java.util.Iterator;
+import java.util.Set;
 import java.util.Map;
 
 /**
@@ -96,6 +98,10 @@ public interface AtlasIndexQuery<V, E> {
          *
          */
         double getScore();
+
+        Set<String> getCollapseKeys();
+
+        DirectIndexQueryResult<V, E> getCollapseVertices(String key);
 
     }
 

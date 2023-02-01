@@ -43,6 +43,8 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.atlas.accesscontrol.AccessControlUtil.REL_ATTR_ACCESS_CONTROL;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.REL_ATTR_POLICIES;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
@@ -136,7 +138,7 @@ public class AccessControlPolicyPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("AccessControlPolicyPreProcessor.getAccessControl");
         AtlasEntityWithExtInfo ret;
 
-        AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute("accessControl");
+        AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(REL_ATTR_ACCESS_CONTROL);
         ret = entityRetriever.toAtlasEntityWithExtInfo(objectId);
 
         //as entity is not committed yet,
@@ -147,12 +149,12 @@ public class AccessControlPolicyPreProcessor implements PreProcessor {
         if (op == CREATE) {
 
             AtlasEntity accessControlEntity = ret.getEntity();
-            List<AtlasObjectId> policies = (List<AtlasObjectId>) accessControlEntity.getRelationshipAttribute("policies");
+            List<AtlasObjectId> policies = (List<AtlasObjectId>) accessControlEntity.getRelationshipAttribute(REL_ATTR_POLICIES);
             if (CollectionUtils.isEmpty(policies)) {
                 policies = new ArrayList<>();
             }
             policies.add(new AtlasObjectId(entity.getGuid(), entity.getTypeName()));
-            accessControlEntity.setRelationshipAttribute("policies", policies);
+            accessControlEntity.setRelationshipAttribute(REL_ATTR_POLICIES, policies);
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
