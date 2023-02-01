@@ -84,7 +84,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedSearchIndexer.class);
 
-    boolean graphIndexInit = false;
+    boolean graphIndexInit;
     private static final String VERTEX_ID_IN_IMPORT_KEY = "__vIdInImport";
     private static final String EDGE_ID_IN_IMPORT_KEY   = "__eIdInImport";
     private static final List<Class> INDEX_EXCLUSION_CLASSES = new ArrayList() {
@@ -565,7 +565,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             if (CollectionUtils.isNotEmpty(attributeDefs)) {
                 for (AtlasAttributeDef attributeDef : attributeDefs) {
                     createIndexForAttribute(management, structDef, attributeDef);
-                    if(attributeDef.isIndexFailed() && !attributeDef.isIndexPresent()) {
+                    if(!attributeDef.isIndexPresent()) {
                         typeDef.setIndexFailed(true);
                         break;
                     }
@@ -875,7 +875,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             }
             else if(graphIndexInit && !attributeDef.isIndexPresent()){
                 LOG.error("Backing Index for vertex property {} of type {} is not created", propertyName, propertyClass.getName());
-                attributeDef.setIndexFailed(true);
                 return indexFieldName;
             }
 
