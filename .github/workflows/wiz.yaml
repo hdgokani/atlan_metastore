@@ -1,4 +1,4 @@
-name: 'wiz-cli'
+name: 'DockerFile Scan For Vulnerability'
 on: [pull_request]
 
 jobs:
