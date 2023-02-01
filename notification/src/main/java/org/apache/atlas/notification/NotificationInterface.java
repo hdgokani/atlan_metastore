@@ -28,8 +28,8 @@ import java.util.List;
  * <p>
  * Use this interface to create consumers and to send messages of a given notification type.
  * <ol>
- *   <li>Atlas sends entity notifications
- *   <li>Hooks send notifications to create/update types/entities. Atlas reads these messages
+ *   <li>Atlas sends entity notifications.
+ *   <li>Hooks send notifications to create/update types/entities. Atlas reads these messages.
  * </ol>
  */
 public interface NotificationInterface {
