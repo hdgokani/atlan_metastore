@@ -39,11 +39,9 @@ public enum AtlasConfiguration {
 
     NOTIFICATION_HOOK_TOPIC_NAME("atlas.notification.hook.topic.name", "ATLAS_HOOK"),
     NOTIFICATION_ENTITIES_TOPIC_NAME("atlas.notification.entities.topic.name", "ATLAS_ENTITIES"),
-    NOTIFICATION_RELATIONSHIPS_TOPIC_NAME("atlas.notification.relationships.topic.name", "ATLAS_RELATIONSHIPS"),
 
     NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES("atlas.notification.hook.consumer.topic.names", "ATLAS_HOOK"), //  a comma separated list of topic names
     NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES("atlas.notification.entities.consumer.topic.names", "ATLAS_ENTITIES"), //  a comma separated list of topic names
-    NOTIFICATION_RELATIONSHIPS_CONSUMER_TOPIC_NAMES("atlas.notification.relationships.consumer.topic.names", "ATLAS_RELATIONSHIPS"), //  a comma separated list of topic names
 
     NOTIFICATION_MESSAGE_MAX_LENGTH_BYTES("atlas.notification.message.max.length.bytes", (1000 * 1000)),
     NOTIFICATION_MESSAGE_COMPRESSION_ENABLED("atlas.notification.message.compression.enabled", true),
@@ -96,9 +94,7 @@ public enum AtlasConfiguration {
     LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 9000),
     ENABLE_SEARCH_LOGGING("atlas.enable.search.logging", true),
     RANGER_ATLAS_SERVICE_TYPE("atlas.ranger.service.type.atlas", "atlas"),
-    RANGER_HEKA_SERVICE_TYPE("atlas.ranger.service.type.heka", "heka"),
-
-    SUPPORTED_RELATIONSHIP_EVENTS("atlas.notification.relationships.filter", "asset_readme,asset_links,RelatedReadme,AtlasGlossarySemanticAssignment,AtlasGlossarySynonym,AtlasGlossaryAntonym");
+    RANGER_HEKA_SERVICE_TYPE("atlas.ranger.service.type.heka", "heka");
 
 
     private static final Configuration APPLICATION_PROPERTIES;

@@ -188,7 +188,7 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
         }
 
         if (!messages.isEmpty()) {
-            notificationSender.send(null, messages);
+            notificationSender.send(messages);
         }
 
         RequestContext.get().endMetricRecord(metric);
