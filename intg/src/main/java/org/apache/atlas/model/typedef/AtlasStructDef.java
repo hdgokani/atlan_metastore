@@ -280,7 +280,6 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         public static final String    ATTRDEF_OPTION_APPEND_ON_PARTIAL_UPDATE = "isAppendOnPartialUpdate";
         private final String          STRING_TRUE                             = "true";
         private final String          MULTIFIELDS                             = "multifields";
-        private boolean               isIndexPresent;
 
         /**
          * single-valued attribute or multi-valued attribute.
@@ -399,10 +398,6 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setSkipScrubbing(other.getSkipScrubbing());
             }
         }
-
-        public void setIndexPresent(boolean isIndexPresent){this.isIndexPresent = isIndexPresent;}
-
-        public boolean isIndexPresent(){return isIndexPresent;}
 
         public void setDisplayName(String displayName) {
             this.displayName = displayName;
