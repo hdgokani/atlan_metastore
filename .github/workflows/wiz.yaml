@@ -39,8 +39,4 @@ jobs:
     # Now building the image and scanning it in the same Step
     # It's possible to skip this step if this job is sceduled after an image-build job.
     # If that's the case, also set "Run wiz-cli docker image scan" step accordingly
-    - name: Build the Docker image
-      run: cd $SCAN_PATH && docker build . --tag $TAG # Configure to fit the params you use to build your image
-    # Perform Image Scan
-    - name: Run wiz-cli docker image scan
-      run: ./wizcli docker scan --image $TAG --policy "$POLICY_IMAGE"
+    
