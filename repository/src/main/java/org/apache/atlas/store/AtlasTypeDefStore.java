@@ -114,4 +114,6 @@ public interface AtlasTypeDefStore {
     void deleteTypeByName(String typeName) throws AtlasBaseException;
 
     void notifyLoadCompletion();
+
+    void isIndexCreationFailed(AtlasTypesDef typesDef) throws AtlasBaseException;
 }
