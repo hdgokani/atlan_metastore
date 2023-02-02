@@ -676,7 +676,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                     if(typeDef.isIndexCreated()) return;
                     if (uniqPropName != null) {
                         createVertexIndex(typeDef, management, uniqPropName, UniqueKind.PER_TYPE_UNIQUE, String.class, cardinality, isIndexable, true, false);
-                        if(typeDef.isIndexCreated()) return;
                     }
                 }
             } else if (isStructType(attributeType)) {
