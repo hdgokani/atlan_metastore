@@ -53,6 +53,7 @@ import static org.apache.atlas.accesscontrol.AccessControlUtil.ACCESS_ADD_REL;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.ACCESS_ENTITY_CREATE;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.ACCESS_REMOVE_REL;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.ACCESS_UPDATE_REL;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.ATTR_POLICY_ACTIONS;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.LINK_ASSET_ACTION;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getActions;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getAssets;
@@ -137,7 +138,9 @@ public class PersonaServiceHelper {
             }
 
             if (CollectionUtils.isEmpty(getActions(personaPolicy))) {
-                throw new AtlasBaseException(BAD_REQUEST, "Please provide actions for persona policy");
+                if (context.isCreateNewPersonaPolicy() || personaPolicy.hasAttribute(ATTR_POLICY_ACTIONS)) {
+                    throw new AtlasBaseException(BAD_REQUEST, "Please provide actions for policy");
+                }
             }
 
             if (isMetadataPolicy(personaPolicy)) {
@@ -146,7 +149,7 @@ public class PersonaServiceHelper {
                 }
 
                 if (StringUtils.isEmpty(getConnectionId(personaPolicy))) {
-                    throw new AtlasBaseException(BAD_REQUEST, "Please provide connectionGuid for persona policy");
+                    throw new AtlasBaseException(BAD_REQUEST, "Please provide policyConnectionGuid for persona policy");
                 }
             }
 
@@ -313,7 +316,7 @@ public class PersonaServiceHelper {
         }
 
         List<String> rangerPolicyItemAssets = new ArrayList<>();
-        assets.forEach(x -> rangerPolicyItemAssets.add("*" + x + "*"));
+        assets.forEach(x -> rangerPolicyItemAssets.add("*@" + x));
 
         String roleName = getRoleName(persona);
 
@@ -347,17 +350,18 @@ public class PersonaServiceHelper {
                 }
             }
 
+            //TODO: remove
             if (action.equals(GLOSSARY_TERM_RELATIONSHIP)) {
                 policyName = "Glossary-term-relationship-" + UUID.randomUUID();
 
                 resources.put(RESOURCE_REL_TYPE, new RangerPolicy.RangerPolicyResource("*"));
 
                 resources.put(RESOURCE_END_ONE_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
-                resources.put(RESOURCE_END_ONE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_ONE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource(GLOSSARY_TYPES, false, false));
                 resources.put(RESOURCE_END_ONE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
 
                 resources.put(RESOURCE_END_TWO_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
-                resources.put(RESOURCE_END_TWO_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_TWO_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource(GLOSSARY_TYPES, false, false));
                 resources.put(RESOURCE_END_TWO_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
 
                 accesses.add(new RangerPolicy.RangerPolicyItemAccess(ACCESS_ADD_REL));
@@ -419,7 +423,7 @@ public class PersonaServiceHelper {
                 resources.put(RESOURCE_REL_TYPE, new RangerPolicy.RangerPolicyResource("*"));
 
                 resources.put(RESOURCE_END_ONE_ENTITY, new RangerPolicy.RangerPolicyResource(rangerPolicyItemAssets, false, false));
-                resources.put(RESOURCE_END_ONE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource("*"));
+                resources.put(RESOURCE_END_ONE_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource(GLOSSARY_TYPES, false, false));
                 resources.put(RESOURCE_END_ONE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
 
                 resources.put(RESOURCE_END_TWO_ENTITY, new RangerPolicy.RangerPolicyResource("*"));
@@ -435,6 +439,7 @@ public class PersonaServiceHelper {
                 rangerPolicies.addAll(glossaryPolicyToRangerPolicy(context, new HashSet<String>() {{ add(RELATED_TERMS); }}));
             }
 
+            //TODO: remove
             if (action.equals(RELATED_TERMS)) {
                 policyName = "Glossary-related-terms-" + UUID.randomUUID();
 
@@ -490,6 +495,8 @@ public class PersonaServiceHelper {
         if (assets.size() == 1 && context.getConnection() != null) {
             String connectionQualifiedName = getQualifiedName(context.getConnection());
             if (assets.get(0).equals(connectionQualifiedName)) {
+                // only allow Connection entity Access if Connection is selected
+                // else allow only on Process, Catalog
                 isConnection = true;
             }
         }
@@ -589,6 +596,7 @@ public class PersonaServiceHelper {
             }
 
             if (LINK_ASSET_ACTION.equals(action)) {
+                //sent via client when entity-update is selected
                 policyName = "link-assets-" + UUID.randomUUID();
 
                 resources.put(RESOURCE_REL_TYPE, new RangerPolicy.RangerPolicyResource("*"));
@@ -598,7 +606,7 @@ public class PersonaServiceHelper {
                 resources.put(RESOURCE_END_ONE_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
 
                 resources.put(RESOURCE_END_TWO_ENTITY, new RangerPolicy.RangerPolicyResource("*"));
-                resources.put(RESOURCE_END_TWO_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource(Arrays.asList("Catalog", "Connection", "Dataset", "Infrastructure", "Process", "ProcessExecution", "Namespace"), false, false));
+                resources.put(RESOURCE_END_TWO_ENTITY_TYPE, new RangerPolicy.RangerPolicyResource(Arrays.asList("Catalog", "Connection", "Process", "Namespace"), false, false));
                 resources.put(RESOURCE_END_TWO_ENTITY_CLASS, new RangerPolicy.RangerPolicyResource("*"));
 
                 accesses.add(new RangerPolicy.RangerPolicyItemAccess(ACCESS_ADD_REL));

@@ -89,7 +89,7 @@ public class AccessControlPolicyPreProcessor implements PreProcessor {
     @Override
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
         AtlasEntity policy = entityRetriever.toAtlasEntity(vertex);
-        AtlasEntityWithExtInfo accessControlExtInfo = getAccessControl(policy, DELETE);
+        AtlasEntityWithExtInfo accessControlExtInfo = getAccessControlEntity(policy, DELETE);
 
         String policyCategory = AccessControlUtil.getPolicyCategory(policy);
         if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
@@ -106,10 +106,10 @@ public class AccessControlPolicyPreProcessor implements PreProcessor {
         String policyCategory = AccessControlUtil.getPolicyCategory(entity);
 
         if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
-            PersonaContext context = new PersonaContext(getAccessControl(entity, CREATE), entity);
+            PersonaContext context = new PersonaContext(getAccessControlEntity(entity, CREATE), entity);
             personaService.createPersonaPolicy(context);
         } else {
-            PurposeContext context = new PurposeContext(getAccessControl(entity, CREATE), entity);
+            PurposeContext context = new PurposeContext(getAccessControlEntity(entity, CREATE), entity);
             purposeService.createPurposePolicy(context);
         }
     }
@@ -122,19 +122,19 @@ public class AccessControlPolicyPreProcessor implements PreProcessor {
         String policyCategory = AccessControlUtil.getPolicyCategory(entity);
 
         if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
-            PersonaContext context = new PersonaContext(getAccessControl(entity, UPDATE), entity);
+            PersonaContext context = new PersonaContext(getAccessControlEntity(entity, UPDATE), entity);
             context.setExistingPersonaPolicy(entityRetriever.toAtlasEntity(vertex));
 
             personaService.updatePersonaPolicy(context);
         } else {
-            PurposeContext context = new PurposeContext(getAccessControl(entity, UPDATE), entity);
+            PurposeContext context = new PurposeContext(getAccessControlEntity(entity, UPDATE), entity);
             context.setExistingPurposePolicy(entityRetriever.toAtlasEntity(vertex));
 
             purposeService.updatePurposePolicy(context);
         }
     }
 
-    private AtlasEntityWithExtInfo getAccessControl(AtlasEntity entity, EntityMutations.EntityOperation op) throws AtlasBaseException {
+    private AtlasEntityWithExtInfo getAccessControlEntity(AtlasEntity entity, EntityMutations.EntityOperation op) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("AccessControlPolicyPreProcessor.getAccessControl");
         AtlasEntityWithExtInfo ret;
 
@@ -144,6 +144,7 @@ public class AccessControlPolicyPreProcessor implements PreProcessor {
         //as entity is not committed yet,
         //in case of create policy, AccessControl does not have relation with current new policy
         //in case of update policy, AccessControl does not have latest state of policy to be updated
+        //We require AccessControl's entity's latest state to process in PersonaService/PurposeService
         ret.addReferredEntity(entity);
 
         if (op == CREATE) {

@@ -55,13 +55,14 @@ import static org.apache.atlas.AtlasErrorCode.ATTRIBUTE_UPDATE_NOT_SUPPORTED;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.ACCESS_ENTITY_READ;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.ATTR_ACCESS_CONTROL_ENABLED;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.ATTR_POLICY_ACTIONS;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.POLICY_QN_FORMAT;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.RANGER_POLICY_TYPE_ACCESS;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.RANGER_POLICY_TYPE_DATA_MASK;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.fetchRangerPoliciesByLabel;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getActions;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getAssets;
-import static org.apache.atlas.accesscontrol.AccessControlUtil.getDataPolicyMaskType;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getESAliasName;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getIsAllow;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getIsEnabled;
@@ -71,7 +72,7 @@ import static org.apache.atlas.accesscontrol.AccessControlUtil.getPolicyType;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getQualifiedName;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getTenantId;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getUUID;
-import static org.apache.atlas.accesscontrol.AccessControlUtil.isDataPolicy;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.isDataPolicyTypeUpdate;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.submitCallablesAndWaitToFinish;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.validateUniquenessByName;
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.ATTR_RANGER_ROLE_ID;
@@ -86,6 +87,7 @@ import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getPersona
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getPersonaPolicyLabel;
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getPersonaRoleId;
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.getRoleName;
+import static org.apache.atlas.repository.Constants.DEFAULT_TENANT_ID;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
@@ -120,10 +122,10 @@ public class AtlasPersonaService {
 
             String tenantId = getTenantId(context.getPersona());
             if (StringUtils.isEmpty(tenantId)) {
-                tenantId = "tenant";
+                tenantId = DEFAULT_TENANT_ID;
             }
             entityWithExtInfo.getEntity().setAttribute(QUALIFIED_NAME, String.format("%s/%s", tenantId, getUUID()));
-            entityWithExtInfo.getEntity().setAttribute("enabled", true);
+            entityWithExtInfo.getEntity().setAttribute(ATTR_ACCESS_CONTROL_ENABLED, true);
 
             RangerRole rangerRole = atlasRangerService.createRangerRole(context);
             context.getPersona().getAttributes().put(ATTR_RANGER_ROLE_ID, rangerRole.getId());
@@ -245,7 +247,7 @@ public class AtlasPersonaService {
         try {
             PersonaServiceHelper.validatePersonaPolicy(context, entityRetriever, atlasRangerService);
 
-            List<RangerPolicy> provisionalRangerPolicies = PersonaServiceHelper.personaPolicyToRangerPolicies(context, getActions(context.getPersonaPolicy()));
+            List<RangerPolicy> provisionalRangerPolicies = PersonaServiceHelper.personaPolicyToRangerPolicies(context, getActions(personaPolicy));
 
             if (CollectionUtils.isNotEmpty(provisionalRangerPolicies)) {
                 createPersonaPolicy(context, provisionalRangerPolicies);
@@ -273,14 +275,22 @@ public class AtlasPersonaService {
         try {
             validatePersonaPolicyUpdate(context);
 
+            List<String> actions = getActions(personaPolicy);
+
+            if (CollectionUtils.isEmpty(actions)) {
+                actions = getActions(entityRetriever.toAtlasEntity(personaPolicy.getGuid()));
+                personaPolicy.setAttribute(ATTR_POLICY_ACTIONS, actions);
+            }
+
             List<RangerPolicy> rangerPolicies = fetchRangerPoliciesByLabel(atlasRangerService,
                     context.isDataPolicy() ? RANGER_HEKA_SERVICE_TYPE.getString() : RANGER_ATLAS_SERVICE_TYPE.getString(),
                     null,
                     getPersonaPolicyLabel(personaPolicy.getGuid()));
 
-            List<RangerPolicy> provisionalRangerPolicies = PersonaServiceHelper.personaPolicyToRangerPolicies(context, getActions(context.getPersonaPolicy()));
+            List<RangerPolicy> provisionalRangerPolicies = PersonaServiceHelper.personaPolicyToRangerPolicies(context, actions);
 
-            if (context.isUpdateIsAllow() || isAssetUpdate(context) || isDataPolicyTypeUpdate(context)) {
+            if (context.isUpdateIsAllow() || isAssetUpdate(context) ||
+                    isDataPolicyTypeUpdate(context.getPersonaPolicy(), context.getExistingPersonaPolicy())) {
                 //remove role from existing policies & create new Ranger policies
                 List<String> removePolicyGuids = Collections.singletonList(getPersonaPolicyLabel(personaPolicy.getGuid()));
                 cleanRoleFromExistingPolicies(context.getPersona(), rangerPolicies, removePolicyGuids);
@@ -337,19 +347,6 @@ public class AtlasPersonaService {
 
     private boolean isAssetUpdate(PersonaContext context) {
         return !CollectionUtils.isEqualCollection(getAssets(context.getExistingPersonaPolicy()), getAssets(context.getPersonaPolicy()));
-    }
-
-    private boolean isDataPolicyTypeUpdate(PersonaContext context) {
-        if (!isDataPolicy(context.getPersonaPolicy())) {
-            return false;
-        }
-
-        String existingMask = getDataPolicyMaskType(context.getExistingPersonaPolicy());
-        existingMask = existingMask == null ? "" : existingMask;
-
-        String newMask = getDataPolicyMaskType(context.getPersonaPolicy());
-
-        return !existingMask.equals(newMask) && (StringUtils.isEmpty(existingMask) || StringUtils.isEmpty(newMask));
     }
 
     public void deletePersonaPolicy(PersonaContext context) throws AtlasBaseException {
@@ -449,7 +446,10 @@ public class AtlasPersonaService {
                                 .map(x -> new CleanRoleWorker(persona, x, removePolicyGuids, atlasRangerService))
                                 .collect(Collectors.toList()));
             }
-        } finally {
+        } catch (AtlasBaseException abe) {
+            throw abe;
+        }
+        finally {
             RequestContext.get().endMetricRecord(recorder);
         }
     }

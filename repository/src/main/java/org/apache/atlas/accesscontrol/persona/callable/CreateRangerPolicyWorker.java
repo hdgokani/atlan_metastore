@@ -14,6 +14,7 @@ import java.util.concurrent.Callable;
 
 import static org.apache.atlas.AtlasConfiguration.RANGER_ATLAS_SERVICE_TYPE;
 import static org.apache.atlas.AtlasConfiguration.RANGER_HEKA_SERVICE_TYPE;
+import static org.apache.atlas.AtlasErrorCode.RANGER_POLICY_MUTATION_FAILED;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.RANGER_POLICY_TYPE_ACCESS;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.RANGER_POLICY_TYPE_DATA_MASK;
 
@@ -32,7 +33,7 @@ public class CreateRangerPolicyWorker implements Callable<RangerPolicy> {
     }
 
     @Override
-    public RangerPolicy call() {
+    public RangerPolicy call() throws AtlasBaseException {
         RangerPolicy ret = null;
         LOG.info("Starting CreateRangerPolicyWorker");
 
@@ -62,7 +63,8 @@ public class CreateRangerPolicyWorker implements Callable<RangerPolicy> {
                 ret = atlasRangerService.updateRangerPolicy(rangerPolicy);
             }
         } catch (AtlasBaseException e) {
-            LOG.error("Failed to create Ranger policies: {}", e.getMessage());
+            LOG.error("Failed to create Ranger policy: {}", e.getMessage());
+            throw new AtlasBaseException(RANGER_POLICY_MUTATION_FAILED, "create", e.getMessage());
         } finally {
             LOG.info("End CreateRangerPolicyWorker");
         }

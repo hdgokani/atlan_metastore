@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import static org.apache.atlas.AtlasErrorCode.RANGER_POLICY_MUTATION_FAILED;
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.LABEL_PREFIX_PERSONA;
 import static org.apache.atlas.accesscontrol.persona.AtlasPersonaUtil.LABEL_TYPE_PERSONA;
 
@@ -34,7 +35,7 @@ public class CleanRoleWorker implements Callable<RangerPolicy> {
     }
 
     @Override
-    public RangerPolicy call() {
+    public RangerPolicy call() throws AtlasBaseException {
         RangerPolicy ret = null;
         LOG.info("Starting CleanRoleWorker");
 
@@ -62,7 +63,8 @@ public class CleanRoleWorker implements Callable<RangerPolicy> {
                 atlasRangerService.updateRangerPolicy(rangerPolicy);
             }
         } catch (AtlasBaseException e) {
-            LOG.error("Failed to clean Ranger role from Ranger policies: {}", e.getMessage());
+            LOG.error("Failed to clean Ranger role from Ranger policy: {}", e.getMessage());
+            throw new AtlasBaseException(RANGER_POLICY_MUTATION_FAILED, "clean Ranger role from", e.getMessage());
         } finally {
             LOG.info("End CleanRoleWorker");
         }

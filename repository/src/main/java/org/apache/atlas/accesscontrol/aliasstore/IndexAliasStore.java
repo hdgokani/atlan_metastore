@@ -20,6 +20,7 @@ package org.apache.atlas.accesscontrol.aliasstore;
 import org.apache.atlas.accesscontrol.persona.PersonaContext;
 import org.apache.atlas.accesscontrol.purpose.PurposeContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -31,7 +32,8 @@ public interface IndexAliasStore {
 
     public boolean updateAlias(PersonaContext personaContext) throws AtlasBaseException;
 
-    public boolean updateAlias(PurposeContext purposeContext) throws AtlasBaseException;
+    public boolean updateAlias(PurposeContext purposeContext,
+                               AtlasEntity.AtlasEntityWithExtInfo existingPurposeWithExtInfo) throws AtlasBaseException;
 
     public boolean deleteAlias(String aliasName) throws AtlasBaseException;
 }
