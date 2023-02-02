@@ -23,7 +23,6 @@ import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 
 import java.util.Iterator;
-import java.util.Map;
 
 /**
  * A graph query that runs directly against a particular index.

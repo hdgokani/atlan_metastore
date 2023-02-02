@@ -212,6 +212,7 @@ public enum AtlasErrorCode {
     TASK_NOT_FOUND(404, "ATLAS-404-00-018", "Given task guid {0} is invalid/not found"),
     RANGER_ROLE_NOT_FOUND(404, "ATLAS-404-00-019", "Ranger role {0} not found: {1}"),
     RANGER_USER_NOT_FOUND(404, "ATLAS-404-00-020", "Ranger user with {0}:{1} not found: {2}"),
+    ES_INDEX_NOT_FOUND(404, "ATLAS-404-00-021", "ElasticSearch index not found"),
 
     METHOD_NOT_ALLOWED(405, "ATLAS-405-00-001", "Error 405 - The request method {0} is inappropriate for the URL: {1}"),
     DELETE_TAG_PROPAGATION_NOT_ALLOWED(406, "ATLAS-406-00-001", "Classification delete is not allowed; Add/Update classification propagation is in queue for classification: {0} and entity: {1}. Please try again"),

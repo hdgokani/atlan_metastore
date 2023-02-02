@@ -15,14 +15,54 @@ import org.apache.ranger.plugin.model.RangerPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
 
 public class AtlasPurposeUtil extends AccessControlUtil {
+
+    public static final String LABEL_PREFIX_PURPOSE        = "purpose:";
+    public static final String LABEL_PREFIX_PURPOSE_POLICY = "purpose:policy:";
 
     public static final String RESOURCE_TAG = "tag";
     public static final String SERVICE_NAME = AtlasConfiguration.RANGER_ATLAS_SERVICE_TYPE.getString();
 
+
+    public static final Set<String> POLICY_ACTIONS = new HashSet<String>() {{
+        add("type-read");
+        add("type-create");
+        add("type-update");
+        add("type-delete");
+
+        add("entity-read");
+        add("entity-create");
+        add("entity-update");
+        add("entity-delete");
+
+        add("entity-add-classification");
+        add("entity-update-classification");
+        add("entity-remove-classification");
+
+        add("add-relationship");
+        add("update-relationship");
+        add("remove-relationship");
+
+        add("entity-add-label");
+        add("entity-remove-label");
+
+        add("entity-update-business-metadata");
+
+        add("admin-purge");
+        add("admin-export");
+        add("admin-import");
+        add("admin-audits");
+        add("admin-entity-audits");
+
+        add("select");
+    }};
 
     public static List<String> getTags(AtlasEntity purpose) {
         return (List<String>) purpose.getAttribute(ATTR_PURPOSE_TAGS);
@@ -41,11 +81,11 @@ public class AtlasPurposeUtil extends AccessControlUtil {
     }
 
     public static String getPurposeLabel(String purposeGuid) {
-        return "purpose:" + purposeGuid;
+        return LABEL_PREFIX_PURPOSE + purposeGuid;
     }
 
     public static String getPurposePolicyLabel(String purposePolicyGuid) {
-        return "purpose:policy:" + purposePolicyGuid;
+        return LABEL_PREFIX_PURPOSE_POLICY + purposePolicyGuid;
     }
 
     public static List<String> getLabelsForPurposePolicy(String purposeGuid, String purposePolicyGuid) {

@@ -18,7 +18,6 @@
 package org.apache.atlas.repository.graphdb.janus;
 
 import java.util.Iterator;
-import java.util.Map;
 
 import com.google.common.base.Preconditions;
 import org.apache.atlas.exception.AtlasBaseException;

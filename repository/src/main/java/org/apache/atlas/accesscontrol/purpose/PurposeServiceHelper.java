@@ -20,6 +20,7 @@ package org.apache.atlas.accesscontrol.purpose;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.ranger.plugin.model.RangerPolicy;
@@ -30,8 +31,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -41,6 +44,9 @@ import static org.apache.atlas.AtlasErrorCode.POLICY_ALREADY_EXISTS;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.ACCESS_ADD_REL;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.ACCESS_REMOVE_REL;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.ACCESS_UPDATE_REL;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.ATTR_DATA_MASKING;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.ATTR_POLICY_ACTIONS;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.ATTR_PURPOSE_TAGS;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.LINK_ASSET_ACTION;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getActions;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getDataPolicyMaskType;
@@ -51,6 +57,8 @@ import static org.apache.atlas.accesscontrol.AccessControlUtil.getPolicyGroups;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.getPolicyUsers;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.isDataMaskPolicy;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.isDataPolicy;
+import static org.apache.atlas.accesscontrol.AccessControlUtil.validateUniquenessByName;
+import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.POLICY_ACTIONS;
 import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.RESOURCE_TAG;
 import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.formatAccessType;
 import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.formatMaskType;
@@ -58,9 +66,25 @@ import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.getIsAllUs
 import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.getPurposeLabel;
 import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.getPurposePolicyLabel;
 import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.getTags;
+import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.validateUniquenessByTags;
+import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
+import static org.apache.ranger.plugin.model.RangerPolicy.POLICY_TYPE_ACCESS;
+import static org.apache.ranger.plugin.model.RangerPolicy.POLICY_TYPE_DATAMASK;
 
 public class PurposeServiceHelper {
     private static final Logger LOG = LoggerFactory.getLogger(PurposeServiceHelper.class);
+
+    protected static void validatePurpose(AtlasGraph graph, PurposeContext context) throws AtlasBaseException {
+        AtlasEntity purposeEntity = context.getPurposeExtInfo().getEntity();
+        List<String> tags = getTags(purposeEntity);
+
+        if (CollectionUtils.isEmpty(tags)) {
+            throw new AtlasBaseException(BAD_REQUEST, "Please provide purposeClassifications for Purpose");
+        }
+
+        validateUniquenessByName(graph, getName(purposeEntity), PURPOSE_ENTITY_TYPE);
+        validateUniquenessByTags(graph, tags, PURPOSE_ENTITY_TYPE);
+    }
 
     protected static void validatePurposePolicy(PurposeContext context) throws AtlasBaseException {
         validatePurposePolicyRequest(context);
@@ -72,14 +96,20 @@ public class PurposeServiceHelper {
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Purpose not Active");
         }
 
-        if (CollectionUtils.isEmpty(getActions(context.getPurposePolicy()))) {
-            throw new AtlasBaseException(BAD_REQUEST, "Please provide actions for policy policy");
+        List<String> actions = getActions(context.getPurposePolicy());
+
+        if (CollectionUtils.isEmpty(actions)) {
+            if (context.isCreateNewPurposePolicy() || context.getPurposePolicy().hasAttribute(ATTR_POLICY_ACTIONS)) {
+                throw new AtlasBaseException(BAD_REQUEST, "Please provide actions for policy");
+            }
         }
+
+        validatePurposePolicyActions(actions);
 
         if (CollectionUtils.isEmpty(getPolicyUsers(context.getPurposePolicy())) &&
                 CollectionUtils.isEmpty(getPolicyGroups(context.getPurposePolicy())) && !getIsAllUsers(context.getPurposePolicy())) {
 
-            throw new AtlasBaseException(BAD_REQUEST, "Please provide users/groups OR select All users for policy policy");
+            throw new AtlasBaseException(BAD_REQUEST, "Please provide users/groups OR select All users for policy");
         }
     }
 
@@ -108,6 +138,15 @@ public class PurposeServiceHelper {
         }
     }
 
+    private static void validatePurposePolicyActions(List<String> actions) throws AtlasBaseException {
+        Set<String> actionsSet = new HashSet<>(actions);
+        actionsSet.removeAll(POLICY_ACTIONS);
+
+        if (actionsSet.size() > 0) {
+            throw new AtlasBaseException(BAD_REQUEST, "Please provide valid action for policy");
+        }
+    }
+
     protected static List<RangerPolicy> purposePolicyToRangerPolicy(PurposeContext context) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("purposePolicyToRangerPolicy");
 
@@ -122,8 +161,8 @@ public class PurposeServiceHelper {
                 throw new AtlasBaseException("Tags list is empty");
             }
 
-            rangerAccessPolicy = getRangerPolicy(context, 0);
-            rangerMaskPolicy = getRangerPolicy(context, 1);
+            rangerAccessPolicy = getRangerPolicy(context, POLICY_TYPE_ACCESS);
+            rangerMaskPolicy = getRangerPolicy(context, POLICY_TYPE_DATAMASK);
 
             Map<String, RangerPolicy.RangerPolicyResource> resources = new HashMap<>();
             resources.put(RESOURCE_TAG, new RangerPolicy.RangerPolicyResource(tags, false, false));
@@ -133,13 +172,8 @@ public class PurposeServiceHelper {
 
             policyToRangerPolicy(context, rangerAccessPolicy, rangerMaskPolicy);
 
-            if (CollectionUtils.isNotEmpty(rangerAccessPolicy.getPolicyItems()) || CollectionUtils.isNotEmpty(rangerAccessPolicy.getDenyPolicyItems())) {
-                ret.add(rangerAccessPolicy);
-            }
-
-            if (CollectionUtils.isNotEmpty(rangerMaskPolicy.getDataMaskPolicyItems())) {
-                ret.add(rangerMaskPolicy);
-            }
+            ret.add(rangerAccessPolicy);
+            ret.add(rangerMaskPolicy);
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
@@ -188,6 +222,7 @@ public class PurposeServiceHelper {
                 }
             } else {
                 for (String action : actions) {
+                    //TODO: validate actions
                     if (action.equals(LINK_ASSET_ACTION)) {
                         accesses.add(new RangerPolicy.RangerPolicyItemAccess(formatAccessType(ACCESS_ADD_REL)));
                         accesses.add(new RangerPolicy.RangerPolicyItemAccess(formatAccessType(ACCESS_UPDATE_REL)));
