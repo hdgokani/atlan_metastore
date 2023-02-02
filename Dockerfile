@@ -78,4 +78,5 @@ RUN addgroup -S appgroup && adduser -S atlas -G appgroup
 
 USER atlas
 
+
 VOLUME ["/opt/apache-atlas/conf", "/opt/apache-atlas/logs"]
