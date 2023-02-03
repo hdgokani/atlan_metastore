@@ -1201,7 +1201,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
     }
     private boolean isIndexCreatedSuccessfully(List<? extends AtlasBaseTypeDef> typedefs) {
-        return typedefs.stream().allMatch(AtlasBaseTypeDef::isIndexCreated);
+        return typedefs == null || !typedefs.stream().anyMatch(typedef -> !typedef.isIndexCreated());
     }
     public boolean isIndexCreated(AtlasTypesDef typesDef) {
         return isIndexCreatedSuccessfully(typesDef.getEntityDefs()) && isIndexCreatedSuccessfully(typesDef.getEnumDefs()) &&
