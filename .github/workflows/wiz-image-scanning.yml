@@ -22,7 +22,7 @@ on: [pull_request]
 
 jobs:
   wiz-cli-image-scan:
-    name: 'Wiz-cli Image Scan'
+    name: "Wiz-cli Image Scan"
     runs-on: ubuntu-latest
     env:
       SCAN_PATH: "." # Set the relative path in the repo to build the image from
@@ -35,46 +35,45 @@ jobs:
         shell: bash
 
     steps:
-    # Checkout the repository to the GitHub Actions runner
-    - name: Check out repository
-      uses: actions/checkout@v2
-    
-    - name: Login to GitHub Registry
-        uses: docker/login-action@v1 
+      # Checkout the repository to the GitHub Actions runner
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Login to GitHub Registry
+        uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: $GITHUB_ACTOR
           password: ${{ secrets.my_pat }}
-    
-    # It's possible to skip this step if this job is sceduled after an image-build job.
-    # If that's the case, also set "Run wiz-cli docker image scan" step accordingly
-    - name: Build the Docker image
-      run: cd $SCAN_PATH && docker build . --tag $TAG # Configure to fit the params you use to build your image
 
-    - name: Download Wiz-cli
-      run: curl -o wizcli https://wizcli.app.wiz.io/wizcli && chmod +x wizcli
+      # It's possible to skip this step if this job is sceduled after an image-build job.
+      # If that's the case, also set "Run wiz-cli docker image scan" step accordingly
+      - name: Build the Docker image
+        run: cd $SCAN_PATH && docker build . --tag $TAG # Configure to fit the params you use to build your image
 
-    - name: Authenticate to Wiz
-      run: ./wizcli auth --id "$WIZ_CLIENT_ID" --secret "$WIZ_CLIENT_SECRET"
-      env:
-        WIZ_CLIENT_ID: ${{ secrets.WIZ_CLIENT_ID }}
-        WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}
+      - name: Download Wiz-cli
+        run: curl -o wizcli https://wizcli.app.wiz.io/wizcli && chmod +x wizcli
 
-    - name: Run wiz-cli docker image scan
-      run: ./wizcli docker scan --image $TAG --policy "$POLICY"
-  
+      - name: Authenticate to Wiz
+        run: ./wizcli auth --id "$WIZ_CLIENT_ID" --secret "$WIZ_CLIENT_SECRET"
+        env:
+          WIZ_CLIENT_ID: ${{ secrets.WIZ_CLIENT_ID }}
+          WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}
+
+      - name: Run wiz-cli docker image scan
+        run: ./wizcli docker scan --image $TAG --policy "$POLICY"
+
   build:
-
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Set up JDK 1.8
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-      
+
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:
@@ -89,19 +88,19 @@ jobs:
         run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: get_branch
 
-      - run:   echo "REPOSITORY_NAME=`echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//"`" >> $GITHUB_ENV
+      - run: echo "REPOSITORY_NAME=`echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//"`" >> $GITHUB_ENV
         shell: bash
 
       - name: Get version tag
         run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.my_pat }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7`)abcd"
         id: get_version
 
-      - name: Set up Buildx 
+      - name: Set up Buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
 
       - name: Login to GitHub Registry
-        uses: docker/login-action@v1 
+        uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: $GITHUB_ACTOR
@@ -113,11 +112,10 @@ jobs:
       #  with:
       #    context: .
       #    file: ./Dockerfile
-          #push: true
+      #push: true
       #    tags: |
       #      ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:latest
       #      ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:${{ steps.get_version.outputs.version }}
-
 
       - name: Check out into atlan repo
         uses: actions/checkout@v2
@@ -139,6 +137,6 @@ jobs:
           branch: main
           author_name: atlan-ci
           author_email: it@atlan.com
-          message: '${{ github.event.repository.name }}'
+          message: "${{ github.event.repository.name }}"
           default_author: user_info
           push: origin main
