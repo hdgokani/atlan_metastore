@@ -109,10 +109,10 @@ public class ESAliasStore implements IndexAliasStore {
     }
 
     @Override
-    public boolean updateAlias(PurposeContext purposeContext) throws AtlasBaseException {
+    public boolean updateAlias(PurposeContext purposeContext, AtlasEntity.AtlasEntityWithExtInfo existingPurposeWithExtInfo) throws AtlasBaseException {
         String aliasName = getAliasName(purposeContext.getPurpose());
 
-        Map<String, Object> filter = getFilter(purposeContext);
+        Map<String, Object> filter = getFilter(purposeContext, existingPurposeWithExtInfo);
 
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
         requestBuilder.addAction(ADD, new AliasAction(VERTEX_INDEX_NAME, aliasName, filter));
@@ -180,8 +180,10 @@ public class ESAliasStore implements IndexAliasStore {
         }
     }
 
-    private Map<String, Object> getFilter(PurposeContext context) {
-        AtlasEntity.AtlasEntityWithExtInfo purposeEntityWithExtInfo = context.getPurposeExtInfo();
+    private Map<String, Object> getFilter(PurposeContext context, AtlasEntity.AtlasEntityWithExtInfo purposeEntityWithExtInfo) {
+        if (purposeEntityWithExtInfo == null) {
+            purposeEntityWithExtInfo = context.getPurposeExtInfo();
+        }
 
         List<Map<String, Object>> allowClauseList = new ArrayList<>();
         List<Map<String, Object>> denyClauseList = new ArrayList<>();

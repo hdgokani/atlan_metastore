@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.ACCESS_CONTROL_ALREADY_EXISTS;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
+import static org.apache.atlas.accesscontrol.purpose.AtlasPurposeUtil.getTags;
 import static org.apache.atlas.repository.Constants.ACCESS_CONTROL_ENTITY_TYPES;
 import static org.apache.atlas.repository.Constants.ACCESS_CONTROL_RELATION_TYPE;
 import static org.apache.atlas.repository.Constants.NAME;
@@ -41,6 +42,8 @@ import static org.apache.atlas.repository.Constants.POLICY_TYPE_DATA;
 import static org.apache.atlas.repository.Constants.POLICY_TYPE_METADATA;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
+import static org.apache.ranger.plugin.model.RangerPolicy.POLICY_TYPE_ACCESS;
+import static org.apache.ranger.plugin.model.RangerPolicy.POLICY_TYPE_DATAMASK;
 
 
 public class AccessControlUtil {
@@ -50,8 +53,8 @@ public class AccessControlUtil {
 
     public static final String POLICY_QN_FORMAT = "%s/%s";
 
-    public static final String RANGER_POLICY_TYPE_ACCESS    = "0";
-    public static final String RANGER_POLICY_TYPE_DATA_MASK = "1";
+    public static final String RANGER_POLICY_TYPE_ACCESS    = String.valueOf(POLICY_TYPE_ACCESS);
+    public static final String RANGER_POLICY_TYPE_DATA_MASK = String.valueOf(POLICY_TYPE_DATAMASK);;
 
     public static final String ACCESS_ENTITY_CREATE = "entity-create";
     public static final String ACCESS_ENTITY_READ   = "entity-read";
@@ -61,12 +64,15 @@ public class AccessControlUtil {
 
     public static final String LINK_ASSET_ACTION = "link-assets";
 
-    public static final String ATTR_POLICY_ACTIONS  = "policyActions";
-    public static final String ATTR_DATA_MASKING    = "dataMaskingOption";
-    public static final String ATTR_POLICY_TYPE     = "accessControlPolicyType";
-    public static final String ATTR_ALL_USERS       = "applyPolicyToAllUsers";
-    public static final String ATTR_POLICY_CATEGORY = "accessControlPolicyCategory";
-    public static final String ATTR_PURPOSE_TAGS    = "purposeClassifications";
+    public static final String ATTR_ACCESS_CONTROL_ENABLED = "isAccessControlEnabled";
+
+    public static final String ATTR_POLICY_ACTIONS         = "policyActions";
+    public static final String ATTR_DATA_MASKING           = "policyDataMaskingOption";
+    public static final String ATTR_POLICY_TYPE            = "accessControlPolicyType";
+    public static final String ATTR_ALL_USERS              = "applyPolicyToAllUsers";
+    public static final String ATTR_POLICY_CONNECTION_GUID = "policyConnectionGuid";
+    public static final String ATTR_POLICY_CATEGORY        = "accessControlPolicyCategory";
+    public static final String ATTR_PURPOSE_TAGS           = "purposeClassifications";
 
     public static final String REL_ATTR_ACCESS_CONTROL  = "accessControl";
     public static final String REL_ATTR_POLICIES        = "policies";
@@ -126,7 +132,7 @@ public class AccessControlUtil {
     }
 
     public static String getConnectionId(AtlasEntity personaPolicyEntity) {
-        return (String) personaPolicyEntity.getAttribute("connectionGuid");
+        return (String) personaPolicyEntity.getAttribute(ATTR_POLICY_CONNECTION_GUID);
     }
 
     public static String getDisplayName(AtlasEntity entity) {
@@ -135,6 +141,10 @@ public class AccessControlUtil {
 
     public static String getDescription(AtlasEntity entity) {
         return (String) entity.getAttribute("description");
+    }
+
+    public static List<AtlasObjectId> getPolicies(AtlasEntity entity) {
+        return  (List<AtlasObjectId>) entity.getRelationshipAttribute(REL_ATTR_POLICIES);
     }
 
     public static List<AtlasEntity> getPolicies(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
@@ -274,7 +284,7 @@ public class AccessControlUtil {
         int size = 25;
         int from = 0;
 
-        params.put("policyType", policyType); //POLICY_TYPE_ACCESS
+        params.put("policyType", policyType);
         params.put("page", "0");
         params.put("pageSize", String.valueOf(size));
         params.put("serviceType", serviceType);
@@ -306,15 +316,6 @@ public class AccessControlUtil {
         }
 
         return null;
-    }
-
-    private static boolean isExactResourceMatch(RangerPolicy resourceMatchedPolicy, String provisionalPolicyResourcesSignature,
-                                                String resourceMatchedPolicyResourcesSignature, String policyType,
-                                                String serviceType) {
-        return provisionalPolicyResourcesSignature.equals(resourceMatchedPolicyResourcesSignature) &&
-                Integer.valueOf(policyType).equals(resourceMatchedPolicy.getPolicyType()) &&
-                serviceType.equals(resourceMatchedPolicy.getServiceType());
-
     }
 
     public static List<RangerPolicy> fetchRangerPoliciesByLabel(AtlasRangerService atlasRangerService,
@@ -409,5 +410,27 @@ public class AccessControlUtil {
         } catch (InterruptedException e) {
             throw new AtlasBaseException();
         }
+    }
+
+    public static boolean isDataPolicyTypeUpdate(AtlasEntity newPolicy, AtlasEntity existingPolicy) {
+        if (existingPolicy == null || !isDataPolicy(newPolicy)) {
+            return false;
+        }
+
+        String existingMask = getDataPolicyMaskType(existingPolicy);
+        existingMask = existingMask == null ? "" : existingMask;
+
+        String newMask = getDataPolicyMaskType(newPolicy);
+
+        return !existingMask.equals(newMask) && (StringUtils.isEmpty(existingMask) || StringUtils.isEmpty(newMask));
+    }
+
+    private static boolean isExactResourceMatch(RangerPolicy resourceMatchedPolicy, String provisionalPolicyResourcesSignature,
+                                                String resourceMatchedPolicyResourcesSignature, String policyType,
+                                                String serviceType) {
+        return provisionalPolicyResourcesSignature.equals(resourceMatchedPolicyResourcesSignature) &&
+                Integer.valueOf(policyType).equals(resourceMatchedPolicy.getPolicyType()) &&
+                serviceType.equals(resourceMatchedPolicy.getServiceType());
+
     }
 }

@@ -47,6 +47,7 @@ public final class Constants {
     public static final String FREETEXT_REQUEST_HANDLER         = "/freetext";
     public static final String TERMS_REQUEST_HANDLER            = "/terms";
     public static final String ES_API_ALIASES                   = "/_aliases";
+    public static final String DEFAULT_TENANT_ID                = "default";
 
     /**
      * Entity type name property key.
@@ -142,7 +143,7 @@ public final class Constants {
 
     public static final List<String> ACCESS_CONTROL_ENTITY_TYPES  = Arrays.asList(PERSONA_ENTITY_TYPE, PURPOSE_ENTITY_TYPE, POLICY_ENTITY_TYPE, ACCESS_CONTROL_ENTITY_TYPE);
 
-    public static final String ACCESS_CONTROL_RELATION_TYPE  = "access_control_policy_parent_children";
+    public static final String ACCESS_CONTROL_RELATION_TYPE  = "access_control_policies";
 
     public static final String POLICY_TYPE_METADATA = "metadata";
     public static final String POLICY_TYPE_GLOSSARY = "glossary";
