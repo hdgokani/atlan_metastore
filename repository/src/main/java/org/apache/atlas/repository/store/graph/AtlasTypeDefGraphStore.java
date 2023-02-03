@@ -1200,84 +1200,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             }
         }
     }
-    public void isIndexCreationFailed(AtlasTypesDef typesDef) throws AtlasBaseException{
-
-        if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
-            for (AtlasBaseTypeDef typedef : typesDef.getEntityDefs()) {
-                if (!typedef.isIndexCreated()) {
-                    AtlasStructDef structDef = (AtlasStructDef) typedef;
-                    List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
-                    for(AtlasAttributeDef attributeDef : attributeDefs) {
-                        LOG.error("Mixed Index for the attributeDef {} of typedef {} is not created", attributeDef.getName(), typedef.getName());
-                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Mixed index creation failed for one or more attributeDefs");
-                    }
-                }
-            }
-        }
-
-        if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
-            for (AtlasBaseTypeDef typedef : typesDef.getEnumDefs()) {
-                if (!typedef.isIndexCreated()) {
-                    AtlasStructDef structDef = (AtlasStructDef) typedef;
-                    List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
-                    for(AtlasAttributeDef attributeDef : attributeDefs) {
-                        LOG.error("Mixed Index for the attributeDef {} of typedef {} is not created", attributeDef.getName(), typedef.getName());
-                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Mixed index creation failed for one or more attributeDefs");
-                    }
-                }
-            }
-        }
-
-        if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
-            for (AtlasBaseTypeDef typedef : typesDef.getStructDefs()) {
-                if (!typedef.isIndexCreated()) {
-                    AtlasStructDef structDef = (AtlasStructDef) typedef;
-                    List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
-                    for(AtlasAttributeDef attributeDef : attributeDefs) {
-                        LOG.error("Mixed Index for the attributeDef {} of typedef {} is not created", attributeDef.getName(), typedef.getName());
-                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Mixed index creation failed for one or more attributeDefs");
-                    }
-                }
-            }
-        }
-
-        if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
-            for (AtlasBaseTypeDef typedef : typesDef.getClassificationDefs()) {
-                if (!typedef.isIndexCreated()) {
-                    AtlasStructDef structDef = (AtlasStructDef) typedef;
-                    List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
-                    for(AtlasAttributeDef attributeDef : attributeDefs) {
-                        LOG.error("Mixed Index for the attributeDef {} of typedef {} is not created", attributeDef.getName(), typedef.getName());
-                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Mixed index creation failed for one or more attributeDefs");
-                    }
-                }
-            }
-        }
-
-        if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
-            for (AtlasBaseTypeDef typedef : typesDef.getRelationshipDefs()) {
-                if (!typedef.isIndexCreated()) {
-                    AtlasStructDef structDef = (AtlasStructDef) typedef;
-                    List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
-                    for(AtlasAttributeDef attributeDef : attributeDefs) {
-                        LOG.error("Mixed Index for the attributeDef {} of typedef {} is not created", attributeDef.getName(), typedef.getName());
-                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Mixed index creation failed for one or more attributeDefs");
-                    }
-                }
-            }
-        }
-
-        if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
-            for (AtlasBaseTypeDef typedef : typesDef.getBusinessMetadataDefs()) {
-                if (!typedef.isIndexCreated()) {
-                    AtlasStructDef structDef = (AtlasStructDef) typedef;
-                    List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
-                    for(AtlasAttributeDef attributeDef : attributeDefs) {
-                        LOG.error("Mixed Index for the attributeDef {} of typedef {} is not created", attributeDef.getName(), typedef.getName());
-                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Mixed index creation failed for one or more attributeDefs");
-                    }
-                }
-            }
-        }
+    private boolean isIndexCreatedSuccessfully(List<? extends AtlasBaseTypeDef> typedefs) {
+        return typedefs.stream().allMatch(AtlasBaseTypeDef::isIndexCreated);
+    }
+    public boolean isIndexCreated(AtlasTypesDef typesDef) {
+        return isIndexCreatedSuccessfully(typesDef.getEntityDefs()) && isIndexCreatedSuccessfully(typesDef.getEnumDefs()) &&
+                isIndexCreatedSuccessfully(typesDef.getStructDefs()) && isIndexCreatedSuccessfully(typesDef.getClassificationDefs()) &&
+                isIndexCreatedSuccessfully(typesDef.getRelationshipDefs()) && isIndexCreatedSuccessfully(typesDef.getBusinessMetadataDefs());
     }
 }

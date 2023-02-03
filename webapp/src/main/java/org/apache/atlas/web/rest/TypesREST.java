@@ -445,7 +445,9 @@ public class TypesREST {
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
             AtlasTypesDef atlasTypesDef = typeDefStore.createTypesDef(typesDef);
             typeCacheRefresher.refreshAllHostCache();
-            typeDefStore.isIndexCreationFailed(typesDef);
+            if(!typeDefStore.isIndexCreated(typesDef)){
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Mixed index creation failed for one or more attributeDefs");
+            }
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.createAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);

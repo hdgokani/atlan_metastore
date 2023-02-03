@@ -115,5 +115,5 @@ public interface AtlasTypeDefStore {
 
     void notifyLoadCompletion();
 
-    void isIndexCreationFailed(AtlasTypesDef typesDef) throws AtlasBaseException;
+    boolean isIndexCreated(AtlasTypesDef typesDef);
 }
