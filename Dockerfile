@@ -73,6 +73,12 @@ RUN cd /opt/apache-atlas/bin \
 
 RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true
+    
+ 
+RUN apt remove \
+    wget \
+    curl \
+    netcat
 
 RUN groupadd -r user && useradd -r -g user user
 
