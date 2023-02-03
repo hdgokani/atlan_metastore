@@ -21,50 +21,12 @@ name: Java CI with Maven
 on: [pull_request]
 
 jobs:
-  wiz-cli-image-scan:
-    name: "Wiz-cli Image Scan"
+  build:
     runs-on: ubuntu-latest
     env:
       SCAN_PATH: "." # Set the relative path in the repo to build the image from
       TAG: "docker-tag" # Set the tag to use for the image
       POLICY: "Default vulnerabilities policy" # Set the desired Wiz-cli policy to use
-
-    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
-    defaults:
-      run:
-        shell: bash
-
-    steps:
-      # Checkout the repository to the GitHub Actions runner
-      - name: Check out repository
-        uses: actions/checkout@v2
-
-      - name: Login to GitHub Registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: $GITHUB_ACTOR
-          password: ${{ secrets.my_pat }}
-
-      # It's possible to skip this step if this job is sceduled after an image-build job.
-      # If that's the case, also set "Run wiz-cli docker image scan" step accordingly
-      - name: Build the Docker image
-        run: cd $SCAN_PATH && docker build . --tag $TAG # Configure to fit the params you use to build your image
-
-      - name: Download Wiz-cli
-        run: curl -o wizcli https://wizcli.app.wiz.io/wizcli && chmod +x wizcli
-
-      - name: Authenticate to Wiz
-        run: ./wizcli auth --id "$WIZ_CLIENT_ID" --secret "$WIZ_CLIENT_SECRET"
-        env:
-          WIZ_CLIENT_ID: ${{ secrets.WIZ_CLIENT_ID }}
-          WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}
-
-      - name: Run wiz-cli docker image scan
-        run: ./wizcli docker scan --image $TAG --policy "$POLICY"
-
-  build:
-    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
@@ -105,17 +67,25 @@ jobs:
           registry: ghcr.io
           username: $GITHUB_ACTOR
           password: ${{ secrets.my_pat }}
+      - name: Download Wiz-cli
+        run: curl -o wizcli https://wizcli.app.wiz.io/wizcli && chmod +x wizcli
 
-      #- name: Build and push
-      #  id: docker_build
-      #  uses: docker/build-push-action@v2
-      #  with:
-      #    context: .
-      #    file: ./Dockerfile
-      #push: true
-      #    tags: |
-      #      ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:latest
-      #      ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:${{ steps.get_version.outputs.version }}
+      - name: Authenticate to Wiz
+        run: ./wizcli auth --id "$WIZ_CLIENT_ID" --secret "$WIZ_CLIENT_SECRET"
+        env:
+          WIZ_CLIENT_ID: ${{ secrets.WIZ_CLIENT_ID }}
+          WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}
+
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          run: ./wizcli docker scan --image latest --policy "$POLICY"
+          tags: |
+            ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:latest
+            ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:${{ steps.get_version.outputs.version }}
 
       - name: Check out into atlan repo
         uses: actions/checkout@v2
