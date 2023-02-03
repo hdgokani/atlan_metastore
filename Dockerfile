@@ -74,9 +74,9 @@ RUN cd /opt/apache-atlas/bin \
 RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true
 
-RUN addgroup -S appgroup && adduser -S atlas -G appgroup
+RUN groupadd -r user && useradd -r -g user user
 
-USER atlas
+USER user
 
 
 VOLUME ["/opt/apache-atlas/conf", "/opt/apache-atlas/logs"]
