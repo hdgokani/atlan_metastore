@@ -75,7 +75,7 @@ RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true
     
  
-RUN apt remove \
+RUN apt-get purge \
     wget \
     curl \
     netcat
