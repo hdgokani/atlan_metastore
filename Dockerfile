@@ -14,7 +14,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+#RUN groupadd -r user && useradd -r -g user user
+#USER user
 
 FROM scratch
 FROM ubuntu:18.04
@@ -76,8 +77,5 @@ RUN cd /opt/apache-atlas/bin \
 
 RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true 
 
-#RUN groupadd -r user && useradd -r -g user user
-
-#USER user
 
 VOLUME ["/opt/apache-atlas/conf", "/opt/apache-atlas/logs"]
