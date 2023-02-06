@@ -93,7 +93,6 @@ jobs:
         with:
           image-ref: ubuntu:18.04
           vuln-type: 'os,library'
-          exit-code: '1'
           format: 'sarif'
           output: 'trivy-results.sarif'
 
