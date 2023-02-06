@@ -20,11 +20,12 @@ jobs:
           scan-type: 'config'
           scan-ref: './Dockerfile'
           hide-progress: false
+          template: '@/contrib/gitlab.tpl'
           format: 'sarif'
           #output: ''
           output: 'trivy-results-docker.sarif'
           exit-code: '0'
-          ignore-unfixed: true
+          #ignore-unfixed: true
           severity: 'CRITICAL,HIGH,MEDIUM'
 
       - name: Upload Trivy Docker Scan Results To GitHub Security tab
