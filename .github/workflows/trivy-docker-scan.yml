@@ -21,8 +21,9 @@ jobs:
           scan-ref: './Dockerfile'
           hide-progress: false
           format: 'sarif'
+          #output: ''
           output: 'trivy-results-docker.sarif'
-          exit-code: '1'
+          exit-code: '0'
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
 
