@@ -316,7 +316,7 @@ public class PersonaServiceHelper {
         }
 
         List<String> rangerPolicyItemAssets = new ArrayList<>();
-        assets.forEach(x -> rangerPolicyItemAssets.add("*@" + x));
+        assets.forEach(x -> rangerPolicyItemAssets.add("*" + x));
 
         String roleName = getRoleName(persona);
 
