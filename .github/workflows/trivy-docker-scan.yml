@@ -20,7 +20,7 @@ jobs:
           scan-type: 'config'
           scan-ref: './Dockerfile'
           hide-progress: false
-          format: 'table'
+          format: 'github'
           #output: ''
           output: 'trivy-results-docker.sarif'
           exit-code: '0'
