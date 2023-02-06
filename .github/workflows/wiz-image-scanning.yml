@@ -29,17 +29,16 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Set up JDK 1.8
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-      
+
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:
@@ -63,36 +62,36 @@ jobs:
               chmod +x ./build.sh && ./build.sh
           fi
 
-      - run:   echo "REPOSITORY_NAME=`echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//"`" >> $GITHUB_ENV
+      - run: echo "REPOSITORY_NAME=`echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//"`" >> $GITHUB_ENV
         shell: bash
 
       - name: Get version tag
         run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.my_pat }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7`)abcd"
         id: get_version
 
-      - name: Set up Buildx 
+      - name: Set up Buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
 
       - name: Login to GitHub Registry
-        uses: docker/login-action@v1 
+        uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: $GITHUB_ACTOR
           password: ${{ secrets.my_pat }}
-      
+
       - name: Download Wiz-cli
-        run: 'curl -o wizcli https://wizcli.app.wiz.io/wizcli && chmod +x wizcli'
-      
+        run: "curl -o wizcli https://wizcli.app.wiz.io/wizcli && chmod +x wizcli"
+
       - name: Authenticate to Wiz
         run: ./wizcli auth --id "$WIZ_CLIENT_ID" --secret "$WIZ_CLIENT_SECRET"
         env:
-          WIZ_CLIENT_ID: '${{ secrets.WIZ_CLIENT_ID }}'
-          WIZ_CLIENT_SECRET: '${{ secrets.WIZ_CLIENT_SECRET }}'
+          WIZ_CLIENT_ID: "${{ secrets.WIZ_CLIENT_ID }}"
+          WIZ_CLIENT_SECRET: "${{ secrets.WIZ_CLIENT_SECRET }}"
 
       - name: Build Image
         id: docker_build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: ./Dockerfile
@@ -124,6 +123,6 @@ jobs:
           branch: main
           author_name: atlan-ci
           author_email: it@atlan.com
-          message: '${{ github.event.repository.name }}'
+          message: "${{ github.event.repository.name }}"
           default_author: user_info
           push: origin main
