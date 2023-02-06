@@ -23,6 +23,11 @@ on: [pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      SCAN_PATH: "." # Set the relative path in the repo to build the image from
+      TAG: "latest" # Set the tag to use for the image
+      POLICY: "Default vulnerabilities policy" # Set the desired Wiz-cli policy to use
+
 
     steps:
       - uses: actions/checkout@v2
@@ -91,6 +96,9 @@ jobs:
           tags: |
             ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:latest
             ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:${{ steps.get_version.outputs.version }}
+
+      - name: Build the Docker image
+        run: cd $SCAN_PATH && docker build . --tag $TAG # Configure to fit the params you use to build your image
 
       - name: Scan the Image For Vulnerabilities
         id: docker_scan
