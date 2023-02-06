@@ -18,14 +18,7 @@
 
 name: Java CI with Maven
 
-on:
-  push:
-    branches:
-      - alpha
-      - beta
-      - development
-      - master
-      - lineageondemand
+on: [pull_request]
 
 jobs:
   build:
