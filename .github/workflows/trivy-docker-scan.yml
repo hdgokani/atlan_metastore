@@ -1,6 +1,10 @@
 name: build
 on:
+  push:
+    branches:
+      - development
   pull_request:
+  
 
 jobs:
   build:
