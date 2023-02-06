@@ -100,7 +100,7 @@ jobs:
 
       - name: Scan the Image For Vulnerabilities
         id: docker_scan
-        run: ./wizcli docker scan --image ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }} $TAG --policy "$POLICY"
+        run: ./wizcli docker scan --image ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }} --policy "$POLICY"
 
       - name: Check out into atlan repo
         uses: actions/checkout@v2
