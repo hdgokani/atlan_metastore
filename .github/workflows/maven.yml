@@ -79,6 +79,8 @@ jobs:
           context: .
           file: ./Dockerfile
           no-cache: true
+          sbom: true
+          provenance: true
           push: true
           tags: |
             ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:latest
