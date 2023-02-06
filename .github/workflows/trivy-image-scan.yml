@@ -91,7 +91,7 @@ jobs:
       - name: Scan Image
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ghcr.io/atlanhq/atlas-metastore-development:${{ steps.get_version.outputs.version }}
+          image-ref: ubuntu:23.04
           format: 'sarif'
           output: 'trivy-results.sarif'
 
