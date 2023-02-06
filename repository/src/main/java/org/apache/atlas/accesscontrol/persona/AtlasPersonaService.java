@@ -424,11 +424,9 @@ public class AtlasPersonaService {
                     atlasRangerService.updateRangerPolicy(rangerPolicy);
                 }
             }
+            
+            aliasStore.updateAlias(context);
 
-            List<String> actions = getActions(personaPolicy);
-            if (actions.contains(ACCESS_ENTITY_READ)) {
-                aliasStore.updateAlias(context);
-            }
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
