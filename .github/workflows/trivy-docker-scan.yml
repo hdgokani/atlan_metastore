@@ -21,9 +21,9 @@ jobs:
           scan-ref: './Dockerfile'
           hide-progress: false
           template: '@/contrib/gitlab.tpl'
-          format: 'json'
+          format: 'sarif'
           #output: ''
-          output: 'trivy-results-docker.json'
+          output: 'trivy-results-docker.sarif'
           exit-code: '0'
           #ignore-unfixed: true
           severity: 'CRITICAL,HIGH,MEDIUM'
