@@ -76,17 +76,20 @@ jobs:
           WIZ_CLIENT_ID: ${{ secrets.WIZ_CLIENT_ID }}
           WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}
 
-      - name: Build and push
+      - name: Build Image
         id: docker_build
         uses: docker/build-push-action@v2
         with:
           context: .
           file: ./Dockerfile
-          run: ./wizcli docker scan --image latest --policy "$POLICY"
           tags: |
             ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:latest
             ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:${{ steps.get_version.outputs.version }}
-
+      
+      - name: Scan the Image For Vulnerabilities
+        id: docker_scan
+        run: ./wizcli docker scan ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:latest --policy "$POLICY"
+      
       - name: Check out into atlan repo
         uses: actions/checkout@v2
         with:
