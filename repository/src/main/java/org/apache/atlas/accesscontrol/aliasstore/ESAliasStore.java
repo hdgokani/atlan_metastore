@@ -150,14 +150,14 @@ public class ESAliasStore implements IndexAliasStore {
     private void personaPolicyToESDslClauses(PersonaContext context, List<AtlasEntity> policies, String type,
                                              List<Map<String, Object>> allowClauseList, List<Map<String, Object>> denyClauseList) throws AtlasBaseException {
         for (AtlasEntity entity: policies) {
-            if (!getActions(entity).contains(ACCESS_ENTITY_READ) || isDeletedPolicy(context, entity)) {
+            if (isDeletedPolicy(context, entity)) {
                 continue;
             }
 
             List<Map<String, Object>> clauseList = getIsAllow(entity) ? allowClauseList : denyClauseList;
             List<String> assets = getAssets(entity);
 
-            if (POLICY_TYPE_METADATA.equals(type)) {
+            if (POLICY_TYPE_METADATA.equals(type) && getActions(entity).contains(ACCESS_ENTITY_READ)) {
                 boolean addConnectionFilter = true;
                 String connectionQName = getQualifiedName(getConnectionEntity(entity));
 
