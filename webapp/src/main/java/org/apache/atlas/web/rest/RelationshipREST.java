@@ -67,8 +67,7 @@ public class RelationshipREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.create(" + relationship + ")");
             }
 
-            return relationshipStore.create(relationship);
-
+            return relationshipStore.create(relationship, true);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -87,8 +86,7 @@ public class RelationshipREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.createOrUpdate(" + relationships + ")");
             }
 
-            return relationshipStore.createOrUpdate(relationships);
-
+            return relationshipStore.createOrUpdate(relationships, true);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -107,8 +105,7 @@ public class RelationshipREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.update(" + relationship + ")");
             }
 
-            return relationshipStore.update(relationship);
-
+            return relationshipStore.update(relationship, true);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -158,11 +155,10 @@ public class RelationshipREST {
         AtlasPerfTracer perf = null;
 
         try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.deleteById(" + guid + ")");
-            }
 
-            relationshipStore.deleteById(guid);
+            relationshipStore.deleteById(guid, true);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -190,8 +186,7 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.deleteById(" + guids.size() + ")");
             }
-
-            relationshipStore.deleteByIds(guids);
+            relationshipStore.deleteByIds(guids, true);
         } finally {
             AtlasPerfTracer.log(perf);
         }

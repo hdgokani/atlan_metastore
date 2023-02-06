@@ -19,10 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.GraphTransactionInterceptor;
-import org.apache.atlas.RequestContext;
+import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
@@ -150,7 +147,6 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getId
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
@@ -209,12 +205,13 @@ public class EntityGraphMapper {
     private final IFullTextMapper           fullTextMapperV2;
     private final TaskManagement            taskManagement;
     private final TransactionInterceptHelper   transactionInterceptHelper;
+    private final AtlasRelationshipStore atlasRelationshipStore;
 
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
                              AtlasRelationshipStore relationshipStore, IAtlasEntityChangeNotifier entityChangeNotifier,
                              AtlasInstanceConverter instanceConverter, IFullTextMapper fullTextMapperV2,
-                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper) {
+                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper, AtlasRelationshipStore atlasRelationshipStore) {
         this.restoreHandlerV1 = restoreHandlerV1;
         this.graphHelper          = new GraphHelper(graph);
         this.deleteDelegate       = deleteDelegate;
@@ -223,6 +220,7 @@ public class EntityGraphMapper {
         this.relationshipStore    = relationshipStore;
         this.entityChangeNotifier = entityChangeNotifier;
         this.instanceConverter    = instanceConverter;
+        this.atlasRelationshipStore = atlasRelationshipStore;
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
@@ -550,7 +548,7 @@ public class EntityGraphMapper {
         exception.setEntityGuid(guid);
     }
 
-    private PreProcessor getPreProcessor(String typeName) throws AtlasBaseException {
+    public PreProcessor getPreProcessor(String typeName) throws AtlasBaseException {
         PreProcessor preProcessor = null;
 
         switch (typeName) {
