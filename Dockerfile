@@ -28,10 +28,10 @@ RUN apt-get update \
     && apt-get -y install apt-utils \
     && apt-get -y install \
         wget \
-        python3 \
+        python \
         openjdk-8-jdk-headless \
         patch \
-        netcat-openbsd \
+        netcat \
         curl \
     && cd / \
     && mkdir /opt/ranger-atlas-plugin \
