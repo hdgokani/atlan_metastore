@@ -98,7 +98,7 @@ public enum AtlasConfiguration {
     RANGER_ATLAS_SERVICE_TYPE("atlas.ranger.service.type.atlas", "atlas"),
     RANGER_HEKA_SERVICE_TYPE("atlas.ranger.service.type.heka", "heka"),
 
-    SUPPORTED_RELATIONSHIP_EVENTS("atlas.notification.relationships.filter", "asset_readme,asset_links,RelatedReadme,AtlasGlossarySemanticAssignment,AtlasGlossarySynonym,AtlasGlossaryAntonym");
+    SUPPORTED_RELATIONSHIP_EVENTS("atlas.notification.relationships.filter", "asset_readme");
 
 
     private static final Configuration APPLICATION_PROPERTIES;
