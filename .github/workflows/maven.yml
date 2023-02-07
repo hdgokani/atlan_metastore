@@ -93,8 +93,7 @@ jobs:
       - name: Scan Image
         uses: aquasecurity/trivy-action@master
         with:
-          run: echo "${{ secrets.my_pat }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          image-ref: ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:latest
+          image-ref: 'ubuntu:18.04'
           vuln-type: 'os,library'
           format: 'sarif'
           output: 'trivy-image-results.sarif'
