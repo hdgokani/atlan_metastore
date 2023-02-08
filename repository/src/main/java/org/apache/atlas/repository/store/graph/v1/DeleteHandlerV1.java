@@ -56,19 +56,20 @@ import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 
 
 import java.util.*;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
+import static org.apache.atlas.AtlasConfiguration.GRAPH_TRAVERSAL_PARALLELISM;
 import static org.apache.atlas.model.TypeCategory.*;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
@@ -1533,19 +1534,26 @@ public abstract class DeleteHandlerV1 {
     private void updateAssetHasLineageStatus(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatus");
 
-        removedEdges.add(currentEdge);
+        Iterator<AtlasEdge> edgeIterator = assetVertex.query()
+                .direction(AtlasEdgeDirection.BOTH)
+                .label(PROCESS_EDGE_LABELS)
+                .has(STATE_PROPERTY_KEY, ACTIVE.name())
+                .edges()
+                .iterator();
 
-        GraphTraversal activeEdgeIterator = graph.V(assetVertex.getId())
-                .bothE(PROCESS_EDGE_LABELS).has("__state","ACTIVE")
-                .where(__.not(__.hasId(P.within(removedEdges.stream().map(AtlasEdge::getId).collect(Collectors.toList())))))
-                .outV()
-                .has("__hasLineage", true)
-                .limit(1);
+        ForkJoinPool forkJoinPool = new ForkJoinPool(GRAPH_TRAVERSAL_PARALLELISM.getInt());
 
-        if(!activeEdgeIterator.hasNext()) {
+        Spliterator<AtlasEdge> atlasEdgeSpliterator = Spliterators.spliteratorUnknownSize(edgeIterator, Spliterator.ORDERED | Spliterator.IMMUTABLE | Spliterator.NONNULL);
+
+        boolean hasLineageExists = forkJoinPool.submit(() -> StreamSupport.stream(atlasEdgeSpliterator, false)
+                .parallel()
+                .filter(edge -> !removedEdges.contains(edge) && !edge.equals(currentEdge))
+                .anyMatch(edge -> getEntityHasLineage(edge.getOutVertex())))
+                .join();
+
+        if (!hasLineageExists) {
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
         }
-
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
