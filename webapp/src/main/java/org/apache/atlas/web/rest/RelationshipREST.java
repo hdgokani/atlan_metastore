@@ -69,7 +69,7 @@ public class RelationshipREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.create(" + relationship + ")");
             }
             ensureNonAccessControlRelType(relationship.getTypeName());
-            return relationshipStore.create(relationship, true);
+            return relationshipStore.create(relationship);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -90,7 +90,7 @@ public class RelationshipREST {
             for (AtlasRelationship relationship : relationships) {
                 ensureNonAccessControlRelType(relationship.getTypeName());
             }
-            return relationshipStore.createOrUpdate(relationships, true);
+            return relationshipStore.createOrUpdate(relationships);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -109,7 +109,7 @@ public class RelationshipREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.update(" + relationship + ")");
             }
             ensureNonAccessControlRelType(relationship.getTypeName());
-            return relationshipStore.update(relationship, true);
+            return relationshipStore.update(relationship);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -162,7 +162,7 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.deleteById(" + guid + ")");
 
-            relationshipStore.deleteById(guid, true);
+            relationshipStore.deleteById(guid);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -190,7 +190,7 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.deleteById(" + guids.size() + ")");
             }
-            relationshipStore.deleteByIds(guids, true);
+            relationshipStore.deleteByIds(guids);
         } finally {
             AtlasPerfTracer.log(perf);
         }

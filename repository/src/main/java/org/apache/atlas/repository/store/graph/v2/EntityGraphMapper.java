@@ -213,13 +213,12 @@ public class EntityGraphMapper {
     private final IFullTextMapper           fullTextMapperV2;
     private final TaskManagement            taskManagement;
     private final TransactionInterceptHelper   transactionInterceptHelper;
-    private final AtlasRelationshipStore atlasRelationshipStore;
 
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
                              AtlasRelationshipStore relationshipStore, IAtlasEntityChangeNotifier entityChangeNotifier,
                              AtlasInstanceConverter instanceConverter, IFullTextMapper fullTextMapperV2,
-                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper, AtlasRelationshipStore atlasRelationshipStore) {
+                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper) {
         this.restoreHandlerV1 = restoreHandlerV1;
         this.graphHelper          = new GraphHelper(graph);
         this.deleteDelegate       = deleteDelegate;
@@ -228,7 +227,6 @@ public class EntityGraphMapper {
         this.relationshipStore    = relationshipStore;
         this.entityChangeNotifier = entityChangeNotifier;
         this.instanceConverter    = instanceConverter;
-        this.atlasRelationshipStore = atlasRelationshipStore;
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
@@ -1856,7 +1854,6 @@ public class EntityGraphMapper {
             }
 
             if(newEntry != null) {
-
                 newElementsCreated.add(newEntry);
             }
         }
@@ -1869,6 +1866,7 @@ public class EntityGraphMapper {
                 allArrayElements = unionCurrentAndNewElements(attribute, (List) currentElements, (List) newElementsCreated);
             } else {
                 removedElements = removeUnusedArrayEntries(attribute, (List) currentElements, (List) newElementsCreated, ctx);
+
                 allArrayElements = unionCurrentAndNewElements(attribute, removedElements, (List) newElementsCreated);
             }
         } else {
@@ -2606,6 +2604,7 @@ public class EntityGraphMapper {
 
                         boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
                                 true, attribute.getRelationshipEdgeDirection(), entityVertex);
+
                         if (!deleted) {
                             additionalElements.add(edge);
                         }
