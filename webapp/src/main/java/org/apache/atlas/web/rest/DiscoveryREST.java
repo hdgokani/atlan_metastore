@@ -80,7 +80,6 @@ import static org.apache.atlas.repository.Constants.*;
 public class DiscoveryREST {
     private static final Logger LOG = LoggerFactory.getLogger(DiscoveryREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.DiscoveryREST");
-
     @Context
     private       HttpServletRequest httpServletRequest;
     private final int                maxFullTextQueryLength;
@@ -398,6 +397,10 @@ public class DiscoveryREST {
                     logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
                 }
                 throw abe;
+            }
+
+            if(LOG.isDebugEnabled()){
+                LOG.debug("Performing indexsearch for the params ({})", parameters);
             }
 
             AtlasSearchResult result = discoveryService.directIndexSearch(parameters);
