@@ -78,9 +78,9 @@ VOLUME ["/opt/apache-atlas/conf", "/opt/apache-atlas/logs"]
 
 RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true 
 
-RUN groupadd -r user && useradd -r -g user user
+#RUN groupadd -r user && useradd -r -g user user
 
-USER user
+#USER user
 
 
 
