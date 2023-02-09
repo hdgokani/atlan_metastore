@@ -1456,6 +1456,8 @@ public abstract class DeleteHandlerV1 {
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(getTypeName(vertexToBeDeleted));
                 boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
                 boolean isCatalog = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
+                // Set hasLineage value for deleted vertex to be false
+                AtlasGraphUtilsV2.setEncodedProperty(vertexToBeDeleted, HAS_LINEAGE, false);
 
                 if (isCatalog || isProcess) {
 
@@ -1550,6 +1552,8 @@ public abstract class DeleteHandlerV1 {
                 .filter(edge -> !removedEdges.contains(edge) && !edge.equals(currentEdge))
                 .anyMatch(edge -> getEntityHasLineage(edge.getOutVertex())))
                 .join();
+
+        forkJoinPool.shutdown();
 
         if (!hasLineageExists) {
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
