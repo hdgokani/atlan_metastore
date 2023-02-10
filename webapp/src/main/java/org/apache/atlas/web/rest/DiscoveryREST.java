@@ -410,6 +410,10 @@ public class DiscoveryREST {
                 logSearchLog(parameters, result, servletRequest, endTime - startTime);
             }
 
+            if(LOG.isDebugEnabled()){
+                LOG.debug("Performing indexsearch for the params ({})", parameters);
+            }
+
             return result;
 
         } catch (AtlasBaseException abe) {
