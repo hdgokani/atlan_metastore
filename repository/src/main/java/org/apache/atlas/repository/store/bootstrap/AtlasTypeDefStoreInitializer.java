@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.bootstrap;
 
 
+import atlas.keycloak.client.KeycloakClient;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -60,6 +61,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.keycloak.admin.client.resource.RealmResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -75,6 +77,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 
+import static atlas.keycloak.client.KeycloakClient.getKeycloakClient;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
@@ -379,6 +382,10 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
     private void startInternal() {
         try {
+            //KeycloakClient.getKeycloakClient().getAllGroups();
+            //KeycloakClient.getKeycloakClient().getAllRoles();
+            //KeycloakClient.getKeycloakClient().getAllUsers();
+
             typeDefStore.init();
             loadBootstrapTypeDefs();
             typeDefStore.notifyLoadCompletion();

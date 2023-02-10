@@ -783,6 +783,7 @@
         <module>server-api</module>
         <module>notification</module>
         <module>client</module>
+        <module>client-keycloak</module>
         <module>graphdb</module>
         <module>repository</module>
         <module>authorization</module>

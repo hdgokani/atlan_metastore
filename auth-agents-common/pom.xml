@@ -35,6 +35,11 @@
 
     <dependencies>
 
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>client-keycloak</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.atlas</groupId>

@@ -19,6 +19,7 @@
 
 package org.apache.ranger.plugin.util;
 
+import atlas.keycloak.client.KeycloakClient;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.lang.StringUtils;
@@ -180,6 +181,11 @@ public class RangerRolesProvider {
 		}
 
 		try {
+			//TODO: get roles from keycloak
+			KeycloakClient.getKeycloakClient().getAllRoles();
+			KeycloakClient.getKeycloakClient().getAllGroups();
+			KeycloakClient.getKeycloakClient().getAllUsers();
+
 			roles = rangerAdmin.getRolesIfUpdated(lastKnownRoleVersion, lastActivationTimeInMillis);
 
 			boolean isUpdated = roles != null;
