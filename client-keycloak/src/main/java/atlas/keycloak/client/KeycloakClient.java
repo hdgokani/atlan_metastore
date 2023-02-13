@@ -85,24 +85,30 @@ public class KeycloakClient {
         return keycloak.realm(REALM_ID);
     }
 
-    public void getAllUsers() {
+    public List<UserRepresentation> getAllUsers() {
 
         List<UserRepresentation> userRepresentations = getRealm().users().list();
         LOG.info("userRepresentations -> ");
         userRepresentations.forEach(user -> LOG.info(user.getUsername()));
+
+        return userRepresentations;
     }
 
-    public void getAllGroups() {
+    public List<GroupRepresentation> getAllGroups() {
 
         List<GroupRepresentation> groupRepresentations = getRealm().groups().groups();
         LOG.info("groupRepresentations -> ");
         groupRepresentations.forEach(group -> LOG.info(group.getName()));
+
+        return groupRepresentations;
     }
 
-    public void getAllRoles() {
+    public List<RoleRepresentation> getAllRoles() {
 
         List<RoleRepresentation> roleRepresentations = getRealm().roles().list();
         LOG.info("roleRepresentations -> ");
         roleRepresentations.forEach(role -> LOG.info(role.getName()));
+
+        return roleRepresentations;
     }
 }

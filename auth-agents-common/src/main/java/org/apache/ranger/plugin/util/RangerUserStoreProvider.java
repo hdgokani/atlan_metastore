@@ -104,6 +104,14 @@ public class RangerUserStoreProvider {
 		this.lastActivationTimeInMillis = lastActivationTimeInMillis;
 	}
 
+	public boolean isRangerUserStoreSetInPlugin() {
+		return rangerUserStoreSetInPlugin;
+	}
+
+	public void setRangerUserStoreSetInPlugin(boolean rangerUserStoreSetInPlugin) {
+		this.rangerUserStoreSetInPlugin = rangerUserStoreSetInPlugin;
+	}
+
 	public void loadUserStore(RangerBasePlugin plugIn) {
 
 		if(LOG.isDebugEnabled()) {

@@ -19,24 +19,41 @@
 
 package org.apache.ranger.plugin.util;
 
+import atlas.keycloak.client.KeycloakClient;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.atlas.RequestContext;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.ranger.admin.client.RangerAdminClient;
 import org.apache.ranger.authorization.hadoop.config.RangerPluginConfig;
+import org.apache.ranger.plugin.model.RangerRole;
 import org.apache.ranger.plugin.policyengine.RangerPluginContext;
 import org.apache.ranger.plugin.service.RangerBasePlugin;
+import org.keycloak.admin.client.resource.RoleResource;
+import org.keycloak.representations.idm.GroupRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
 
 
 public class PolicyRefresher extends Thread {
@@ -50,6 +67,7 @@ public class PolicyRefresher extends Thread {
 	private final RangerAdminClient              rangerAdmin;
 	private final RangerRolesProvider            rolesProvider;
 	private final RangerUserStoreProvider		 userStoreProvider;
+	private final KeycloakUserStore		 		 keycloakUserStore;
 	private final long                           pollingIntervalMs;
 	private final String                         cacheFileName;
 	private final String                         cacheDir;
@@ -96,6 +114,7 @@ public class PolicyRefresher extends Thread {
 		this.gson                          = gson;
 		this.rolesProvider                 = new RangerRolesProvider(getServiceType(), appId, getServiceName(), rangerAdmin,  cacheDir, pluginConfig);
 		this.userStoreProvider             = new RangerUserStoreProvider(getServiceType(), appId, getServiceName(), rangerAdmin,  cacheDir, pluginConfig);
+		this.keycloakUserStore             = new KeycloakUserStore(getServiceType(), appId, getServiceName(),  cacheDir, pluginConfig);
 		this.pollingIntervalMs             = pluginConfig.getLong(propertyPrefix + ".policy.pollIntervalMs", 30 * 1000);
 
 		setName("PolicyRefresher(serviceName=" + serviceName + ")-" + getId());
@@ -142,6 +161,8 @@ public class PolicyRefresher extends Thread {
 	}
 
 	public void startRefresher() {
+		loadSubjectsFromKeycloakAdmin(plugIn);
+
 		loadRoles();
 		loadPolicy();
 		loadUserStore();
@@ -206,6 +227,7 @@ public class PolicyRefresher extends Thread {
 			DownloadTrigger trigger = null;
 			try {
 				trigger = policyDownloadQueue.take();
+				loadSubjectsFromKeycloakAdmin(plugIn);
 				loadRoles();
 				loadPolicy();
 				loadUserStore();
@@ -227,6 +249,20 @@ public class PolicyRefresher extends Thread {
 	public void syncPoliciesWithAdmin(DownloadTrigger token) throws InterruptedException {
 		policyDownloadQueue.put(token);
 		token.waitForCompletion();
+	}
+
+	private void loadSubjectsFromKeycloakAdmin(RangerBasePlugin plugIn) {
+		LOG.info("Fetching subjects form Keycloak");
+
+		AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadSubjectsFromKeycloakAdmin");
+
+		try {
+			keycloakUserStore.loadKeycloakSubjects(plugIn, rolesProvider, userStoreProvider);
+		} catch (Exception e) {
+			LOG.error("Encountered unexpected exception, ignoring..", e);
+		} finally {
+			RequestContext.get().endMetricRecord(recorder);
+		}
 	}
 
 	private void loadPolicy() {

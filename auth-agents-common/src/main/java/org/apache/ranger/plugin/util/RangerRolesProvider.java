@@ -28,6 +28,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.ranger.admin.client.RangerAdminClient;
 import org.apache.ranger.plugin.service.RangerBasePlugin;
+import org.keycloak.representations.idm.GroupRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 
 import java.io.File;
 import java.io.FileReader;
@@ -36,6 +39,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 
 
 public class RangerRolesProvider {
@@ -102,6 +106,14 @@ public class RangerRolesProvider {
 
 	public void setLastActivationTimeInMillis(long lastActivationTimeInMillis) {
 		this.lastActivationTimeInMillis = lastActivationTimeInMillis;
+	}
+
+	public boolean isRangerUserGroupRolesSetInPlugin() {
+		return rangerUserGroupRolesSetInPlugin;
+	}
+
+	public void setRangerUserGroupRolesSetInPlugin(boolean rangerUserGroupRolesSetInPlugin) {
+		this.rangerUserGroupRolesSetInPlugin = rangerUserGroupRolesSetInPlugin;
 	}
 
 	public void loadUserGroupRoles(RangerBasePlugin plugIn) {
@@ -181,10 +193,6 @@ public class RangerRolesProvider {
 		}
 
 		try {
-			//TODO: get roles from keycloak
-			KeycloakClient.getKeycloakClient().getAllRoles();
-			KeycloakClient.getKeycloakClient().getAllGroups();
-			KeycloakClient.getKeycloakClient().getAllUsers();
 
 			roles = rangerAdmin.getRolesIfUpdated(lastKnownRoleVersion, lastActivationTimeInMillis);
 
