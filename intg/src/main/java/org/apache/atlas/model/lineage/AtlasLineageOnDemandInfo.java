@@ -143,6 +143,7 @@ public class AtlasLineageOnDemandInfo implements Serializable {
 
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true, value = {"inputRelationsReachedLimit", "outputRelationsReachedLimit", "fromCounter"})
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class LineageInfoOnDemand {
@@ -159,7 +160,6 @@ public class AtlasLineageOnDemandInfo implements Serializable {
         @JsonProperty
         boolean                    hasDownstream;
         LineageOnDemandConstraints onDemandConstraints;
-        @JsonIgnore
         int                        fromCounter;  // Counter for relations to be skipped
 
         public LineageInfoOnDemand() { }
@@ -181,16 +181,16 @@ public class AtlasLineageOnDemandInfo implements Serializable {
             return isInputRelationsReachedLimit;
         }
 
-        public void setInputRelationsReachedLimit(boolean inputRelationsReachedLimit) {
-            isInputRelationsReachedLimit = inputRelationsReachedLimit;
+        public void setInputRelationsReachedLimit(boolean isInputRelationsReachedLimit) {
+            this.isInputRelationsReachedLimit = isInputRelationsReachedLimit;
         }
 
         public boolean isOutputRelationsReachedLimit() {
             return isOutputRelationsReachedLimit;
         }
 
-        public void setOutputRelationsReachedLimit(boolean outputRelationsReachedLimit) {
-            isOutputRelationsReachedLimit = outputRelationsReachedLimit;
+        public void setOutputRelationsReachedLimit(boolean isOutputRelationsReachedLimit) {
+            this.isOutputRelationsReachedLimit = isOutputRelationsReachedLimit;
         }
 
         public boolean hasMoreInputs() {
