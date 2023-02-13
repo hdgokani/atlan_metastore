@@ -260,7 +260,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private void appendLineageOnDemandPayload(AtlasLineageOnDemandInfo lineageInfo, LineageOnDemandRequest lineageOnDemandRequest) {
-        if (lineageInfo == null || MapUtils.isEmpty(lineageOnDemandRequest.getConstraints())) {
+        if (lineageInfo == null) {
             return;
         }
         lineageInfo.setLineageOnDemandPayload(lineageOnDemandRequest);
