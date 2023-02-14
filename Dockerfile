@@ -17,7 +17,7 @@
 #
 
 FROM scratch
-FROM ubuntu:18.04
+FROM ubuntu:23.04
 LABEL maintainer="engineering@atlan.com"
 ARG VERSION=3.0.0-SNAPSHOT
 
@@ -28,10 +28,10 @@ RUN apt-get update \
     && apt-get -y install apt-utils \
     && apt-get -y install \
         wget \
-        python \
+        python3 \
         openjdk-8-jdk-headless \
         patch \
-        netcat \
+        netcat-traditional \
         curl \
     && cd / \
     && mkdir /opt/ranger-atlas-plugin \
@@ -40,7 +40,8 @@ RUN apt-get update \
     && tar -xzvf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz -C /opt \
     && mv /opt/apache-atlas-${VERSION} /opt/apache-atlas \
     && apt-get clean \
-    && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
+    && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz \
+    && alias python=python3
 
 # Copy the repair index jar file
 RUN cd / \
