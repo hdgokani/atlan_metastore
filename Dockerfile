@@ -40,8 +40,7 @@ RUN apt-get update \
     && tar -xzvf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz -C /opt \
     && mv /opt/apache-atlas-${VERSION} /opt/apache-atlas \
     && apt-get clean \
-    && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz \
-    && alias python=python3
+    && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
 
 # Copy the repair index jar file
 RUN cd / \
@@ -52,6 +51,8 @@ RUN cd / \
     && rm -rf /atlas-index-repair-tool-${VERSION}.tar.gz
 
 COPY atlas-hub/repair_index.py /opt/apache-atlas/bin/
+
+RUN alias python=python3
 
 RUN chmod +x /opt/apache-atlas/bin/repair_index.py
 
