@@ -1242,8 +1242,8 @@ public class RangerDefaultPolicyEvaluator extends RangerAbstractPolicyEvaluator 
 	protected RangerPolicyItemEvaluator getMatchingPolicyItem(RangerAccessRequest request, RangerAccessResult result) {
 		RangerPolicyItemEvaluator ret = null;
 
-		Integer policyType = getPolicy().getPolicyType();
-		if (policyType == null) {
+		String policyType = getPolicy().getPolicyType();
+		if (StringUtils.isEmpty(policyType)) {
 			policyType = RangerPolicy.POLICY_TYPE_ACCESS;
 		}
 

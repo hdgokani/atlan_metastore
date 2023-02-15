@@ -295,8 +295,8 @@ public class RangerPolicyValidator extends RangerValidator {
 					valid = false;
 				}
 
-				int existingPolicyType = existingPolicy.getPolicyType() == null ? RangerPolicy.POLICY_TYPE_ACCESS : existingPolicy.getPolicyType();
-				int policyType         = policy.getPolicyType() == null ? RangerPolicy.POLICY_TYPE_ACCESS : policy.getPolicyType();
+				String existingPolicyType = StringUtils.isEmpty(existingPolicy.getPolicyType()) ? RangerPolicy.POLICY_TYPE_ACCESS : existingPolicy.getPolicyType();
+				String policyType         = StringUtils.isEmpty(policy.getPolicyType()) ? RangerPolicy.POLICY_TYPE_ACCESS : policy.getPolicyType();
 
 				if (existingPolicyType != policyType) {
 					ValidationErrorCode error = ValidationErrorCode.POLICY_VALIDATION_ERR_POLICY_TYPE_CHANGE_NOT_ALLOWED;
@@ -330,7 +330,7 @@ public class RangerPolicyValidator extends RangerValidator {
 			RangerServiceDef serviceDef       = null;
 			int              policyItemsCount = 0;
 
-			int policyType=policy.getPolicyType() == null ? RangerPolicy.POLICY_TYPE_ACCESS : policy.getPolicyType();
+			String policyType = StringUtils.isEmpty(policy.getPolicyType()) ? RangerPolicy.POLICY_TYPE_ACCESS : policy.getPolicyType();
 			switch (policyType) {
 			case RangerPolicy.POLICY_TYPE_DATAMASK:
 				if (CollectionUtils.isNotEmpty(policy.getDataMaskPolicyItems())) {
@@ -410,11 +410,11 @@ public class RangerPolicyValidator extends RangerValidator {
 		if(LOG.isDebugEnabled()) {
 			LOG.debug(String.format("==> RangerPolicyValidator.isValidAccessTypeDef(%s, %s, %s,%s,%s)", policy, failures, action,isAdmin,serviceDef));
 		}
-		int policyType=policy.getPolicyType() == null ? RangerPolicy.POLICY_TYPE_ACCESS : policy.getPolicyType();
+		String policyType = StringUtils.isEmpty(policy.getPolicyType()) ? RangerPolicy.POLICY_TYPE_ACCESS : policy.getPolicyType();
 		//row filter policy
-		if (policyType==RangerPolicy.POLICY_TYPE_ROWFILTER){
+		if (RangerPolicy.POLICY_TYPE_ROWFILTER.equals(policyType)) {
 			List<String> rowFilterAccessTypeDefNames=new ArrayList<String>();
-			if(serviceDef!=null && serviceDef.getRowFilterDef()!=null){
+			if(serviceDef!=null && serviceDef.getRowFilterDef() != null){
 				if(!CollectionUtils.isEmpty(serviceDef.getRowFilterDef().getAccessTypes())){
 					for(RangerAccessTypeDef rangerAccessTypeDef:serviceDef.getRowFilterDef().getAccessTypes()){
 						rowFilterAccessTypeDefNames.add(rangerAccessTypeDef.getName().toLowerCase());
@@ -422,7 +422,7 @@ public class RangerPolicyValidator extends RangerValidator {
 				}
 			}
 
-			if(!CollectionUtils.isEmpty(policy.getRowFilterPolicyItems())){
+			if(!CollectionUtils.isEmpty(policy.getRowFilterPolicyItems())) {
 				for(RangerRowFilterPolicyItem rangerRowFilterPolicyItem:policy.getRowFilterPolicyItems()){
 					if(!CollectionUtils.isEmpty(rangerRowFilterPolicyItem.getAccesses())){
 						for(RangerPolicyItemAccess rangerPolicyItemAccess : rangerRowFilterPolicyItem.getAccesses()){
@@ -442,7 +442,7 @@ public class RangerPolicyValidator extends RangerValidator {
 			}
 		}
 		//data mask policy
-		if (policyType==RangerPolicy.POLICY_TYPE_DATAMASK){
+		if (RangerPolicy.POLICY_TYPE_DATAMASK.equals(policyType)){
 			List<String> dataMaskAccessTypeDefNames=new ArrayList<String>();
 			if(serviceDef!=null && serviceDef.getDataMaskDef()!=null){
 				if(!CollectionUtils.isEmpty(serviceDef.getDataMaskDef().getAccessTypes())){

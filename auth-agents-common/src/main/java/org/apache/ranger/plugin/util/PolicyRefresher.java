@@ -161,10 +161,10 @@ public class PolicyRefresher extends Thread {
 	}
 
 	public void startRefresher() {
-		loadSubjectsFromKeycloakAdmin(plugIn);
+		//loadSubjectsFromKeycloakAdmin(plugIn);
 
 		loadRoles();
-		loadPolicy();
+		//loadPolicy();
 		loadUserStore();
 		super.start();
 
@@ -227,9 +227,9 @@ public class PolicyRefresher extends Thread {
 			DownloadTrigger trigger = null;
 			try {
 				trigger = policyDownloadQueue.take();
-				loadSubjectsFromKeycloakAdmin(plugIn);
+				//loadSubjectsFromKeycloakAdmin(plugIn);
 				loadRoles();
-				loadPolicy();
+				//loadPolicy();
 				loadUserStore();
 			} catch(InterruptedException excp) {
 				LOG.info("PolicyRefresher(serviceName=" + serviceName + ").run(): interrupted! Exiting thread", excp);
