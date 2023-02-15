@@ -67,7 +67,6 @@ public class PolicyRefresher extends Thread {
 	private final RangerAdminClient              rangerAdmin;
 	private final RangerRolesProvider            rolesProvider;
 	private final RangerUserStoreProvider		 userStoreProvider;
-	private final KeycloakUserStore		 		 keycloakUserStore;
 	private final long                           pollingIntervalMs;
 	private final String                         cacheFileName;
 	private final String                         cacheDir;
@@ -114,7 +113,6 @@ public class PolicyRefresher extends Thread {
 		this.gson                          = gson;
 		this.rolesProvider                 = new RangerRolesProvider(getServiceType(), appId, getServiceName(), rangerAdmin,  cacheDir, pluginConfig);
 		this.userStoreProvider             = new RangerUserStoreProvider(getServiceType(), appId, getServiceName(), rangerAdmin,  cacheDir, pluginConfig);
-		this.keycloakUserStore             = new KeycloakUserStore(getServiceType(), appId, getServiceName(),  cacheDir, pluginConfig);
 		this.pollingIntervalMs             = pluginConfig.getLong(propertyPrefix + ".policy.pollIntervalMs", 30 * 1000);
 
 		setName("PolicyRefresher(serviceName=" + serviceName + ")-" + getId());
@@ -161,8 +159,6 @@ public class PolicyRefresher extends Thread {
 	}
 
 	public void startRefresher() {
-		//loadSubjectsFromKeycloakAdmin(plugIn);
-
 		loadRoles();
 		//loadPolicy();
 		loadUserStore();
@@ -173,9 +169,8 @@ public class PolicyRefresher extends Thread {
 		try {
 			policyDownloadTimer.schedule(new DownloaderTask(policyDownloadQueue), pollingIntervalMs, pollingIntervalMs);
 
-			if (LOG.isDebugEnabled()) {
-				LOG.debug("Scheduled policyDownloadRefresher to download policies every " + pollingIntervalMs + " milliseconds");
-			}
+			LOG.info("Scheduled policyDownloadRefresher to download policies every " + pollingIntervalMs + " milliseconds");
+
 		} catch (IllegalStateException exception) {
 			LOG.error("Error scheduling policyDownloadTimer:", exception);
 			LOG.error("*** Policies will NOT be downloaded every " + pollingIntervalMs + " milliseconds ***");
@@ -227,7 +222,7 @@ public class PolicyRefresher extends Thread {
 			DownloadTrigger trigger = null;
 			try {
 				trigger = policyDownloadQueue.take();
-				//loadSubjectsFromKeycloakAdmin(plugIn);
+
 				loadRoles();
 				//loadPolicy();
 				loadUserStore();
@@ -249,20 +244,6 @@ public class PolicyRefresher extends Thread {
 	public void syncPoliciesWithAdmin(DownloadTrigger token) throws InterruptedException {
 		policyDownloadQueue.put(token);
 		token.waitForCompletion();
-	}
-
-	private void loadSubjectsFromKeycloakAdmin(RangerBasePlugin plugIn) {
-		LOG.info("Fetching subjects form Keycloak");
-
-		AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadSubjectsFromKeycloakAdmin");
-
-		try {
-			keycloakUserStore.loadKeycloakSubjects(plugIn, rolesProvider, userStoreProvider);
-		} catch (Exception e) {
-			LOG.error("Encountered unexpected exception, ignoring..", e);
-		} finally {
-			RequestContext.get().endMetricRecord(recorder);
-		}
 	}
 
 	private void loadPolicy() {

@@ -63,7 +63,6 @@ import java.util.stream.Collectors;
 public class KeycloakUserStore {
     private static final Logger LOG = LoggerFactory.getLogger(KeycloakUserStore.class);
 
-    private static String THREAD_NAME_PATTERN_ROLES_SET = "keycloakSubjectsFetcher-%d-";
     private static int NUM_THREADS = 5;
 
     private final String            serviceType;
@@ -76,7 +75,7 @@ public class KeycloakUserStore {
     private final Gson              gson;
 
 
-    public KeycloakUserStore(String serviceType, String appId, String serviceName, String cacheDir, Configuration config) {
+    public KeycloakUserStore(String serviceType, String appId, String serviceName, String cacheDir) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> RangerRolesProvider(serviceName=" + serviceName + ").RangerRolesProvider()");
         }
@@ -117,7 +116,7 @@ public class KeycloakUserStore {
         return service;
     }
 
-    public void loadKeycloakSubjects(RangerBasePlugin plugIn,
+/*    public void loadKeycloakSubjects(RangerBasePlugin plugIn,
                                             RangerRolesProvider rolesProvider,
                                             RangerUserStoreProvider userStoreProvider) throws AtlasBaseException {
 
@@ -130,10 +129,10 @@ public class KeycloakUserStore {
         } else {
             LOG.info("Skipping loading Keycloak subjects as no updates found since last caching");
         }
-    }
+    }*/
 
-    private boolean isKeycloakSubjectStoreStoreUpdated() {
-        long currentCashedUpdatedTime = getCurrentUpdatedTime();
+    public long getKeycloakSubjectsStoreUpdatedTime() {
+        //long currentCashedUpdatedTime = getCurrentUpdatedTime();
 
         //TODO: String vriables
         List<String> operationTypes = Arrays.asList("CREATE", "UPDATE", "DELETE");
@@ -149,15 +148,15 @@ public class KeycloakUserStore {
             latestEventTime = adminEvents.get(0).getTime();
         }
 
-        LOG.info("currentCashedUpdatedTime < latestEventTime : {} < {} = {}",
+        /*LOG.info("currentCashedUpdatedTime < latestEventTime : {} < {} = {}",
                 currentCashedUpdatedTime, latestEventTime,
-                currentCashedUpdatedTime < latestEventTime);
+                currentCashedUpdatedTime < latestEventTime);*/
 
-        if (currentCashedUpdatedTime < latestEventTime) {
+/*        if (currentCashedUpdatedTime < latestEventTime) {
             return true;
-        }
+        }*/
 
-        return false;
+        return latestEventTime;
     }
 
     private long getCurrentUpdatedTime() {
@@ -219,11 +218,11 @@ public class KeycloakUserStore {
         return roles;
     }
 
-    private static List<UserRepresentation> loadRoles(RangerBasePlugin plugin,
-                                                      RangerRolesProvider rolesProvider) throws AtlasBaseException {
+    public RangerRoles loadRoles() throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadRoles");
 
         List<RoleRepresentation> kRoles = KeycloakClient.getKeycloakClient().getAllRoles();
+        LOG.info("Found {} keycloak roles", kRoles.size());
 
         Set<RangerRole> roleSet = new HashSet<>();
         RangerRoles rangerRoles = new RangerRoles();
@@ -235,18 +234,39 @@ public class KeycloakUserStore {
                         .collect(Collectors.toList()));
 
         rangerRoles.setRangerRoles(roleSet);
-        plugin.setRoles(rangerRoles);
 
         Date current = new Date();
         rangerRoles.setRoleUpdateTime(current);
-        rolesProvider.setLastActivationTimeInMillis(current.getTime());
-        rolesProvider.setRangerUserGroupRolesSetInPlugin(true);
-
-        rolesProvider.saveToCache(rangerRoles);
+        rangerRoles.setServiceName(serviceName);
 
         RequestContext.get().endMetricRecord(recorder);
 
-        return userNamesList;
+        return rangerRoles;
+    }
+
+    public RangerUserStore loadUserStore() throws AtlasBaseException {
+
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadUserStore");
+
+        Map<String, Set<String>> userGroupMapping = new HashMap<>();
+
+        List<UserRepresentation> kUsers = KeycloakClient.getKeycloakClient().getAllUsers();
+        LOG.info("Found {} keycloak users", kUsers.size());
+
+        List<Callable<Object>> callables = new ArrayList<>();
+        kUsers.forEach(x -> callables.add(new UserGroupsFetcher(x, userGroupMapping)));
+
+        submitCallablesAndWaitToFinish("RoleSubjectsFetcher", callables);
+
+        RangerUserStore userStore = new RangerUserStore();
+        userStore.setUserGroupMapping(userGroupMapping);
+        Date current = new Date();
+        userStore.setUserStoreUpdateTime(current);
+        userStore.setServiceName(serviceName);
+
+        RequestContext.get().endMetricRecord(recorder);
+
+        return userStore;
     }
 
     private static void loadUserStore(RangerBasePlugin plugin,
@@ -281,6 +301,7 @@ public class KeycloakUserStore {
 
         RequestContext.get().endMetricRecord(recorder);
     }
+
 
     private static RangerRole keycloakRoleToRangerRole(RoleRepresentation kRole) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("keycloakRolesToRangerRoles");
@@ -382,16 +403,36 @@ public class KeycloakUserStore {
 
             //get all groups for Roles
             Thread groupsFetcher = new Thread(() -> {
-                Set<GroupRepresentation> kGroups = roleResource.getRoleGroupMembers();
-                rangerRole.setGroups(keycloakGroupsToRangerRoleMember(kGroups));
+                int start = 0;
+                int size = 100;
+                Set<GroupRepresentation> ret = new HashSet<>();
+
+                do {
+                    Set<GroupRepresentation> kGroups = roleResource.getRoleGroupMembers(start, size);
+                    ret.addAll(kGroups);
+                    start += size;
+
+                } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+
+                rangerRole.setGroups(keycloakGroupsToRangerRoleMember(ret));
             });
             groupsFetcher.start();
 
             //get all users for Roles
             Thread usersFetcher = new Thread(() -> {
-                Set<UserRepresentation> kUsers = roleResource.getRoleUserMembers();
-                rangerRole.setUsers(keycloakUsersToRangerRoleMember(kUsers));
-                userNamesList.addAll(kUsers);
+                int start = 0;
+                int size = 100;
+                Set<UserRepresentation> ret = new HashSet<>();
+
+                do {
+                    Set<UserRepresentation> userRepresentations = roleResource.getRoleUserMembers(start, size);
+                    ret.addAll(userRepresentations);
+                    start += size;
+
+                } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+
+                rangerRole.setUsers(keycloakUsersToRangerRoleMember(ret));
+                userNamesList.addAll(ret);
             });
             usersFetcher.start();
 

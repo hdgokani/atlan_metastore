@@ -19,18 +19,15 @@
 
 package org.apache.ranger.plugin.util;
 
-import atlas.keycloak.client.KeycloakClient;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.ranger.admin.client.RangerAdminClient;
 import org.apache.ranger.plugin.service.RangerBasePlugin;
-import org.keycloak.representations.idm.GroupRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
 
 import java.io.File;
 import java.io.FileReader;
@@ -39,7 +36,6 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
 
 
 public class RangerRolesProvider {
@@ -50,6 +46,7 @@ public class RangerRolesProvider {
 	private final String            serviceType;
 	private final String            serviceName;
 	private final RangerAdminClient rangerAdmin;
+	private final KeycloakUserStore keycloakUserStore;
 
 	private final String            cacheFileName;
 	private final String			cacheFileNamePrefix;
@@ -70,6 +67,7 @@ public class RangerRolesProvider {
 		this.serviceType = serviceType;
 		this.serviceName = serviceName;
 		this.rangerAdmin = rangerAdmin;
+		this.keycloakUserStore = new KeycloakUserStore(serviceType, appId, serviceName, cacheDir);
 
 
 		if (StringUtils.isEmpty(appId)) {
@@ -133,12 +131,21 @@ public class RangerRolesProvider {
 
 		try {
 			//load userGroupRoles from ranger admin
-			RangerRoles roles = loadUserGroupRolesFromAdmin();
+			//RangerRoles roles = loadUserGroupRolesFromAdmin();
+
+			RangerRoles currentRoles = loadUserGroupRolesFromCache();
+
+			long currentUpdatedTimeInCache = 0L;
+			if (currentRoles.getRoleUpdateTime() != null) {
+				currentUpdatedTimeInCache = currentRoles.getRoleUpdateTime().getTime();
+			}
+
+			RangerRoles roles = loadUserGroupRolesFromAdmin(currentUpdatedTimeInCache);
 
 			if (roles == null) {
 				//if userGroupRoles fetch from ranger Admin Fails, load from cache
 				if (!rangerUserGroupRolesSetInPlugin) {
-					roles = loadUserGroupRolesFromCache();
+					roles = currentRoles;
 				}
 			}
 
@@ -152,7 +159,7 @@ public class RangerRolesProvider {
 				plugIn.setRoles(roles);
 				rangerUserGroupRolesSetInPlugin = true;
 				setLastActivationTimeInMillis(System.currentTimeMillis());
-				lastKnownRoleVersion = roles.getRoleVersion();
+				lastKnownRoleVersion = roles.getRoleVersion() == null ? -1 : roles.getRoleVersion();
 			} else {
 				if (!rangerUserGroupRolesSetInPlugin && !serviceDefSetInPlugin) {
 					plugIn.setRoles(null);
@@ -178,13 +185,13 @@ public class RangerRolesProvider {
 		}
 	}
 
-	private RangerRoles loadUserGroupRolesFromAdmin() throws RangerServiceNotFoundException {
+	private RangerRoles loadUserGroupRolesFromAdmin(long currentUpdatedTimeInCache) throws RangerServiceNotFoundException {
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerRolesProvider(serviceName=" + serviceName + ").loadUserGroupRolesFromAdmin()");
 		}
 
-		RangerRoles roles;
+		RangerRoles roles = null;
 
 		RangerPerfTracer perf = null;
 
@@ -194,11 +201,16 @@ public class RangerRolesProvider {
 
 		try {
 
-			roles = rangerAdmin.getRolesIfUpdated(lastKnownRoleVersion, lastActivationTimeInMillis);
+/*			roles = rangerAdmin.getRolesIfUpdated(lastKnownRoleVersion, lastActivationTimeInMillis);
 
-			boolean isUpdated = roles != null;
+			boolean isUpdated = roles != null;*/
+
+			long keycloakStoreUpdatedTime = keycloakUserStore.getKeycloakSubjectsStoreUpdatedTime();
+			boolean isUpdated = currentUpdatedTimeInCache < keycloakStoreUpdatedTime;
 
 			if(isUpdated) {
+				roles = keycloakUserStore.loadRoles();
+
 				long newVersion = roles.getRoleVersion() == null ? -1 : roles.getRoleVersion().longValue();
 				saveToCache(roles);
 				LOG.info("RangerRolesProvider(serviceName=" + serviceName + "): found updated version. lastKnownRoleVersion=" + lastKnownRoleVersion + "; newVersion=" + newVersion );
@@ -207,10 +219,10 @@ public class RangerRolesProvider {
 					LOG.debug("RangerRolesProvider(serviceName=" + serviceName + ").run(): no update found. lastKnownRoleVersion=" + lastKnownRoleVersion );
 				}
 			}
-		} catch (RangerServiceNotFoundException snfe) {
+		}/* catch (RangerServiceNotFoundException snfe) {
 			LOG.error("RangerRolesProvider(serviceName=" + serviceName + "): failed to find service. Will clean up local cache of roles (" + lastKnownRoleVersion + ")", snfe);
 			throw snfe;
-		} catch (Exception excp) {
+		}*/ catch (Exception excp) {
 			LOG.error("RangerRolesProvider(serviceName=" + serviceName + "): failed to refresh roles. Will continue to use last known version of roles (" + "lastKnowRoleVersion= " + lastKnownRoleVersion, excp);
 			roles = null;
 		}
@@ -274,7 +286,7 @@ public class RangerRolesProvider {
 			roles = new RangerRoles();
 			roles.setServiceName(serviceName);
 			roles.setRoleVersion(-1L);
-			roles.setRoleUpdateTime(new Date());
+			roles.setRoleUpdateTime(null);
 			roles.setRangerRoles(new HashSet<>());
 			saveToCache(roles);
 		}

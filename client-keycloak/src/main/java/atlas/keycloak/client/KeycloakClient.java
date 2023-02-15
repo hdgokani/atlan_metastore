@@ -18,6 +18,7 @@
 
 package atlas.keycloak.client;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
@@ -35,6 +36,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 //@Component
@@ -86,29 +88,51 @@ public class KeycloakClient {
     }
 
     public List<UserRepresentation> getAllUsers() {
+        int start = 0;
+        int size = 100;
 
-        List<UserRepresentation> userRepresentations = getRealm().users().list();
-        LOG.info("userRepresentations -> ");
-        userRepresentations.forEach(user -> LOG.info(user.getUsername()));
+        List<UserRepresentation> ret = new ArrayList<>();
 
-        return userRepresentations;
+        do {
+            List<UserRepresentation> userRepresentations = getRealm().users().list(start, size);
+            ret.addAll(userRepresentations);
+            start += size;
+
+        } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+
+        return ret;
     }
 
     public List<GroupRepresentation> getAllGroups() {
 
-        List<GroupRepresentation> groupRepresentations = getRealm().groups().groups();
-        LOG.info("groupRepresentations -> ");
-        groupRepresentations.forEach(group -> LOG.info(group.getName()));
+        int start = 0;
+        int size = 100;
 
-        return groupRepresentations;
+        List<GroupRepresentation> ret = new ArrayList<>();
+
+        do {
+            List<GroupRepresentation> groupRepresentations = getRealm().groups().groups(start, size);
+            ret.addAll(groupRepresentations);
+            start += size;
+
+        } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+
+        return ret;
     }
 
     public List<RoleRepresentation> getAllRoles() {
+        int start = 0;
+        int size = 100;
 
-        List<RoleRepresentation> roleRepresentations = getRealm().roles().list();
-        LOG.info("roleRepresentations -> ");
-        roleRepresentations.forEach(role -> LOG.info(role.getName()));
+        List<RoleRepresentation> ret = new ArrayList<>();
 
-        return roleRepresentations;
+        do {
+            List<RoleRepresentation> roleRepresentations = getRealm().roles().list(start, size);
+            ret.addAll(roleRepresentations);
+            start += size;
+
+        } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+
+        return ret;
     }
 }

@@ -46,6 +46,7 @@ public class RangerUserStoreProvider {
 	private final String            serviceType;
 	private final String            serviceName;
 	private final RangerAdminClient rangerAdmin;
+	private final KeycloakUserStore keycloakUserStore;
 
 	private final String            cacheFileName;
 	private final String			cacheFileNamePrefix;
@@ -66,6 +67,7 @@ public class RangerUserStoreProvider {
 		this.serviceType = serviceType;
 		this.serviceName = serviceName;
 		this.rangerAdmin = rangerAdmin;
+		this.keycloakUserStore = new KeycloakUserStore(serviceType, appId, serviceName, cacheDir);
 
 
 		if (StringUtils.isEmpty(appId)) {
@@ -129,12 +131,21 @@ public class RangerUserStoreProvider {
 
 		try {
 			//load userGroupRoles from ranger admin
-			RangerUserStore userStore = loadUserStoreFromAdmin();
+			//RangerUserStore userStore = loadUserStoreFromAdmin();
+
+			RangerUserStore currentUserStore = loadUserStoreFromCache();
+
+			long currentUpdatedTimeInCache = 0L;
+			if (currentUserStore.getUserStoreUpdateTime() != null) {
+				currentUpdatedTimeInCache = currentUserStore.getUserStoreUpdateTime().getTime();
+			}
+
+			RangerUserStore userStore = loadUserStoreFromAdmin(currentUpdatedTimeInCache);
 
 			if (userStore == null) {
 				//if userGroupRoles fetch from ranger Admin Fails, load from cache
 				if (!rangerUserStoreSetInPlugin) {
-					userStore = loadUserStoreFromCache();
+					userStore = currentUserStore;
 				}
 			}
 
@@ -148,7 +159,7 @@ public class RangerUserStoreProvider {
 				plugIn.setUserStore(userStore);
 				rangerUserStoreSetInPlugin = true;
 				setLastActivationTimeInMillis(System.currentTimeMillis());
-				lastKnownUserStoreVersion = userStore.getUserStoreVersion();
+				lastKnownUserStoreVersion = userStore.getUserStoreVersion() == null ? -1 : userStore.getUserStoreVersion();
 			} else {
 				if (!rangerUserStoreSetInPlugin && !serviceDefSetInPlugin) {
 					plugIn.setUserStore(userStore);
@@ -174,13 +185,13 @@ public class RangerUserStoreProvider {
 		}
 	}
 
-	private RangerUserStore loadUserStoreFromAdmin() throws RangerServiceNotFoundException {
+	private RangerUserStore loadUserStoreFromAdmin(long currentUpdatedTimeInCache) throws RangerServiceNotFoundException {
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerUserStoreProvider(serviceName=" + serviceName + ").loadUserStoreFromAdmin()");
 		}
 
-		RangerUserStore userStore;
+		RangerUserStore userStore = null;
 
 		RangerPerfTracer perf = null;
 
@@ -189,11 +200,16 @@ public class RangerUserStoreProvider {
 		}
 
 		try {
-			userStore = rangerAdmin.getUserStoreIfUpdated(lastKnownUserStoreVersion, lastActivationTimeInMillis);
+			/*userStore = rangerAdmin.getUserStoreIfUpdated(lastKnownUserStoreVersion, lastActivationTimeInMillis);
 
-			boolean isUpdated = userStore != null;
+			boolean isUpdated = userStore != null;*/
+
+			long keycloakStoreUpdatedTime = keycloakUserStore.getKeycloakSubjectsStoreUpdatedTime();
+			boolean isUpdated = currentUpdatedTimeInCache < keycloakStoreUpdatedTime;
 
 			if(isUpdated) {
+				userStore = keycloakUserStore.loadUserStore();
+
 				long newVersion = userStore.getUserStoreVersion() == null ? -1 : userStore.getUserStoreVersion().longValue();
 				saveToCache(userStore);
 				LOG.info("RangerUserStoreProvider(serviceName=" + serviceName + "): found updated version. lastKnownUserStoreVersion=" + lastKnownUserStoreVersion + "; newVersion=" + newVersion );
@@ -202,10 +218,10 @@ public class RangerUserStoreProvider {
 					LOG.debug("RangerUserStoreProvider(serviceName=" + serviceName + ").run(): no update found. lastKnownUserStoreVersion=" + lastKnownUserStoreVersion );
 				}
 			}
-		} catch (RangerServiceNotFoundException snfe) {
+		}/* catch (RangerServiceNotFoundException snfe) {
 			LOG.error("RangerUserStoreProvider(serviceName=" + serviceName + "): failed to find service. Will clean up local cache of userStore (" + lastKnownUserStoreVersion + ")", snfe);
 			throw snfe;
-		} catch (Exception excp) {
+		}*/ catch (Exception excp) {
 			LOG.error("RangerUserStoreProvider(serviceName=" + serviceName + "): failed to refresh userStore. Will continue to use last known version of userStore (" + "lastKnowRoleVersion= " + lastKnownUserStoreVersion, excp);
 			userStore = null;
 		}
@@ -269,7 +285,7 @@ public class RangerUserStoreProvider {
 			userStore = new RangerUserStore();
 			userStore.setServiceName(serviceName);
 			userStore.setUserStoreVersion(-1L);
-			userStore.setUserStoreUpdateTime(new Date());
+			userStore.setUserStoreUpdateTime(null);
 			userStore.setUserGroupMapping(new HashMap<String, Set<String>>());
 			saveToCache(userStore);
 		}
