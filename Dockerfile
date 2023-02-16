@@ -44,6 +44,15 @@ RUN apt-get update \
     && mv /opt/apache-atlas-${VERSION} /opt/apache-atlas \
     && apt-get clean \
     && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
+    
+    
+#USER user
+RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup
+RUN mkdir -p /home/appuser/app/
+RUN chown appuser /home/appuser/app/
+USER appuser
+WORKDIR /home/appuser/app/
+
 
 #ENV alias python=python3
 #RUN update-alternatives --set python /usr/bin/python3
@@ -86,13 +95,6 @@ VOLUME ["/opt/apache-atlas/conf", "/opt/apache-atlas/logs"]
 RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true 
 
 #RUN groupadd -r user && useradd -r -g user user
-
-#USER user
-RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup
-RUN mkdir -p /home/appuser/app/
-RUN chown appuser /home/appuser/app/
-USER appuser
-WORKDIR /home/appuser/app/
 
 
 
