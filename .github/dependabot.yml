@@ -1,5 +1,4 @@
 # Use `allow` to specify which dependencies to maintain
-
 version: 2
 updates:
   - package-ecosystem: "npm" #npm
