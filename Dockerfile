@@ -74,8 +74,8 @@ RUN cd /opt/apache-atlas/bin \
 #     && patch -b -f < atlas_start.py.patch \
 #     && patch -b -f < atlas_config.py.patch \
 
-RUN cd /opt/apache-atlas/bin
-RUN python3 ./atlas_start.py -setup
+RUN cd /opt/apache-atlas/bin \
+    && /usr/bin/python3 ./atlas_start.py -setup || true
 
 
 VOLUME ["/opt/apache-atlas/conf", "/opt/apache-atlas/logs"]
