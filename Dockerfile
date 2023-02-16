@@ -72,7 +72,7 @@ RUN cd /opt/apache-atlas/bin \
 #     && patch -b -f < atlas_config.py.patch \
 
 ### 3. Get Python, PIP
-
+RUN update-alternatives --set python /usr/bin/python3.11
 
 RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true
