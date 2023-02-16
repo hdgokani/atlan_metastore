@@ -17,21 +17,24 @@
 #
 
 FROM scratch
-FROM ubuntu:18.04
+FROM ubuntu:23.04
 LABEL maintainer="engineering@atlan.com"
 ARG VERSION=3.0.0-SNAPSHOT
 
 COPY distro/target/apache-atlas-3.0.0-SNAPSHOT-server.tar.gz  /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
+
 
 RUN apt-get update \
     && apt-get -y upgrade \
     && apt-get -y install apt-utils \
     && apt-get -y install \
         wget \
-        python \
+        python3 \
+        #python \
         openjdk-8-jdk-headless \
         patch \
-        netcat \
+        netcat-traditional \
+        #netcat \
         curl \
     && cd / \
     && mkdir /opt/ranger-atlas-plugin \
@@ -71,7 +74,8 @@ RUN cd /opt/apache-atlas/bin \
 #     && patch -b -f < atlas_start.py.patch \
 #     && patch -b -f < atlas_config.py.patch \
 
-RUN cd /opt/apache-atlas/bin \
-    && ./atlas_start.py -setup || true
+RUN cd /opt/apache-atlas/bin
+CMD [ "python3", "./atlas_start.py -setup"]
+
 
 VOLUME ["/opt/apache-atlas/conf", "/opt/apache-atlas/logs"]
