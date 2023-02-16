@@ -42,6 +42,8 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
 
+RUN update-alternatives --set python /usr/bin/python3.11
+
 # Copy the repair index jar file
 RUN cd / \
     && wget https://atlan-build-artifacts.s3.ap-south-1.amazonaws.com/atlas/atlas-index-repair-tool-${VERSION}.tar.gz \
@@ -71,8 +73,6 @@ RUN cd /opt/apache-atlas/bin \
 #     && patch -b -f < atlas_start.py.patch \
 #     && patch -b -f < atlas_config.py.patch \
 
-### 3. Get Python, PIP
-RUN update-alternatives --set python /usr/bin/python3.11
 
 RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true
