@@ -17,8 +17,8 @@
 #
 
 FROM scratch
-#FROM ubuntu:23.04
-FROM ubuntu:18.04
+FROM ubuntu:23.04
+#FROM ubuntu:18.04
 LABEL maintainer="engineering@atlan.com"
 ARG VERSION=3.0.0-SNAPSHOT
 
@@ -29,12 +29,12 @@ RUN apt-get update \
     && apt-get -y install apt-utils \
     && apt-get -y install \
         wget \
-        #python3 \
-        python \
+        python3 \
+        #python \
         openjdk-8-jdk-headless \
         patch \
-        #netcat-traditional \
-        netcat \
+        netcat-traditional \
+        #netcat \
         curl \
     && cd / \
     && mkdir /opt/ranger-atlas-plugin \
@@ -47,15 +47,19 @@ RUN apt-get update \
     
     
 #USER user
-RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup
-RUN mkdir -p /home/appuser/app/
-RUN chown appuser /home/appuser/app/
-USER appuser
-WORKDIR /home/appuser/app/
+#RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup
+#RUN mkdir -p /home/appuser/app/
+#RUN chown appuser /home/appuser/app/
+#USER appuser
+#WORKDIR /home/appuser/app/
 
 
 #ENV alias python=python3
 #RUN update-alternatives --set python /usr/bin/python3
+
+RUN ln -s /usr/bin/python3 /usr/bin/python & \
+    ln -s /usr/bin/pip3 /usr/bin/pip
+
 
 # Copy the repair index jar file
 RUN cd / \
