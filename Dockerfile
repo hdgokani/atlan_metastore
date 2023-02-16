@@ -27,12 +27,14 @@ COPY distro/target/apache-atlas-3.0.0-SNAPSHOT-server.tar.gz  /apache-atlas-3.0.
 RUN apt-get update \
     && apt-get -y upgrade \
     && apt-get -y install apt-utils \
-    && apt-get install -y python3 \
     && apt-get -y install \
         wget \
+        python3 \
+        #python \
         openjdk-8-jdk-headless \
         patch \
-        netcat \
+        netcat-traditional \
+        #netcat \
         curl \
     && cd / \
     && mkdir /opt/ranger-atlas-plugin \
