@@ -936,11 +936,11 @@ public class RangerPolicyRepository {
             RangerPolicyEvaluator evaluator = buildPolicyEvaluator(policy, serviceDef, options);
 
             if (evaluator != null) {
-                if(policy.getPolicyType() == null || policy.getPolicyType() == RangerPolicy.POLICY_TYPE_ACCESS) {
+                if(StringUtils.isEmpty(policy.getPolicyType()) || RangerPolicy.POLICY_TYPE_ACCESS.equals(policy.getPolicyType())) {
                     policyEvaluators.add(evaluator);
-                } else if(policy.getPolicyType() == RangerPolicy.POLICY_TYPE_DATAMASK) {
+                } else if(RangerPolicy.POLICY_TYPE_DATAMASK.equals(policy.getPolicyType())) {
                     dataMaskPolicyEvaluators.add(evaluator);
-                } else if(policy.getPolicyType() == RangerPolicy.POLICY_TYPE_ROWFILTER) {
+                } else if(RangerPolicy.POLICY_TYPE_ROWFILTER.equals(policy.getPolicyType())) {
                     rowFilterPolicyEvaluators.add(evaluator);
                 } else {
                     LOG.warn("RangerPolicyEngine: ignoring policy id=" + policy.getId() + " - invalid policyType '" + policy.getPolicyType() + "'");
@@ -948,7 +948,7 @@ public class RangerPolicyRepository {
             }
         }
         if (LOG.isInfoEnabled()) {
-            LOG.info("This policy engine contains " + (policyEvaluators.size()+dataMaskPolicyEvaluators.size()+rowFilterPolicyEvaluators.size()) + " policy evaluators");
+            LOG.info("This policy engine contains " + (policyEvaluators.size() + dataMaskPolicyEvaluators.size() + rowFilterPolicyEvaluators.size()) + " policy evaluators");
         }
         RangerPolicyEvaluator.PolicyEvalOrderComparator comparator = new RangerPolicyEvaluator.PolicyEvalOrderComparator();
         Collections.sort(policyEvaluators, comparator);

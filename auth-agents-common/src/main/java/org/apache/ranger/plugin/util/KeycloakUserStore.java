@@ -238,6 +238,7 @@ public class KeycloakUserStore {
         Date current = new Date();
         rangerRoles.setRoleUpdateTime(current);
         rangerRoles.setServiceName(serviceName);
+        rangerRoles.setRoleVersion(-1L);
 
         RequestContext.get().endMetricRecord(recorder);
 
@@ -263,6 +264,7 @@ public class KeycloakUserStore {
         Date current = new Date();
         userStore.setUserStoreUpdateTime(current);
         userStore.setServiceName(serviceName);
+        userStore.setUserStoreVersion(-1L);
 
         RequestContext.get().endMetricRecord(recorder);
 

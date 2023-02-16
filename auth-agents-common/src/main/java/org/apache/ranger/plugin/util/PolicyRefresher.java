@@ -19,41 +19,24 @@
 
 package org.apache.ranger.plugin.util;
 
-import atlas.keycloak.client.KeycloakClient;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.apache.atlas.RequestContext;
-import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.ranger.admin.client.RangerAdminClient;
 import org.apache.ranger.authorization.hadoop.config.RangerPluginConfig;
-import org.apache.ranger.plugin.model.RangerRole;
 import org.apache.ranger.plugin.policyengine.RangerPluginContext;
 import org.apache.ranger.plugin.service.RangerBasePlugin;
-import org.keycloak.admin.client.resource.RoleResource;
-import org.keycloak.representations.idm.GroupRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.stream.Collectors;
 
 
 public class PolicyRefresher extends Thread {
@@ -160,7 +143,7 @@ public class PolicyRefresher extends Thread {
 
 	public void startRefresher() {
 		loadRoles();
-		//loadPolicy();
+		loadPolicy();
 		loadUserStore();
 		super.start();
 
@@ -224,7 +207,7 @@ public class PolicyRefresher extends Thread {
 				trigger = policyDownloadQueue.take();
 
 				loadRoles();
-				//loadPolicy();
+				loadPolicy();
 				loadUserStore();
 			} catch(InterruptedException excp) {
 				LOG.info("PolicyRefresher(serviceName=" + serviceName + ").run(): interrupted! Exiting thread", excp);
@@ -324,7 +307,8 @@ public class PolicyRefresher extends Thread {
 		}
 
 		try {
-			svcPolicies = rangerAdmin.getServicePoliciesIfUpdated(lastKnownVersion, lastActivationTimeInMillis);
+			//svcPolicies = rangerAdmin.getServicePoliciesIfUpdated(lastKnownVersion, lastActivationTimeInMillis);
+			svcPolicies = null;
 
 			boolean isUpdated = svcPolicies != null;
 
@@ -344,10 +328,10 @@ public class PolicyRefresher extends Thread {
 					LOG.debug("PolicyRefresher(serviceName=" + serviceName + ").run(): no update found. lastKnownVersion=" + lastKnownVersion);
 				}
 			}
-		} catch (RangerServiceNotFoundException snfe) {
+		}/* catch (RangerServiceNotFoundException snfe) {
 			LOG.error("PolicyRefresher(serviceName=" + serviceName + "): failed to find service. Will clean up local cache of policies (" + lastKnownVersion + ")", snfe);
 			throw snfe;
-		} catch (Exception excp) {
+		}*/ catch (Exception excp) {
 			LOG.error("PolicyRefresher(serviceName=" + serviceName + "): failed to refresh policies. Will continue to use last known version of policies (" + lastKnownVersion + ")", excp);
 			svcPolicies = null;
 		}
