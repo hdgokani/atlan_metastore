@@ -18,7 +18,6 @@
 # limitations under the License.
 #
 
-
 alias python=python3
 sed -i -e "s~RANGER_SERVICE_URL~${RANGER_SERVICE_URL}~g" /opt/ranger-atlas-plugin/install.properties
 sed -i -e "s~ATLAS_REPOSITORY_NAME~${ATLAS_REPOSITORY_NAME}~g" /opt/ranger-atlas-plugin/install.properties
