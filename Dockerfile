@@ -52,8 +52,6 @@ RUN cd / \
 
 COPY atlas-hub/repair_index.py /opt/apache-atlas/bin/
 
-RUN alias python=python3
-
 RUN chmod +x /opt/apache-atlas/bin/repair_index.py
 
 COPY atlas-hub/atlas_start.py.patch atlas-hub/atlas_config.py.patch /opt/apache-atlas/bin/
@@ -74,6 +72,7 @@ RUN cd /opt/apache-atlas/bin \
 #     && patch -b -f < atlas_config.py.patch \
 
 RUN cd /opt/apache-atlas/bin \
+    && alias python=python3 \
     && ./atlas_start.py -setup || true
 
 VOLUME ["/opt/apache-atlas/conf", "/opt/apache-atlas/logs"]
