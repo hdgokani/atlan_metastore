@@ -28,7 +28,7 @@ RUN apt-get update \
     && apt-get -y install apt-utils \
     && apt-get -y install \
         wget \
-        python3 \
+        python-is-python3 \
         openjdk-8-jdk-headless \
         patch \
         netcat-traditional \
