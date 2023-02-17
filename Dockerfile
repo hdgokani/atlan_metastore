@@ -74,10 +74,15 @@ RUN cd /opt/apache-atlas/bin \
 #     && patch -b -f < atlas_start.py.patch \
 #     && patch -b -f < atlas_config.py.patch \
 
-RUN useradd -ms /bin/bash atlas
-RUN chown atlas /home/atlas/
-USER atlas
-WORKDIR /home/atlas
+#RUN useradd -ms /bin/bash atlas
+#RUN chown atlas /home/atlas/
+#USER atlas
+#WORKDIR /home/atlas
+RUN groupadd atlas && \
+    useradd -g atlas -ms /bin/bash atlas && \
+    mkdir -p /home/atlas/dist && \
+    mkdir -p /home/atlas/scripts && \
+    chown -R atlas:atlas /home/atlas
 
 RUN chmod +x /opt/apache-atlas/bin/repair_index.py
 RUN cd /opt/apache-atlas/bin \
