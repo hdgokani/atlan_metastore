@@ -75,7 +75,7 @@ RUN cd /opt/apache-atlas/bin \
 #     && patch -b -f < atlas_config.py.patch \
 
 RUN useradd -ms /bin/bash atlas
-RUN chown appuser /home/appuser/app/
+RUN chown atlas /home/atlas/
 USER atlas
 WORKDIR /home/atlas
 
