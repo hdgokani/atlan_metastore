@@ -16,13 +16,14 @@
 # limitations under the License.
 #
 
+
 FROM scratch
 FROM ubuntu:23.04
+#FROM ubuntu:18.04
 LABEL maintainer="engineering@atlan.com"
 ARG VERSION=3.0.0-SNAPSHOT
 
 COPY distro/target/apache-atlas-3.0.0-SNAPSHOT-server.tar.gz  /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
-
 
 RUN apt-get update \
     && apt-get -y upgrade \
@@ -44,6 +45,22 @@ RUN apt-get update \
     && mv /opt/apache-atlas-${VERSION} /opt/apache-atlas \
     && apt-get clean \
     && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
+    
+    
+#USER user
+#RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup
+#RUN mkdir -p /home/appuser/app/
+#RUN chown appuser /home/appuser/app/
+#USER appuser
+#WORKDIR /home/appuser/app/
+
+
+#ENV alias python=python3
+#RUN update-alternatives --set python /usr/bin/python3
+
+RUN ln -s /usr/bin/python3 /usr/bin/python & \
+    ln -s /usr/bin/pip3 /usr/bin/pip
+
 
 # Copy the repair index jar file
 RUN cd / \
@@ -74,8 +91,15 @@ RUN cd /opt/apache-atlas/bin \
 #     && patch -b -f < atlas_start.py.patch \
 #     && patch -b -f < atlas_config.py.patch \
 
-RUN cd /opt/apache-atlas/bin
-CMD [ "python3", "./atlas_start.py -setup"]
 
+RUN cd /opt/apache-atlas/bin \
+    && ./atlas_start.py -setup || true
 
 VOLUME ["/opt/apache-atlas/conf", "/opt/apache-atlas/logs"]
+
+RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true 
+
+#RUN groupadd -r user && useradd -r -g user user
+
+
+
