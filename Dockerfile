@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 
+
 FROM scratch
 FROM ubuntu:23.04
 LABEL maintainer="engineering@atlan.com"
