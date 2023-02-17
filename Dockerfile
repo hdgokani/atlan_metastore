@@ -98,5 +98,3 @@ RUN cd /opt/apache-atlas/bin \
 VOLUME ["/opt/apache-atlas/conf", "/opt/apache-atlas/logs"]
 
 RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true 
-
-USER atlas
