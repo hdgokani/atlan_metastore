@@ -30,11 +30,9 @@ RUN apt-get update \
     && apt-get -y install \
         wget \
         python3 \
-        #python \
         openjdk-8-jdk-headless \
         patch \
         netcat-traditional \
-        #netcat \
         curl \
     && cd / \
     && mkdir /opt/ranger-atlas-plugin \
@@ -76,7 +74,7 @@ RUN cd /opt/apache-atlas/bin \
 #     && patch -b -f < atlas_start.py.patch \
 #     && patch -b -f < atlas_config.py.patch \
 
-RUN useradd -ms -u 1001 /bin/bash atlas
+RUN useradd -ms /bin/bash atlas
 RUN chown appuser /home/appuser/app/
 USER atlas
 WORKDIR /home/atlas
