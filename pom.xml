@@ -861,36 +861,6 @@
             <name>Typesafe Repository</name>
             <url>https://repo.typesafe.com/typesafe/releases/</url>
         </repository>
-        <repository>
-            <id>restlet</id>
-            <url>https://maven.restlet.talend.com/</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-<!--        <repository>-->
-<!--            <id>oracleReleases</id>-->
-<!--            <name>Oracle Released Java Packages</name>-->
-<!--            <url>http://download.oracle.com/maven</url>-->
-<!--            <layout>default</layout>-->
-<!--        </repository>-->
-        <repository>
-            <id>atlassian-public</id>
-            <url>https://maven.atlassian.com/repository/public</url>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-                <checksumPolicy>warn</checksumPolicy>
-            </snapshots>
-            <releases>
-                <enabled>true</enabled>
-                <checksumPolicy>warn</checksumPolicy>
-            </releases>
-        </repository>
-<!--        <repository>-->
-<!--            <id>clojars.org</id>-->
-<!--            <url>http://clojars.org/repo</url>-->
-<!--        </repository>-->
     </repositories>
 
     <dependencyManagement>
