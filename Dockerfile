@@ -22,6 +22,14 @@ FROM ubuntu:23.04
 LABEL maintainer="engineering@atlan.com"
 ARG VERSION=3.0.0-SNAPSHOT
 
+
+# Set environment variables
+ENV JAVA_HOME      /usr/lib/jvm/java-8-openjdk-amd64
+ENV ATLAS_DIST    /home/atlas/dist
+ENV ATLAS_HOME    /opt/atlas
+ENV ATLAS_SCRIPTS /home/atlas/scripts
+ENV PATH          /usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
 COPY distro/target/apache-atlas-3.0.0-SNAPSHOT-server.tar.gz  /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
 
 RUN apt-get update \
