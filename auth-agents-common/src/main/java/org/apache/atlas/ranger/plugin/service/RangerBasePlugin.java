@@ -63,7 +63,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
 public class RangerBasePlugin {
 	private static final Log LOG = LogFactory.getLog(RangerBasePlugin.class);
 
@@ -79,7 +78,6 @@ public class RangerBasePlugin {
 	private       RangerRoles                 roles;
 	private       RangerUserStore             userStore;
 	private final List<RangerChainedPlugin>   chainedPlugins;
-
 
 	public RangerBasePlugin(String serviceType, String appId) {
 		this(new RangerPluginConfig(serviceType, null, appId, null, null, null));

@@ -49,12 +49,6 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-repository</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
             <version>3.0.0-SNAPSHOT</version>
         </dependency>

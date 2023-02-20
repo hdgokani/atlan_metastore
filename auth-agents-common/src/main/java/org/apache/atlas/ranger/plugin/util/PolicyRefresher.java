@@ -308,7 +308,10 @@ public class PolicyRefresher extends Thread {
 
 		try {
 			//svcPolicies = rangerAdmin.getServicePoliciesIfUpdated(lastKnownVersion, lastActivationTimeInMillis);
-			svcPolicies = null;
+			RangerRESTUtils restUtils = new RangerRESTUtils();
+
+			//svcPolicies = PolicyTransformerImpl.getPolicies(serviceName, restUtils.getPluginId(serviceName, plugIn.getAppId()));
+			//svcPolicies = null;
 
 			boolean isUpdated = svcPolicies != null;
 
