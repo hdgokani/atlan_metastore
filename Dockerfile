@@ -21,14 +21,6 @@ FROM ubuntu:23.04
 LABEL maintainer="engineering@atlan.com"
 ARG VERSION=3.0.0-SNAPSHOT
 
-
-# Set environment variables
-ENV JAVA_HOME      /usr/lib/jvm/java-8-openjdk-amd64
-ENV ATLAS_DIST    /home/atlas/dist
-ENV ATLAS_HOME    /opt/atlas
-ENV ATLAS_SCRIPTS /home/atlas/scripts
-ENV PATH          /usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
 COPY distro/target/apache-atlas-3.0.0-SNAPSHOT-server.tar.gz  /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
 
 RUN apt-get update \
@@ -50,10 +42,6 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
 
-RUN ln -s /usr/bin/python3 /usr/bin/python & \
-    ln -s /usr/bin/pip3 /usr/bin/pip
-
-
 # Copy the repair index jar file
 RUN cd / \
     && wget https://atlan-build-artifacts.s3.ap-south-1.amazonaws.com/atlas/atlas-index-repair-tool-${VERSION}.tar.gz \
@@ -62,7 +50,12 @@ RUN cd / \
     && mv /atlas-index-repair-tool-${VERSION}.jar /opt/apache-atlas/libext/ \
     && rm -rf /atlas-index-repair-tool-${VERSION}.tar.gz
 
+RUN ln -s /usr/bin/python3 /usr/bin/python & \
+    ln -s /usr/bin/pip3 /usr/bin/pip
+
 COPY atlas-hub/repair_index.py /opt/apache-atlas/bin/
+
+RUN chmod +x /opt/apache-atlas/bin/repair_index.py
 
 COPY atlas-hub/atlas_start.py.patch atlas-hub/atlas_config.py.patch /opt/apache-atlas/bin/
 COPY atlas-hub/pre-conf/ranger/lib/ /opt/apache-atlas/libext/
@@ -81,20 +74,7 @@ RUN cd /opt/apache-atlas/bin \
 #     && patch -b -f < atlas_start.py.patch \
 #     && patch -b -f < atlas_config.py.patch \
 
-#RUN useradd -ms /bin/bash atlas
-#RUN chown atlas /home/atlas/
-#USER atlas
-#WORKDIR /home/atlas
-RUN groupadd atlas && \
-    useradd -g atlas -ms /bin/bash atlas && \
-    mkdir -p /home/atlas/dist && \
-    mkdir -p /home/atlas/scripts && \
-    chown -R atlas:atlas /home/atlas
-
-RUN chmod +x /opt/apache-atlas/bin/repair_index.py
 RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true
 
 VOLUME ["/opt/apache-atlas/conf", "/opt/apache-atlas/logs"]
-
-RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true 
