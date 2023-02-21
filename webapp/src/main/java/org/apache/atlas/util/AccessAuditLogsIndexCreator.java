@@ -33,6 +33,7 @@ import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.CreateIndexResponse;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.xcontent.XContentType;
@@ -102,7 +103,7 @@ public class AccessAuditLogsIndexCreator {
 
         hosts = getHosts(configuration);
         port = getPort(configuration);
-        
+
         protocol = configuration.getString(ES_CONFIG_PROTOCOL, "http");
         index = configuration.getString(ES_CONFIG_INDEX, DEFAULT_INDEX_NAME);
         password = configuration.getString(ES_CONFIG_PASSWORD);
@@ -216,18 +217,18 @@ public class AccessAuditLogsIndexCreator {
     }
 
     private boolean createIndex() {
-        boolean exits = false;
+        boolean exists = false;
         if (client == null) {
             connect();
         }
         if (client != null) {
             try {
-                exits = client.indices().open(new OpenIndexRequest(this.index), RequestOptions.DEFAULT)
-                        .isShardsAcknowledged();
+                GetIndexRequest getRequest = new GetIndexRequest(index);
+                exists = client.indices().exists(getRequest, RequestOptions.DEFAULT);
             } catch (Exception e) {
                 LOG.info("Index " + this.index + " not available.");
             }
-            if (!exits) {
+            if (!exists) {
                 LOG.info("Index does not exist. Attempting to create index:" + this.index);
                 CreateIndexRequest request = new CreateIndexRequest(this.index);
                 if (this.no_of_shards >= 0 && this.no_of_replicas >= 0) {
@@ -240,9 +241,9 @@ public class AccessAuditLogsIndexCreator {
                 try {
                     CreateIndexResponse createIndexResponse = client.indices().create(request, RequestOptions.DEFAULT);
                     if (createIndexResponse != null) {
-                        exits = client.indices().open(new OpenIndexRequest(this.index), RequestOptions.DEFAULT)
-                                .isShardsAcknowledged();
-                        if (exits) {
+                        GetIndexRequest getRequest = new GetIndexRequest(index);
+                        exists = client.indices().exists(getRequest, RequestOptions.DEFAULT);
+                        if (exists) {
                             LOG.info("Index " + this.index + " created successfully.");
                         }
                     }
@@ -254,7 +255,7 @@ public class AccessAuditLogsIndexCreator {
                 LOG.info("Index " + this.index + " is already created.");
             }
         }
-        return exits;
+        return exists;
     }
 
     private void logErrorMessageAndWait(String msg, Exception exception) {
