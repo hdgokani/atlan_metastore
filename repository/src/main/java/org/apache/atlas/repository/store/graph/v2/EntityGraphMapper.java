@@ -59,6 +59,7 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.Category
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.readme.ReadmePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryFolderPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryPreProcessor;
@@ -578,6 +579,10 @@ public class EntityGraphMapper {
 
             case QUERY_COLLECTION_ENTITY_TYPE:
                 preProcessor = new QueryCollectionPreProcessor(typeRegistry, entityRetriever);
+                break;
+
+            case README_ENTITY_TYPE:
+                preProcessor = new ReadmePreProcessor(typeRegistry, entityRetriever, graph);
                 break;
 
         }

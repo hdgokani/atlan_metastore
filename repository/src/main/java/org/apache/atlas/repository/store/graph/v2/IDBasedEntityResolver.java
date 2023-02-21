@@ -32,15 +32,11 @@ import org.apache.atlas.type.AtlasTypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 
 public class IDBasedEntityResolver implements EntityResolver {
     private static final Logger LOG = LoggerFactory.getLogger(IDBasedEntityResolver.class);
-    public static final String README_ENTITY_TYPE    = "Readme";
-    public static final String QUALIFIED_NAME        = "qualifiedName";
-    public static final String GUID                  = "guid";
 
     private final AtlasGraph        graph;
     private final AtlasTypeRegistry typeRegistry;
@@ -72,10 +68,7 @@ public class IDBasedEntityResolver implements EntityResolver {
                     if (entityType == null) {
                         throw new AtlasBaseException(element.getValue(), AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
                     }
-                    if(entity.getTypeName().equals(README_ENTITY_TYPE)){
-                        Object asset = entity.getRelationshipAttribute("asset");
-                        if(asset != null) entity.setAttribute(QUALIFIED_NAME, ((LinkedHashMap)asset).get(GUID) + "/readme");
-                    }
+
                     vertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, entity.getAttributes());
                 } else if (!isAssignedGuid) { // for local-guids, entity must be in the stream
                     throw new AtlasBaseException(element.getValue(), AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid);
