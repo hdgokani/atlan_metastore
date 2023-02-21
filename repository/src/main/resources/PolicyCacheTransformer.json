@@ -1,125 +1,130 @@
 {
-    "atlan-asset-read": [
-        {
-            "category": "entity",
-            "resources": [
-                "entity:{entity}",
-                "entity-type:{entity-type}"
-            ],
-            "actions": ["entity-read"]
-        }
-    ],
-    "atlan-asset-update": [
-        {
-            "category": "entity",
-            "resources": [
-                "entity:{entity}",
-                "entity-type:{entity-type}"
-            ],
-            "actions": ["entity-update"]
-        },
-        {
-            "category": "relationship",
-            "resources": [
-                "relationship-type:*",
-                "end-one-entity-type:*",
-                "end-one-entity-classification:*",
-                "end-one-entity:{entity}",
+  "atlan-asset-read": [
+    {
+      "category": "entity",
+      "resources": [
+        "entity:{entity}",
+        "entity-type:{entity-type}"
+      ],
+      "actions": ["entity-read"]
+    }
+  ],
+  "atlan-asset-update": [
+    {
+      "category": "entity",
+      "resources": [
+        "entity:{entity}",
+        "entity-type:{entity-type}"
+      ],
+      "actions": ["entity-update"]
+    },
+    {
+      "category": "relationship",
+      "resources": [
+        "relationship-type:*",
 
-                "end-two-entity-type:Catalog,Connection,Process,ProcessExecution,Namespace",
-                "end-two-entity-classification:",
-                "end-two-entity:*"
-            ],
-            "actions": ["add-relationship", "remove-relationship"]
-        }
-    ],
-    "atlan-api-create": [
-         {
-            "category": "entity",
-            "resources": [
-                "entity:{entity}",
-                "entity-type:{entity-type}"
-            ],
-            "actions": ["entity-create"]
-        }
-    ],
-    "atlan-api-delete": [
-         {
-            "category": "entity",
-            "resources": [
-                "entity:{entity}",
-                "entity-type:{entity-type}"
-            ],
-            "actions": ["entity-delete"]
-        }
-    ],
-    "atlan-business-update-metadata": [
-         {
-            "resources": [
-                "entity:{entity}",
-                "entity-type:*",
-                "entity-classification:*",
-                "entity-business:*"
-            ],
-            "actions": ["entity-business-update-metadata"]
-        }
-    ],
-    "atlan-entity-add-classification": [
-         {
-            "category": "entity",
-            "resources": [
-                "entity:{entity}",
-                "entity-type:*",
-                "entity-classification:*",
-                "classification:*"
-            ],
-            "actions": ["entity-add-classification"]
-        }
-    ],
-    "atlan-entity-remove-classification": [
-         {
-            "category": "entity",
-            "resources": [
-                "entity:{entity}",
-                "entity-type:*",
-                "entity-classification:*",
-                "classification:*"
-            ],
-            "actions": ["entity-remove-classification"]
-        }
-    ],
-    "atlan-add-terms": [
-        {
-            "category": "relationship",
-            "resources": [
-                "relationship-type:*",
+        "end-one-entity-type:*",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}",
 
-                "end-one-entity-type:AtlasGlossaryTerm",
-                "end-one-entity-classification:*",
-                "end-one-entity:{entity}",
+        "end-two-entity-type:Catalog",
+        "end-two-entity-type:Connection",
+        "end-two-entity-type:Process",
+        "end-two-entity-type:Namespace",
+        "end-two-entity-type:ProcessExecution",
+        "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "remove-relationship"]
+    }
+  ],
+  "atlan-api-create": [
+    {
+      "category": "entity",
+      "resources": [
+        "entity:{entity}",
+        "entity-type:{entity-type}"
+      ],
+      "actions": ["entity-create"]
+    }
+  ],
+  "atlan-api-delete": [
+    {
+      "category": "entity",
+      "resources": [
+        "entity:{entity}",
+        "entity-type:{entity-type}"
+      ],
+      "actions": ["entity-delete"]
+    }
+  ],
+  "atlan-business-update-metadata": [
+    {
+      "resources": [
+        "entity:{entity}",
+        "entity-type:{entity-type}",
+        "entity-classification:*",
+        "entity-business:*"
+      ],
+      "actions": ["entity-business-update-metadata"]
+    }
+  ],
+  "atlan-entity-add-classification": [
+    {
+      "category": "entity",
+      "resources": [
+        "entity:{entity}",
+        "entity-type:{entity-type}",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": ["entity-add-classification"]
+    }
+  ],
+  "atlan-entity-remove-classification": [
+    {
+      "category": "entity",
+      "resources": [
+        "entity:{entity}",
+        "entity-type:{entity-type}",
+        "entity-classification:*",
+        "classification:*"
+      ],
+      "actions": ["entity-remove-classification"]
+    }
+  ],
+  "atlan-add-terms": [
+    {
+      "category": "relationship",
+      "resources": [
+        "relationship-type:*",
 
-                "end-two-entity-type:*",
-                "end-two-entity-classification:",
-                "end-two-entity:{entity}"
-            ],
-            "actions": ["add-relationship"]
-        }
-    ],
-    "atlan-remove-terms": [
-        {
-            "category": "relationship",
-            "resources": [
-                "relationship-type:*",
+        "end-one-entity-type:AtlasGlossaryTerm",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
 
-                "end-one-entity-type:AtlasGlossaryTerm",
-                "end-one-entity-classification:*",
-                "end-one-entity:{entity}",
+        "end-two-entity-type:*",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}"
+      ],
+      "actions": ["add-relationship"]
+    }
+  ],
+  "atlan-remove-terms": [
+    {
+      "category": "relationship",
+      "resources": [
+        "relationship-type:*",
 
-                "end-two-entity-type:*",
-                "end-two-entity-classification:",
-                "end-two-entity:{entity}"
-            ],
-            "actions": ["remove-relationship"]
-        }
-    ]
+        "end-one-entity-type:AtlasGlossaryTerm",
+        "end-one-entity-classification:*",
+        "end-one-entity:*",
+
+        "end-two-entity-type:*",
+        "end-two-entity-classification:*",
+        "end-two-entity:{entity}"
+      ],
+      "actions": ["remove-relationship"]
+    }
+  ]
 }

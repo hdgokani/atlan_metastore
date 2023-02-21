@@ -22,31 +22,46 @@ import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PolicyTransformerTemplate {
     private static final Logger LOG = LoggerFactory.getLogger(PolicyTransformerTemplate.class);
 
-    private String action;
-    private List<TemplatePolicies> policies;
+    private Map<String, List<TemplatePolicy>> actionToPoliciesMap = new HashMap<>();
 
-    public String getAction() {
-        return action;
+    public PolicyTransformerTemplate() {
     }
 
-    public void setAction(String action) {
-        this.action = action;
+    public List<TemplatePolicy> getTemplate(String action) {
+        return actionToPoliciesMap.get(action);
     }
 
-    public List<TemplatePolicies> getPolicies() {
-        return policies;
+    public void fromJsonString(String json) {
+
+        Map<String, List<Map>> templates = AtlasType.fromJson(json, Map.class);
+
+        for (String customAction : templates.keySet()) {
+            List<Map> templatePolicies = templates.get(customAction);
+            List<TemplatePolicy> policies = new ArrayList<>();
+
+            for (Map policy: templatePolicies) {
+                TemplatePolicy templatePolicy = new TemplatePolicy();
+
+                templatePolicy.setActions((List<String>) policy.get("actions"));
+                templatePolicy.setResources((List<String>) policy.get("resources"));
+                templatePolicy.setCategory((String) policy.get("category"));
+
+                policies.add(templatePolicy);
+            }
+
+            this.actionToPoliciesMap.put(customAction, policies);
+        }
     }
 
-    public void setPolicies(List<TemplatePolicies> policies) {
-        this.policies = policies;
-    }
-
-    class TemplatePolicies {
+    class TemplatePolicy {
         private String category;
         private List<String> resources;
         private List<String> actions;

@@ -1,0 +1,324 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.atlas.util;
+
+import org.apache.atlas.ranger.authorization.credutils.CredentialsProviderUtil;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthSchemeProvider;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.AuthSchemes;
+import org.apache.http.config.Lookup;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.impl.auth.SPNegoSchemeFactory;
+import org.elasticsearch.action.admin.indices.open.OpenIndexRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.CreateIndexResponse;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.core.TimeValue;
+import org.elasticsearch.xcontent.XContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.StringTokenizer;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.apache.atlas.repository.audit.ESBasedAuditRepository.INDEX_BACKEND_CONF;
+
+public class AccessAuditLogsIndexCreator {
+    private static final Logger LOG = LoggerFactory.getLogger(AccessAuditLogsIndexCreator.class);
+
+    private static final String ES_CONFIG_USERNAME = "ranger.audit.elasticsearch.user";
+    private static final String ES_CONFIG_PASSWORD = "ranger.audit.elasticsearch.password";
+    private static final String ES_CONFIG_PORT = "ranger.audit.elasticsearch.port";
+    private static final String ES_CONFIG_PROTOCOL = "ranger.audit.elasticsearch.protocol";
+    private static final String ES_CONFIG_INDEX = "ranger.audit.elasticsearch.index";
+    private static final String ES_TIME_INTERVAL = "ranger.audit.elasticsearch.time.interval";
+    private static final String ES_NO_SHARDS = "ranger.audit.elasticsearch.no.shards";
+    private static final String ES_NO_REPLICA = "ranger.audit.elasticsearch.no.replica";
+    private static final String ES_CREDENTIAL_PROVIDER_PATH = "ranger.credential.provider.path";
+    private static final String ES_CREDENTIAL_ALIAS = "ranger.audit.elasticsearch.credential.alias";
+    private static final String ES_BOOTSTRAP_MAX_RETRY = "ranger.audit.elasticsearch.max.retry";
+
+    private static final String DEFAULT_INDEX_NAME = "ranger_audits";
+    private static final String ES_RANGER_AUDIT_SCHEMA_FILE = "ranger_es_schema.json";
+
+    private static final long DEFAULT_ES_TIME_INTERVAL_MS = 60000L;
+    private static final int TRY_UNTIL_SUCCESS = -1;
+    private static final int DEFAULT_ES_BOOTSTRAP_MAX_RETRY = 30;
+
+    private final AtomicLong lastLoggedAt = new AtomicLong(0);
+    private volatile RestHighLevelClient client = null;
+    private Long time_interval;
+
+    private String user;
+    private String password;
+    private String hosts;
+    private String protocol;
+    private String index;
+    private String es_ranger_audit_schema_json;
+
+    private int port;
+    private int max_retry;
+    private int retry_counter = 0;
+    private int no_of_replicas;
+    private int no_of_shards;
+    private boolean is_completed = false;
+
+    public AccessAuditLogsIndexCreator(Configuration configuration) throws IOException {
+        LOG.info("Starting Ranger audit schema setup in ElasticSearch.");
+        time_interval = configuration.getLong(ES_TIME_INTERVAL, DEFAULT_ES_TIME_INTERVAL_MS);
+        user = configuration.getString(ES_CONFIG_USERNAME);
+
+        hosts = getHosts(configuration);
+        port = getPort(configuration);
+        
+        protocol = configuration.getString(ES_CONFIG_PROTOCOL, "http");
+        index = configuration.getString(ES_CONFIG_INDEX, DEFAULT_INDEX_NAME);
+        password = configuration.getString(ES_CONFIG_PASSWORD);
+
+        no_of_replicas = configuration.getInt(ES_NO_REPLICA, 1);
+        no_of_shards = configuration.getInt(ES_NO_SHARDS, 1);
+        max_retry = configuration.getInt(ES_BOOTSTRAP_MAX_RETRY, DEFAULT_ES_BOOTSTRAP_MAX_RETRY);
+
+        String atlasHomeDir  = System.getProperty("atlas.home");
+        String elasticsearchFilePath = (StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "elasticsearch" + File.separator + ES_RANGER_AUDIT_SCHEMA_FILE;
+        Path es_schema_path = Paths.get(elasticsearchFilePath);
+        es_ranger_audit_schema_json = new String(Files.readAllBytes(es_schema_path), StandardCharsets.UTF_8);
+
+        String providerPath = configuration.getString(ES_CREDENTIAL_PROVIDER_PATH);
+        String credentialAlias = configuration.getString(ES_CREDENTIAL_ALIAS, ES_CONFIG_PASSWORD);
+        if (providerPath != null && credentialAlias != null) {
+            if (StringUtils.isBlank(password) || "none".equalsIgnoreCase(password.trim())) {
+                password = configuration.getString(ES_CONFIG_PASSWORD);
+            }
+        }
+    }
+
+    private String connectionString() {
+        return String.format(Locale.ROOT,"User:%s, %s://%s:%s/%s", user, protocol, hosts, port, index);
+    }
+
+    public void init() {
+        LOG.info("Started run method");
+        if (StringUtils.isNotBlank(hosts)) {
+            LOG.info("Elastic search hosts=" + hosts + ", index=" + index);
+            while (!is_completed && (max_retry == TRY_UNTIL_SUCCESS || retry_counter < max_retry)) {
+                try {
+                    LOG.info("Trying to acquire elastic search connection");
+                    if (connect()) {
+                        LOG.info("Connection to elastic search established successfully");
+                        if (createIndex()) {
+                            is_completed = true;
+                            break;
+                        } else {
+                            logErrorMessageAndWait("Error while performing operations on elasticsearch. ", null);
+                        }
+                    } else {
+                        logErrorMessageAndWait(
+                                "Cannot connect to elasticsearch kindly check the elasticsearch related configs. ",
+                                null);
+                    }
+                } catch (Exception ex) {
+                    logErrorMessageAndWait("Error while validating elasticsearch index ", ex);
+                }
+            }
+        } else {
+            LOG.error("elasticsearch hosts values are empty. Please set property " + INDEX_BACKEND_CONF);
+        }
+
+    }
+
+    private synchronized boolean connect() {
+        if (client == null) {
+            synchronized (AccessAuditLogsIndexCreator.class) {
+                if (client == null) {
+                    try {
+                        createClient();
+                    } catch (Exception ex) {
+                        LOG.error("Can't connect to elasticsearch server. host=" + hosts + ", index=" + index + ex);
+                    }
+                }
+            }
+        }
+        return client != null;
+    }
+
+    private void createClient() {
+        try {
+            RestClientBuilder restClientBuilder =
+                    getRestClientBuilder(hosts, protocol, user, password, port);
+            client = new RestHighLevelClient(restClientBuilder);
+        } catch (Throwable t) {
+            lastLoggedAt.updateAndGet(lastLoggedAt -> {
+                long now = System.currentTimeMillis();
+                long elapsed = now - lastLoggedAt;
+                if (elapsed > TimeUnit.MINUTES.toMillis(1)) {
+                    LOG.error("Can't connect to ElasticSearch server: " + connectionString() + t);
+                    return now;
+                } else {
+                    return lastLoggedAt;
+                }
+            });
+        }
+    }
+
+    public static RestClientBuilder getRestClientBuilder(String urls, String protocol, String user, String password, int port) {
+        RestClientBuilder restClientBuilder = RestClient.builder(
+                toArray(urls, ",").stream()
+                        .map(x -> new HttpHost(x, port, protocol))
+                        .<HttpHost>toArray(i -> new HttpHost[i])
+        );
+        if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password) && !user.equalsIgnoreCase("NONE") && !password.equalsIgnoreCase("NONE")) {
+
+            final CredentialsProvider credentialsProvider =
+                    CredentialsProviderUtil.getBasicCredentials(user, password);
+            restClientBuilder.setHttpClientConfigCallback(clientBuilder ->
+                    clientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+
+        } else {
+            LOG.error("ElasticSearch Credentials not provided!!");
+            final CredentialsProvider credentialsProvider = null;
+            restClientBuilder.setHttpClientConfigCallback(clientBuilder ->
+                    clientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+        }
+        return restClientBuilder;
+    }
+
+    private boolean createIndex() {
+        boolean exits = false;
+        if (client == null) {
+            connect();
+        }
+        if (client != null) {
+            try {
+                exits = client.indices().open(new OpenIndexRequest(this.index), RequestOptions.DEFAULT)
+                        .isShardsAcknowledged();
+            } catch (Exception e) {
+                LOG.info("Index " + this.index + " not available.");
+            }
+            if (!exits) {
+                LOG.info("Index does not exist. Attempting to create index:" + this.index);
+                CreateIndexRequest request = new CreateIndexRequest(this.index);
+                if (this.no_of_shards >= 0 && this.no_of_replicas >= 0) {
+                    request.settings(Settings.builder().put("index.number_of_shards", this.no_of_shards)
+                            .put("index.number_of_replicas", this.no_of_replicas));
+                }
+                request.mapping(es_ranger_audit_schema_json, XContentType.JSON);
+                request.setMasterTimeout(TimeValue.timeValueMinutes(1));
+                request.setTimeout(TimeValue.timeValueMinutes(2));
+                try {
+                    CreateIndexResponse createIndexResponse = client.indices().create(request, RequestOptions.DEFAULT);
+                    if (createIndexResponse != null) {
+                        exits = client.indices().open(new OpenIndexRequest(this.index), RequestOptions.DEFAULT)
+                                .isShardsAcknowledged();
+                        if (exits) {
+                            LOG.info("Index " + this.index + " created successfully.");
+                        }
+                    }
+                } catch (Exception e) {
+                    LOG.error("Unable to create Index. Reason:" + e.toString());
+                    e.printStackTrace();
+                }
+            } else {
+                LOG.info("Index " + this.index + " is already created.");
+            }
+        }
+        return exits;
+    }
+
+    private void logErrorMessageAndWait(String msg, Exception exception) {
+        retry_counter++;
+        String attemptMessage;
+        if (max_retry != TRY_UNTIL_SUCCESS) {
+            attemptMessage = (retry_counter == max_retry) ? ("Maximum attempts reached for setting up elasticsearch.")
+                    : ("[retrying after " + time_interval + " ms]. No. of attempts left : "
+                    + (max_retry - retry_counter) + " . Maximum attempts : " + max_retry);
+        } else {
+            attemptMessage = "[retrying after " + time_interval + " ms]";
+        }
+        StringBuilder errorBuilder = new StringBuilder();
+        errorBuilder.append(msg);
+        if (exception != null) {
+            errorBuilder.append("Error : ".concat(exception.getMessage() + ". "));
+        }
+        errorBuilder.append(attemptMessage);
+        LOG.error(errorBuilder.toString());
+        try {
+            Thread.sleep(time_interval);
+        } catch (InterruptedException ex) {
+            LOG.info("sleep interrupted: " + ex.getMessage());
+        }
+    }
+
+    private static String getHosts(Configuration configuration) {
+        StringBuilder urls = new StringBuilder();
+        String indexConf = configuration.getString(INDEX_BACKEND_CONF);
+        String[] hosts = indexConf.split(",");
+        for (String host : hosts) {
+            host = host.trim();
+            String[] hostAndPort = host.split(":");
+            urls.append(hostAndPort[0]);
+
+        }
+        return urls.toString();
+    }
+
+    private static int getPort(Configuration configuration) {
+        int port = 9200;
+        StringBuilder urls = new StringBuilder();
+        String indexConf = configuration.getString(INDEX_BACKEND_CONF);
+        try {
+            String[] hosts = indexConf.split(",");
+            String host = hosts[0];
+            host = host.trim();
+            String[] hostAndPort = host.split(":");
+            port = Integer.parseInt(hostAndPort[1]);
+        } catch (Exception e) {
+            LOG.warn("Setting ES port to default {}", port);
+        }
+
+        return port;
+    }
+
+    public static List<String> toArray(String destListStr, String delim) {
+        List<String> list = new ArrayList<String>();
+        if (StringUtils.isNotBlank(destListStr)) {
+            StringTokenizer tokenizer = new StringTokenizer(destListStr, delim.trim());
+            while (tokenizer.hasMoreTokens()) {
+                list.add(tokenizer.nextToken());
+            }
+        }
+        return list;
+    }
+}
