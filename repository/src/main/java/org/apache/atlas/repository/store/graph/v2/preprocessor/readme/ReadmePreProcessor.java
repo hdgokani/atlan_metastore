@@ -14,6 +14,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
+import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -31,11 +32,13 @@ public class ReadmePreProcessor implements PreProcessor {
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
     private final AtlasGraph graph;
+    private final TaskManagement taskManagement;
 
-    public ReadmePreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
+    public ReadmePreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, TaskManagement taskManagement) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
         this.graph = graph;
+        this.taskManagement = taskManagement;
     }
 
     @Override
@@ -66,7 +69,7 @@ public class ReadmePreProcessor implements PreProcessor {
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
         AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, entity.getAttributes());
         if(vertex != null){
-            HardDeleteHandlerV1 hardDeleteHandlerV1 = new HardDeleteHandlerV1(graph, typeRegistry, null);
+            HardDeleteHandlerV1 hardDeleteHandlerV1 = new HardDeleteHandlerV1(graph, typeRegistry, taskManagement);
             Collection<AtlasVertex> vertices = new ArrayList<>();
             vertices.add(vertex);
             hardDeleteHandlerV1.deleteEntities(vertices);

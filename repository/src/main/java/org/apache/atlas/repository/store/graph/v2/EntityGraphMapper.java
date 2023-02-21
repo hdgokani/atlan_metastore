@@ -582,7 +582,7 @@ public class EntityGraphMapper {
                 break;
 
             case README_ENTITY_TYPE:
-                preProcessor = new ReadmePreProcessor(typeRegistry, entityRetriever, graph);
+                preProcessor = new ReadmePreProcessor(typeRegistry, entityRetriever, graph, taskManagement);
                 break;
 
         }
