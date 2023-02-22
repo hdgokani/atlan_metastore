@@ -729,7 +729,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 		if (isSuperUser || StringUtils.equals(request.getAccessType(), RangerPolicyEngine.SUPER_USER_ACCESS)) {
 			ret.setIsAllowed(isSuperUser);
 			ret.setIsAccessDetermined(true);
-			ret.setPolicyId(-1);
+			ret.setPolicyId("-1");
 			ret.setPolicyPriority(Integer.MAX_VALUE);
 			ret.setReason("superuser");
 		}

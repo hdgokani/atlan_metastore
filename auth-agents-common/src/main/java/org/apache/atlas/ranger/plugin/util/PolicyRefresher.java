@@ -21,6 +21,8 @@ package org.apache.atlas.ranger.plugin.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.atlas.policytransformer.PolicyTransformerImpl;
+import org.apache.atlas.ranger.plugin.model.RangerServiceDef;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -28,6 +30,7 @@ import org.apache.atlas.ranger.admin.client.RangerAdminClient;
 import org.apache.atlas.ranger.authorization.hadoop.config.RangerPluginConfig;
 import org.apache.atlas.ranger.plugin.policyengine.RangerPluginContext;
 import org.apache.atlas.ranger.plugin.service.RangerBasePlugin;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.FileReader;
@@ -37,7 +40,6 @@ import java.io.Writer;
 import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-
 
 public class PolicyRefresher extends Thread {
 	private static final Log LOG = LogFactory.getLog(PolicyRefresher.class);
@@ -66,6 +68,7 @@ public class PolicyRefresher extends Thread {
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> PolicyRefresher(serviceName=" + plugIn.getServiceName() + ").PolicyRefresher()");
 		}
+		LOG.info("==> PolicyRefresher(serviceName=" + plugIn.getServiceName() + ").PolicyRefresher()");
 
 		RangerPluginConfig pluginConfig   = plugIn.getConfig();
 		String             propertyPrefix = pluginConfig.getPropertyPrefix();
@@ -309,6 +312,9 @@ public class PolicyRefresher extends Thread {
 		try {
 			//svcPolicies = rangerAdmin.getServicePoliciesIfUpdated(lastKnownVersion, lastActivationTimeInMillis);
 			RangerRESTUtils restUtils = new RangerRESTUtils();
+			PolicyTransformerImpl transformer = new PolicyTransformerImpl(plugIn.getTypeRegistry());
+
+			svcPolicies = transformer.getPolicies(serviceName, restUtils.getPluginId(serviceName, plugIn.getAppId()));
 
 			//svcPolicies = PolicyTransformerImpl.getPolicies(serviceName, restUtils.getPluginId(serviceName, plugIn.getAppId()));
 			//svcPolicies = null;

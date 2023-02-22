@@ -1,24 +1,29 @@
 {
   "atlan-asset-read": [
     {
+      "policyType": "ACCESS",
       "category": "entity",
       "resources": [
         "entity:{entity}",
-        "entity-type:{entity-type}"
+        "entity-type:{entity-type}",
+        "entity-classification:*"
       ],
       "actions": ["entity-read"]
     }
   ],
   "atlan-asset-update": [
     {
+      "policyType": "ACCESS",
       "category": "entity",
       "resources": [
         "entity:{entity}",
-        "entity-type:{entity-type}"
+        "entity-type:{entity-type}",
+        "entity-classification:*"
       ],
       "actions": ["entity-update"]
     },
     {
+      "policyType": "ACCESS",
       "category": "relationship",
       "resources": [
         "relationship-type:*",
@@ -40,26 +45,32 @@
   ],
   "atlan-api-create": [
     {
+      "policyType": "ACCESS",
       "category": "entity",
       "resources": [
         "entity:{entity}",
-        "entity-type:{entity-type}"
+        "entity-type:{entity-type}",
+        "entity-classification:*"
       ],
       "actions": ["entity-create"]
     }
   ],
   "atlan-api-delete": [
     {
+      "policyType": "ACCESS",
       "category": "entity",
       "resources": [
         "entity:{entity}",
-        "entity-type:{entity-type}"
+        "entity-type:{entity-type}",
+        "entity-classification:*"
       ],
       "actions": ["entity-delete"]
     }
   ],
   "atlan-business-update-metadata": [
     {
+      "policyType": "ACCESS",
+      "category": "entity",
       "resources": [
         "entity:{entity}",
         "entity-type:{entity-type}",
@@ -71,6 +82,7 @@
   ],
   "atlan-entity-add-classification": [
     {
+      "policyType": "ACCESS",
       "category": "entity",
       "resources": [
         "entity:{entity}",
@@ -83,6 +95,7 @@
   ],
   "atlan-entity-remove-classification": [
     {
+      "policyType": "ACCESS",
       "category": "entity",
       "resources": [
         "entity:{entity}",
@@ -95,6 +108,7 @@
   ],
   "atlan-add-terms": [
     {
+      "policyType": "ACCESS",
       "category": "relationship",
       "resources": [
         "relationship-type:*",
@@ -112,6 +126,7 @@
   ],
   "atlan-remove-terms": [
     {
+      "policyType": "ACCESS",
       "category": "relationship",
       "resources": [
         "relationship-type:*",

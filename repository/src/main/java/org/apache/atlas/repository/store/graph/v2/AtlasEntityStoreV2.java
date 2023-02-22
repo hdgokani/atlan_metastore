@@ -23,7 +23,6 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.GraphTransactionInterceptor;
-import org.apache.atlas.PolicyTransformerImpl;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasConfiguration;
@@ -127,11 +126,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final TaskManagement             taskManagement;
     private EntityDiscoveryService discovery;
     private final AtlasRelationshipStore atlasRelationshipStore;
-    private final PolicyTransformerImpl policyTransformer;
 
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
-                              IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement, AtlasRelationshipStore atlasRelationshipStore, PolicyTransformerImpl policyTransformer) {
+                              IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement, AtlasRelationshipStore atlasRelationshipStore) {
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
         this.restoreHandlerV1     = restoreHandlerV1;
@@ -143,7 +141,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.graphHelper          = new GraphHelper(graph);
         this.taskManagement = taskManagement;
         this.atlasRelationshipStore = atlasRelationshipStore;
-        this.policyTransformer = policyTransformer;
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
         } catch (AtlasException e) {
@@ -180,7 +177,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @Override
     @GraphTransaction
     public AtlasEntityWithExtInfo getById(String guid) throws AtlasBaseException {
-        policyTransformer.getPolicies("atlas", "plugId");
         return getById(guid, false, false);
     }
 

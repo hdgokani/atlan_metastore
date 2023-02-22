@@ -64,7 +64,7 @@ public class AuthzAuditEvent extends AuditEventBase {
 	protected String agentId = null;
 
 	@SerializedName("policy")
-	protected long policyId = 0;
+	protected String policyId = "0";
 
 	@SerializedName("reason")
 	protected String resultReason = null;
@@ -130,7 +130,7 @@ public class AuthzAuditEvent extends AuditEventBase {
 	public AuthzAuditEvent(int repositoryType, String repositoryName,
 						   String user, Date eventTime, String accessType,
 						   String resourcePath, String resourceType, String action,
-						   short accessResult, String agentId, long policyId,
+						   short accessResult, String agentId, String policyId,
 						   String resultReason, String aclEnforcer, String sessionId,
 						   String clientType, String clientIP, String requestData, String clusterName) {
 		this(repositoryType, repositoryName, user, eventTime, accessType, resourcePath, resourceType, action, accessResult, agentId,
@@ -140,7 +140,7 @@ public class AuthzAuditEvent extends AuditEventBase {
 	public AuthzAuditEvent(int repositoryType, String repositoryName,
 			String user, Date eventTime, String accessType,
 			String resourcePath, String resourceType, String action,
-			short accessResult, String agentId, long policyId,
+			short accessResult, String agentId, String policyId,
 			String resultReason, String aclEnforcer, String sessionId,
 			String clientType, String clientIP, String requestData, String clusterName, String zoneName) {
 		this(repositoryType, repositoryName, user, eventTime, accessType, resourcePath, resourceType, action, accessResult, agentId,
@@ -151,7 +151,7 @@ public class AuthzAuditEvent extends AuditEventBase {
 	public AuthzAuditEvent(int repositoryType, String repositoryName,
 						   String user, Date eventTime, String accessType,
 						   String resourcePath, String resourceType, String action,
-						   short accessResult, String agentId, long policyId,
+						   short accessResult, String agentId, String policyId,
 						   String resultReason, String aclEnforcer, String sessionId,
 						   String clientType, String clientIP, String requestData, String clusterName, String zoneName, Long policyVersion) {
 		this.repositoryType = repositoryType;
@@ -327,7 +327,7 @@ public class AuthzAuditEvent extends AuditEventBase {
 	/**
 	 * @return the policyId
 	 */
-	public long getPolicyId() {
+	public String getPolicyId() {
 		return policyId;
 	}
 
@@ -335,7 +335,7 @@ public class AuthzAuditEvent extends AuditEventBase {
 	 * @param policyId
 	 *            the policyId to set
 	 */
-	public void setPolicyId(long policyId) {
+	public void setPolicyId(String policyId) {
 		this.policyId = policyId;
 	}
 

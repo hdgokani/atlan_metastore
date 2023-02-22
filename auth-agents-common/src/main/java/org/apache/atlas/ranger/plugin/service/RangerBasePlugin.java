@@ -19,6 +19,7 @@
 
 package org.apache.atlas.ranger.plugin.service;
 
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -78,6 +79,7 @@ public class RangerBasePlugin {
 	private       RangerRoles                 roles;
 	private       RangerUserStore             userStore;
 	private final List<RangerChainedPlugin>   chainedPlugins;
+	private 	  AtlasTypeRegistry 		  typeRegistry = null;
 
 	public RangerBasePlugin(String serviceType, String appId) {
 		this(new RangerPluginConfig(serviceType, null, appId, null, null, null));
@@ -85,6 +87,11 @@ public class RangerBasePlugin {
 
 	public RangerBasePlugin(String serviceType, String serviceName, String appId) {
 		this(new RangerPluginConfig(serviceType, serviceName, appId, null, null, null));
+	}
+
+	public RangerBasePlugin(String serviceType, String serviceName, AtlasTypeRegistry typeRegistry) {
+		this(new RangerPluginConfig(serviceType, serviceName, null, null, null, null));
+		this.typeRegistry = typeRegistry;
 	}
 
 	public RangerBasePlugin(RangerPluginConfig pluginConfig) {
@@ -226,6 +233,14 @@ public class RangerBasePlugin {
 	}
 
 	public AuditProviderFactory getAuditProviderFactory() { return RangerBasePlugin.getAuditProviderFactory(getServiceName()); }
+
+	public AtlasTypeRegistry getTypeRegistry() {
+		return typeRegistry;
+	}
+
+	public void setTypeRegistry(AtlasTypeRegistry typeRegistry) {
+		this.typeRegistry = typeRegistry;
+	}
 
 	public void init() {
 		cleanup();
@@ -938,7 +953,7 @@ public class RangerBasePlugin {
 				accessResult.setIsAllowed(isSuccess);
 
 				if(! isSuccess) {
-					accessResult.setPolicyId(-1);
+					accessResult.setPolicyId("-1");
 				}
 
 				resultProcessor.processResult(accessResult);

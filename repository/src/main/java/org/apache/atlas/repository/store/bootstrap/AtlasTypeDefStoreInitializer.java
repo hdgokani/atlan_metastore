@@ -379,15 +379,11 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
     private void startInternal() {
         try {
-            //KeycloakClient.getKeycloakClient().getAllGroups();
-            //KeycloakClient.getKeycloakClient().getAllRoles();
-            //KeycloakClient.getKeycloakClient().getAllUsers();
-
             typeDefStore.init();
             loadBootstrapTypeDefs();
             typeDefStore.notifyLoadCompletion();
             try {
-                AtlasAuthorizerFactory.getAtlasAuthorizer();
+                AtlasAuthorizerFactory.getAtlasAuthorizer(typeRegistry);
             } catch (Throwable t) {
                 LOG.error("AtlasTypeDefStoreInitializer.instanceIsActive(): Unable to obtain AtlasAuthorizer", t);
             }

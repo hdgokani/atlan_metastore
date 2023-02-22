@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas;
+package org.apache.atlas.policytransformer;
 
 import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
@@ -53,6 +53,7 @@ public class PolicyTransformerTemplate {
                 templatePolicy.setActions((List<String>) policy.get("actions"));
                 templatePolicy.setResources((List<String>) policy.get("resources"));
                 templatePolicy.setCategory((String) policy.get("category"));
+                templatePolicy.setPolicyType((String) policy.get("policyType"));
 
                 policies.add(templatePolicy);
             }
@@ -62,9 +63,18 @@ public class PolicyTransformerTemplate {
     }
 
     class TemplatePolicy {
+        private String policyType;
         private String category;
         private List<String> resources;
         private List<String> actions;
+
+        public String getPolicyType() {
+            return policyType;
+        }
+
+        public void setPolicyType(String policyType) {
+            this.policyType = policyType;
+        }
 
         public String getCategory() {
             return category;

@@ -1437,13 +1437,13 @@ public class RangerPolicyRepository {
 
     static private final class AuditInfo {
         final boolean isAudited;
-        final long    auditPolicyId;
+        final String    auditPolicyId;
 
-        AuditInfo(boolean isAudited, long auditPolicyId) {
+        AuditInfo(boolean isAudited, String auditPolicyId) {
             this.isAudited     = isAudited;
             this.auditPolicyId = auditPolicyId;
         }
-        long getAuditPolicyId() {
+        String getAuditPolicyId() {
             return this.auditPolicyId;
         }
         boolean getIsAudited() {
