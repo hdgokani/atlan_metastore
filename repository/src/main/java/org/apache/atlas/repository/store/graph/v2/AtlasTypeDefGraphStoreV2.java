@@ -495,9 +495,9 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         return getTypeNamesFromEdges(vertex, AtlasGraphUtilsV2.ENTITYTYPE_EDGE_LABEL);
     }
 
-    boolean getSkipDisplayNameUniquenessCheckProperty(AtlasVertex vertex) {
-        Boolean skipDisplayNameUniquenessCheckProperty =  vertex.getProperty(Constants.TYPE_SKIP_DISPLAYNAME_UNIQUENESS_CHECK, Boolean.class);
-        return skipDisplayNameUniquenessCheckProperty != null ? skipDisplayNameUniquenessCheckProperty : false;
+    boolean getAllowDuplicateDisplayNameProperty(AtlasVertex vertex) {
+        Boolean allowDuplicateDisplayNameProperty =  vertex.getProperty(Constants.TYPE_ALLOW_DUPLICATE_DISPLAY_NAME, Boolean.class);
+        return allowDuplicateDisplayNameProperty != null ? allowDuplicateDisplayNameProperty : false;
     }
 
     /**
