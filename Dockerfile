@@ -73,5 +73,12 @@ RUN cd /opt/apache-atlas/bin \
 
 RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true
+    
+
+RUN groupadd atlas && \
+    useradd -g atlas -ms /bin/bash atlas && \
+    mkdir -p /home/atlas/dist && \
+    mkdir -p /home/atlas/scripts && \
+    chown -R atlas:atlas /home/atlas
 
 VOLUME ["/opt/apache-atlas/conf", "/opt/apache-atlas/logs"]
