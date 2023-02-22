@@ -80,13 +80,14 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
         if (ret != null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_ALREADY_EXISTS, classificationDef.getName());
         }
-        ret = typeDefStore.findTypeVertexByDisplayName(
-                classificationDef.getDisplayName(), TypeCategory.TRAIT);
-        if (ret != null && !classificationDef.getAllowDuplicateDisplayName()) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS, classificationDef.getDisplayName());
+        if(!classificationDef.getAllowDuplicateDisplayName()) {
+            ret = typeDefStore.findTypeVertexByDisplayName(
+                    classificationDef.getDisplayName(), TypeCategory.TRAIT);
+            if (ret != null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS, classificationDef.getDisplayName());
+            }
         }
-
-        ret = typeDefStore.createTypeVertex(classificationDef);
+            ret = typeDefStore.createTypeVertex(classificationDef);
 
         updateVertexPreCreate(classificationDef, (AtlasClassificationType)type, ret);
 
@@ -108,7 +109,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
         updateVertexAddReferences(classificationDef, vertex);
 
         AtlasClassificationDef ret = toClassificationDef(vertex);
-        ret.setAllowDuplicateDisplayName(classificationDef.getAllowDuplicateDisplayName());
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasClassificationDefStoreV1.create({}, {}): {}", classificationDef, preCreateResult, ret);
         }
@@ -189,13 +190,12 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
             throw new AtlasBaseException(AtlasErrorCode.MISSING_CLASSIFICATION_DISPLAY_NAME);
         }
 
-        //validate uniqueness of display name
-        AtlasVertex ret = typeDefStore.findTypeVertexByDisplayName(
-                classifiDef.getDisplayName(), DataTypes.TypeCategory.TRAIT);
-        if (ret != null && (
-                classifiDef.getGuid() == null || !classifiDef.getGuid().equals(ret.getProperty(Constants.GUID_PROPERTY_KEY, String.class)))
-                 && (!classifiDef.getAllowDuplicateDisplayName())) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS, classifiDef.getDisplayName());
+        if(!classifiDef.getAllowDuplicateDisplayName()){
+            AtlasVertex ret = typeDefStore.findTypeVertexByDisplayName(
+                    classifiDef.getDisplayName(), DataTypes.TypeCategory.TRAIT);
+            if (ret != null && (classifiDef.getGuid() == null || !classifiDef.getGuid().equals(ret.getProperty(Constants.GUID_PROPERTY_KEY, String.class)))){
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_WITH_DISPLAY_NAME_ALREADY_EXISTS, classifiDef.getDisplayName());
+            }
         }
     }
 
@@ -213,7 +213,6 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
         AtlasClassificationDef ret = StringUtils.isNotBlank(classifiDef.getGuid())
                   ? updateByGuid(classifiDef.getGuid(), classifiDef) : updateByName(classifiDef.getName(), classifiDef);
 
-        ret.setAllowDuplicateDisplayName(classifiDef.getAllowDuplicateDisplayName());
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasClassificationDefStoreV1.update({}): {}", classifiDef, ret);
         }
