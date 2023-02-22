@@ -92,7 +92,7 @@ jobs:
       - name: Scan Image
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'ubuntu:18.04'
+          image-ref: 'ubuntu:23.04'
           vuln-type: 'os,library'
           format: 'sarif'
           output: 'trivy-image-results.sarif'
