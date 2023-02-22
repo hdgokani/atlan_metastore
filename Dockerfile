@@ -83,4 +83,5 @@ RUN groupadd atlas && \
     mkdir -p /home/atlas/scripts && \
     chown -R atlas:atlas /home/atlas
 
+
 VOLUME ["/opt/apache-atlas/conf", "/opt/apache-atlas/logs"]
