@@ -6,9 +6,9 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v1.HardDeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
@@ -20,9 +20,6 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Collection;
 
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 
@@ -60,19 +57,17 @@ public class ReadmePreProcessor implements PreProcessor {
         }
     }
 
-    private void processCreateReadme(AtlasStruct entity) throws AtlasBaseException {
+    private void processCreateReadme(AtlasEntity entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateReadme");
-        String entityQualifiedName = createQualifiedName((AtlasEntity) entity);
+        String entityQualifiedName = createQualifiedName(entity);
 
         entity.setAttribute(QUALIFIED_NAME, entityQualifiedName);
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
         AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, entity.getAttributes());
         if(vertex != null){
-            HardDeleteHandlerV1 hardDeleteHandlerV1 = new HardDeleteHandlerV1(graph, typeRegistry, taskManagement);
-            Collection<AtlasVertex> vertices = new ArrayList<>();
-            vertices.add(vertex);
-            hardDeleteHandlerV1.deleteEntities(vertices);
+            String guidOfReadme = GraphHelper.getGuid(vertex);
+            entity.setGuid(guidOfReadme);
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
