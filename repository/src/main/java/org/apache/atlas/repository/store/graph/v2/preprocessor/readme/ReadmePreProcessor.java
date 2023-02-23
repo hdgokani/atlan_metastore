@@ -49,7 +49,7 @@ public class ReadmePreProcessor implements PreProcessor {
 
         switch (operation) {
             case CREATE:
-                processCreateReadme(entity);
+                processCreateReadme(entity, context);
                 break;
             case UPDATE:
                 processUpdateReadme(entity, context.getVertex(entity.getGuid()));
@@ -57,7 +57,7 @@ public class ReadmePreProcessor implements PreProcessor {
         }
     }
 
-    private void processCreateReadme(AtlasEntity entity) throws AtlasBaseException {
+    private void processCreateReadme(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateReadme");
         String entityQualifiedName = createQualifiedName(entity);
 
@@ -68,6 +68,7 @@ public class ReadmePreProcessor implements PreProcessor {
         if(vertex != null){
             String guidOfReadme = GraphHelper.getGuid(vertex);
             entity.setGuid(guidOfReadme);
+            context.cacheEntity(guidOfReadme, vertex, entityType);
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);

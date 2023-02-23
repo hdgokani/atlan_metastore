@@ -370,7 +370,6 @@ public class EntityGraphMapper {
                     reqContext.getDeletedEdgesIds().clear();
 
                     String guid = createdEntity.getGuid();
-                    AtlasVertex vertex = context.getVertex(guid);
                     AtlasEntityType entityType = context.getType(guid);
 
                     PreProcessor preProcessor = getPreProcessor(entityType.getTypeName());
@@ -378,9 +377,9 @@ public class EntityGraphMapper {
                         preProcessor.processAttributes(createdEntity, context, CREATE);
                         if(entityType.getTypeName().equals(README_ENTITY_TYPE))
                             guid = createdEntity.getGuid();
-                            vertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, createdEntity.getAttributes());
                     }
 
+                    AtlasVertex vertex = context.getVertex(guid);
                     mapAttributes(createdEntity, entityType, vertex, CREATE, context);
                     mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
 
