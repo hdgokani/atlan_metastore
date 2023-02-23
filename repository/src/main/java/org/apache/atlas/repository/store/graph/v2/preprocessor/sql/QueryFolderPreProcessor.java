@@ -134,6 +134,10 @@ public class QueryFolderPreProcessor implements PreProcessor {
 
         }
 
+        if(currentCollectionQualifiedName.equals(newCollectionQualifiedName)) {
+            return;
+        }
+
         processParentCollectionUpdation(vertex, currentCollectionQualifiedName, newCollectionQualifiedName);
 
         LOG.info("Moved folder {} from collection {} to collection {}", entity.getAttribute(QUALIFIED_NAME), currentCollectionQualifiedName, newCollectionQualifiedName);
