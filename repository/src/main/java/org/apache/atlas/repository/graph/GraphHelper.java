@@ -34,6 +34,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -1145,12 +1146,20 @@ public final class GraphHelper {
         return element.getProperty(MODIFIED_BY_KEY, String.class);
     }
 
+    public static void setModifiedByAsString(AtlasElement element, String modifiedBy){
+         element.setProperty(MODIFIED_BY_KEY, modifiedBy);
+    }
+
     public static long getCreatedTime(AtlasElement element){
         return element.getProperty(TIMESTAMP_PROPERTY_KEY, Long.class);
     }
 
     public static long getModifiedTime(AtlasElement element){
         return element.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+    }
+
+    public static void setModifiedTime(AtlasElement element, Long modifiedTime) {
+        element.setProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, modifiedTime);
     }
 
     public static boolean isActive(AtlasEntity entity) {

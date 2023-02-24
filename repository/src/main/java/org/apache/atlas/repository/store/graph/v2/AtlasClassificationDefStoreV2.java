@@ -41,6 +41,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPE_SKIP_DISPLAYNAME_UNIQUENESS_CHECK;
 
 /**
  * ClassificationDef store in v1 format.
@@ -366,12 +367,14 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
                                        AtlasClassificationType classificationType,
                                        AtlasVertex             vertex) throws AtlasBaseException {
         AtlasStructDefStoreV2.updateVertexPreCreate(classificationDef, classificationType, vertex, typeDefStore);
+        vertex.setProperty(TYPE_SKIP_DISPLAYNAME_UNIQUENESS_CHECK, classificationDef.getSkipDisplayNameUniquenessCheck());
     }
 
     private void updateVertexPreUpdate(AtlasClassificationDef  classificationDef,
                                        AtlasClassificationType classificationType,
                                        AtlasVertex             vertex) throws AtlasBaseException {
         AtlasStructDefStoreV2.updateVertexPreUpdate(classificationDef, classificationType, vertex, typeDefStore);
+        vertex.setProperty(TYPE_SKIP_DISPLAYNAME_UNIQUENESS_CHECK, classificationDef.getSkipDisplayNameUniquenessCheck());
     }
 
     private void updateVertexAddReferences(AtlasClassificationDef classificationDef, AtlasVertex vertex) throws AtlasBaseException {
@@ -392,6 +395,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
             ret.setSuperTypes(typeDefStore.getSuperTypeNames(vertex));
             ret.setEntityTypes(typeDefStore.getEntityTypeNames(vertex));
+            ret.setSkipDisplayNameUniquenessCheck(typeDefStore.getSkipDisplayNameUniquenessCheckProperty(vertex));
         }
 
         return ret;

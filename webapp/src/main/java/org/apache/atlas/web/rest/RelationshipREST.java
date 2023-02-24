@@ -36,10 +36,12 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
+import static org.apache.atlas.accesscontrol.AccessControlUtil.ensureNonAccessControlRelType;
+
 /**
  * REST interface for entity relationships.
  */
-@Path("v2/relationship")
+@Path("relationship")
 @Singleton
 @Service
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
@@ -66,7 +68,7 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.create(" + relationship + ")");
             }
-
+            ensureNonAccessControlRelType(relationship.getTypeName());
             return relationshipStore.create(relationship);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -85,7 +87,9 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.createOrUpdate(" + relationships + ")");
             }
-
+            for (AtlasRelationship relationship : relationships) {
+                ensureNonAccessControlRelType(relationship.getTypeName());
+            }
             return relationshipStore.createOrUpdate(relationships);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -104,7 +108,7 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.update(" + relationship + ")");
             }
-
+            ensureNonAccessControlRelType(relationship.getTypeName());
             return relationshipStore.update(relationship);
         } finally {
             AtlasPerfTracer.log(perf);
