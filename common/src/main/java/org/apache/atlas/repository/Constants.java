@@ -131,7 +131,6 @@ public final class Constants {
      */
     public static final String CONNECTION_ENTITY_TYPE       = "Connection";
     public static final String QUERY_ENTITY_TYPE            = "Query";
-<<<<<<< Updated upstream
     public static final String README_ENTITY_TYPE           = "Readme";
     public static final String QUERY_FOLDER_ENTITY_TYPE     = "Folder";
     public static final String QUERY_COLLECTION_ENTITY_TYPE = "Collection";
@@ -144,19 +143,6 @@ public final class Constants {
     public static final String PURPOSE_ENTITY_TYPE = "Purpose";
     public static final String POLICY_ENTITY_TYPE  = "Policy";
 
-=======
-    public static final String QUERY_FOLDER_ENTITY_TYPE     = "Folder";
-    public static final String QUERY_COLLECTION_ENTITY_TYPE = "Collection";
-    public static final String README_ENTITY_TYPE           = "Readme";
-    /*
-     * Purpose / Persona
-     */
-    public static final String ACCESS_CONTROL_ENTITY_TYPE = "AccessControl";
-    public static final String PERSONA_ENTITY_TYPE = "Persona";
-    public static final String PURPOSE_ENTITY_TYPE = "Purpose";
-    public static final String POLICY_ENTITY_TYPE  = "Policy";
-
->>>>>>> Stashed changes
     public static final List<String> ACCESS_CONTROL_ENTITY_TYPES  = Arrays.asList(PERSONA_ENTITY_TYPE, PURPOSE_ENTITY_TYPE, POLICY_ENTITY_TYPE, ACCESS_CONTROL_ENTITY_TYPE);
 
     public static final String ACCESS_CONTROL_RELATION_TYPE  = "access_control_policies";
