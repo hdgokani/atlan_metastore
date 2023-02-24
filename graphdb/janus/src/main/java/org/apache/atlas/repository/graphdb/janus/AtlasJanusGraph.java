@@ -28,19 +28,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
-import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
-import org.apache.atlas.repository.graphdb.AtlasGraphTraversal;
-import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
-import org.apache.atlas.repository.graphdb.AtlasIndexQueryParameter;
-import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
-import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.graphdb.GraphIndexQueryParameters;
-import org.apache.atlas.repository.graphdb.GremlinVersion;
+import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.graphdb.janus.query.AtlasJanusGraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.atlas.type.AtlasType;
@@ -61,12 +49,7 @@ import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONWriter;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphFactory;
-import org.janusgraph.core.JanusGraphIndexQuery;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.SchemaViolationException;
+import org.janusgraph.core.*;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.core.schema.Parameter;
@@ -80,12 +63,9 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.apache.atlas.AtlasErrorCode.RELATIONSHIP_CREATE_INVALID_PARAMS;
 import static org.apache.atlas.repository.Constants.*;
@@ -398,6 +378,13 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
     @Override
+    public List<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> getVertices(String... vertexIds) {
+        Iterator<Vertex> it = getGraph().vertices(vertexIds);
+        List<Vertex> vertices = getElements(it);
+        return GraphDbObjectFactory.createVertices(this, vertices);
+    }
+
+    @Override
     public void releaseGremlinScriptEngine(ScriptEngine scriptEngine) {
         if (scriptEngine instanceof GremlinGroovyScriptEngine) {
             try {
@@ -486,12 +473,19 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
 
-    String getIndexFieldName(AtlasPropertyKey propertyKey, JanusGraphIndex graphIndex, Parameter ... parameters) {
+    String getIndexFieldName(AtlasPropertyKey propertyKey, JanusGraphIndex graphIndex, Parameter... parameters) {
         PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
-        if(parameters == null) {
+        if (parameters == null) {
             parameters = EMPTY_PARAMETER_ARRAY;
         }
         return janusGraph.getIndexSerializer().getDefaultFieldName(janusKey, parameters, graphIndex.getBackingIndex());
+    }
+
+    private static <T> List<T> getElements(Iterator<T> it) {
+        if (!it.hasNext()) {
+            return Collections.EMPTY_LIST;
+        }
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, Spliterator.ORDERED), true).collect(Collectors.toList());
     }
 
 

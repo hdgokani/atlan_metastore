@@ -18,6 +18,7 @@
 package org.apache.atlas.discovery;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -65,6 +66,8 @@ import javax.inject.Inject;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.*;
 import static org.apache.atlas.SortOrder.ASCENDING;
@@ -1004,15 +1007,18 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
         SearchParams searchParams = ret.getSearchParameters();
         try {
-            if(LOG.isDebugEnabled()){
+            if (LOG.isDebugEnabled()) {
                 LOG.debug("Preparing search results for ({})", ret.getSearchParameters());
             }
-            Iterator<Result> iterator = indexQueryResult.getIterator();
+            List<Result> indexResults = Lists.newArrayList(indexQueryResult.getIterator());
             boolean showSearchScore = searchParams.getShowSearchScore();
 
-            while (iterator.hasNext()) {
-                Result result = iterator.next();
-                AtlasVertex vertex = result.getVertex();
+            Map<String, AtlasVertex> verticesMap = getVerticesMap(indexResults);
+            Iterator<Result> indexResultsIterator = indexResults.iterator();
+
+            while (indexResultsIterator.hasNext()) {
+                Result result = indexResultsIterator.next();
+                AtlasVertex vertex = verticesMap.getOrDefault(result.getVertexId(), result.getVertex());
 
                 if (vertex == null) {
                     LOG.warn("vertex in null");
@@ -1059,9 +1065,14 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 ret.addEntity(header);
             }
         } catch (Exception e) {
-                throw e;
+            throw e;
         }
         scrubSearchResults(ret, searchParams.getSuppressLogs());
+    }
+
+    private Map<String, AtlasVertex> getVerticesMap(List<Result> results) {
+        String[] vertexIds = results.stream().map(r -> r.getVertexId()).collect(Collectors.toList()).toArray(new String[0]);
+        return (Map<String, AtlasVertex>) graph.getVertices(vertexIds).stream().collect(Collectors.toMap(v -> ((AtlasVertex) v).getId(), Function.identity()));
     }
 
     private Map<String, Object> getMap(String key, Object value) {
@@ -1071,11 +1082,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     public List<AtlasEntityHeader> searchUsingTermQualifiedName(int from, int size, String termQName,
-                                                        Set<String> attributes, Set<String>relationAttributes) throws AtlasBaseException {
+                                                                Set<String> attributes, Set<String> relationAttributes) throws AtlasBaseException {
         IndexSearchParams indexSearchParams = new IndexSearchParams();
         Map<String, Object> dsl = getMap("from", from);
         dsl.put("size", size);
-        dsl.put("query", getMap("term", getMap("__meanings", getMap("value",termQName))));
+        dsl.put("query", getMap("term", getMap("__meanings", getMap("value", termQName))));
 
         indexSearchParams.setDsl(dsl);
         indexSearchParams.setAttributes(attributes);
