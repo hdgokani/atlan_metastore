@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterators;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
@@ -34,9 +33,6 @@ import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.janusgraph.core.JanusGraphIndexQuery;
 import org.janusgraph.core.JanusGraphVertex;
-
-import java.util.Iterator;
-import java.util.Set;
 
 /**
  * Janus implementation of AtlasIndexQuery.
@@ -138,11 +134,6 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
         @Override
         public AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> getVertex() {
             return GraphDbObjectFactory.createVertex(graph, source.getElement());
-        }
-
-        @Override
-        public String getVertexId() {
-            return String.valueOf(source.getElement().id());
         }
 
         @Override
