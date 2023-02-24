@@ -59,6 +59,7 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.Category
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.readme.ReadmePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryFolderPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryPreProcessor;
@@ -369,14 +370,16 @@ public class EntityGraphMapper {
                     reqContext.getDeletedEdgesIds().clear();
 
                     String guid = createdEntity.getGuid();
-                    AtlasVertex vertex = context.getVertex(guid);
                     AtlasEntityType entityType = context.getType(guid);
 
                     PreProcessor preProcessor = getPreProcessor(entityType.getTypeName());
                     if (preProcessor != null) {
                         preProcessor.processAttributes(createdEntity, context, CREATE);
+                        if(entityType.getTypeName().equals(README_ENTITY_TYPE))
+                            guid = createdEntity.getGuid();
                     }
 
+                    AtlasVertex vertex = context.getVertex(guid);
                     mapAttributes(createdEntity, entityType, vertex, CREATE, context);
                     mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
 
@@ -580,6 +583,9 @@ public class EntityGraphMapper {
                 preProcessor = new QueryCollectionPreProcessor(typeRegistry, entityRetriever);
                 break;
 
+            case README_ENTITY_TYPE:
+                preProcessor = new ReadmePreProcessor(typeRegistry, entityRetriever, graph);
+                break;
         }
 
         return preProcessor;

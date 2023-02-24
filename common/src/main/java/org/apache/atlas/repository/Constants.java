@@ -129,6 +129,7 @@ public final class Constants {
     public static final String QUERY_ENTITY_TYPE            = "Query";
     public static final String QUERY_FOLDER_ENTITY_TYPE     = "QueryFolder";
     public static final String QUERY_COLLECTION_ENTITY_TYPE = "QueryCollection";
+    public static final String README_ENTITY_TYPE           = "Readme";
 
 
     /**
