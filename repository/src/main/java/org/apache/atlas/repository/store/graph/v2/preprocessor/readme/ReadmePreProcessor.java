@@ -20,7 +20,10 @@ import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
+import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 
 public class ReadmePreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(GlossaryPreProcessor.class);
@@ -62,18 +65,25 @@ public class ReadmePreProcessor implements PreProcessor {
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
         AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, entity.getAttributes());
-        if(vertex != null){
+        if(vertex != null && !vertex.getProperty(STATE_PROPERTY_KEY, String.class).equals(DELETED.name())){
             String guidOfExistingReadme = GraphHelper.getGuid(vertex);
             entity.setGuid(guidOfExistingReadme);
             context.cacheEntity(guidOfExistingReadme, vertex, entityType);
         }
+        else if(vertex != null){
+            vertex.setProperty(STATE_PROPERTY_KEY,ACTIVE.name());
+            context.cacheEntity(entity.getGuid(), vertex, entityType);
+        }
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
-    private void processUpdateReadme(AtlasStruct entity, AtlasVertex vertex){
+    private void processUpdateReadme(AtlasStruct entity, AtlasVertex vertex) {
 
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateReadme");
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
+        if(vertex.getProperty(STATE_PROPERTY_KEY, String.class).equals(DELETED.name())){
+            vertex.setProperty(STATE_PROPERTY_KEY,ACTIVE.name());
+        }
 
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         RequestContext.get().endMetricRecord(metricRecorder);
