@@ -91,7 +91,7 @@ public class RangerBasePlugin {
 
 	public RangerBasePlugin(String serviceType, String serviceName, AtlasTypeRegistry typeRegistry) {
 		this(new RangerPluginConfig(serviceType, serviceName, null, null, null, null));
-		this.typeRegistry = typeRegistry;
+		setTypeRegistry(typeRegistry);
 	}
 
 	public RangerBasePlugin(RangerPluginConfig pluginConfig) {

@@ -146,9 +146,9 @@ public class PolicyRefresher extends Thread {
 	}
 
 	public void startRefresher() {
-		//loadRoles();
+		loadRoles();
 		loadPolicy();
-		//loadUserStore();
+		loadUserStore();
 		super.start();
 
 		policyDownloadTimer = new Timer("policyDownloadTimer", true);
@@ -210,9 +210,9 @@ public class PolicyRefresher extends Thread {
 			try {
 				trigger = policyDownloadQueue.take();
 
-				//loadRoles();
+				loadRoles();
 				loadPolicy();
-				//loadUserStore();
+				loadUserStore();
 			} catch(InterruptedException excp) {
 				LOG.info("PolicyRefresher(serviceName=" + serviceName + ").run(): interrupted! Exiting thread", excp);
 				break;
@@ -314,7 +314,7 @@ public class PolicyRefresher extends Thread {
 
 		try {
 
-			if (serviceName.equals("atlas") ) {
+			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null) {
 				RangerRESTUtils restUtils = new RangerRESTUtils();
 				PolicyTransformerImpl transformer = new PolicyTransformerImpl(plugIn.getTypeRegistry());
 

@@ -21,8 +21,6 @@ package org.apache.atlas.ranger.plugin.util;
 
 import atlas.keycloak.client.KeycloakClient;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -123,6 +121,7 @@ public class KeycloakUserStore {
                         .collect(Collectors.toList()));
 
         rangerRoles.setRangerRoles(roleSet);
+        rangerRoles.setServiceName(serviceName);
 
         Date current = new Date();
         rangerRoles.setRoleUpdateTime(current);

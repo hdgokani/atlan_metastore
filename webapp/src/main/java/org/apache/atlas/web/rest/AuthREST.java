@@ -71,7 +71,7 @@ public class AuthREST {
     }
 
     @GET
-    @Path("download/roles")
+    @Path("download/roles/{serviceName}")
     @Timed
     public RangerRoles downloadRoles(@PathParam("serviceName") final String serviceName,
                                           @QueryParam("pluginId") String pluginId,
@@ -98,7 +98,7 @@ public class AuthREST {
     }
 
     @GET
-    @Path("download/userStore")
+    @Path("download/userStore/{serviceName}")
     @Timed
     public RangerUserStore downloadUserStore(@PathParam("serviceName") final String serviceName,
                                      @QueryParam("pluginId") String pluginId,

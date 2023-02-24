@@ -45,7 +45,7 @@ public class RangerUserStoreProvider {
 	private final String            serviceType;
 	private final String            serviceName;
 	private final RangerAdminClient rangerAdmin;
-	//private final KeycloakUserStore keycloakUserStore;
+	private final KeycloakUserStore keycloakUserStore;
 
 	private final String            cacheFileName;
 	private final String			cacheFileNamePrefix;
@@ -67,8 +67,7 @@ public class RangerUserStoreProvider {
 		this.serviceType = serviceType;
 		this.serviceName = serviceName;
 		this.rangerAdmin = rangerAdmin;
-		//this.keycloakUserStore = new KeycloakUserStore(serviceType, appId, serviceName, cacheDir);
-
+		this.keycloakUserStore = new KeycloakUserStore(serviceType);
 
 		if (StringUtils.isEmpty(appId)) {
 			appId = serviceType;
@@ -131,21 +130,12 @@ public class RangerUserStoreProvider {
 
 		try {
 			//load userGroupRoles from ranger admin
-			//RangerUserStore userStore = loadUserStoreFromAdmin();
-
-			RangerUserStore currentUserStore = loadUserStoreFromCache();
-
-			long currentUpdatedTimeInCache = 0L;
-			if (currentUserStore.getUserStoreUpdateTime() != null) {
-				currentUpdatedTimeInCache = currentUserStore.getUserStoreUpdateTime().getTime();
-			}
-
-			RangerUserStore userStore = loadUserStoreFromAdmin(currentUpdatedTimeInCache);
+			RangerUserStore userStore = loadUserStoreFromAdmin();
 
 			if (userStore == null) {
 				//if userGroupRoles fetch from ranger Admin Fails, load from cache
 				if (!rangerUserStoreSetInPlugin) {
-					userStore = currentUserStore;
+					userStore = loadUserStoreFromCache();
 				}
 			}
 
@@ -187,7 +177,7 @@ public class RangerUserStoreProvider {
 		}
 	}
 
-	private RangerUserStore loadUserStoreFromAdmin(long currentUpdatedTimeInCache) throws RangerServiceNotFoundException {
+	private RangerUserStore loadUserStoreFromAdmin() throws RangerServiceNotFoundException {
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerUserStoreProvider(serviceName=" + serviceName + ").loadUserStoreFromAdmin()");
@@ -202,12 +192,15 @@ public class RangerUserStoreProvider {
 		}
 
 		try {
-			userStore = rangerAdmin.getUserStoreIfUpdated(lastUpdateTimeInMillis, lastActivationTimeInMillis);
+			if ("atlas".equals(serviceName)) {
+				userStore = keycloakUserStore.loadUserStoreIfUpdated(lastUpdateTimeInMillis);
+			} else {
+				userStore = rangerAdmin.getUserStoreIfUpdated(lastUpdateTimeInMillis, lastActivationTimeInMillis);
+			}
 
 			boolean isUpdated = userStore != null;
 
 			if(isUpdated) {
-				//userStore = keycloakUserStore.loadUserStore();
 
 				long newVersion = userStore.getUserStoreVersion() == null ? -1 : userStore.getUserStoreVersion().longValue();
 				saveToCache(userStore);

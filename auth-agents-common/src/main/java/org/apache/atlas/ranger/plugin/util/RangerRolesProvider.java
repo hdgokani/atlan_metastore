@@ -44,7 +44,7 @@ public class RangerRolesProvider {
 	private final String            serviceType;
 	private final String            serviceName;
 	private final RangerAdminClient rangerAdmin;
-	//private final KeycloakUserStore keycloakUserStore;
+	private final KeycloakUserStore keycloakUserStore;
 
 	private final String            cacheFileName;
 	private final String			cacheFileNamePrefix;
@@ -66,7 +66,7 @@ public class RangerRolesProvider {
 		this.serviceType = serviceType;
 		this.serviceName = serviceName;
 		this.rangerAdmin = rangerAdmin;
-		//this.keycloakUserStore = new KeycloakUserStore(serviceType, appId, serviceName, cacheDir);
+		this.keycloakUserStore = new KeycloakUserStore(serviceType);
 
 
 		if (StringUtils.isEmpty(appId)) {
@@ -113,14 +113,6 @@ public class RangerRolesProvider {
 		this.lastActivationTimeInMillis = lastActivationTimeInMillis;
 	}
 
-	public boolean isRangerUserGroupRolesSetInPlugin() {
-		return rangerUserGroupRolesSetInPlugin;
-	}
-
-	public void setRangerUserGroupRolesSetInPlugin(boolean rangerUserGroupRolesSetInPlugin) {
-		this.rangerUserGroupRolesSetInPlugin = rangerUserGroupRolesSetInPlugin;
-	}
-
 	public void loadUserGroupRoles(RangerBasePlugin plugIn) {
 
 		if(LOG.isDebugEnabled()) {
@@ -138,21 +130,12 @@ public class RangerRolesProvider {
 
 		try {
 			//load userGroupRoles from ranger admin
-			//RangerRoles roles = loadUserGroupRolesFromAdmin();
-
-			RangerRoles currentRoles = loadUserGroupRolesFromCache();
-
-			long currentUpdatedTimeInCache = 0L;
-			if (currentRoles.getRoleUpdateTime() != null) {
-				currentUpdatedTimeInCache = currentRoles.getRoleUpdateTime().getTime();
-			}
-
-			RangerRoles roles = loadUserGroupRolesFromAdmin(currentUpdatedTimeInCache);
+			RangerRoles roles = loadUserGroupRolesFromAdmin();
 
 			if (roles == null) {
 				//if userGroupRoles fetch from ranger Admin Fails, load from cache
 				if (!rangerUserGroupRolesSetInPlugin) {
-					roles = currentRoles;
+					roles = loadUserGroupRolesFromCache();
 				}
 			}
 
@@ -194,7 +177,7 @@ public class RangerRolesProvider {
 		}
 	}
 
-	private RangerRoles loadUserGroupRolesFromAdmin(long currentUpdatedTimeInCache) throws RangerServiceNotFoundException {
+	private RangerRoles loadUserGroupRolesFromAdmin() throws RangerServiceNotFoundException {
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerRolesProvider(serviceName=" + serviceName + ").loadUserGroupRolesFromAdmin()");
@@ -210,7 +193,18 @@ public class RangerRolesProvider {
 
 		try {
 
-			roles = rangerAdmin.getRolesIfUpdated(lastUpdatedTimeInMillis, lastActivationTimeInMillis);
+
+
+
+
+
+
+
+			if ("atlas".equals(serviceName)) {
+				roles = keycloakUserStore.loadRolesIfUpdated(lastUpdatedTimeInMillis);
+			} else {
+				roles = rangerAdmin.getRolesIfUpdated(lastUpdatedTimeInMillis, lastActivationTimeInMillis);
+			}
 
 			boolean isUpdated = roles != null;
 

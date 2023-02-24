@@ -52,6 +52,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.FileCopyUtils;
 
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -100,9 +101,9 @@ public class PolicyTransformerImpl {
     private static final String RESOURCE_SERVICE_DEF_ATLAS_TAG = RESOURCE_SERVICE_DEF_PATH + "ranger-servicedef-tag.json";
 
     private EntityDiscoveryService discoveryService;
-    private final AtlasGraph                graph;
-    private final AtlasTypeRegistry         typeRegistry;
-    private final EntityGraphRetriever      entityRetriever;
+    private AtlasGraph                graph = null;
+    private AtlasTypeRegistry         typeRegistry = null;
+    private EntityGraphRetriever      entityRetriever = null;
 
 
     public PolicyTransformerImpl(AtlasTypeRegistry typeRegistry) {
@@ -114,6 +115,17 @@ public class PolicyTransformerImpl {
         } catch (AtlasException e) {
             LOG.error("Failed to initialize discoveryService");
         }
+    }
+
+    @Inject
+    public PolicyTransformerImpl(AtlasGraph graph,
+                                 AtlasTypeRegistry typeRegistry,
+                                 EntityGraphRetriever entityRetriever,
+                                 EntityDiscoveryService discoveryService) {
+        this.graph = graph;
+        this.typeRegistry = typeRegistry;
+        this.entityRetriever = entityRetriever;
+        this.discoveryService = discoveryService;
     }
 
     public ServicePolicies getPolicies(String serviceName, String pluginId, Long lastUpdatedTime) {
@@ -156,7 +168,7 @@ public class PolicyTransformerImpl {
                     }
                 }
 
-                LOG.info("policies ");
+                //LOG.info("policies ");
                 LOG.info(AtlasType.toJson(servicePolicies));
             }
 
