@@ -131,42 +131,42 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 	}
 
 	@Override
-	public ServicePolicies getServicePoliciesIfUpdated(final long lastKnownVersion, final long lastActivationTimeInMillis) throws Exception {
+	public ServicePolicies getServicePoliciesIfUpdated(final long lastUpdatedTiemInMillis, final long lastActivationTimeInMillis) throws Exception {
 		if (LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerAdminRESTClient.getServicePoliciesIfUpdated(" + lastKnownVersion + ", " + lastActivationTimeInMillis + ")");
+			LOG.debug("==> RangerAdminRESTClient.getServicePoliciesIfUpdated(" + lastUpdatedTiemInMillis + ", " + lastActivationTimeInMillis + ")");
 		}
 
 		final ServicePolicies ret;
 
 		if (isRangerCookieEnabled && policyDownloadSessionId != null && isValidPolicyDownloadSessionCookie) {
-			ret = getServicePoliciesIfUpdatedWithCookie(lastKnownVersion, lastActivationTimeInMillis);
+			ret = getServicePoliciesIfUpdatedWithCookie(lastUpdatedTiemInMillis, lastActivationTimeInMillis);
 		} else {
-			ret = getServicePoliciesIfUpdatedWithCred(lastKnownVersion, lastActivationTimeInMillis);
+			ret = getServicePoliciesIfUpdatedWithCred(lastUpdatedTiemInMillis, lastActivationTimeInMillis);
 		}
 
 		if (LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerAdminRESTClient.getServicePoliciesIfUpdated(" + lastKnownVersion + ", " + lastActivationTimeInMillis + "): " + ret);
+			LOG.debug("<== RangerAdminRESTClient.getServicePoliciesIfUpdated(" + lastUpdatedTiemInMillis + ", " + lastActivationTimeInMillis + "): " + ret);
 		}
 
 		return ret;
 	}
 
 	@Override
-	public RangerRoles getRolesIfUpdated(final long lastKnownRoleVersion, final long lastActivationTimeInMillis) throws Exception {
+	public RangerRoles getRolesIfUpdated(final long lastUpdatedTimeInMillis, final long lastActivationTimeInMillis) throws Exception {
 		if (LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerAdminRESTClient.getRolesIfUpdated(" + lastKnownRoleVersion + ", " + lastActivationTimeInMillis + ")");
+			LOG.debug("==> RangerAdminRESTClient.getRolesIfUpdated(" + lastUpdatedTimeInMillis + ", " + lastActivationTimeInMillis + ")");
 		}
 
 		final RangerRoles ret;
 
 		if (isRangerCookieEnabled && roleDownloadSessionId != null && isValidRoleDownloadSessionCookie) {
-			ret = getRolesIfUpdatedWithCookie(lastKnownRoleVersion, lastActivationTimeInMillis);
+			ret = getRolesIfUpdatedWithCookie(lastUpdatedTimeInMillis, lastActivationTimeInMillis);
 		} else {
-			ret = getRolesIfUpdatedWithCred(lastKnownRoleVersion, lastActivationTimeInMillis);
+			ret = getRolesIfUpdatedWithCred(lastUpdatedTimeInMillis, lastActivationTimeInMillis);
 		}
 
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerAdminRESTClient.getRolesIfUpdated(" + lastKnownRoleVersion + ", " + lastActivationTimeInMillis + "): ");
+			LOG.debug("<== RangerAdminRESTClient.getRolesIfUpdated(" + lastUpdatedTimeInMillis + ", " + lastActivationTimeInMillis + "): ");
 		}
 
 		return ret;
@@ -744,22 +744,22 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 	}
 
 	@Override
-	public RangerUserStore getUserStoreIfUpdated(long lastKnownUserStoreVersion, long lastActivationTimeInMillis) throws Exception {
+	public RangerUserStore getUserStoreIfUpdated(long lastUpdateTimeInMillis, long lastActivationTimeInMillis) throws Exception {
 		if (LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerAdminRESTClient.getUserStoreIfUpdated(" + lastKnownUserStoreVersion + ", " + lastActivationTimeInMillis + ")");
+			LOG.debug("==> RangerAdminRESTClient.getUserStoreIfUpdated(" + lastUpdateTimeInMillis + ", " + lastActivationTimeInMillis + ")");
 		}
 
 
 		final RangerUserStore ret;
 
 		if (isRangerCookieEnabled && userStoreDownloadSessionId != null && isValidUserStoreDownloadSessionCookie) {
-			ret = getUserStoreIfUpdatedWithCookie(lastKnownUserStoreVersion, lastActivationTimeInMillis);
+			ret = getUserStoreIfUpdatedWithCookie(lastUpdateTimeInMillis, lastActivationTimeInMillis);
 		} else {
-			ret = getUserStoreIfUpdatedWithCred(lastKnownUserStoreVersion, lastActivationTimeInMillis);
+			ret = getUserStoreIfUpdatedWithCred(lastUpdateTimeInMillis, lastActivationTimeInMillis);
 		}
 
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerAdminRESTClient.getUserStoreIfUpdated(" + lastKnownUserStoreVersion + ", " + lastActivationTimeInMillis + "): ");
+			LOG.debug("<== RangerAdminRESTClient.getUserStoreIfUpdated(" + lastUpdateTimeInMillis + ", " + lastActivationTimeInMillis + "): ");
 		}
 
 		return ret;
@@ -1126,16 +1126,16 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 	}
 
 	/* Roles Download ranger admin rest call methods */
-	private RangerRoles getRolesIfUpdatedWithCred(final long lastKnownRoleVersion, final long lastActivationTimeInMillis) throws Exception {
+	private RangerRoles getRolesIfUpdatedWithCred(final long lastUpdatedTimeInMillis, final long lastActivationTimeInMillis) throws Exception {
 		if (LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerAdminRESTClient.getRolesIfUpdatedWithCred(" + lastKnownRoleVersion + ", " + lastActivationTimeInMillis + ")");
+			LOG.debug("==> RangerAdminRESTClient.getRolesIfUpdatedWithCred(" + lastUpdatedTimeInMillis + ", " + lastActivationTimeInMillis + ")");
 		}
 
 		final RangerRoles ret;
 
 		final UserGroupInformation user = MiscUtil.getUGILoginUser();
 		final boolean isSecureMode      = user != null && UserGroupInformation.isSecurityEnabled();
-		final ClientResponse response   = getRangerRolesDownloadResponse(lastKnownRoleVersion, lastActivationTimeInMillis, user, isSecureMode);
+		final ClientResponse response   = getRangerRolesDownloadResponse(lastUpdatedTimeInMillis, lastActivationTimeInMillis, user, isSecureMode);
 
 		if (response == null || response.getStatus() == HttpServletResponse.SC_NOT_MODIFIED || response.getStatus() == HttpServletResponse.SC_NO_CONTENT) {
 			if (response == null) {
@@ -1147,7 +1147,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 				if (LOG.isDebugEnabled()) {
 					LOG.debug("No change in Roles. secureMode=" + isSecureMode + ", user=" + user
 							+ ", response=" + resp + ", serviceName=" + serviceName
-							+ ", " + "lastKnownRoleVersion=" + lastKnownRoleVersion
+							+ ", " + "lastUpdatedTimeInMillis=" + lastUpdatedTimeInMillis
 							+ ", " + "lastActivationTimeInMillis=" + lastActivationTimeInMillis);
 				}
 			}
@@ -1160,7 +1160,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 			ret = null;
 			LOG.error("Error getting Roles; service not found. secureMode=" + isSecureMode + ", user=" + user
 					+ ", response=" + response.getStatus() + ", serviceName=" + serviceName
-					+ ", " + "lastKnownRoleVersion=" + lastKnownRoleVersion
+					+ ", " + "lastUpdatedTimeInMillis=" + lastUpdatedTimeInMillis
 					+ ", " + "lastActivationTimeInMillis=" + lastActivationTimeInMillis);
 			String exceptionMsg = response.hasEntity() ? response.getEntity(String.class) : null;
 
@@ -1175,7 +1175,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 		}
 
 		if (LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerAdminRESTClient.getRolesIfUpdatedWithCred(" + lastKnownRoleVersion + ", " + lastActivationTimeInMillis + "): " + ret);
+			LOG.debug("<== RangerAdminRESTClient.getRolesIfUpdatedWithCred(" + lastUpdatedTimeInMillis + ", " + lastActivationTimeInMillis + "): " + ret);
 		}
 
 		return ret;
@@ -1349,15 +1349,15 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 		return ret;
 	}
 
-	private ClientResponse getRangerRolesDownloadResponse(final long lastKnownRoleVersion, final long lastActivationTimeInMillis, final UserGroupInformation user, final boolean isSecureMode) throws Exception {
+	private ClientResponse getRangerRolesDownloadResponse(final long lastUpdatedTimeInMillis, final long lastActivationTimeInMillis, final UserGroupInformation user, final boolean isSecureMode) throws Exception {
 		if (LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerAdminRESTClient.getRangerRolesDownloadResponse(" + lastKnownRoleVersion + ", " + lastActivationTimeInMillis + ")");
+			LOG.debug("==> RangerAdminRESTClient.getRangerRolesDownloadResponse(" + lastUpdatedTimeInMillis + ", " + lastActivationTimeInMillis + ")");
 		}
 
 		final ClientResponse ret;
 
 		Map<String, String> queryParams = new HashMap<String, String>();
-		queryParams.put(RangerRESTUtils.REST_PARAM_LAST_KNOWN_ROLE_VERSION, Long.toString(lastKnownRoleVersion));
+		queryParams.put(RangerRESTUtils.REST_PARAM_LAST_KNOWN_ROLE_VERSION, Long.toString(lastUpdatedTimeInMillis));
 		queryParams.put(RangerRESTUtils.REST_PARAM_LAST_ACTIVATION_TIME, Long.toString(lastActivationTimeInMillis));
 		queryParams.put(RangerRESTUtils.REST_PARAM_PLUGIN_ID, pluginId);
 		queryParams.put(RangerRESTUtils.REST_PARAM_CLUSTER_NAME, clusterName);
@@ -1389,7 +1389,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 		}
 
 		if (LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerAdminRESTClient.getRangerRolesDownloadResponse(" + lastKnownRoleVersion + ", " + lastActivationTimeInMillis + "): " + ret);
+			LOG.debug("<== RangerAdminRESTClient.getRangerRolesDownloadResponse(" + lastUpdatedTimeInMillis + ", " + lastActivationTimeInMillis + "): " + ret);
 		}
 
 		return ret;

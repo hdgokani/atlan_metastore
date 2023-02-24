@@ -36,9 +36,9 @@ public interface RangerAdminClient {
 
 	void init(String serviceName, String appId, String configPropertyPrefix, Configuration config);
 
-	ServicePolicies getServicePoliciesIfUpdated(long lastKnownVersion, long lastActivationTimeInMillis) throws Exception;
+	ServicePolicies getServicePoliciesIfUpdated(long lastUpdatedTiemInMillis, long lastActivationTimeInMillis) throws Exception;
 
-	RangerRoles getRolesIfUpdated(long lastKnownRoleVersion, long lastActivationTimeInMills) throws Exception;
+	RangerRoles getRolesIfUpdated(long lastUpdatedTimeInMillis, long lastActivationTimeInMills) throws Exception;
 
 	RangerRole createRole(RangerRole request) throws Exception;
 
@@ -62,6 +62,6 @@ public interface RangerAdminClient {
 
 	List<String> getTagTypes(String tagTypePattern) throws Exception;
 
-	RangerUserStore getUserStoreIfUpdated(long lastKnownUserStoreVersion, long lastActivationTimeInMillis) throws Exception;
+	RangerUserStore getUserStoreIfUpdated(long lastUpdateTimeInMillis, long lastActivationTimeInMillis) throws Exception;
 
 }

@@ -44,7 +44,7 @@ public class RangerRolesProvider {
 	private final String            serviceType;
 	private final String            serviceName;
 	private final RangerAdminClient rangerAdmin;
-	private final KeycloakUserStore keycloakUserStore;
+	//private final KeycloakUserStore keycloakUserStore;
 
 	private final String            cacheFileName;
 	private final String			cacheFileNamePrefix;
@@ -52,6 +52,7 @@ public class RangerRolesProvider {
 	private final Gson              gson;
 	private final boolean           disableCacheIfServiceNotFound;
 
+	private long	lastUpdatedTimeInMillis = -1;
 	private long	lastActivationTimeInMillis;
 	private long    lastKnownRoleVersion = -1L;
 	private boolean rangerUserGroupRolesSetInPlugin;
@@ -65,7 +66,7 @@ public class RangerRolesProvider {
 		this.serviceType = serviceType;
 		this.serviceName = serviceName;
 		this.rangerAdmin = rangerAdmin;
-		this.keycloakUserStore = new KeycloakUserStore(serviceType, appId, serviceName, cacheDir);
+		//this.keycloakUserStore = new KeycloakUserStore(serviceType, appId, serviceName, cacheDir);
 
 
 		if (StringUtils.isEmpty(appId)) {
@@ -94,6 +95,14 @@ public class RangerRolesProvider {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("<== RangerRolesProvider(serviceName=" + serviceName + ").RangerRolesProvider()");
 		}
+	}
+
+	public long getLastUpdatedTimeInMillis() {
+		return lastUpdatedTimeInMillis;
+	}
+
+	public void setLastUpdatedTimeInMillis(long lastUpdatedTimeInMillis) {
+		this.lastUpdatedTimeInMillis = lastUpdatedTimeInMillis;
 	}
 
 	public long getLastActivationTimeInMillis() {
@@ -158,6 +167,7 @@ public class RangerRolesProvider {
 				rangerUserGroupRolesSetInPlugin = true;
 				setLastActivationTimeInMillis(System.currentTimeMillis());
 				lastKnownRoleVersion = roles.getRoleVersion() == null ? -1 : roles.getRoleVersion();
+				lastUpdatedTimeInMillis = roles.getRoleUpdateTime() == null ? -1 : roles.getRoleUpdateTime().getTime();
 			} else {
 				if (!rangerUserGroupRolesSetInPlugin && !serviceDefSetInPlugin) {
 					plugIn.setRoles(null);
@@ -170,6 +180,7 @@ public class RangerRolesProvider {
 				plugIn.setRoles(null);
 				setLastActivationTimeInMillis(System.currentTimeMillis());
 				lastKnownRoleVersion = -1L;
+				lastUpdatedTimeInMillis = -1L;
 				serviceDefSetInPlugin = true;
 			}
 		} catch (Exception excp) {
@@ -199,16 +210,11 @@ public class RangerRolesProvider {
 
 		try {
 
-/*			roles = rangerAdmin.getRolesIfUpdated(lastKnownRoleVersion, lastActivationTimeInMillis);
+			roles = rangerAdmin.getRolesIfUpdated(lastUpdatedTimeInMillis, lastActivationTimeInMillis);
 
-			boolean isUpdated = roles != null;*/
-
-			long keycloakStoreUpdatedTime = keycloakUserStore.getKeycloakSubjectsStoreUpdatedTime();
-			boolean isUpdated = currentUpdatedTimeInCache < keycloakStoreUpdatedTime;
+			boolean isUpdated = roles != null;
 
 			if(isUpdated) {
-				roles = keycloakUserStore.loadRoles();
-
 				long newVersion = roles.getRoleVersion() == null ? -1 : roles.getRoleVersion().longValue();
 				saveToCache(roles);
 				LOG.info("RangerRolesProvider(serviceName=" + serviceName + "): found updated version. lastKnownRoleVersion=" + lastKnownRoleVersion + "; newVersion=" + newVersion );
@@ -217,10 +223,7 @@ public class RangerRolesProvider {
 					LOG.debug("RangerRolesProvider(serviceName=" + serviceName + ").run(): no update found. lastKnownRoleVersion=" + lastKnownRoleVersion );
 				}
 			}
-		}/* catch (RangerServiceNotFoundException snfe) {
-			LOG.error("RangerRolesProvider(serviceName=" + serviceName + "): failed to find service. Will clean up local cache of roles (" + lastKnownRoleVersion + ")", snfe);
-			throw snfe;
-		}*/ catch (Exception excp) {
+		} catch (Exception excp) {
 			LOG.error("RangerRolesProvider(serviceName=" + serviceName + "): failed to refresh roles. Will continue to use last known version of roles (" + "lastKnowRoleVersion= " + lastKnownRoleVersion, excp);
 			roles = null;
 		}
@@ -266,6 +269,7 @@ public class RangerRolesProvider {
 					}
 
 					lastKnownRoleVersion = roles.getRoleVersion() == null ? -1 : roles.getRoleVersion().longValue();
+					lastUpdatedTimeInMillis = roles.getRoleUpdateTime() == null ? -1 : roles.getRoleUpdateTime().getTime();
 				}
 			} catch (Exception excp) {
 				LOG.error("failed to load userGroupRoles from cache file " + cacheFile.getAbsolutePath(), excp);

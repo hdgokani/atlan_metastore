@@ -48,12 +48,12 @@ public abstract class AbstractRangerAdminClient implements RangerAdminClient {
     }
 
     @Override
-    public ServicePolicies getServicePoliciesIfUpdated(long lastKnownVersion, long lastActivationTimeInMillis) throws Exception {
+    public ServicePolicies getServicePoliciesIfUpdated(long lastUpdatedTiemInMillis, long lastActivationTimeInMillis) throws Exception {
         return null;
     }
 
     @Override
-    public RangerRoles getRolesIfUpdated(long lastKnownRoleVersion, long lastActivationTimeInMillis) throws Exception {
+    public RangerRoles getRolesIfUpdated(long lastUpdatedTimeInMillis, long lastActivationTimeInMillis) throws Exception {
         return null;
     }
 
@@ -113,7 +113,7 @@ public abstract class AbstractRangerAdminClient implements RangerAdminClient {
     }
 
     @Override
-    public RangerUserStore getUserStoreIfUpdated(long lastKnownUserStoreVersion, long lastActivationTimeInMillis) throws Exception {
+    public RangerUserStore getUserStoreIfUpdated(long lastUpdateTimeInMillis, long lastActivationTimeInMillis) throws Exception {
         return null;
     }
 }

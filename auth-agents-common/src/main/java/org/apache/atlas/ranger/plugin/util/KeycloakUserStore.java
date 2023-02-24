@@ -62,44 +62,14 @@ public class KeycloakUserStore {
 
     private static int NUM_THREADS = 5;
 
-    private final String            serviceType;
     private final String            serviceName;
 
-    private final String            cacheFileName;
-    private final String			cacheFileNamePrefix;
-    private final String            cacheDir;
-
-    private final Gson              gson;
-
-
-    public KeycloakUserStore(String serviceType, String appId, String serviceName, String cacheDir) {
+    public KeycloakUserStore(String serviceName) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> RangerRolesProvider(serviceName=" + serviceName + ").RangerRolesProvider()");
         }
 
-        this.serviceType = serviceType;
         this.serviceName = serviceName;
-
-
-        if (StringUtils.isEmpty(appId)) {
-            appId = serviceType;
-        }
-
-        cacheFileNamePrefix = "roles";
-        String cacheFilename = String.format("%s_%s_%s.json", appId, serviceName, cacheFileNamePrefix);
-        cacheFilename = cacheFilename.replace(File.separatorChar, '_');
-        cacheFilename = cacheFilename.replace(File.pathSeparatorChar, '_');
-
-        this.cacheFileName = cacheFilename;
-        this.cacheDir = cacheDir;
-
-        Gson gson = null;
-        try {
-            gson = new GsonBuilder().setDateFormat("yyyyMMdd-HH:mm:ss.SSS-Z").create();
-        } catch (Throwable excp) {
-            LOG.error("RangerRolesProvider(): failed to create GsonBuilder object", excp);
-        }
-        this.gson = gson;
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== RangerRolesProvider(serviceName=" + serviceName + ").RangerRolesProvider()");
@@ -113,23 +83,7 @@ public class KeycloakUserStore {
         return service;
     }
 
-/*    public void loadKeycloakSubjects(RangerBasePlugin plugIn,
-                                            RangerRolesProvider rolesProvider,
-                                            RangerUserStoreProvider userStoreProvider) throws AtlasBaseException {
-
-        boolean isUpdated = isKeycloakSubjectStoreStoreUpdated();
-
-        if (isUpdated) {
-            List<UserRepresentation> userNamesList = loadRoles(plugIn, rolesProvider);
-
-            loadUserStore(plugIn, userNamesList, userStoreProvider);
-        } else {
-            LOG.info("Skipping loading Keycloak subjects as no updates found since last caching");
-        }
-    }*/
-
     public long getKeycloakSubjectsStoreUpdatedTime() {
-        //long currentCashedUpdatedTime = getCurrentUpdatedTime();
 
         //TODO: String vriables
         List<String> operationTypes = Arrays.asList("CREATE", "UPDATE", "DELETE");
@@ -145,78 +99,16 @@ public class KeycloakUserStore {
             latestEventTime = adminEvents.get(0).getTime();
         }
 
-        /*LOG.info("currentCashedUpdatedTime < latestEventTime : {} < {} = {}",
-                currentCashedUpdatedTime, latestEventTime,
-                currentCashedUpdatedTime < latestEventTime);*/
-
-/*        if (currentCashedUpdatedTime < latestEventTime) {
-            return true;
-        }*/
-
         return latestEventTime;
     }
 
-    private long getCurrentUpdatedTime() {
-        RangerRoles rangerRoles = loadUserGroupRolesFromCache();
-        if (rangerRoles == null) {
-            return -1L;
-        }
-
-        return rangerRoles.getRoleUpdateTime().getTime();
-    }
-
-    private RangerRoles loadUserGroupRolesFromCache() {
-
-        RangerRoles roles = null;
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> RangerRolesProvider(serviceName=" + serviceName + ").loadUserGroupRolesFromCache()");
-        }
-
-        File cacheFile = cacheDir == null ? null : new File(cacheDir + File.separator + cacheFileName);
-
-        if (cacheFile != null && cacheFile.isFile() && cacheFile.canRead()) {
-            Reader reader = null;
-
-            AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadUserGroupRolesFromCache");
-            try {
-                reader = new FileReader(cacheFile);
-
-                roles = gson.fromJson(reader, RangerRoles.class);
-
-                if (roles != null) {
-                    if (!StringUtils.equals(serviceName, roles.getServiceName())) {
-                        LOG.warn("ignoring unexpected serviceName '" + roles.getServiceName() + "' in cache file '" + cacheFile.getAbsolutePath() + "'");
-
-                        roles.setServiceName(serviceName);
-                    }
-
-                    //lastKnownRoleVersion = roles.getRoleVersion() == null ? -1 : roles.getRoleVersion().longValue();
-                }
-            } catch (Exception excp) {
-                LOG.error("failed to load userGroupRoles from cache file " + cacheFile.getAbsolutePath(), excp);
-            } finally {
-                RequestContext.get().endMetricRecord(recorder);
-
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (Exception excp) {
-                        LOG.error("error while closing opened cache file " + cacheFile.getAbsolutePath(), excp);
-                    }
-                }
-            }
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== RangerRolesProvider(serviceName=" + serviceName + ").RangerRolesProvider()");
-        }
-
-        return roles;
-    }
-
-    public RangerRoles loadRoles() throws AtlasBaseException {
+    public RangerRoles loadRolesIfUpdated(long lastUpdatedTime) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadRoles");
+
+        long keycloakUpdateTime = getKeycloakSubjectsStoreUpdatedTime();
+        if (keycloakUpdateTime <= lastUpdatedTime) {
+            return null;
+        }
 
         List<RoleRepresentation> kRoles = KeycloakClient.getKeycloakClient().getAllRoles();
         LOG.info("Found {} keycloak roles", kRoles.size());
@@ -242,9 +134,13 @@ public class KeycloakUserStore {
         return rangerRoles;
     }
 
-    public RangerUserStore loadUserStore() throws AtlasBaseException {
-
+    public RangerUserStore loadUserStoreIfUpdated(long lastUpdatedTime) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadUserStore");
+
+        long keycloakUpdateTime = getKeycloakSubjectsStoreUpdatedTime();
+        if (keycloakUpdateTime <= lastUpdatedTime) {
+            return null;
+        }
 
         Map<String, Set<String>> userGroupMapping = new HashMap<>();
 

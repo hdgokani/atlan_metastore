@@ -59,6 +59,7 @@ public class PolicyRefresher extends Thread {
 	private final BlockingQueue<DownloadTrigger> policyDownloadQueue = new LinkedBlockingQueue<>();
 	private       Timer                          policyDownloadTimer;
 	private       long                           lastKnownVersion    = -1L;
+	private       long                           lastUpdatedTiemInMillis    = -1L;
 	private       long                           lastActivationTimeInMillis;
 	private       boolean                        policiesSetInPlugin;
 	private       boolean                        serviceDefSetInPlugin;
@@ -145,9 +146,9 @@ public class PolicyRefresher extends Thread {
 	}
 
 	public void startRefresher() {
-		loadRoles();
+		//loadRoles();
 		loadPolicy();
-		loadUserStore();
+		//loadUserStore();
 		super.start();
 
 		policyDownloadTimer = new Timer("policyDownloadTimer", true);
@@ -209,9 +210,9 @@ public class PolicyRefresher extends Thread {
 			try {
 				trigger = policyDownloadQueue.take();
 
-				loadRoles();
+				//loadRoles();
 				loadPolicy();
-				loadUserStore();
+				//loadUserStore();
 			} catch(InterruptedException excp) {
 				LOG.info("PolicyRefresher(serviceName=" + serviceName + ").run(): interrupted! Exiting thread", excp);
 				break;
@@ -270,6 +271,7 @@ public class PolicyRefresher extends Thread {
 				serviceDefSetInPlugin = false;
 				setLastActivationTimeInMillis(System.currentTimeMillis());
 				lastKnownVersion = svcPolicies.getPolicyVersion() != null ? svcPolicies.getPolicyVersion() : -1L;
+				lastUpdatedTiemInMillis = svcPolicies.getPolicyUpdateTime() != null ? svcPolicies.getPolicyUpdateTime().getTime() : -1L;
 			} else {
 				if (!policiesSetInPlugin && !serviceDefSetInPlugin) {
 					plugIn.setPolicies(null);
@@ -283,6 +285,7 @@ public class PolicyRefresher extends Thread {
 				serviceDefSetInPlugin = true;
 				setLastActivationTimeInMillis(System.currentTimeMillis());
 				lastKnownVersion = -1;
+				lastUpdatedTiemInMillis = -1;
 			}
 		} catch (Exception excp) {
 			LOG.error("Encountered unexpected exception, ignoring..", excp);
@@ -310,14 +313,17 @@ public class PolicyRefresher extends Thread {
 		}
 
 		try {
-			//svcPolicies = rangerAdmin.getServicePoliciesIfUpdated(lastKnownVersion, lastActivationTimeInMillis);
-			RangerRESTUtils restUtils = new RangerRESTUtils();
-			PolicyTransformerImpl transformer = new PolicyTransformerImpl(plugIn.getTypeRegistry());
 
-			svcPolicies = transformer.getPolicies(serviceName, restUtils.getPluginId(serviceName, plugIn.getAppId()));
+			if (serviceName.equals("atlas") ) {
+				RangerRESTUtils restUtils = new RangerRESTUtils();
+				PolicyTransformerImpl transformer = new PolicyTransformerImpl(plugIn.getTypeRegistry());
 
-			//svcPolicies = PolicyTransformerImpl.getPolicies(serviceName, restUtils.getPluginId(serviceName, plugIn.getAppId()));
-			//svcPolicies = null;
+				svcPolicies = transformer.getPolicies(serviceName,
+														restUtils.getPluginId(serviceName, plugIn.getAppId()),
+														lastUpdatedTiemInMillis);
+			} else {
+				svcPolicies = rangerAdmin.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis, lastActivationTimeInMillis);
+			}
 
 			boolean isUpdated = svcPolicies != null;
 
@@ -337,10 +343,7 @@ public class PolicyRefresher extends Thread {
 					LOG.debug("PolicyRefresher(serviceName=" + serviceName + ").run(): no update found. lastKnownVersion=" + lastKnownVersion);
 				}
 			}
-		}/* catch (RangerServiceNotFoundException snfe) {
-			LOG.error("PolicyRefresher(serviceName=" + serviceName + "): failed to find service. Will clean up local cache of policies (" + lastKnownVersion + ")", snfe);
-			throw snfe;
-		}*/ catch (Exception excp) {
+		} catch (Exception excp) {
 			LOG.error("PolicyRefresher(serviceName=" + serviceName + "): failed to refresh policies. Will continue to use last known version of policies (" + lastKnownVersion + ")", excp);
 			svcPolicies = null;
 		}
@@ -385,6 +388,7 @@ public class PolicyRefresher extends Thread {
 		        	}
 
 		        	lastKnownVersion = policies.getPolicyVersion() == null ? -1 : policies.getPolicyVersion().longValue();
+					lastUpdatedTiemInMillis = policies.getPolicyUpdateTime() == null ? -1 : policies.getPolicyUpdateTime().getTime();
 		         }
 	        } catch (Exception excp) {
 	        	LOG.error("failed to load policies from cache file " + cacheFile.getAbsolutePath(), excp);
