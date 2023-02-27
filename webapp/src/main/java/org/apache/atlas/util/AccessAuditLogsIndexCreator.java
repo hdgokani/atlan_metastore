@@ -16,18 +16,26 @@
  */
 package org.apache.atlas.util;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.ranger.authorization.credutils.CredentialsProviderUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.config.Lookup;
 import org.apache.http.config.RegistryBuilder;
+import org.apache.http.entity.ContentType;
 import org.apache.http.impl.auth.SPNegoSchemeFactory;
+import org.apache.http.nio.entity.NStringEntity;
 import org.elasticsearch.action.admin.indices.open.OpenIndexRequest;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -79,12 +87,13 @@ public class AccessAuditLogsIndexCreator {
     private static final int DEFAULT_ES_BOOTSTRAP_MAX_RETRY = 30;
 
     private final AtomicLong lastLoggedAt = new AtomicLong(0);
-    private volatile RestHighLevelClient client = null;
+    private volatile RestClient client = null;
     private Long time_interval;
 
     private String user;
     private String password;
-    private String hosts;
+    //private String hosts;
+    List<HttpHost> hosts;
     private String protocol;
     private String index;
     private String es_ranger_audit_schema_json;
@@ -101,7 +110,8 @@ public class AccessAuditLogsIndexCreator {
         time_interval = configuration.getLong(ES_TIME_INTERVAL, DEFAULT_ES_TIME_INTERVAL_MS);
         user = configuration.getString(ES_CONFIG_USERNAME);
 
-        hosts = getHosts(configuration);
+        //hosts = getHosts(configuration);
+        hosts = getHttpHosts(configuration);
         port = getPort(configuration);
 
         protocol = configuration.getString(ES_CONFIG_PROTOCOL, "http");
@@ -132,7 +142,7 @@ public class AccessAuditLogsIndexCreator {
 
     public void init() {
         LOG.info("Started run method");
-        if (StringUtils.isNotBlank(hosts)) {
+        if (CollectionUtils.isNotEmpty(hosts)) {
             LOG.info("Elastic search hosts=" + hosts + ", index=" + index);
             while (!is_completed && (max_retry == TRY_UNTIL_SUCCESS || retry_counter < max_retry)) {
                 try {
@@ -152,6 +162,12 @@ public class AccessAuditLogsIndexCreator {
                     }
                 } catch (Exception ex) {
                     logErrorMessageAndWait("Error while validating elasticsearch index ", ex);
+                } finally {
+                    try {
+                        client.close();
+                    } catch (IOException e) {
+                        LOG.warn("AccessAuditLogsIndexCreator: Failed to close ES client");
+                    }
                 }
             }
         } else {
@@ -177,9 +193,12 @@ public class AccessAuditLogsIndexCreator {
 
     private void createClient() {
         try {
-            RestClientBuilder restClientBuilder =
-                    getRestClientBuilder(hosts, protocol, user, password, port);
-            client = new RestHighLevelClient(restClientBuilder);
+            RestClientBuilder builder = RestClient.builder(hosts.get(0));
+            builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
+                    .setConnectTimeout(900000)
+                    .setSocketTimeout(900000));
+
+            client = builder.build();
         } catch (Throwable t) {
             lastLoggedAt.updateAndGet(lastLoggedAt -> {
                 long now = System.currentTimeMillis();
@@ -223,29 +242,38 @@ public class AccessAuditLogsIndexCreator {
         }
         if (client != null) {
             try {
-                GetIndexRequest getRequest = new GetIndexRequest(index);
-                exists = client.indices().exists(getRequest, RequestOptions.DEFAULT);
+                Request request = new Request("HEAD", index);
+                Response response = client.performRequest(request);
+
+                int statusCode = response.getStatusLine().getStatusCode();
+                if (statusCode == 200) {
+                    LOG.info("Entity audits index exists!");
+                    exists = true;
+                } else {
+                    LOG.info("Entity audits index does not exist!");
+                    exists = false;
+                }
+
             } catch (Exception e) {
                 LOG.info("Index " + this.index + " not available.");
             }
             if (!exists) {
                 LOG.info("Index does not exist. Attempting to create index:" + this.index);
-                CreateIndexRequest request = new CreateIndexRequest(this.index);
-                if (this.no_of_shards >= 0 && this.no_of_replicas >= 0) {
-                    request.settings(Settings.builder().put("index.number_of_shards", this.no_of_shards)
-                            .put("index.number_of_replicas", this.no_of_replicas));
-                }
-                request.mapping(es_ranger_audit_schema_json, XContentType.JSON);
-                request.setMasterTimeout(TimeValue.timeValueMinutes(1));
-                request.setTimeout(TimeValue.timeValueMinutes(2));
                 try {
-                    CreateIndexResponse createIndexResponse = client.indices().create(request, RequestOptions.DEFAULT);
-                    if (createIndexResponse != null) {
-                        GetIndexRequest getRequest = new GetIndexRequest(index);
-                        exists = client.indices().exists(getRequest, RequestOptions.DEFAULT);
-                        if (exists) {
-                            LOG.info("Index " + this.index + " created successfully.");
-                        }
+                    HttpEntity entity = new NStringEntity(es_ranger_audit_schema_json, ContentType.APPLICATION_JSON);
+                    Request request = new Request("PUT", index);
+
+                    /*if (this.no_of_shards >= 0 && this.no_of_replicas >= 0) {
+                        request.settings(Settings.builder().put("number_of_shards", this.no_of_shards)
+                                .put("number_of_replicas", this.no_of_replicas));
+                    }*/
+
+                    request.setEntity(entity);
+                    Response response = client.performRequest(request);
+
+                    if (response != null && response.getStatusLine().getStatusCode() == 200) {
+                        LOG.info("Index " + this.index + " created successfully.");
+                        exists = true;
                     }
                 } catch (Exception e) {
                     LOG.error("Unable to create Index. Reason:" + e.toString());
@@ -294,6 +322,24 @@ public class AccessAuditLogsIndexCreator {
         }
         return urls.toString();
     }
+
+    public static List<HttpHost> getHttpHosts(Configuration configuration) {
+        List<HttpHost> httpHosts = new ArrayList<>();
+
+        String indexConf = configuration.getString(INDEX_BACKEND_CONF);
+        String[] hosts = indexConf.split(",");
+        for (String host : hosts) {
+            host = host.trim();
+            String[] hostAndPort = host.split(":");
+            if (hostAndPort.length == 1) {
+                httpHosts.add(new HttpHost(hostAndPort[0]));
+            } else if (hostAndPort.length == 2) {
+                httpHosts.add(new HttpHost(hostAndPort[0], Integer.parseInt(hostAndPort[1])));
+            }
+        }
+        return httpHosts;
+    }
+
 
     private static int getPort(Configuration configuration) {
         int port = 9200;
