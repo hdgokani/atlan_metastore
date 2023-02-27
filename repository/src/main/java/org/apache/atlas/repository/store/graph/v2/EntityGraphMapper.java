@@ -55,6 +55,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PersonaPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
@@ -580,6 +581,9 @@ public class EntityGraphMapper {
                 preProcessor = new QueryCollectionPreProcessor(typeRegistry, entityRetriever);
                 break;
 
+            case "Persona":
+                preProcessor = new PersonaPreProcessor(graph, typeRegistry, entityRetriever);
+                break;
         }
 
         return preProcessor;

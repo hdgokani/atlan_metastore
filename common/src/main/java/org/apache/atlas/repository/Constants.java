@@ -45,6 +45,7 @@ public final class Constants {
     public static final String HISTORICAL_GUID_PROPERTY_KEY     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "historicalGuids");
     public static final String FREETEXT_REQUEST_HANDLER         = "/freetext";
     public static final String TERMS_REQUEST_HANDLER            = "/terms";
+    public static final String ES_API_ALIASES                   = "/_aliases";
 
     /**
      * Entity type name property key.
@@ -131,6 +132,15 @@ public final class Constants {
     public static final String QUERY_COLLECTION_ENTITY_TYPE = "QueryCollection";
 
 
+    /*
+     * Purpose / Persona
+     */
+    public static final String ACCESS_CONTROL_ENTITY_TYPE = "AccessControl";
+    public static final String PERSONA_ENTITY_TYPE = "Persona";
+    public static final String PURPOSE_ENTITY_TYPE = "Purpose";
+    public static final String POLICY_ENTITY_TYPE  = "Policy";
+
+
     /**
      * Lineage relations.
      */
@@ -196,6 +206,8 @@ public final class Constants {
      */
     public static final String INDEX_PREFIX = "janusgraph_";
 
+    public static final String VERTEX_INDEX_NAME = INDEX_PREFIX + VERTEX_INDEX;
+
     public static final String NAME                                    = "name";
     public static final String QUALIFIED_NAME                          = "qualifiedName";
     public static final String TYPE_NAME_PROPERTY_KEY                  = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
@@ -204,6 +216,10 @@ public final class Constants {
     public static final String INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH  = "atlas.graph.index.search.tags.max-query-str-length";
     public static final String INDEX_SEARCH_VERTEX_PREFIX_PROPERTY     = "atlas.graph.index.search.vertex.prefix";
     public static final String INDEX_SEARCH_VERTEX_PREFIX_DEFAULT      = "$v$";
+
+    public static final String ATTR_TENANT_ID = "tenantId";
+    public static final String DEFAULT_TENANT_ID = "default";
+
 
     public static final String MAX_FULLTEXT_QUERY_STR_LENGTH = "atlas.graph.fulltext-max-query-str-length";
     public static final String MAX_DSL_QUERY_STR_LENGTH      = "atlas.graph.dsl-max-query-str-length";

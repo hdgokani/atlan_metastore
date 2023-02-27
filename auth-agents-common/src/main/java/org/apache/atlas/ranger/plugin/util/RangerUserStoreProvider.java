@@ -193,6 +193,7 @@ public class RangerUserStoreProvider {
 
 		try {
 			if ("atlas".equals(serviceName)) {
+				LOG.info("RangerUserStoreProvider: fetching using keycloak directly for atlas service");
 				userStore = keycloakUserStore.loadUserStoreIfUpdated(lastUpdateTimeInMillis);
 			} else {
 				userStore = rangerAdmin.getUserStoreIfUpdated(lastUpdateTimeInMillis, lastActivationTimeInMillis);

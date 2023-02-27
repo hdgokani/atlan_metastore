@@ -192,15 +192,8 @@ public class RangerRolesProvider {
 		}
 
 		try {
-
-
-
-
-
-
-
-
 			if ("atlas".equals(serviceName)) {
+				LOG.info("RangerRolesProvider: fetching using keycloak directly for atlas service");
 				roles = keycloakUserStore.loadRolesIfUpdated(lastUpdatedTimeInMillis);
 			} else {
 				roles = rangerAdmin.getRolesIfUpdated(lastUpdatedTimeInMillis, lastActivationTimeInMillis);
