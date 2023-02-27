@@ -54,7 +54,7 @@ public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> HardDeleteHandlerV1.deleteEdge({}, {})", GraphHelper.string(edge), force);
         }
-        boolean isRelationshipEdge = isRelationshipEdge(edge);
+
         authorizeRemoveRelation(edge);
 
         if (DEFERRED_ACTION_ENABLED) {
@@ -64,7 +64,7 @@ public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
         }
 
         graphHelper.removeEdge(edge);
-        if (isRelationshipEdge)
+        if (isRelationshipEdge(edge))
             AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_HARD_DELETE, edge, entityRetriever);
     }
 }
