@@ -18,7 +18,13 @@
 
 package atlas.keycloak.client;
 
+import com.fasterxml.jackson.core.JsonParser;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.codehaus.jettison.json.JSONTokener;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
@@ -35,9 +41,17 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.apache.atlas.ApplicationProperties.ATLAS_CONFIGURATION_DIRECTORY_PROPERTY;
 
 //@Component
 public class KeycloakClient {
@@ -46,12 +60,15 @@ public class KeycloakClient {
     private static KeycloakClient keycloakClient = null;
     private static Keycloak keycloak = null;
 
+    public static final String KEYCLOAK_PROPERTIES = "keycloak.json";
+    private static final String ATLAS_LOG_DIR = "atlas.log.dir";
+
     //TODO: get creds from properties
-    private static String REALM_ID = "default";
-    private static String AUTH_SERVER_URL = "https://beta.atlan.dev/auth";
-    private static String CLIENT_ID = "atlan-backend";
-    private static String CLIENT_SECRET = "f176d49a-d82f-4d41-a05e-11940c076fcd";
-    private static String GRANT_TYPE = "client_credentials";
+    private static String REALM_ID;
+    private static String AUTH_SERVER_URL;
+    private static String CLIENT_ID;
+    private static String CLIENT_SECRET;
+    private static String GRANT_TYPE;
 
 
     private KeycloakClient() {
@@ -60,10 +77,42 @@ public class KeycloakClient {
     public static KeycloakClient getKeycloakClient() {
         if (keycloakClient == null) {
             LOG.info("Initializing Keycloak client..");
+            try {
+                initConf();
+            } catch (IOException e) {
+                LOG.error("Failed to fetch Keycloak conf {}", e.getMessage());
+            } catch (JSONException e) {
+                LOG.error("Failed to parsing Keycloak conf {}", e.getMessage());
+            } catch (Exception e) {
+                LOG.error("Failed to connect to Keycloak {}", e.getMessage());
+            }
             init();
             LOG.info("Initialized Keycloak client..");
         }
         return keycloakClient;
+    }
+
+    private static void initConf() throws Exception {
+        String confLocation = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
+
+        File confFile;
+        if (StringUtils.isNotEmpty(confLocation)) {
+            confFile = new File(confLocation, KEYCLOAK_PROPERTIES);
+
+            if (confFile.exists()) {
+                String keyConf = new String(Files.readAllBytes(confFile.toPath()), StandardCharsets.UTF_8);
+
+                JSONObject object = new JSONObject(keyConf);
+
+                REALM_ID = object.getString("realm");
+                AUTH_SERVER_URL = object.getString("auth-server-url");
+                CLIENT_ID = object.getString("resource");
+                GRANT_TYPE = "client_credentials";
+                CLIENT_SECRET = object.getJSONObject("credentials").getString("secret");
+            } else {
+                throw new AtlasBaseException("Keycloak configuration file not found in location " + confLocation);
+            }
+        }
     }
 
     private static void init() {
