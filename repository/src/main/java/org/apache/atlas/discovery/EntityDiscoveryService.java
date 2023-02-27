@@ -88,16 +88,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import javax.script.ScriptEngine;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import javax.script.ScriptException;
 import java.util.stream.Collectors;
 
@@ -966,7 +957,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     private void scrubSearchResults(AtlasSearchResult result, boolean suppressLogs) throws AtlasBaseException {
+        Date d1 = new Date();
         AtlasAuthorizationUtils.scrubSearchResults(new AtlasSearchResultScrubRequest(typeRegistry, result), suppressLogs);
+        LOG.info("Completed scrubSearchResults call in: {}", String.valueOf(System.currentTimeMillis() - d1.getTime()));
     }
 
     private Set<String> getAggregationFields() {
@@ -1028,10 +1021,12 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             indexQuery = graph.elasticsearchQuery(indexName);
 
+            Date d1 = new Date();
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
-
+            LOG.info("##Completed 1.elasticsearch query call in: {}", String.valueOf(System.currentTimeMillis() - d1.getTime()));
+            d1 = new Date();
             prepareSearchResult(ret, indexQueryResult, resultAttributes, true);
-
+            LOG.info("##Completed 6.prepareSearchResult query call in: {}", String.valueOf(System.currentTimeMillis() - d1.getTime()));
             ret.setAggregations(indexQueryResult.getAggregationMap());
             ret.setApproximateCount(indexQuery.vertexTotals());
         } catch (Exception e) {
@@ -1042,6 +1037,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
+        Date d1 = new Date();
         SearchParams searchParams = ret.getSearchParameters();
         try {
             if(LOG.isDebugEnabled()){
@@ -1052,18 +1048,23 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             while (iterator.hasNext()) {
                 Result result = iterator.next();
+                d1 = new Date();
                 AtlasVertex vertex = result.getVertex();
-
+                LOG.info("##Completed 2.get vertex call in: {}", String.valueOf(System.currentTimeMillis() - d1.getTime()));
                 if (vertex == null) {
                     LOG.warn("vertex is null");
                     continue;
                 }
-
+                d1 = new Date();
                 AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
+                LOG.info("##Completed 3.toAtlasEntityHeader call in: {}", String.valueOf(System.currentTimeMillis() - d1.getTime()));
+                d1 = new Date();
                 header.setClassifications(entityRetriever.getAllClassifications(vertex));
+                LOG.info("##Completed 4.getAllClassifications call in: {}", String.valueOf(System.currentTimeMillis() - d1.getTime()));
                 if (showSearchScore) {
                     ret.addEntityScore(header.getGuid(), result.getScore());
                 }
+                d1 = new Date();
                 if (fetchCollapsedResults) {
                     Map<String, AtlasSearchResult> collapse = new HashMap<>();
 
@@ -1099,9 +1100,12 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 ret.addEntity(header);
             }
         } catch (Exception e) {
-                throw e;
+            throw e;
+        } finally {
+            LOG.info("##Completed 5.prepare search call in: {}", String.valueOf(System.currentTimeMillis() - d1.getTime()));
         }
         scrubSearchResults(ret, searchParams.getSuppressLogs());
+
     }
 
     @Override

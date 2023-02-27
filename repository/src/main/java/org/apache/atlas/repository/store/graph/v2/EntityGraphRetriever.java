@@ -968,17 +968,19 @@ public class EntityGraphRetriever {
     }
 
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
+        Date d1 = new Date();
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader");
         AtlasEntityHeader ret = new AtlasEntityHeader();
-
-        String  typeName     = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
-        String  guid         = entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+        String typeName = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
+        String guid = entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
         Boolean isIncomplete = isEntityIncomplete(entityVertex);
-
+        LOG.info("##3.1Completed mapVertexToAtlasEntityHeader type,guid call in: {}", String.valueOf(System.currentTimeMillis() - d1.getTime()));
         ret.setTypeName(typeName);
         ret.setGuid(guid);
         ret.setStatus(GraphHelper.getStatus(entityVertex));
+        d1 = new Date();
         ret.setClassificationNames(getAllTraitNames(entityVertex));
+        LOG.info("##3.2Completed mapVertexToAtlasEntityHeader  alltraits call in: {}", String.valueOf(System.currentTimeMillis() - d1.getTime()));
         ret.setIsIncomplete(isIncomplete);
         ret.setLabels(getLabels(entityVertex));
 
@@ -987,10 +989,13 @@ public class EntityGraphRetriever {
         ret.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
         ret.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
 
+        d1 = new Date();
         List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
         ret.setMeanings(termAssignmentHeaders);
         ret.setMeaningNames(termAssignmentHeaders.stream().map(AtlasTermAssignmentHeader::getDisplayText).collect(Collectors.toList()));
+        LOG.info("##3.3Completed mapVertexToAtlasEntityHeader  mapAssignedTerms call in: {}", String.valueOf(System.currentTimeMillis() - d1.getTime()));
 
+        d1 = new Date();
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
         if (entityType != null) {
@@ -1034,6 +1039,7 @@ public class EntityGraphRetriever {
                 }
             }
         }
+        LOG.info("##3.4Completed rest of attribute mapping call in: {}", String.valueOf(System.currentTimeMillis() - d1.getTime()));
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
     }
