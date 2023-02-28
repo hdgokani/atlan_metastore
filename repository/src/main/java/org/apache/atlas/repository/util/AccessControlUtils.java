@@ -18,9 +18,15 @@
 package org.apache.atlas.repository.util;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -29,14 +35,18 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasErrorCode.ACCESS_CONTROL_ALREADY_EXISTS;
 import static org.apache.atlas.repository.Constants.ATTR_TENANT_ID;
 import static org.apache.atlas.repository.Constants.CONNECTION_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.DEFAULT_TENANT_ID;
+import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
 
 public class AccessControlUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AccessControlUtils.class);
@@ -80,12 +90,12 @@ public class AccessControlUtils {
         return ret;
     }
 
-    public static long getPersonaRoleId(AtlasEntity entity) throws AtlasBaseException {
+    public static String getPersonaRoleId(AtlasEntity entity) throws AtlasBaseException {
         String roleId = (String) entity.getAttribute(ATTR_PERSONA_ROLE_ID);
         if (roleId == null) {
             throw new AtlasBaseException("rangerRoleId not found for Persona with GUID " + entity.getGuid());
         }
-        return Long.parseLong(roleId);
+        return roleId;
     }
 
     public static boolean getIsEnabled(AtlasEntity entity) throws AtlasBaseException {
@@ -106,6 +116,10 @@ public class AccessControlUtils {
 
     public static String getUUID(){
         return NanoIdUtils.randomNanoId(22);
+    }
+
+    public static String getEntityName(AtlasEntity entity) {
+        return (String) entity.getAttribute(NAME);
     }
 
     public static String getESAliasName(AtlasEntity entity) {
@@ -189,6 +203,86 @@ public class AccessControlUtils {
         }
 
         throw new AtlasBaseException("Could not find connection for policy");
+    }
+
+    public static void validateUniquenessByName(AtlasGraph graph, String name, String typeName) throws AtlasBaseException {
+        IndexSearchParams indexSearchParams = new IndexSearchParams();
+        Map<String, Object> dsl = mapOf("size", 1);
+
+        List mustClauseList = new ArrayList();
+        mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
+        mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
+        mustClauseList.add(mapOf("term", mapOf("name.keyword", name)));
+
+        dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
+
+        indexSearchParams.setDsl(dsl);
+
+        if (checkEntityExists(graph, indexSearchParams)){
+            throw new AtlasBaseException(ACCESS_CONTROL_ALREADY_EXISTS, typeName, name);
+        }
+    }
+
+    public static void validateUniquenessByTags(AtlasGraph graph, List<String> tags, String typeName) throws AtlasBaseException {
+        IndexSearchParams indexSearchParams = new IndexSearchParams();
+        Map<String, Object> dsl = mapOf("size", 1);
+
+        List mustClauseList = new ArrayList();
+        mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
+        mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
+        mustClauseList.add(mapOf("terms", mapOf(ATTR_PURPOSE_CLASSIFICATIONS, tags)));
+
+        Map<String, Object> scriptMap = mapOf("inline", "doc['" + ATTR_PURPOSE_CLASSIFICATIONS + "'].length == params.list_length");
+        scriptMap.put("lang", "painless");
+        scriptMap.put("params", mapOf("list_length", tags.size()));
+
+        mustClauseList.add(mapOf("script", mapOf("script", scriptMap)));
+
+        dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
+
+        indexSearchParams.setDsl(dsl);
+
+        if (hasMatchingVertex(graph, tags, indexSearchParams)){
+            throw new AtlasBaseException(String.format("Entity already exists, typeName:tags, %s:%s", typeName, tags));
+        }
+    }
+
+    protected static boolean hasMatchingVertex(AtlasGraph graph, List<String> newTags,
+                                               IndexSearchParams indexSearchParams) throws AtlasBaseException {
+        AtlasIndexQuery indexQuery = graph.elasticsearchQuery(VERTEX_INDEX_NAME);
+
+        DirectIndexQueryResult indexQueryResult = indexQuery.vertices(indexSearchParams);
+        Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
+
+        while (iterator.hasNext()) {
+            AtlasVertex vertex = iterator.next().getVertex();
+            if (vertex != null) {
+                List<String> tags = (List<String>) vertex.getPropertyValues(ATTR_PURPOSE_CLASSIFICATIONS, String.class);
+
+                //TODO: handle via ES query if possible -> match exact tags list
+                if (CollectionUtils.isEqualCollection(tags, newTags)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    protected static boolean checkEntityExists(AtlasGraph graph, IndexSearchParams indexSearchParams) throws AtlasBaseException {
+        AtlasIndexQuery indexQuery = graph.elasticsearchQuery(VERTEX_INDEX_NAME);
+
+        DirectIndexQueryResult indexQueryResult = indexQuery.vertices(indexSearchParams);
+        Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
+
+        while (iterator.hasNext()) {
+            AtlasVertex vertex = iterator.next().getVertex();
+            if (vertex != null) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static AtlasEntity getConnectionEntity(EntityGraphRetriever entityRetriever, String connectionQualifiedName) throws AtlasBaseException {

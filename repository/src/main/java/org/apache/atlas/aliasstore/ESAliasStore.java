@@ -85,15 +85,15 @@ public class ESAliasStore implements IndexAliasStore {
     }
 
     @Override
-    public boolean updateAlias(AtlasEntity policy, AtlasEntity.AtlasEntityWithExtInfo accessControl) throws AtlasBaseException {
-        String aliasName = getAliasName(policy);
+    public boolean updateAlias(AtlasEntity.AtlasEntityWithExtInfo accessControl) throws AtlasBaseException {
+        String aliasName = getAliasName(accessControl.getEntity());
 
         Map<String, Object> filter;
 
         if (PERSONA_ENTITY_TYPE.equals(accessControl.getEntity().getTypeName())) {
-            filter = getFilterForPersona(policy, accessControl);
+            filter = getFilterForPersona(accessControl);
         } else {
-            filter = getFilterForPurpose(policy, accessControl);
+            filter = getFilterForPurpose(accessControl);
         }
 
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
@@ -110,7 +110,7 @@ public class ESAliasStore implements IndexAliasStore {
         return true;
     }
 
-    private Map<String, Object> getFilterForPersona(AtlasEntity policy, AtlasEntity.AtlasEntityWithExtInfo persona) throws AtlasBaseException {
+    private Map<String, Object> getFilterForPersona(AtlasEntity.AtlasEntityWithExtInfo persona) throws AtlasBaseException {
         List<Map<String, Object>> allowClauseList = new ArrayList<>();
         List<Map<String, Object>> denyClauseList = new ArrayList<>();
 
@@ -122,7 +122,7 @@ public class ESAliasStore implements IndexAliasStore {
         return esClausesToFilter(allowClauseList, denyClauseList);
     }
 
-    private Map<String, Object> getFilterForPurpose(AtlasEntity policy, AtlasEntity.AtlasEntityWithExtInfo purpose) throws AtlasBaseException {
+    private Map<String, Object> getFilterForPurpose(AtlasEntity.AtlasEntityWithExtInfo purpose) throws AtlasBaseException {
 
         List<Map<String, Object>> allowClauseList = new ArrayList<>();
         List<Map<String, Object>> denyClauseList = new ArrayList<>();
@@ -133,7 +133,7 @@ public class ESAliasStore implements IndexAliasStore {
         if (CollectionUtils.isNotEmpty(policies)) {
 
             for (AtlasEntity entity: policies) {
-                if (RequestContext.get().isDeletedEntity(policy.getGuid())) {
+                if (RequestContext.get().isDeletedEntity(entity.getGuid())) {
                     continue;
                 }
 
