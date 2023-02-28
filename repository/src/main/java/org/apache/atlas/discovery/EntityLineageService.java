@@ -370,11 +370,11 @@ public class EntityLineageService implements AtlasLineageService {
             for (AtlasEdge incomingEdge : incomingEdges) {
                 AtlasVertex processVertex = incomingEdge.getOutVertex();
 
-                if (!vertexMatchesEvaluation(processVertex, atlasLineageOnDemandContext) || getStatus(incomingEdge) == DELETED) {
+                if (checkForOffset(incomingEdge, datasetVertex, atlasLineageOnDemandContext, ret)) {
                     continue;
                 }
 
-                if (checkForOffset(incomingEdge, datasetVertex, atlasLineageOnDemandContext, ret)) {
+                if (!vertexMatchesEvaluation(processVertex, atlasLineageOnDemandContext)) {
                     continue;
                 }
 
@@ -391,11 +391,11 @@ public class EntityLineageService implements AtlasLineageService {
                 for (AtlasEdge outgoingEdge : outgoingEdges) {
                     AtlasVertex entityVertex = outgoingEdge.getInVertex();
 
-                    if (!vertexMatchesEvaluation(entityVertex, atlasLineageOnDemandContext) || getStatus(outgoingEdge) == DELETED) {
+                    if (checkForOffset(outgoingEdge, processVertex, atlasLineageOnDemandContext, ret)) {
                         continue;
                     }
 
-                    if (checkForOffset(outgoingEdge, processVertex, atlasLineageOnDemandContext, ret)) {
+                    if (!vertexMatchesEvaluation(entityVertex, atlasLineageOnDemandContext)) {
                         continue;
                     }
 
