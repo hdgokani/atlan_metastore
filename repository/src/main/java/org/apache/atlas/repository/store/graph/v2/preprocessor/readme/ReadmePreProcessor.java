@@ -27,10 +27,10 @@ import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 public class ReadmePreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ReadmePreProcessor.class);
 
-    private AtlasTypeRegistry typeRegistry;
-    private EntityGraphRetriever entityRetriever;
-    private AtlasGraph graph;
-    private RestoreHandlerV1 restoreHandlerV1;
+    private final AtlasTypeRegistry    typeRegistry;
+    private final EntityGraphRetriever entityRetriever;
+    private final AtlasGraph           graph;
+    private final RestoreHandlerV1     restoreHandlerV1;
 
     public ReadmePreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, RestoreHandlerV1 restoreHandlerV1) {
         this.entityRetriever = entityRetriever;
@@ -72,10 +72,7 @@ public class ReadmePreProcessor implements PreProcessor {
                 GraphTransactionInterceptor.addToVertexStateCache(vertex.getId(), AtlasEntity.Status.ACTIVE);
                 restoreHandlerV1.restoreEntities(Collections.singletonList(vertex));
             }
-
-            String guidOfExistingReadme = GraphHelper.getGuid(vertex);
-            entity.setGuid(guidOfExistingReadme);
-            context.cacheEntity(guidOfExistingReadme, vertex, entityType);
+            context.cacheEntity(entity.getGuid(), vertex, entityType);
         }
         requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(vertex, entity.getAttributes().keySet()));
         requestContext.cacheDifferentialEntity(entity);
