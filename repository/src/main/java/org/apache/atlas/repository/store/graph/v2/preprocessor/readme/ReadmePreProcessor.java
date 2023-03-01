@@ -67,15 +67,15 @@ public class ReadmePreProcessor implements PreProcessor {
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
         AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(graph, entityType, entity.getAttributes());
-        if(vertex != null && !vertex.getProperty(STATE_PROPERTY_KEY, String.class).equals(DELETED.name())){
+        if(vertex != null){
+            if(vertex.getProperty(STATE_PROPERTY_KEY, String.class).equals(DELETED.name())){
+                GraphTransactionInterceptor.addToVertexStateCache(vertex.getId(), AtlasEntity.Status.ACTIVE);
+                restoreHandlerV1.restoreEntities(Collections.singletonList(vertex));
+            }
+
             String guidOfExistingReadme = GraphHelper.getGuid(vertex);
             entity.setGuid(guidOfExistingReadme);
             context.cacheEntity(guidOfExistingReadme, vertex, entityType);
-        }
-        else if(vertex != null){
-            GraphTransactionInterceptor.addToVertexStateCache(vertex.getId(), AtlasEntity.Status.ACTIVE);
-            restoreHandlerV1.restoreEntities(Collections.singletonList(vertex));
-            context.cacheEntity(entity.getGuid(), vertex, entityType);
         }
         requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(vertex, entity.getAttributes().keySet()));
         requestContext.cacheDifferentialEntity(entity);
