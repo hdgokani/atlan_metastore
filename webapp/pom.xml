@@ -121,6 +121,13 @@
             <artifactId>atlas-client-v2</artifactId>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/org.jsoup/jsoup -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.15.4</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-authorization</artifactId>
