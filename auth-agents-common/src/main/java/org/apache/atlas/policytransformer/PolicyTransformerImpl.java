@@ -318,13 +318,13 @@ public class PolicyTransformerImpl {
 
         if (resources.size() == 1) {
             Map<String, Object> uniqueAttributes = new HashMap<>();
-            uniqueAttributes.put(ATTR_QUALIFIED_NAME, resources.get(0));
+            uniqueAttributes.put(ATTR_QUALIFIED_NAME, resources.get(0).split(":")[1]);
 
             try {
                 entityRetriever.toAtlasEntity(new AtlasObjectId("Connection", uniqueAttributes));
             } catch (AtlasBaseException abe) {
                 if (AtlasErrorCode.INSTANCE_GUID_NOT_FOUND != abe.getAtlasErrorCode()) {
-                    LOG.error("Failed to find connection entity");
+                    LOG.error("Failed to find connection entity for resource {}", resources.get(0));
                 }
             }
 

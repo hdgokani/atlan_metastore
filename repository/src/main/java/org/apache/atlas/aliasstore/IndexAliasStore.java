@@ -27,7 +27,7 @@ public interface IndexAliasStore {
     public boolean createAlias(AtlasEntity entity) throws AtlasBaseException;
 
     //public boolean updateAlias(AtlasEntity policy, AtlasEntity.AtlasEntityWithExtInfo accessControl) throws AtlasBaseException;
-    public boolean updateAlias(AtlasEntity.AtlasEntityWithExtInfo accessControl) throws AtlasBaseException;
+    public boolean updateAlias(AtlasEntity.AtlasEntityWithExtInfo accessControl, AtlasEntity policy) throws AtlasBaseException;
 
     public boolean deleteAlias(String aliasName) throws AtlasBaseException;
 }

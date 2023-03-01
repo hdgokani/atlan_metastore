@@ -29,9 +29,11 @@ import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -52,19 +54,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_ACCESS_CONTROL_ENABLED;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PERSONA_ROLE_ID;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PURPOSE_CLASSIFICATIONS;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_ACCESS_CONTROL;
+import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
+import static org.apache.atlas.repository.util.AccessControlUtils.getESAliasName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getEntityName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsEnabled;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaGroups;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaRoleId;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaUsers;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicies;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPurposeTags;
 import static org.apache.atlas.repository.util.AccessControlUtils.getTenantId;
 import static org.apache.atlas.repository.util.AccessControlUtils.getUUID;
@@ -78,13 +87,16 @@ public class PurposePreProcessor implements PreProcessor {
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
     private IndexAliasStore aliasStore;
+    private AtlasEntityStore entityStore;
 
     public PurposePreProcessor(AtlasGraph graph,
                                AtlasTypeRegistry typeRegistry,
-                               EntityGraphRetriever entityRetriever) {
+                               EntityGraphRetriever entityRetriever,
+                               AtlasEntityStore entityStore) {
         this.graph = graph;
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
+        this.entityStore = entityStore;
 
         aliasStore = new ESAliasStore(graph, entityRetriever);
     }
@@ -103,7 +115,7 @@ public class PurposePreProcessor implements PreProcessor {
                 processCreatePurpose(entity);
                 break;
             case UPDATE:
-                processUpdatePurpose(entity, context.getVertex(entity.getGuid()));
+                processUpdatePurpose(context, entity, context.getVertex(entity.getGuid()));
                 break;
         }
     }
@@ -122,7 +134,9 @@ public class PurposePreProcessor implements PreProcessor {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void processUpdatePurpose(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
+    private void processUpdatePurpose(EntityMutationContext context,
+                                      AtlasStruct entity,
+                                      AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdatePurpose");
 
         AtlasEntity purpose = (AtlasEntity) entity;
@@ -154,15 +168,58 @@ public class PurposePreProcessor implements PreProcessor {
         }
 
         List<String> newTags = getPurposeTags(purpose);
+
         if (!CollectionUtils.isEmpty(newTags) && !CollectionUtils.isEqualCollection(newTags, getPurposeTags(existingPurposeEntity))) {
             validateUniquenessByTags(graph, newTags, PURPOSE_ENTITY_TYPE);
 
-            // TODO: update all policies tags resource
-            
-            aliasStore.updateAlias(existingPurposeExtInfo);
+            List<AtlasObjectId> policies = (List<AtlasObjectId>) existingPurposeEntity.getRelationshipAttribute(REL_ATTR_POLICIES);
+
+            if (CollectionUtils.isNotEmpty(policies)) {
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
+                List<String> newTagsResources = newTags.stream().map(x -> "tag:" + x).collect(Collectors.toList());
+
+                for (AtlasObjectId policy : policies) {
+                    AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
+
+                    policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
+                    newTagsResources.forEach(x -> policyVertex.setProperty(ATTR_POLICY_RESOURCES, x));
+
+                    AtlasEntity policyToBeUpdated = entityRetriever.toAtlasEntity(policyVertex);
+
+                    context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
+
+                    existingPurposeExtInfo.addReferredEntity(policyToBeUpdated);
+                }
+            }
+
+            existingPurposeExtInfo.getEntity().setAttribute(ATTR_PURPOSE_CLASSIFICATIONS, newTags);
+            aliasStore.updateAlias(existingPurposeExtInfo, null);
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    @Override
+    public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
+
+        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(vertex);
+        AtlasEntity purpose = entityWithExtInfo.getEntity();
+
+        if(!purpose.getStatus().equals(AtlasEntity.Status.ACTIVE)) {
+            LOG.info("Purpose with guid {} is already deleted/purged", purpose.getGuid());
+            return;
+        }
+
+        //delete policies
+        List<AtlasObjectId> policies = (List<AtlasObjectId>) purpose.getRelationshipAttribute(REL_ATTR_POLICIES);
+
+        for (AtlasObjectId policyObjectId : policies) {
+            //AtlasVertex policyVertex = entityRetriever.getEntityVertex(policyObjectId.getGuid());
+            entityStore.deleteById(policyObjectId.getGuid());
+        }
+
+        //delete ES alias
+        aliasStore.deleteAlias(getESAliasName(purpose));
     }
 
     public static String createQualifiedName() {

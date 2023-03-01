@@ -63,7 +63,6 @@ public class KeycloakClient {
     public static final String KEYCLOAK_PROPERTIES = "keycloak.json";
     private static final String ATLAS_LOG_DIR = "atlas.log.dir";
 
-    //TODO: get creds from properties
     private static String REALM_ID;
     private static String AUTH_SERVER_URL;
     private static String CLIENT_ID;

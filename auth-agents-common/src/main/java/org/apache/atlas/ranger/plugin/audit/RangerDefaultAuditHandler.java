@@ -210,7 +210,7 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 
 	private void populateDefaults(AuthzAuditEvent auditEvent) {
 		if( auditEvent.getAclEnforcer() == null || auditEvent.getAclEnforcer().isEmpty()) {
-			auditEvent.setAclEnforcer("ranger-acl"); // TODO: review
+			auditEvent.setAclEnforcer("ranger-acl");
 		}
 
 		if (auditEvent.getAgentHostname() == null || auditEvent.getAgentHostname().isEmpty()) {

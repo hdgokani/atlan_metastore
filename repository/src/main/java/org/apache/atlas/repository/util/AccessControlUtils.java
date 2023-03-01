@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.ACCESS_CONTROL_ALREADY_EXISTS;
@@ -62,8 +63,15 @@ public class AccessControlUtils {
     public static final String ATTR_PURPOSE_CLASSIFICATIONS  = "purposeClassifications";
 
     public static final String ATTR_POLICY_TYPE  = "policyType";
+    public static final String ATTR_POLICY_USERS  = "policyUsers";
+    public static final String ATTR_POLICY_GROUPS  = "policyGroups";
+    public static final String ATTR_POLICY_ROLES  = "policyRoles";
     public static final String ATTR_POLICY_ACTIONS  = "policyActions";
+    public static final String ATTR_POLICY_CATEGORY  = "policyCategory";
     public static final String ATTR_POLICY_RESOURCES  = "policyResources";
+    public static final String ATTR_POLICY_IS_ENABLED  = "isPolicyEnabled";
+    public static final String ATTR_POLICY_RESOURCES_CATEGORY  = "policyResourceCategory";
+    public static final String ATTR_POLICY_SERVICE_NAME  = "policyServiceName";
 
     public static final String REL_ATTR_ACCESS_CONTROL = "accessControl";
     public static final String REL_ATTR_POLICIES       = "policies";
@@ -74,6 +82,8 @@ public class AccessControlUtils {
     public static final String ACCESS_READ_PURPOSE_METADATA = "entity-read";
     public static final String ACCESS_READ_PERSONA_METADATA = "persona-asset-read";
     public static final String ACCESS_READ_PURPOSE_GLOSSARY = "persona-glossary-read";
+
+    private static final String CONNECTION_QN = "%s/%s/%s";
 
     public static String getTenantId(AtlasStruct entity) {
         String ret = DEFAULT_TENANT_ID;
@@ -122,8 +132,20 @@ public class AccessControlUtils {
         return (String) entity.getAttribute(NAME);
     }
 
+    public static String getEntityQualifiedName(AtlasEntity entity) {
+        return getStringAttribute(entity, QUALIFIED_NAME);
+    }
+
+    public static String getPersonaRoleName(AtlasEntity persona) {
+        String qualifiedName = getStringAttribute(persona, QUALIFIED_NAME);
+
+        String[] parts = qualifiedName.split("/");
+
+        return "nb_" + parts[parts.length - 1];
+    }
+
     public static String getESAliasName(AtlasEntity entity) {
-        String qualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
+        String qualifiedName = getStringAttribute(entity, QUALIFIED_NAME);
 
         String[] parts = qualifiedName.split("/");
 
@@ -143,26 +165,40 @@ public class AccessControlUtils {
     }
 
     public static List<String> getPolicyAssets(AtlasEntity policyEntity) throws AtlasBaseException {
-        List<String> resources = getListAttribute(policyEntity, ATTR_POLICY_RESOURCES);
+        List<String> resources = getPolicyResources(policyEntity);
 
         List<String> assets = resources.stream()
                 .filter(x -> x.startsWith("entity:"))
-                .map(x -> x.split(":")[0])
+                .map(x -> x.split(":")[1])
                 .collect(Collectors.toList());
 
         return assets;
     }
 
-    public static List<String> getPolicyActions(AtlasEntity policyEntity) throws AtlasBaseException {
-        List<String> actions = getListAttribute(policyEntity, ATTR_POLICY_ACTIONS);
+    public static List<String> getPolicyResources(AtlasEntity policyEntity) throws AtlasBaseException {
+        return getListAttribute(policyEntity, ATTR_POLICY_RESOURCES);
+    }
 
-        return actions;
+    public static List<String> getPolicyActions(AtlasEntity policyEntity) throws AtlasBaseException {
+        return getListAttribute(policyEntity, ATTR_POLICY_ACTIONS);
+    }
+
+    public static String getPolicyServiceName(AtlasEntity policyEntity) throws AtlasBaseException {
+        return getStringAttribute(policyEntity, ATTR_POLICY_SERVICE_NAME);
+    }
+
+    public static String getPolicyCategory(AtlasEntity policyEntity) {
+        return getStringAttribute(policyEntity, ATTR_POLICY_CATEGORY);
+    }
+
+    private static String getStringAttribute(AtlasEntity policyEntity, String attrName) {
+        Object obj = policyEntity.getAttribute(attrName);
+        return obj == null ? null : (String) obj;
     }
 
     public static Map<String, Object> mapOf(String key, Object value) {
         Map<String, Object> map = new HashMap<>();
         map.put(key, value);
-
         return map;
     }
 
@@ -175,8 +211,10 @@ public class AccessControlUtils {
     public static List<AtlasEntity> objectToEntityList(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, List<AtlasObjectId> policies) {
         List<AtlasEntity> ret = new ArrayList<>();
 
+        Set<String> referredGuids =  entityWithExtInfo.getReferredEntities().keySet();
         if (policies != null) {
             ret = policies.stream()
+                    .filter(x -> referredGuids.contains(x.getGuid()))
                     .map(x -> entityWithExtInfo.getReferredEntity(x.getGuid()))
                     .filter(x -> x.getStatus() == null || x.getStatus() == AtlasEntity.Status.ACTIVE)
                     .collect(Collectors.toList());
@@ -193,7 +231,7 @@ public class AccessControlUtils {
         String[] splitted = assets.get(0).split("/");
         String connectionQName;
         try {
-            connectionQName = splitted[0] + splitted[0] + splitted[2];
+            connectionQName = String.format(CONNECTION_QN, splitted[0], splitted[1  ], splitted[2]);
         } catch (ArrayIndexOutOfBoundsException aib) {
             throw new AtlasBaseException("Failed to extract qualifiedName of the connection");
         }

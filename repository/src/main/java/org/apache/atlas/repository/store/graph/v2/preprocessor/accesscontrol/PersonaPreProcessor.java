@@ -29,9 +29,11 @@ import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -52,8 +54,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.ATTRIBUTE_UPDATE_NOT_SUPPORTED;
+import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
@@ -61,9 +65,14 @@ import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_ACCESS_CONTROL_ENABLED;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PERSONA_ROLE_ID;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_ACCESS_CONTROL;
+import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
+import static org.apache.atlas.repository.util.AccessControlUtils.getESAliasName;
+import static org.apache.atlas.repository.util.AccessControlUtils.getEntityName;
+import static org.apache.atlas.repository.util.AccessControlUtils.getEntityQualifiedName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsEnabled;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaGroups;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaRoleId;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaRoleName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaUsers;
 import static org.apache.atlas.repository.util.AccessControlUtils.getTenantId;
 import static org.apache.atlas.repository.util.AccessControlUtils.getUUID;
@@ -75,13 +84,16 @@ public class PersonaPreProcessor implements PreProcessor {
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
     private IndexAliasStore aliasStore;
+    private AtlasEntityStore entityStore;
 
     public PersonaPreProcessor(AtlasGraph graph,
                                AtlasTypeRegistry typeRegistry,
-                               EntityGraphRetriever entityRetriever) {
+                               EntityGraphRetriever entityRetriever,
+                               AtlasEntityStore entityStore) {
         this.graph = graph;
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
+        this.entityStore = entityStore;
 
         aliasStore = new ESAliasStore(graph, entityRetriever);
     }
@@ -103,6 +115,30 @@ public class PersonaPreProcessor implements PreProcessor {
                 processUpdatePersona(entity, context.getVertex(entity.getGuid()));
                 break;
         }
+    }
+
+    @Override
+    public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
+        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(vertex);
+        AtlasEntity persona = entityWithExtInfo.getEntity();
+
+        if(!persona.getStatus().equals(AtlasEntity.Status.ACTIVE)) {
+            LOG.info("Persona with guid {} is already deleted/purged", persona.getGuid());
+            return;
+        }
+
+        //delete policies
+        List<AtlasObjectId> policies = (List<AtlasObjectId>) persona.getRelationshipAttribute(REL_ATTR_POLICIES);
+        for (AtlasObjectId policyObjectId : policies) {
+            //AtlasVertex policyVertex = entityRetriever.getEntityVertex(policyObjectId.getGuid());
+            entityStore.deleteById(policyObjectId.getGuid());
+        }
+
+        //remove role
+        removeKeycloakRole(getPersonaRoleId(persona));
+
+        //delete ES alias
+        aliasStore.deleteAlias(getESAliasName(persona));
     }
 
     private void processCreatePersona(AtlasStruct entity) throws AtlasBaseException {
@@ -163,9 +199,11 @@ public class PersonaPreProcessor implements PreProcessor {
     }
 
     private String createKeycloakRole(AtlasEntity entity) throws AtlasBaseException {
-        String roleName = (String) entity.getAttribute(NAME);
+        String roleName = getPersonaRoleName(entity);
         List<String> users = getPersonaUsers(entity);
+        List<String> userIds = new ArrayList<>();
         List<String> groups = getPersonaGroups(entity);
+        List<String> groupIds = new ArrayList<>();
 
         List<UserRepresentation> keycloakPersonaUsers = new ArrayList<>();
         UsersResource usersResource = KeycloakClient.getKeycloakClient().getRealm().users();
@@ -202,8 +240,9 @@ public class PersonaPreProcessor implements PreProcessor {
         attributes.put("createdAt", Collections.singletonList(String.valueOf(System.currentTimeMillis())));
         attributes.put("createdBy", Collections.singletonList(RequestContext.get().getUser()));
         attributes.put("enabled", Collections.singletonList(String.valueOf(true)));
-        attributes.put("users", users);
-        attributes.put("groups", groups);
+        attributes.put("displayName", Collections.singletonList(getEntityName(entity)));
+        attributes.put("users", Collections.singletonList(AtlasType.toJson(keycloakPersonaUsers.stream().map(x -> x.getId()).collect(Collectors.toList()))));
+        attributes.put("groups", Collections.singletonList(AtlasType.toJson(keycloakPersonaGroups.stream().map(x -> x.getId()).collect(Collectors.toList()))));
 
         RoleRepresentation roleRepresentation = new RoleRepresentation();
         roleRepresentation.setName(roleName);
@@ -238,7 +277,7 @@ public class PersonaPreProcessor implements PreProcessor {
 
     private void updateKeycloakRole(AtlasEntity newPersona, AtlasEntity existingPersona) throws AtlasBaseException {
         String roleId = getPersonaRoleId(existingPersona);
-        String roleName = (String) existingPersona.getAttribute(NAME);
+        String roleName = getPersonaRoleName(existingPersona);
 
         List<String> newUsers       = getPersonaUsers(newPersona);
         List<String> newGroups      = getPersonaGroups(newPersona);
@@ -322,13 +361,22 @@ public class PersonaPreProcessor implements PreProcessor {
         attributes.put("updatedAt", Collections.singletonList(String.valueOf(System.currentTimeMillis())));
         attributes.put("updatedBy", Collections.singletonList(RequestContext.get().getUser()));
         attributes.put("enabled", Collections.singletonList(String.valueOf(true)));
-        attributes.put("users", newUsers);
-        attributes.put("groups", newGroups);
+        attributes.put("displayName", Collections.singletonList(getEntityName(newPersona)));
+        //TODO: store IDs instead on names
+        //attributes.put("users", Collections.singletonList(AtlasType.toJson(newUsers)));
+        //attributes.put("groups", Collections.singletonList(AtlasType.toJson(newGroups)));
 
         roleRepresentation.setAttributes(attributes);
 
         rolesResource.updateRole(roleId, roleRepresentation);
         LOG.info("Updated keycloak role with name {}", roleName);
+    }
+
+    private void removeKeycloakRole(String roleId) {
+        RoleByIdResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
+        //RoleRepresentation roleRepresentation = rolesResource.getRole(roleId);
+
+        rolesResource.deleteRole(roleId);
     }
 
     private AtlasEntity.AtlasEntityWithExtInfo getAccessControlEntity(AtlasEntity entity, EntityMutations.EntityOperation op) throws AtlasBaseException {
