@@ -534,10 +534,10 @@ define(['require',
                         inputLimit = relationCount.inputRelationCount;
                         outputLimit = relationCount.outputRelationCount + Globals.lineageNodeCount;
                     }
-                    this.lineageOnDemandPayload["constraints"][parentId] = { direction: "BOTH", inputRelationsLimit: inputLimit, outputRelationsLimit: outputLimit, depth: Globals.lineageDepth };
+                    this.lineageOnDemandPayload[parentId] = { direction: "BOTH", inputRelationsLimit: inputLimit, outputRelationsLimit: outputLimit, depth: Globals.lineageDepth };
                 }
                 var queryParameter = {}
-                queryParameter["constraints"] = this.lineageOnDemandPayload["constraints"];
+                queryParameter["constraints"] = this.lineageOnDemandPayload;
                 this.fetchGraphData({ queryParam: queryParameter, 'legends': false });
             },
             validateInputOutputLimit: function(parentId, btnType) {

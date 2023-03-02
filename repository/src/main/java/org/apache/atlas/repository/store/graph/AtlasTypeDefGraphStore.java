@@ -298,7 +298,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
         tryUpdateByName(name, classificationDef, ttr);
-        //check
+
         return getClassificationDefStore(ttr).updateByName(name, classificationDef, false);
     }
 
