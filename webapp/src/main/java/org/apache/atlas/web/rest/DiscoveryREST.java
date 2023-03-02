@@ -17,8 +17,10 @@
  */
 package org.apache.atlas.web.rest;
 
+import java.util.UUID;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -31,6 +33,7 @@ import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
@@ -39,6 +42,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
@@ -369,10 +373,10 @@ public class DiscoveryREST {
     @Timed
     public AtlasSearchResult indexSearch(IndexSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-
+        RequestContext.get().setTraceId(UUID.randomUUID().toString());
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearch(" + parameters + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearch(" + AtlasType.toJson(parameters) + ")");
             }
 
             if (StringUtils.isEmpty(parameters.getQuery())) {
@@ -384,6 +388,7 @@ public class DiscoveryREST {
             return discoveryService.directIndexSearch(parameters);
         } finally {
             AtlasPerfTracer.log(perf);
+            RequestContext.clear();
         }
 
     }

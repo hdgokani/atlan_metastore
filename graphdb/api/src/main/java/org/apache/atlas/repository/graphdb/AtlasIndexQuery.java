@@ -93,6 +93,7 @@ public interface AtlasIndexQuery<V, E> {
 
         DirectIndexQueryResult<V, E> getCollapseVertices(String key);
 
-    }
+        String getVertexId();
 
+    }
 }

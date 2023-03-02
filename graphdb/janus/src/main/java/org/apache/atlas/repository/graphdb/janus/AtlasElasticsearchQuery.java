@@ -221,6 +221,16 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> getCollapseVertices(String key) {
             return null;
         }
+
+        @Override
+        public String getVertexId() {
+            return String.valueOf(LongEncoding.decode(hit.getId()));
+        }
+
+        @Override
+        public Object getProperty(String key) {
+            return hit.getSourceAsMap().get(key);
+        }
     }
 
 
@@ -268,6 +278,18 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             }
             return null;
         }
+
+
+        @Override
+        public String getVertexId() {
+            return String.valueOf(LongEncoding.decode(String.valueOf(hit.get("_id"))));
+        }
+
+        @Override
+        public Object getProperty(String key) {
+            return AtlasType.fromJson(AtlasType.toJson(hit.getOrDefault("_source", Collections.EMPTY_MAP)), Map.class).get(key);
+        }
+
 
         @Override
         public double getScore() {

@@ -44,11 +44,7 @@ import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
-import org.apache.atlas.repository.graphdb.AtlasElement;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -121,7 +117,6 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -963,10 +958,6 @@ public class EntityGraphRetriever {
         return entity;
     }
 
-    private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex) throws AtlasBaseException {
-        return mapVertexToAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
-    }
-
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader");
         AtlasEntityHeader ret = new AtlasEntityHeader();
@@ -1008,34 +999,34 @@ public class EntityGraphRetriever {
                 ret.setDisplayText(displayText.toString());
             }
 
-            if (CollectionUtils.isNotEmpty(attributes)) {
-                for (String attrName : attributes) {
-                    AtlasAttribute attribute = entityType.getAttribute(attrName);
-
-                    if (attribute == null) {
-                        attrName = toNonQualifiedName(attrName);
-
-                        if (ret.hasAttribute(attrName)) {
-                            continue;
-                        }
-
-                        attribute = entityType.getAttribute(attrName);
-
-                        if (attribute == null) {
-                            attribute = entityType.getRelationshipAttribute(attrName, null);
-                        }
-                    }
-
-                    Object attrValue = getVertexAttribute(entityVertex, attribute);
-
-                    if (attrValue != null) {
-                        ret.setAttribute(attrName, attrValue);
-                    }
+            attributes.stream().parallel().forEach(attrName -> {
+                try {
+                    enrichEntityHeaderWithAttributes(attrName, entityType,ret, entityVertex);
+                } catch (AtlasBaseException e) {
+                    LOG.error("Error while fetching attributes for vertex: {}", entityVertex.getIdForDisplay());
+                    throw new RuntimeException(e);
                 }
-            }
+            });
         }
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
+    }
+
+    private void enrichEntityHeaderWithAttributes(String attrName, AtlasEntityType entityType, AtlasEntityHeader ret, AtlasVertex entityVertex) throws AtlasBaseException {
+        AtlasAttribute attribute = entityType.getAttribute(attrName);
+        if (attribute == null) {
+            attrName = toNonQualifiedName(attrName);
+            if (!ret.hasAttribute(attrName)) {
+                attribute = entityType.getAttribute(attrName);
+                if (attribute == null) {
+                    attribute = entityType.getRelationshipAttribute(attrName, null);
+                }
+            }
+        }
+        Object attrValue = getVertexAttribute(entityVertex, attribute);
+        if (attrValue != null) {
+            ret.setAttribute(attrName, attrValue);
+        }
     }
 
     private String toNonQualifiedName(String attrName) {

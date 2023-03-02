@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import org.slf4j.MDC;
 
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 
@@ -119,6 +120,7 @@ public class RequestContext {
         }
 
         CURRENT_CONTEXT.remove();
+        MDC.clear();
     }
 
     public void clearCache() {
@@ -573,6 +575,7 @@ public class RequestContext {
 
     public void setTraceId(String traceId) {
         this.traceId = traceId;
+        MDC.put("trace_id", this.traceId);
     }
 
     public class EntityGuidPair {

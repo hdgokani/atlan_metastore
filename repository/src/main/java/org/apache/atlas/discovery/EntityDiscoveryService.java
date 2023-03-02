@@ -18,6 +18,9 @@
 package org.apache.atlas.discovery;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -1007,12 +1010,14 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             if(LOG.isDebugEnabled()){
                 LOG.debug("Preparing search results for ({})", ret.getSearchParameters());
             }
-            Iterator<Result> iterator = indexQueryResult.getIterator();
+            List<Result> indexResults = Lists.newArrayList(indexQueryResult.getIterator());
             boolean showSearchScore = searchParams.getShowSearchScore();
 
-            while (iterator.hasNext()) {
-                Result result = iterator.next();
-                AtlasVertex vertex = result.getVertex();
+            Map<String, AtlasVertex> verticesMap = getVerticesMap(indexResults);
+            Iterator<Result> indexResultsIterator = indexResults.iterator();
+            while (indexResultsIterator.hasNext()) {
+                Result result = indexResultsIterator.next();
+                AtlasVertex vertex = verticesMap.getOrDefault(result.getVertexId(), result.getVertex());
 
                 if (vertex == null) {
                     LOG.warn("vertex in null");
@@ -1062,6 +1067,14 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 throw e;
         }
         scrubSearchResults(ret, searchParams.getSuppressLogs());
+    }
+
+    private Map<String, AtlasVertex> getVerticesMap(List<Result> results) {
+        if (results.isEmpty()) {
+            return Collections.EMPTY_MAP;
+        }
+        String[] vertexIds = results.stream().map(r -> r.getVertexId()).collect(Collectors.toList()).toArray(new String[0]);
+        return (Map<String, AtlasVertex>) graph.getVertices(vertexIds).stream().collect(Collectors.toMap(v -> ((AtlasVertex) v).getId(), Function.identity()));
     }
 
     private Map<String, Object> getMap(String key, Object value) {
