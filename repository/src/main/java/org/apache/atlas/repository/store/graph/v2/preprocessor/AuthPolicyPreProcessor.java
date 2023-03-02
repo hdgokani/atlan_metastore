@@ -20,8 +20,8 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.aliasstore.ESAliasStore;
-import org.apache.atlas.aliasstore.IndexAliasStore;
+import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
+import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -41,17 +41,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_GUID_NOT_FOUND;
-import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_ACCESS_CONTROL_ENABLED;
@@ -62,22 +59,11 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SE
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_USERS;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_ACCESS_CONTROL;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
-import static org.apache.atlas.repository.util.AccessControlUtils.getEntityName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getEntityQualifiedName;
-import static org.apache.atlas.repository.util.AccessControlUtils.getIsEnabled;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaRoleId;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaRoleName;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicies;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyActions;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyAssets;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResources;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyServiceName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPurposeTags;
-import static org.apache.atlas.repository.util.AccessControlUtils.getTenantId;
 import static org.apache.atlas.repository.util.AccessControlUtils.getUUID;
-import static org.apache.atlas.repository.util.AccessControlUtils.validateUniquenessByName;
-import static org.apache.atlas.repository.util.AccessControlUtils.validateUniquenessByTags;
 
 public class AuthPolicyPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AuthPolicyPreProcessor.class);

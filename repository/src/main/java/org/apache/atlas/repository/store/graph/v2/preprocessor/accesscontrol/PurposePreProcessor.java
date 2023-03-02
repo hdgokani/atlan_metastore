@@ -18,10 +18,9 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol;
 
 
-import atlas.keycloak.client.KeycloakClient;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.aliasstore.ESAliasStore;
-import org.apache.atlas.aliasstore.IndexAliasStore;
+import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
+import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -37,43 +36,23 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
-import org.keycloak.admin.client.resource.GroupResource;
-import org.keycloak.admin.client.resource.GroupsResource;
-import org.keycloak.admin.client.resource.RoleByIdResource;
-import org.keycloak.admin.client.resource.UserResource;
-import org.keycloak.admin.client.resource.UsersResource;
-import org.keycloak.representations.idm.GroupRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
-import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_ACCESS_CONTROL_ENABLED;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PERSONA_ROLE_ID;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PURPOSE_CLASSIFICATIONS;
-import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_ACCESS_CONTROL;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
 import static org.apache.atlas.repository.util.AccessControlUtils.getESAliasName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getEntityName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsEnabled;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaGroups;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaRoleId;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaUsers;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicies;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPurposeTags;
 import static org.apache.atlas.repository.util.AccessControlUtils.getTenantId;
 import static org.apache.atlas.repository.util.AccessControlUtils.getUUID;
@@ -214,7 +193,6 @@ public class PurposePreProcessor implements PreProcessor {
         List<AtlasObjectId> policies = (List<AtlasObjectId>) purpose.getRelationshipAttribute(REL_ATTR_POLICIES);
 
         for (AtlasObjectId policyObjectId : policies) {
-            //AtlasVertex policyVertex = entityRetriever.getEntityVertex(policyObjectId.getGuid());
             entityStore.deleteById(policyObjectId.getGuid());
         }
 

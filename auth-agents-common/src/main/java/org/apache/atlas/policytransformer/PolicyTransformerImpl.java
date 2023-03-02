@@ -68,6 +68,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.repository.util.AccessControlUtils.*;
+
 @Component
 public class PolicyTransformerImpl {
     private static final Logger LOG = LoggerFactory.getLogger(PolicyTransformerImpl.class);
@@ -79,7 +81,6 @@ public class PolicyTransformerImpl {
 
     private static final String ATTR_POLICY_ACTIONS            = "policyActions";
     private static final String ATTR_POLICY_TYPE               = "policyType";
-    private static final String ATTR_POLICY_CATEGORY           = "policyCategory"; //Persona, Purpose, bootstrap
     private static final String ATTR_POLICY_RESOURCES          = "policyResources";
     private static final String ATTR_POLICY_RESOURCES_CATEGORY = "policyResourceCategory";
     private static final String ATTR_POLICY_GROUPS             = "policyGroups";
@@ -105,6 +106,24 @@ public class PolicyTransformerImpl {
     private AtlasTypeRegistry         typeRegistry = null;
     private EntityGraphRetriever      entityRetriever = null;
 
+    private static PolicyTransformerTemplate templates;
+
+    static {
+        String jsonTemplate = null;
+        try {
+            File jsonTemplateFile = new File(PolicyTransformerImpl.class.getResource("/PolicyCacheTransformer.json").getPath());
+
+            jsonTemplate = FileCopyUtils.copyToString(new FileReader(jsonTemplateFile));
+        } catch (IOException e) {
+            LOG.error("");
+        }
+        jsonTemplate =  jsonTemplate.replaceAll("\n", "");
+        jsonTemplate =  jsonTemplate.replaceAll("\\s", "");
+
+
+        templates = new PolicyTransformerTemplate();
+        templates.fromJsonString(jsonTemplate);
+    }
 
     public PolicyTransformerImpl(AtlasTypeRegistry typeRegistry) {
         this.graph                = new AtlasJanusGraph();
@@ -259,15 +278,6 @@ public class PolicyTransformerImpl {
     private List<AtlasEntityHeader> transformCustomPoliciesToAtlasPolicies(AtlasEntityHeader atlasPolicy) throws IOException {
         List<AtlasEntityHeader> ret = new ArrayList<>();
 
-        File jsonTemplateFile = new File(getClass().getResource("/PolicyCacheTransformer.json").getPath());
-        String jsonTemplate = FileCopyUtils.copyToString(new FileReader(jsonTemplateFile));
-        jsonTemplate =  jsonTemplate.replaceAll("\n", "");
-        jsonTemplate =  jsonTemplate.replaceAll("\\s", "");
-
-
-        PolicyTransformerTemplate templates = new PolicyTransformerTemplate();
-        templates.fromJsonString(jsonTemplate);
-
         List<String> atlasActions = (List<String>) atlasPolicy.getAttribute(ATTR_POLICY_ACTIONS);
         List<String> atlasResources = (List<String>) atlasPolicy.getAttribute(ATTR_POLICY_RESOURCES);
 
@@ -281,9 +291,14 @@ public class PolicyTransformerImpl {
                 header.setGuid(atlasPolicy.getGuid() + "-" + i);
 
                 header.setAttribute(ATTR_POLICY_ACTIONS, templatePolicy.getActions());
-                header.setAttribute(ATTR_POLICY_RESOURCES_CATEGORY, templatePolicy.getCategory());
+                header.setAttribute(ATTR_POLICY_RESOURCES_CATEGORY, templatePolicy.getPolicyResourceCategory());
 
-                boolean isConnection = isConnectionPolicy(atlasPolicy);
+                boolean isConnection = false;
+                String policyCategory = getPolicyCategory(atlasPolicy);
+                if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
+                    isConnection = isConnectionPolicy(atlasPolicy);
+                }
+
                 List<String> finalResources = new ArrayList<>();
                 for (String templateResource : templatePolicy.getResources()) {
                     if (templateResource.contains(PLACEHOLDER_ENTITY)) {
@@ -323,7 +338,7 @@ public class PolicyTransformerImpl {
             try {
                 entityRetriever.toAtlasEntity(new AtlasObjectId("Connection", uniqueAttributes));
             } catch (AtlasBaseException abe) {
-                if (AtlasErrorCode.INSTANCE_GUID_NOT_FOUND != abe.getAtlasErrorCode()) {
+                if (AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND != abe.getAtlasErrorCode()) {
                     LOG.error("Failed to find connection entity for resource {}", resources.get(0));
                 }
             }

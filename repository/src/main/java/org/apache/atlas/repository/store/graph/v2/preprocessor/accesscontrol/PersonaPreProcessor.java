@@ -20,8 +20,8 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol;
 
 import atlas.keycloak.client.KeycloakClient;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.aliasstore.ESAliasStore;
-import org.apache.atlas.aliasstore.IndexAliasStore;
+import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
+import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -33,6 +33,7 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.repository.store.users.KeycloakStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -56,11 +57,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.AtlasErrorCode.ATTRIBUTE_UPDATE_NOT_SUPPORTED;
-import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
-import static org.apache.atlas.repository.Constants.NAME;
-import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_ACCESS_CONTROL_ENABLED;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PERSONA_ROLE_ID;
@@ -68,7 +65,6 @@ import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_ACCES
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
 import static org.apache.atlas.repository.util.AccessControlUtils.getESAliasName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getEntityName;
-import static org.apache.atlas.repository.util.AccessControlUtils.getEntityQualifiedName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsEnabled;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaGroups;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaRoleId;
@@ -85,6 +81,7 @@ public class PersonaPreProcessor implements PreProcessor {
     private final EntityGraphRetriever entityRetriever;
     private IndexAliasStore aliasStore;
     private AtlasEntityStore entityStore;
+    private KeycloakStore keycloakStore;
 
     public PersonaPreProcessor(AtlasGraph graph,
                                AtlasTypeRegistry typeRegistry,
@@ -96,6 +93,7 @@ public class PersonaPreProcessor implements PreProcessor {
         this.entityStore = entityStore;
 
         aliasStore = new ESAliasStore(graph, entityRetriever);
+        keycloakStore = new KeycloakStore(true, true);
     }
 
     @Override
@@ -201,37 +199,7 @@ public class PersonaPreProcessor implements PreProcessor {
     private String createKeycloakRole(AtlasEntity entity) throws AtlasBaseException {
         String roleName = getPersonaRoleName(entity);
         List<String> users = getPersonaUsers(entity);
-        List<String> userIds = new ArrayList<>();
         List<String> groups = getPersonaGroups(entity);
-        List<String> groupIds = new ArrayList<>();
-
-        List<UserRepresentation> keycloakPersonaUsers = new ArrayList<>();
-        UsersResource usersResource = KeycloakClient.getKeycloakClient().getRealm().users();
-
-        for (String userName : users) {
-            List<UserRepresentation> matchedUsers = usersResource.search(userName);
-            Optional<UserRepresentation> keyUserOptional = matchedUsers.stream().filter(x -> userName.equals(x.getUsername())).findFirst();
-
-            if (keyUserOptional.isPresent()) {
-                keycloakPersonaUsers.add(keyUserOptional.get());
-            } else {
-                throw new AtlasBaseException("Keycloak user not found with userName " + userName);
-            }
-        }
-
-        List<GroupRepresentation> keycloakPersonaGroups = new ArrayList<>();
-        GroupsResource groupsResource = KeycloakClient.getKeycloakClient().getRealm().groups();
-
-        for (String groupName : groups) {
-            List<GroupRepresentation> matchedGroups = groupsResource.groups(groupName, 0, 100);
-            Optional<GroupRepresentation> keyGroupOptional = matchedGroups.stream().filter(x -> groupName.equals(x.getName())).findFirst();
-
-            if (keyGroupOptional.isPresent()) {
-                keycloakPersonaGroups.add(keyGroupOptional.get());
-            } else {
-                throw new AtlasBaseException("Keycloak group not found with name " + groupName);
-            }
-        }
 
         Map<String, List<String>> attributes = new HashMap<>();
         attributes.put("name", Collections.singletonList(roleName));
@@ -241,38 +209,10 @@ public class PersonaPreProcessor implements PreProcessor {
         attributes.put("createdBy", Collections.singletonList(RequestContext.get().getUser()));
         attributes.put("enabled", Collections.singletonList(String.valueOf(true)));
         attributes.put("displayName", Collections.singletonList(getEntityName(entity)));
-        attributes.put("users", Collections.singletonList(AtlasType.toJson(keycloakPersonaUsers.stream().map(x -> x.getId()).collect(Collectors.toList()))));
-        attributes.put("groups", Collections.singletonList(AtlasType.toJson(keycloakPersonaGroups.stream().map(x -> x.getId()).collect(Collectors.toList()))));
 
-        RoleRepresentation roleRepresentation = new RoleRepresentation();
-        roleRepresentation.setName(roleName);
-        roleRepresentation.setComposite(false);
-        roleRepresentation.setAttributes(attributes);
+        RoleRepresentation role = keycloakStore.createRole(roleName, users, groups, null);
 
-        KeycloakClient.getKeycloakClient().getRealm().roles().create(roleRepresentation);
-        LOG.info("Created keycloak role with name {}", roleName);
-
-        String roleId = KeycloakClient.getKeycloakClient().getRealm().roles().get(roleName).toRepresentation().getId();
-        roleRepresentation.setId(roleId);
-
-
-        //add realm role into users
-        for (UserRepresentation kUser : keycloakPersonaUsers) {
-            final UserResource userResource = usersResource.get(kUser.getId());
-
-            userResource.roles().realmLevel().add(Collections.singletonList(roleRepresentation));
-            userResource.update(kUser);
-        }
-
-        //add realm role into groups
-        for (GroupRepresentation kGroup : keycloakPersonaGroups) {
-            final GroupResource groupResource = groupsResource.group(kGroup.getId());
-
-            groupResource.roles().realmLevel().add(Collections.singletonList(roleRepresentation));
-            groupResource.update(kGroup);
-        }
-
-        return roleId;
+        return role.getId();
     }
 
     private void updateKeycloakRole(AtlasEntity newPersona, AtlasEntity existingPersona) throws AtlasBaseException {

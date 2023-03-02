@@ -26,7 +26,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.atlas.ranger.plugin.model.RangerRole;
 import org.apache.atlas.ranger.plugin.service.RangerBasePlugin;
 import org.keycloak.admin.client.resource.RoleResource;
@@ -37,9 +36,6 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -60,7 +56,7 @@ public class KeycloakUserStore {
 
     private static int NUM_THREADS = 5;
 
-    private final String            serviceName;
+    private final String serviceName;
 
     public KeycloakUserStore(String serviceName) {
         if (LOG.isDebugEnabled()) {

@@ -52,8 +52,8 @@ public class PolicyTransformerTemplate {
 
                 templatePolicy.setActions((List<String>) policy.get("actions"));
                 templatePolicy.setResources((List<String>) policy.get("resources"));
-                templatePolicy.setCategory((String) policy.get("category"));
                 templatePolicy.setPolicyType((String) policy.get("policyType"));
+                templatePolicy.setPolicyResourceCategory((String) policy.get("policyResourceCategory"));
 
                 policies.add(templatePolicy);
             }
@@ -64,9 +64,9 @@ public class PolicyTransformerTemplate {
 
     class TemplatePolicy {
         private String policyType;
-        private String category;
         private List<String> resources;
         private List<String> actions;
+        private String policyResourceCategory;
 
         public String getPolicyType() {
             return policyType;
@@ -76,12 +76,12 @@ public class PolicyTransformerTemplate {
             this.policyType = policyType;
         }
 
-        public String getCategory() {
-            return category;
+        public String getPolicyResourceCategory() {
+            return policyResourceCategory;
         }
 
-        public void setCategory(String category) {
-            this.category = category;
+        public void setPolicyResourceCategory(String category) {
+            this.policyResourceCategory = category;
         }
 
         public List<String> getResources() {

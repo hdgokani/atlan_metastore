@@ -15,20 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.aliasstore;
+package org.apache.atlas.repository.store.aliasstore;
 
 import org.apache.atlas.ESAliasRequestBuilder;
 import org.apache.atlas.ESAliasRequestBuilder.AliasAction;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.hbase.security.access.AccessControlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -40,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.ADD;
-import static org.apache.atlas.repository.Constants.CONNECTION_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
@@ -56,7 +50,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.getPolicies;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyActions;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyAssets;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPurposeTags;
-import static org.apache.atlas.repository.util.AccessControlUtils.mapOf;
+import static org.apache.atlas.util.AtlasEntityUtils.mapOf;
 
 
 @Component

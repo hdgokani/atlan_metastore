@@ -2,7 +2,7 @@
   "persona-asset-read": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:{entity-type}",
@@ -14,7 +14,7 @@
   "persona-asset-update": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:{entity-type}",
@@ -24,7 +24,7 @@
     },
     {
       "policyType": "ACCESS",
-      "category": "relationship",
+      "policyResourceCategory": "RELATIONSHIP",
       "resources": [
         "relationship-type:*",
 
@@ -46,7 +46,7 @@
   "persona-api-create": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:{entity-type}",
@@ -58,7 +58,7 @@
   "persona-api-delete": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:{entity-type}",
@@ -70,7 +70,7 @@
   "persona-business-update-metadata": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:{entity-type}",
@@ -83,7 +83,7 @@
   "persona-entity-add-classification": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:{entity-type}",
@@ -96,7 +96,7 @@
   "persona-entity-update-classification": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:{entity-type}",
@@ -109,7 +109,7 @@
   "persona-entity-remove-classification": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:{entity-type}",
@@ -122,7 +122,7 @@
   "persona-add-terms": [
     {
       "policyType": "ACCESS",
-      "category": "relationship",
+      "policyResourceCategory": "RELATIONSHIP",
       "resources": [
         "relationship-type:*",
 
@@ -140,7 +140,7 @@
   "persona-remove-terms": [
     {
       "policyType": "ACCESS",
-      "category": "relationship",
+      "policyResourceCategory": "RELATIONSHIP",
       "resources": [
         "relationship-type:*",
 
@@ -161,7 +161,7 @@
   "persona-glossary-read": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:AtlasGlossary",
@@ -173,7 +173,7 @@
     },
     {
       "policyType": "ACCESS",
-      "category": "relationship",
+      "policyResourceCategory": "RELATIONSHIP",
       "resources": [
         "relationship-type:*",
 
@@ -195,7 +195,7 @@
   "persona-glossary-update": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:AtlasGlossary",
@@ -207,7 +207,7 @@
     },
     {
       "policyType": "ACCESS",
-      "category": "relationship",
+      "policyResourceCategory": "RELATIONSHIP",
       "resources": [
         "relationship-type:*",
 
@@ -225,7 +225,7 @@
     },
     {
       "policyType": "ACCESS",
-      "category": "relationship",
+      "policyResourceCategory": "RELATIONSHIP",
       "resources": [
         "relationship-type:*",
 
@@ -243,7 +243,7 @@
   "persona-glossary-create": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:AtlasGlossary",
@@ -257,7 +257,7 @@
   "persona-glossary-delete": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:AtlasGlossary",
@@ -271,7 +271,7 @@
   "persona-glossary-update-custom-metadata": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:AtlasGlossary",
@@ -286,7 +286,7 @@
   "persona-glossary-add-classifications": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:AtlasGlossary",
@@ -301,7 +301,7 @@
   "persona-glossary-update-classifications": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:AtlasGlossary",
@@ -316,7 +316,7 @@
   "persona-glossary-delete-classifications": [
     {
       "policyType": "ACCESS",
-      "category": "entity",
+      "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
         "entity-type:AtlasGlossary",

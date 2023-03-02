@@ -20,9 +20,9 @@ package org.apache.atlas.repository.util;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -34,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +47,9 @@ import static org.apache.atlas.repository.Constants.DEFAULT_TENANT_ID;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
+import static org.apache.atlas.util.AtlasEntityUtils.getListAttribute;
+import static org.apache.atlas.util.AtlasEntityUtils.getStringAttribute;
+import static org.apache.atlas.util.AtlasEntityUtils.mapOf;
 
 public class AccessControlUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AccessControlUtils.class);
@@ -82,6 +84,10 @@ public class AccessControlUtils {
     public static final String ACCESS_READ_PURPOSE_METADATA = "entity-read";
     public static final String ACCESS_READ_PERSONA_METADATA = "persona-asset-read";
     public static final String ACCESS_READ_PURPOSE_GLOSSARY = "persona-glossary-read";
+
+    public static final String POLICY_CATEGORY_PERSONA  = "persona";
+    public static final String POLICY_CATEGORY_PURPOSE  = "purpose";
+    public static final String POLICY_CATEGORY_BOOTSTRAP  = "bootstrap";
 
     private static final String CONNECTION_QN = "%s/%s/%s";
 
@@ -191,15 +197,8 @@ public class AccessControlUtils {
         return getStringAttribute(policyEntity, ATTR_POLICY_CATEGORY);
     }
 
-    private static String getStringAttribute(AtlasEntity policyEntity, String attrName) {
-        Object obj = policyEntity.getAttribute(attrName);
-        return obj == null ? null : (String) obj;
-    }
-
-    public static Map<String, Object> mapOf(String key, Object value) {
-        Map<String, Object> map = new HashMap<>();
-        map.put(key, value);
-        return map;
+    public static String getPolicyCategory(AtlasEntityHeader policyEntity) {
+        return getStringAttribute(policyEntity, ATTR_POLICY_CATEGORY);
     }
 
     public static List<AtlasEntity> getPolicies(AtlasEntity.AtlasEntityWithExtInfo accessControl) {
@@ -231,7 +230,7 @@ public class AccessControlUtils {
         String[] splitted = assets.get(0).split("/");
         String connectionQName;
         try {
-            connectionQName = String.format(CONNECTION_QN, splitted[0], splitted[1  ], splitted[2]);
+            connectionQName = String.format(CONNECTION_QN, splitted[0], splitted[1], splitted[2]);
         } catch (ArrayIndexOutOfBoundsException aib) {
             throw new AtlasBaseException("Failed to extract qualifiedName of the connection");
         }
@@ -329,16 +328,5 @@ public class AccessControlUtils {
         AtlasEntity entity = entityRetriever.toAtlasEntity(objectId);
 
         return entity;
-    }
-
-    private static List<String> getListAttribute(AtlasStruct entity, String attrName) {
-        List<String> ret = new ArrayList<>();
-
-        Object valueObj = entity.getAttribute(attrName);
-        if (valueObj != null) {
-            ret = (List<String>) valueObj;
-        }
-
-        return ret;
     }
 }
