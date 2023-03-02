@@ -112,7 +112,7 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
 
         typeDefStore.createTypesDef(new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(),
                 Arrays.asList(tagX, tagY),
-                Collections.emptyList(), Collections.emptyList()), false);
+                Collections.emptyList(), Collections.emptyList()));
     }
 
     public static InputStream getZipSource(String fileName) throws IOException {

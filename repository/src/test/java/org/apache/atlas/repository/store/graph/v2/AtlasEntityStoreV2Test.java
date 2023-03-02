@@ -124,7 +124,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         primitiveEntityDef.add(TestUtilsV2.createPrimitiveEntityDef());
         typesDef11.setEntityDefs(primitiveEntityDef);
 
-        typeDefStore.createTypesDef(typesDef11, false);
+        typeDefStore.createTypesDef(typesDef11);
     }
     @BeforeTest
     public void init() throws Exception {
@@ -630,7 +630,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
                         AtlasTypeUtil.createOptionalAttrDef(mapAttrName, "map<string,string>"));
 
         AtlasTypesDef atlasTypesDef = new AtlasTypesDef(null, null, null, Arrays.asList(typeDefinition));
-        typeDefStore.createTypesDef(atlasTypesDef, false);
+        typeDefStore.createTypesDef(atlasTypesDef);
 
         //verify that entity can be created with reserved characters in string value, array value and map key and value
         AtlasEntity entity = new AtlasEntity();
@@ -931,7 +931,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         getTagWithName(typesDef,"testTag","int");
 
         try {
-            typeDefStore.createTypesDef(typesDef, false);
+            typeDefStore.createTypesDef(typesDef);
         } catch (AtlasBaseException e) {
             fail("Tag creation should've succeeded");
         }
@@ -945,7 +945,7 @@ public class AtlasEntityStoreV2Test extends AtlasEntityTestBase {
         AtlasClassificationDef aTag = getTagWithName(typesDef, "testTag", "string");
 
         try {
-            typeDefStore.createTypesDef(typesDef, false);
+            typeDefStore.createTypesDef(typesDef);
         } catch (AtlasBaseException e) {
             fail("Tag re-creation should've succeeded");
         }

@@ -150,7 +150,7 @@ public class TestLoadModelUtils {
 
     public static void createTypes(AtlasTypeDefStore typeDefStore, String entitiesSubDir, String typesDef) {
         try {
-            typeDefStore.createTypesDef(loadTypes(entitiesSubDir, typesDef), false);
+            typeDefStore.createTypesDef(loadTypes(entitiesSubDir, typesDef));
         } catch (AtlasBaseException e) {
             throw new SkipException("setup: could not load typesDef.");
         }
@@ -206,7 +206,7 @@ public class TestLoadModelUtils {
 
         AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesFromJson, typeRegistry);
         if (typesToCreate != null && !typesToCreate.isEmpty()) {
-            typeDefStore.createTypesDef(typesToCreate, false);
+            typeDefStore.createTypesDef(typesToCreate);
         }
     }
 

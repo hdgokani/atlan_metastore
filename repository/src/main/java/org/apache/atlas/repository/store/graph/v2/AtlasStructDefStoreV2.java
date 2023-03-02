@@ -62,12 +62,12 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
     }
 
     @Override
-    public AtlasVertex preCreate(AtlasStructDef structDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasVertex preCreate(AtlasStructDef structDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasStructDefStoreV1.preCreate({})", structDef);
         }
 
-        validateType(structDef, allowDuplicateDisplayName);
+        validateType(structDef);
 
         AtlasType type = typeRegistry.getType(structDef.getName());
 
@@ -95,7 +95,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
     }
 
     @Override
-    public AtlasStructDef create(AtlasStructDef structDef, AtlasVertex preCreateResult, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasStructDef create(AtlasStructDef structDef, AtlasVertex preCreateResult) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasStructDefStoreV1.create({}, {})", structDef, preCreateResult);
         }
@@ -107,7 +107,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Missing attributes for structdef");
         }
 
-        AtlasVertex vertex = (preCreateResult == null) ? preCreate(structDef, allowDuplicateDisplayName) : preCreateResult;
+        AtlasVertex vertex = (preCreateResult == null) ? preCreate(structDef) : preCreateResult;
 
         AtlasStructDefStoreV2.updateVertexAddReferences(structDef, vertex, typeDefStore);
 
@@ -184,7 +184,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
     }
 
     @Override
-    public AtlasStructDef update(AtlasStructDef structDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasStructDef update(AtlasStructDef structDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasStructDefStoreV1.update({})", structDef);
         }
@@ -192,10 +192,10 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         verifyAttributeTypeReadAccess(structDef.getAttributeDefs());
 
 
-        validateType(structDef, allowDuplicateDisplayName);
+        validateType(structDef);
 
-        AtlasStructDef ret = StringUtils.isNotBlank(structDef.getGuid()) ? updateByGuid(structDef.getGuid(), structDef, allowDuplicateDisplayName)
-                                                                         : updateByName(structDef.getName(), structDef, allowDuplicateDisplayName);
+        AtlasStructDef ret = StringUtils.isNotBlank(structDef.getGuid()) ? updateByGuid(structDef.getGuid(), structDef)
+                                                                         : updateByName(structDef.getName(), structDef);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasStructDefStoreV1.update({}): {}", structDef, ret);
@@ -205,7 +205,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
     }
 
     @Override
-    public AtlasStructDef updateByName(String name, AtlasStructDef structDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasStructDef updateByName(String name, AtlasStructDef structDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasStructDefStoreV1.updateByName({}, {})", name, structDef);
         }
@@ -214,7 +214,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update struct-def ", name);
 
-        validateType(structDef, allowDuplicateDisplayName);
+        validateType(structDef);
 
         AtlasType type = typeRegistry.getType(structDef.getName());
 
@@ -241,7 +241,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
     }
 
     @Override
-    public AtlasStructDef updateByGuid(String guid, AtlasStructDef structDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasStructDef updateByGuid(String guid, AtlasStructDef structDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasStructDefStoreV1.updateByGuid({})", guid);
         }
@@ -250,7 +250,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update struct-def ", (existingDef != null ? existingDef.getName() : guid));
 
-        validateType(structDef, allowDuplicateDisplayName);
+        validateType(structDef);
 
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 
@@ -467,6 +467,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
                 AtlasGraphUtilsV2.setProperty(vertex, propertyKey, toJsonFromAttribute(structType.getAttribute(attributeDef.getName())));
             }
         }
+
         AtlasGraphUtilsV2.setEncodedProperty(vertex, encodedStructDefPropertyKey, attrNames);
     }
 

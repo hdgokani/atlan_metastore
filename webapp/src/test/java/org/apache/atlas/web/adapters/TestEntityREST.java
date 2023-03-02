@@ -67,11 +67,11 @@ public class TestEntityREST {
     @BeforeClass
     public void setUp() throws Exception {
         AtlasTypesDef typesDef = TestUtilsV2.defineHiveTypes();
-        typeStore.createTypesDef(typesDef, false);
+        typeStore.createTypesDef(typesDef);
         AtlasTypesDef enumDef =  TestUtilsV2.defineEnumTypes();
-        typeStore.createTypesDef(enumDef, false);
+        typeStore.createTypesDef(enumDef);
         AtlasTypesDef metadataDef = TestUtilsV2.defineBusinessMetadataTypes();
-        typeStore.createTypesDef(metadataDef, false);
+        typeStore.createTypesDef(metadataDef);
     }
 
     @AfterClass

@@ -442,9 +442,10 @@ public class TypesREST {
                                                                AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
             lock = attemptAcquiringLock();
+            RequestContext.get().setAllowDuplicateDisplayName(allowDuplicateDisplayName);
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
-            AtlasTypesDef atlasTypesDef = typeDefStore.createTypesDef(typesDef, allowDuplicateDisplayName);
+            AtlasTypesDef atlasTypesDef = typeDefStore.createTypesDef(typesDef);
             typeCacheRefresher.refreshAllHostCache();
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
@@ -507,8 +508,9 @@ public class TypesREST {
                 classificationDef.setRandomNameForNewAttributeDefs(existingClassificationDef);
             }
             RequestContext.get().setInTypePatching(patch);
+            RequestContext.get().setAllowDuplicateDisplayName(allowDuplicateDisplayName);
             LOG.info("TypesRest.updateAtlasTypeDefs:: Typedef patch enabled:" + patch);
-            AtlasTypesDef atlasTypesDef = typeDefStore.updateTypesDef(typesDef, allowDuplicateDisplayName);
+            AtlasTypesDef atlasTypesDef = typeDefStore.updateTypesDef(typesDef);
             typeCacheRefresher.refreshAllHostCache();
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {

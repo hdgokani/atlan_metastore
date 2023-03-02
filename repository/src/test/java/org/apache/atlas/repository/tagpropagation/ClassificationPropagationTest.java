@@ -612,7 +612,7 @@ public class ClassificationPropagationTest extends AtlasTestBase {
 
         typeDefStore.createTypesDef(new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(),
                                                       Arrays.asList(tag1, tag2, tag3, tag4, PII),
-                                                      Collections.emptyList(), Collections.emptyList()), false);
+                                                      Collections.emptyList(), Collections.emptyList()));
     }
 
     private void initializeEntitiesMap() throws AtlasBaseException {

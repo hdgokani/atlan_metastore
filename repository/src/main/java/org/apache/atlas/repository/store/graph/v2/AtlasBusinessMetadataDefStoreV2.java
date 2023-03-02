@@ -59,12 +59,12 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     }
 
     @Override
-    public AtlasVertex preCreate(AtlasBusinessMetadataDef businessMetadataDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasVertex preCreate(AtlasBusinessMetadataDef businessMetadataDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasBusinessMetadataDefStoreV2.preCreate({})", businessMetadataDef);
         }
 
-        validateType(businessMetadataDef, allowDuplicateDisplayName);
+        validateType(businessMetadataDef);
 
         AtlasType type = typeRegistry.getType(businessMetadataDef.getName());
 
@@ -102,8 +102,8 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     }
 
     @Override
-    public void validateType(AtlasBaseTypeDef typeDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
-        super.validateType(typeDef, allowDuplicateDisplayName);
+    public void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
+        super.validateType(typeDef);
         AtlasBusinessMetadataDef businessMetadataDef = (AtlasBusinessMetadataDef) typeDef;
 
         //validate uniqueness of display name for BM
@@ -124,7 +124,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     }
 
     @Override
-    public AtlasBusinessMetadataDef create(AtlasBusinessMetadataDef businessMetadataDef, AtlasVertex preCreateResult, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasBusinessMetadataDef create(AtlasBusinessMetadataDef businessMetadataDef, AtlasVertex preCreateResult) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasBusinessMetadataDefStoreV2.create({}, {})", businessMetadataDef, preCreateResult);
         }
@@ -140,7 +140,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         }
 
 
-        AtlasVertex vertex = (preCreateResult == null) ? preCreate(businessMetadataDef, allowDuplicateDisplayName) : preCreateResult;
+        AtlasVertex vertex = (preCreateResult == null) ? preCreate(businessMetadataDef) : preCreateResult;
 
         AtlasBusinessMetadataDef ret = toBusinessMetadataDef(vertex);
 
@@ -215,7 +215,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     }
 
     @Override
-    public AtlasBusinessMetadataDef update(AtlasBusinessMetadataDef typeDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasBusinessMetadataDef update(AtlasBusinessMetadataDef typeDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasBusinessMetadataDefStoreV2.update({})", typeDef);
         }
@@ -230,10 +230,10 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             }
         }
 
-        validateType(typeDef, allowDuplicateDisplayName);
+        validateType(typeDef);
 
-        AtlasBusinessMetadataDef ret = StringUtils.isNotBlank(typeDef.getGuid()) ? updateByGuid(typeDef.getGuid(), typeDef, allowDuplicateDisplayName)
-                : updateByName(typeDef.getName(), typeDef, allowDuplicateDisplayName);
+        AtlasBusinessMetadataDef ret = StringUtils.isNotBlank(typeDef.getGuid()) ? updateByGuid(typeDef.getGuid(), typeDef)
+                : updateByName(typeDef.getName(), typeDef);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasBusinessMetadataDefStoreV2.update({}): {}", typeDef, ret);
@@ -243,7 +243,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     }
 
     @Override
-    public AtlasBusinessMetadataDef updateByName(String name, AtlasBusinessMetadataDef typeDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasBusinessMetadataDef updateByName(String name, AtlasBusinessMetadataDef typeDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasBusinessMetadataDefStoreV2.updateByName({}, {})", name, typeDef);
         }
@@ -252,7 +252,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update businessMetadata-def ", name);
 
-        validateType(typeDef, allowDuplicateDisplayName);
+        validateType(typeDef);
 
         AtlasType type = typeRegistry.getType(typeDef.getName());
 
@@ -278,7 +278,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         return ret;
     }
 
-    public AtlasBusinessMetadataDef updateByGuid(String guid, AtlasBusinessMetadataDef typeDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasBusinessMetadataDef updateByGuid(String guid, AtlasBusinessMetadataDef typeDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasBusinessMetadataDefStoreV2.updateByGuid({})", guid);
         }
@@ -287,7 +287,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update businessMetadata-def ", (existingDef != null ? existingDef.getName() : guid));
 
-        validateType(typeDef, allowDuplicateDisplayName);
+        validateType(typeDef);
 
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 

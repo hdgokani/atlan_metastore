@@ -133,7 +133,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
         AtlasTypesDef employeeTypes = TestUtilsV2.defineDeptEmployeeTypes();
 
         try {
-            typeDefStore.createTypesDef(employeeTypes, false);
+            typeDefStore.createTypesDef(employeeTypes);
         } catch (AtlasBaseException e) {
             fail("Employee Type setup is required");
         }
@@ -325,7 +325,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
 
     private void createUpdateClassificationDef(AtlasTypesDef td) {
         try {
-            typeDefStore.createTypesDef(td, false);
+            typeDefStore.createTypesDef(td);
         }
         catch(Exception e) {
             fail("Error creating classifications definitions.");

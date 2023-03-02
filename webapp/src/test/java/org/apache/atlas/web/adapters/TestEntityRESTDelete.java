@@ -62,7 +62,7 @@ public class TestEntityRESTDelete {
     @BeforeClass
     public void setUp() throws Exception {
         AtlasTypesDef typesDef = TestUtilsV2.defineHiveTypes();
-        typeStore.createTypesDef(typesDef, false);
+        typeStore.createTypesDef(typesDef);
     }
 
     @AfterMethod

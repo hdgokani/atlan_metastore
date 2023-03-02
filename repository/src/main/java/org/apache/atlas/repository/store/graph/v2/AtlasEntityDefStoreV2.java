@@ -50,12 +50,12 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
     }
 
     @Override
-    public AtlasVertex preCreate(AtlasEntityDef entityDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasVertex preCreate(AtlasEntityDef entityDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.preCreate({})", entityDef);
         }
 
-        validateType(entityDef, allowDuplicateDisplayName);
+        validateType(entityDef);
 
         AtlasType type = typeRegistry.getType(entityDef.getName());
 
@@ -85,12 +85,12 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
     }
 
     @Override
-    public AtlasEntityDef create(AtlasEntityDef entityDef, AtlasVertex preCreateResult, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasEntityDef create(AtlasEntityDef entityDef, AtlasVertex preCreateResult) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.create({}, {})", entityDef, preCreateResult);
         }
 
-        AtlasVertex vertex = (preCreateResult == null) ? preCreate(entityDef, allowDuplicateDisplayName) : preCreateResult;
+        AtlasVertex vertex = (preCreateResult == null) ? preCreate(entityDef) : preCreateResult;
 
         updateVertexAddReferences(entityDef, vertex);
 
@@ -168,17 +168,17 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
     }
 
     @Override
-    public AtlasEntityDef update(AtlasEntityDef entityDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasEntityDef update(AtlasEntityDef entityDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.update({})", entityDef);
         }
 
         verifyAttributeTypeReadAccess(entityDef.getAttributeDefs());
 
-        validateType(entityDef, allowDuplicateDisplayName);
+        validateType(entityDef);
 
-        AtlasEntityDef ret = StringUtils.isNotBlank(entityDef.getGuid()) ? updateByGuid(entityDef.getGuid(), entityDef, allowDuplicateDisplayName)
-                                                                         : updateByName(entityDef.getName(), entityDef, allowDuplicateDisplayName);
+        AtlasEntityDef ret = StringUtils.isNotBlank(entityDef.getGuid()) ? updateByGuid(entityDef.getGuid(), entityDef)
+                                                                         : updateByName(entityDef.getName(), entityDef);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasEntityDefStoreV1.update({}): {}", entityDef, ret);
@@ -188,7 +188,7 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
     }
 
     @Override
-    public AtlasEntityDef updateByName(String name, AtlasEntityDef entityDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasEntityDef updateByName(String name, AtlasEntityDef entityDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.updateByName({}, {})", name, entityDef);
         }
@@ -197,7 +197,7 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update entity-def ", name);
 
-        validateType(entityDef, allowDuplicateDisplayName);
+        validateType(entityDef);
 
         AtlasType type = typeRegistry.getType(entityDef.getName());
 
@@ -224,7 +224,7 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
     }
 
     @Override
-    public AtlasEntityDef updateByGuid(String guid, AtlasEntityDef entityDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasEntityDef updateByGuid(String guid, AtlasEntityDef entityDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.updateByGuid({})", guid);
         }
@@ -233,7 +233,7 @@ public class AtlasEntityDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEntityDe
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update entity-def ", (existingDef != null ? existingDef.getName() : guid));
 
-        validateType(entityDef, allowDuplicateDisplayName);
+        validateType(entityDef);
 
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 

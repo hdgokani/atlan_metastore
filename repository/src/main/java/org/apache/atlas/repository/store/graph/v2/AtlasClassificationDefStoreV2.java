@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
@@ -57,12 +58,12 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
     }
 
     @Override
-    public AtlasVertex preCreate(AtlasClassificationDef classificationDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasVertex preCreate(AtlasClassificationDef classificationDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.preCreate({})", classificationDef);
         }
 
-        validateType(classificationDef, allowDuplicateDisplayName);
+        validateType(classificationDef);
 
         AtlasType type = typeRegistry.getType(classificationDef.getName());
 
@@ -80,7 +81,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
         if (ret != null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_ALREADY_EXISTS, classificationDef.getName());
         }
-        if(!allowDuplicateDisplayName) {
+        if(!RequestContext.get().getAllowDuplicateDisplayName()) {
             ret = typeDefStore.findTypeVertexByDisplayName(
                     classificationDef.getDisplayName(), TypeCategory.TRAIT);
             if (ret != null) {
@@ -99,12 +100,12 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
     }
 
     @Override
-    public AtlasClassificationDef create(AtlasClassificationDef classificationDef, AtlasVertex preCreateResult, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasClassificationDef create(AtlasClassificationDef classificationDef, AtlasVertex preCreateResult) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.create({}, {})", classificationDef, preCreateResult);
         }
 
-        AtlasVertex vertex = (preCreateResult == null) ? preCreate(classificationDef, allowDuplicateDisplayName) : preCreateResult;
+        AtlasVertex vertex = (preCreateResult == null) ? preCreate(classificationDef) : preCreateResult;
 
         updateVertexAddReferences(classificationDef, vertex);
 
@@ -181,8 +182,8 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
     }
 
     @Override
-    public void validateType(AtlasBaseTypeDef typeDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
-        super.validateType(typeDef, allowDuplicateDisplayName);
+    public void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
+        super.validateType(typeDef);
 
         AtlasClassificationDef classifiDef = (AtlasClassificationDef) typeDef;
 
@@ -190,7 +191,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
             throw new AtlasBaseException(AtlasErrorCode.MISSING_CLASSIFICATION_DISPLAY_NAME);
         }
 
-        if(!allowDuplicateDisplayName){
+        if(!RequestContext.get().getAllowDuplicateDisplayName()){
             AtlasVertex ret = typeDefStore.findTypeVertexByDisplayName(
                     classifiDef.getDisplayName(), DataTypes.TypeCategory.TRAIT);
             if (ret != null && (classifiDef.getGuid() == null || !classifiDef.getGuid().equals(ret.getProperty(Constants.GUID_PROPERTY_KEY, String.class)))){
@@ -200,7 +201,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
     }
 
     @Override
-    public AtlasClassificationDef update(AtlasClassificationDef classifiDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasClassificationDef update(AtlasClassificationDef classifiDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.update({})", classifiDef);
         }
@@ -208,10 +209,10 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
         verifyTypeReadAccess(classifiDef.getSuperTypes());
         verifyTypeReadAccess(classifiDef.getEntityTypes());
 
-        validateType(classifiDef, allowDuplicateDisplayName);
+        validateType(classifiDef);
 
         AtlasClassificationDef ret = StringUtils.isNotBlank(classifiDef.getGuid())
-                  ? updateByGuid(classifiDef.getGuid(), classifiDef, allowDuplicateDisplayName) : updateByName(classifiDef.getName(), classifiDef, allowDuplicateDisplayName);
+                  ? updateByGuid(classifiDef.getGuid(), classifiDef) : updateByName(classifiDef.getName(), classifiDef);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasClassificationDefStoreV1.update({}): {}", classifiDef, ret);
@@ -221,7 +222,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
     }
 
     @Override
-    public AtlasClassificationDef updateByName(String name, AtlasClassificationDef classificationDef, boolean allowDuplicateDisplayName)
+    public AtlasClassificationDef updateByName(String name, AtlasClassificationDef classificationDef)
         throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.updateByName({}, {})", name, classificationDef);
@@ -231,7 +232,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update classification-def ", name);
 
-        validateType(classificationDef, allowDuplicateDisplayName);
+        validateType(classificationDef);
 
         AtlasType type = typeRegistry.getType(classificationDef.getName());
 
@@ -258,7 +259,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
     }
 
     @Override
-    public AtlasClassificationDef updateByGuid(String guid, AtlasClassificationDef classificationDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasClassificationDef updateByGuid(String guid, AtlasClassificationDef classificationDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasClassificationDefStoreV1.updateByGuid({})", guid);
         }
@@ -267,7 +268,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update classification-def ", (existingDef != null ? existingDef.getName() : guid));
 
-        validateType(classificationDef, allowDuplicateDisplayName);
+        validateType(classificationDef);
 
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 

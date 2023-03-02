@@ -149,7 +149,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         tryUpdateByName(name, enumDef, ttr);
 
-        return getEnumDefStore(ttr).updateByName(name, enumDef, false);
+        return getEnumDefStore(ttr).updateByName(name, enumDef);
     }
 
     @Override
@@ -159,7 +159,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         tryUpdateByGUID(guid, enumDef, ttr);
 
-        return getEnumDefStore(ttr).updateByGuid(guid, enumDef, false);
+        return getEnumDefStore(ttr).updateByGuid(guid, enumDef);
     }
 
     @Override
@@ -247,7 +247,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         tryUpdateByName(name, structDef, ttr);
 
-        return getStructDefStore(ttr).updateByName(name, structDef, false);
+        return getStructDefStore(ttr).updateByName(name, structDef);
     }
 
     @Override
@@ -257,7 +257,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         tryUpdateByGUID(guid, structDef, ttr);
 
-        return getStructDefStore(ttr).updateByGuid(guid, structDef, false);
+        return getStructDefStore(ttr).updateByGuid(guid, structDef);
     }
 
     @Override
@@ -299,7 +299,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         tryUpdateByName(name, classificationDef, ttr);
 
-        return getClassificationDefStore(ttr).updateByName(name, classificationDef, false);
+        return getClassificationDefStore(ttr).updateByName(name, classificationDef);
     }
 
     @Override
@@ -310,7 +310,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         tryUpdateByGUID(guid, classificationDef, ttr);
 
-        return getClassificationDefStore(ttr).updateByGuid(guid, classificationDef, false);
+        return getClassificationDefStore(ttr).updateByGuid(guid, classificationDef);
     }
 
     @Override
@@ -351,7 +351,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         tryUpdateByName(name, entityDef, ttr);
 
-        return getEntityDefStore(ttr).updateByName(name, entityDef, false);
+        return getEntityDefStore(ttr).updateByName(name, entityDef);
     }
 
     @Override
@@ -359,7 +359,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     public AtlasEntityDef updateEntityDefByGuid(String guid, AtlasEntityDef entityDef) throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
         tryUpdateByGUID(guid, entityDef, ttr);
-        return getEntityDefStore(ttr).updateByGuid(guid, entityDef, false);
+        return getEntityDefStore(ttr).updateByGuid(guid, entityDef);
     }
 
     @Override
@@ -367,7 +367,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     public AtlasRelationshipDef updateRelationshipDefByName(String name, AtlasRelationshipDef relationshipDef) throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
         tryUpdateByName(name, relationshipDef, ttr);
-        return getRelationshipDefStore(ttr).updateByName(name, relationshipDef, false);
+        return getRelationshipDefStore(ttr).updateByName(name, relationshipDef);
     }
 
     @Override
@@ -375,12 +375,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     public AtlasRelationshipDef updateRelationshipDefByGuid(String guid, AtlasRelationshipDef relationshipDef) throws AtlasBaseException {
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
         tryUpdateByGUID(guid, relationshipDef, ttr);
-        return getRelationshipDefStore(ttr).updateByGuid(guid, relationshipDef, false);
+        return getRelationshipDefStore(ttr).updateByGuid(guid, relationshipDef);
     }
 
     @Override
     @GraphTransaction
-    public AtlasTypesDef createTypesDef(AtlasTypesDef typesDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasTypesDef createTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasTypeDefGraphStore.createTypesDef(enums={}, structs={}, classifications={}, entities={}, relationships={}, businessMetadataDefs={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
@@ -395,7 +395,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         tryTypeCreation(typesDef, ttr);
 
 
-        AtlasTypesDef ret = addToGraphStore(typesDef, ttr, allowDuplicateDisplayName);
+        AtlasTypesDef ret = addToGraphStore(typesDef, ttr);
 
         try {
             ttr.updateTypes(ret);
@@ -441,10 +441,10 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         // Translate any NOT FOUND errors to BAD REQUEST
         tryTypeCreation(typesToCreate, ttr);
 
-        AtlasTypesDef ret = addToGraphStore(typesToCreate, ttr, false);
+        AtlasTypesDef ret = addToGraphStore(typesToCreate, ttr);
 
         if (!typesToUpdate.isEmpty()) {
-            AtlasTypesDef updatedTypes = updateGraphStore(typesToUpdate, ttr, false);
+            AtlasTypesDef updatedTypes = updateGraphStore(typesToUpdate, ttr);
 
             if (CollectionUtils.isNotEmpty(updatedTypes.getEnumDefs())) {
                 for (AtlasEnumDef enumDef : updatedTypes.getEnumDefs()) {
@@ -486,7 +486,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
     @Override
     @GraphTransaction
-    public AtlasTypesDef updateTypesDef(AtlasTypesDef typesDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasTypesDef updateTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasTypeDefGraphStore.updateTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships{}, businessMetadataDefs={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
@@ -510,7 +510,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             }
         }
 
-        AtlasTypesDef ret = updateGraphStore(typesDef, ttr, allowDuplicateDisplayName);
+        AtlasTypesDef ret = updateGraphStore(typesDef, ttr);
 
         try {
             ttr.updateTypes(ret);
@@ -939,7 +939,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
     }
 
-    private AtlasTypesDef addToGraphStore(AtlasTypesDef typesDef, AtlasTransientTypeRegistry ttr, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    private AtlasTypesDef addToGraphStore(AtlasTypesDef typesDef, AtlasTransientTypeRegistry ttr) throws AtlasBaseException {
         AtlasTypesDef ret = new AtlasTypesDef();
 
         AtlasDefStore<AtlasEnumDef>             enumDefStore             = getEnumDefStore(ttr);
@@ -958,7 +958,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         // for enumerations run the create
         if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
             for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
-                AtlasEnumDef createdDef = enumDefStore.create(enumDef, null, allowDuplicateDisplayName);
+                AtlasEnumDef createdDef = enumDefStore.create(enumDef, null);
 
                 ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
 
@@ -969,38 +969,38 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
             for (AtlasStructDef structDef : typesDef.getStructDefs()) {
-                preCreateStructDefs.add(structDefStore.preCreate(structDef, allowDuplicateDisplayName));
+                preCreateStructDefs.add(structDefStore.preCreate(structDef));
             }
         }
 
         if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
             for (AtlasClassificationDef classifiDef : typesDef.getClassificationDefs()) {
-                preCreateClassifiDefs.add(classifiDefStore.preCreate(classifiDef, allowDuplicateDisplayName));
+                preCreateClassifiDefs.add(classifiDefStore.preCreate(classifiDef));
             }
         }
 
         if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
             for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
-                preCreateEntityDefs.add(entityDefStore.preCreate(entityDef, allowDuplicateDisplayName));
+                preCreateEntityDefs.add(entityDefStore.preCreate(entityDef));
             }
         }
 
         if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
             for (AtlasRelationshipDef relationshipDef : typesDef.getRelationshipDefs()) {
-                preCreateRelationshipDefs.add(relationshipDefStore.preCreate(relationshipDef, allowDuplicateDisplayName));
+                preCreateRelationshipDefs.add(relationshipDefStore.preCreate(relationshipDef));
             }
         }
 
         if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
             for (AtlasBusinessMetadataDef businessMetadataDef : typesDef.getBusinessMetadataDefs()) {
-                preCreateBusinessMetadataDefs.add(businessMetadataDefStore.preCreate(businessMetadataDef, allowDuplicateDisplayName));
+                preCreateBusinessMetadataDefs.add(businessMetadataDefStore.preCreate(businessMetadataDef));
             }
         }
 
         if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
             int i = 0;
             for (AtlasStructDef structDef : typesDef.getStructDefs()) {
-                AtlasStructDef createdDef = structDefStore.create(structDef, preCreateStructDefs.get(i), allowDuplicateDisplayName);
+                AtlasStructDef createdDef = structDefStore.create(structDef, preCreateStructDefs.get(i));
 
                 ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
 
@@ -1012,7 +1012,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
             int i = 0;
             for (AtlasClassificationDef classifiDef : typesDef.getClassificationDefs()) {
-                AtlasClassificationDef createdDef = classifiDefStore.create(classifiDef, preCreateClassifiDefs.get(i), allowDuplicateDisplayName);
+                AtlasClassificationDef createdDef = classifiDefStore.create(classifiDef, preCreateClassifiDefs.get(i));
 
                 ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
 
@@ -1024,7 +1024,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
             int i = 0;
             for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
-                AtlasEntityDef createdDef = entityDefStore.create(entityDef, preCreateEntityDefs.get(i), allowDuplicateDisplayName);
+                AtlasEntityDef createdDef = entityDefStore.create(entityDef, preCreateEntityDefs.get(i));
 
                 ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
 
@@ -1035,7 +1035,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
             int i = 0;
             for (AtlasRelationshipDef relationshipDef : typesDef.getRelationshipDefs()) {
-                AtlasRelationshipDef createdDef = relationshipDefStore.create(relationshipDef, preCreateRelationshipDefs.get(i), allowDuplicateDisplayName);
+                AtlasRelationshipDef createdDef = relationshipDefStore.create(relationshipDef, preCreateRelationshipDefs.get(i));
 
                 ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
 
@@ -1047,7 +1047,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
             int i = 0;
             for (AtlasBusinessMetadataDef businessMetadataDef : typesDef.getBusinessMetadataDefs()) {
-                AtlasBusinessMetadataDef createdDef = businessMetadataDefStore.create(businessMetadataDef, preCreateBusinessMetadataDefs.get(i), allowDuplicateDisplayName);
+                AtlasBusinessMetadataDef createdDef = businessMetadataDefStore.create(businessMetadataDef, preCreateBusinessMetadataDefs.get(i));
 
                 ttr.updateGuid(createdDef.getName(), createdDef.getGuid());
 
@@ -1059,7 +1059,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         return ret;
     }
 
-    private AtlasTypesDef updateGraphStore(AtlasTypesDef typesDef, AtlasTransientTypeRegistry ttr, boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    private AtlasTypesDef updateGraphStore(AtlasTypesDef typesDef, AtlasTransientTypeRegistry ttr) throws AtlasBaseException {
         AtlasTypesDef ret = new AtlasTypesDef();
 
         AtlasDefStore<AtlasEnumDef>             enumDefStore             = getEnumDefStore(ttr);
@@ -1071,37 +1071,37 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
             for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
-                ret.getEnumDefs().add(enumDefStore.update(enumDef, allowDuplicateDisplayName));
+                ret.getEnumDefs().add(enumDefStore.update(enumDef));
             }
         }
 
         if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
             for (AtlasStructDef structDef : typesDef.getStructDefs()) {
-                ret.getStructDefs().add(structDefStore.update(structDef, allowDuplicateDisplayName));
+                ret.getStructDefs().add(structDefStore.update(structDef));
             }
         }
 
         if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
             for (AtlasClassificationDef classifiDef : typesDef.getClassificationDefs()) {
-                ret.getClassificationDefs().add(classifiDefStore.update(classifiDef, allowDuplicateDisplayName));
+                ret.getClassificationDefs().add(classifiDefStore.update(classifiDef));
             }
         }
 
         if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
             for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
-                ret.getEntityDefs().add(entityDefStore.update(entityDef, allowDuplicateDisplayName));
+                ret.getEntityDefs().add(entityDefStore.update(entityDef));
             }
         }
 
         if (CollectionUtils.isNotEmpty(typesDef.getRelationshipDefs())) {
             for (AtlasRelationshipDef relationshipDef : typesDef.getRelationshipDefs()) {
-                ret.getRelationshipDefs().add(relationDefStore.update(relationshipDef, allowDuplicateDisplayName));
+                ret.getRelationshipDefs().add(relationDefStore.update(relationshipDef));
             }
         }
 
         if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
             for (AtlasBusinessMetadataDef businessMetadataDef : typesDef.getBusinessMetadataDefs()) {
-                ret.getBusinessMetadataDefs().add(businessMetadataDefStore.update(businessMetadataDef, allowDuplicateDisplayName));
+                ret.getBusinessMetadataDefs().add(businessMetadataDefStore.update(businessMetadataDef));
             }
         }
 

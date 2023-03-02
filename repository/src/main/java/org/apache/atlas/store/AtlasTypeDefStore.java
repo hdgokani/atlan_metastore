@@ -93,9 +93,9 @@ public interface AtlasTypeDefStore {
 
     /* Bulk Operations */
 
-    AtlasTypesDef createTypesDef(AtlasTypesDef typesDef, boolean allowDuplicateDisplayName) throws AtlasBaseException;
+    AtlasTypesDef createTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException;
 
-    AtlasTypesDef updateTypesDef(AtlasTypesDef typesDef, boolean allowDuplicateDisplayName) throws AtlasBaseException;
+    AtlasTypesDef updateTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException;
 
     AtlasTypesDef createUpdateTypesDef(AtlasTypesDef typesToCreateUpdate) throws AtlasBaseException;
 

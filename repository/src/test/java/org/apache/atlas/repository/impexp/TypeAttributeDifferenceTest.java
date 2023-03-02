@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.impexp;
 
+import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
@@ -27,6 +28,7 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.TestLoadModelUtils;
 import org.apache.atlas.utils.TestResourceFileUtils;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -36,6 +38,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
@@ -176,7 +179,7 @@ public class TypeAttributeDifferenceTest {
 
         AtlasImportResult result = new AtlasImportResult();
         AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesDef, this.typeRegistry);
-        typeDefStore.createTypesDef(typesToCreate, false);
+        typeDefStore.createTypesDef(typesToCreate);
         typeAttributeDifference.updateTypes(typesDef, result);
         assertNotNull(typesDef);
     }

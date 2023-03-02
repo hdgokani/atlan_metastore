@@ -63,7 +63,7 @@ public class AtlasEntityDefStoreV2Test extends AtlasTestBase {
     public void testCreateTypeWithReservedKeywords(AtlasEntityDef atlasEntityDef) throws AtlasException {
         try {
             ApplicationProperties.get().setProperty(AtlasAbstractDefStoreV2.ALLOW_RESERVED_KEYWORDS, false);
-            entityDefStore.create(atlasEntityDef, null, false);
+            entityDefStore.create(atlasEntityDef, null);
         } catch (AtlasBaseException e) {
             Assert.assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_INVALID);
         }

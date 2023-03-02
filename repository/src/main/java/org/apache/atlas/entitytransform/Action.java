@@ -182,7 +182,7 @@ public abstract class Action {
 
                             typesDef.setClassificationDefs(Collections.singletonList(classificationDef));
 
-                            typeDefStore.createTypesDef(typesDef, false);
+                            typeDefStore.createTypesDef(typesDef);
 
                             LOG.info("created classification: {}", classificationName);
                         } else {

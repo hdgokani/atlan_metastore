@@ -52,7 +52,6 @@ public class AtlasClassificationDef extends AtlasStructDef implements AtlasNamed
     private Set<String> entityTypes;
 
     private String displayName;
-    private boolean allowDuplicateDisplayName;
     // subTypes field below is derived from 'superTypes' specified in all AtlasClassificationDef
     // this value is ignored during create & update operations
     private Set<String> subTypes;
@@ -99,12 +98,6 @@ public class AtlasClassificationDef extends AtlasStructDef implements AtlasNamed
     public AtlasClassificationDef(String name, String displayName, String description, String typeVersion,
                                   List<AtlasAttributeDef> attributeDefs, Set<String> superTypes,
                                   Set<String> entityTypes, Map<String, String> options) {
-        this(name, displayName, description, typeVersion, attributeDefs, superTypes, entityTypes, options, false);
-    }
-
-    public AtlasClassificationDef(String name, String displayName, String description, String typeVersion,
-                                  List<AtlasAttributeDef> attributeDefs, Set<String> superTypes,
-                                  Set<String> entityTypes, Map<String, String> options, boolean allowDuplicateDisplayName) {
         super(TypeCategory.CLASSIFICATION, name, description, typeVersion, attributeDefs, options);
         this.setDisplayName(displayName);
         setSuperTypes(superTypes);

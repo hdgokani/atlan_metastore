@@ -42,6 +42,7 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
+import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
@@ -135,7 +136,7 @@ public class AtlasEntityTestBase extends AtlasTestBase {
         try {
             AtlasTypesDef typesDef = new AtlasTypesDef();
             getTagWithName(typesDef, tagName, attributeType);
-            typeDefStore.createTypesDef(typesDef, false);
+            typeDefStore.createTypesDef(typesDef);
         } catch (AtlasBaseException e) {
             fail("Tag creation should've succeeded");
         }
@@ -248,7 +249,7 @@ public class AtlasEntityTestBase extends AtlasTestBase {
             AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesDef, typeRegistry);
 
             if (!typesToCreate.isEmpty()) {
-                typeDefStore.createTypesDef(typesToCreate, false);
+                typeDefStore.createTypesDef(typesToCreate);
             }
         }
     }
