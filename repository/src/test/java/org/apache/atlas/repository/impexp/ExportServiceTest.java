@@ -93,7 +93,7 @@ public class ExportServiceTest extends AtlasTestBase {
         AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(sampleTypes, typeRegistry);
 
         if (!typesToCreate.isEmpty()) {
-            typeDefStore.createTypesDef(typesToCreate);
+            typeDefStore.createTypesDef(typesToCreate, false);
         }
 
         AtlasEntity.AtlasEntitiesWithExtInfo  deptEg2 = TestUtilsV2.createDeptEg2();

@@ -1069,7 +1069,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     try {
                         RequestContext.get().setInTypePatching(true); // to allow removal of attributes
 
-                        typeDefStore.updateTypesDef(typesDef);
+                        typeDefStore.updateTypesDef(typesDef, false);
 
                         ret = APPLIED;
                     } finally {
@@ -1115,7 +1115,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                 }
                 typeDef.setTypeVersion(patch.getUpdateToVersion());
 
-                typeDefStore.updateTypesDef(AtlasTypeUtil.getTypesDef(typeDef));
+                typeDefStore.updateTypesDef(AtlasTypeUtil.getTypesDef(typeDef), false);
 
                 ret = APPLIED;
             } else {
@@ -1148,7 +1148,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                 typeDef.setServiceType(patch.getServiceType());
                 typeDef.setTypeVersion(patch.getUpdateToVersion());
 
-                typeDefStore.updateTypesDef(AtlasTypeUtil.getTypesDef(typeDef));
+                typeDefStore.updateTypesDef(AtlasTypeUtil.getTypesDef(typeDef), false);
 
                 ret = APPLIED;
             } else {

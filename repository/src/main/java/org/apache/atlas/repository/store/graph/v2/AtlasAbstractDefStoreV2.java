@@ -106,7 +106,7 @@ import java.util.regex.Pattern;
         }
     }
 
-    public void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
+    public void validateType(AtlasBaseTypeDef typeDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
         if (!isValidName(typeDef.getName())) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID_FORMAT, typeDef.getName(), typeDef.getCategory().name());
         }

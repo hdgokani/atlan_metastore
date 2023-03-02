@@ -116,7 +116,7 @@ public class GlossaryServiceTest {
             AtlasClassificationDef classificationDef = new AtlasClassificationDef("TestClassification", "Test only classification");
             AtlasTypesDef          typesDef          = new AtlasTypesDef();
             typesDef.setClassificationDefs(Arrays.asList(classificationDef));
-            typeDefStore.createTypesDef(typesDef);
+            typeDefStore.createTypesDef(typesDef, false);
         } catch (AtlasBaseException e) {
             throw new SkipException("Test classification creation failed");
         }

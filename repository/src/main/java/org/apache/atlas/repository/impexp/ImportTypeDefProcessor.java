@@ -46,7 +46,7 @@ public class ImportTypeDefProcessor {
 
         AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typeDefinitionMap, this.typeRegistry);
         if (!typesToCreate.isEmpty()) {
-            typeDefStore.createTypesDef(typesToCreate);
+            typeDefStore.createTypesDef(typesToCreate, false);
             updateMetricsForTypesDef(typesToCreate, result);
         }
 

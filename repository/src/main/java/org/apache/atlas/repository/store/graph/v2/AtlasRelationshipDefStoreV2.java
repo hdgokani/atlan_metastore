@@ -58,12 +58,12 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
     }
 
     @Override
-    public AtlasVertex preCreate(AtlasRelationshipDef relationshipDef) throws AtlasBaseException {
+    public AtlasVertex preCreate(AtlasRelationshipDef relationshipDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasRelationshipDefStoreV1.preCreate({})", relationshipDef);
         }
 
-        validateType(relationshipDef);
+        validateType(relationshipDef, allowDuplicateDisplayName);
 
         AtlasType type = typeRegistry.getType(relationshipDef.getName());
 
@@ -131,13 +131,13 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
     }
 
     @Override
-    public AtlasRelationshipDef create(AtlasRelationshipDef relationshipDef, AtlasVertex preCreateResult)
+    public AtlasRelationshipDef create(AtlasRelationshipDef relationshipDef, AtlasVertex preCreateResult, boolean allowDuplicateDisplayName)
             throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasRelationshipDefStoreV1.create({}, {})", relationshipDef, preCreateResult);
         }
 
-        AtlasVertex vertex = (preCreateResult == null) ? preCreate(relationshipDef) : preCreateResult;
+        AtlasVertex vertex = (preCreateResult == null) ? preCreate(relationshipDef, allowDuplicateDisplayName) : preCreateResult;
 
         AtlasRelationshipDef ret = toRelationshipDef(vertex);
 
@@ -213,18 +213,18 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
     }
 
     @Override
-    public AtlasRelationshipDef update(AtlasRelationshipDef relationshipDef) throws AtlasBaseException {
+    public AtlasRelationshipDef update(AtlasRelationshipDef relationshipDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasRelationshipDefStoreV1.update({})", relationshipDef);
         }
 
         verifyTypeReadAccess(relationshipDef);
 
-        validateType(relationshipDef);
+        validateType(relationshipDef, allowDuplicateDisplayName);
 
         AtlasRelationshipDef ret = StringUtils.isNotBlank(relationshipDef.getGuid())
-                ? updateByGuid(relationshipDef.getGuid(), relationshipDef)
-                : updateByName(relationshipDef.getName(), relationshipDef);
+                ? updateByGuid(relationshipDef.getGuid(), relationshipDef, allowDuplicateDisplayName)
+                : updateByName(relationshipDef.getName(), relationshipDef, allowDuplicateDisplayName);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasRelationshipDefStoreV1.update({}): {}", relationshipDef, ret);
@@ -234,7 +234,7 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
     }
 
     @Override
-    public AtlasRelationshipDef updateByName(String name, AtlasRelationshipDef relationshipDef)
+    public AtlasRelationshipDef updateByName(String name, AtlasRelationshipDef relationshipDef, boolean allowDuplicateDisplayName)
             throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasRelationshipDefStoreV1.updateByName({}, {})", name, relationshipDef);
@@ -244,7 +244,7 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update relationship-def ", name);
 
-        validateType(relationshipDef);
+        validateType(relationshipDef, allowDuplicateDisplayName);
 
         AtlasType type = typeRegistry.getType(relationshipDef.getName());
 
@@ -270,7 +270,7 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
     }
 
     @Override
-    public AtlasRelationshipDef updateByGuid(String guid, AtlasRelationshipDef relationshipDef)
+    public AtlasRelationshipDef updateByGuid(String guid, AtlasRelationshipDef relationshipDef, boolean allowDuplicateDisplayName)
             throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasRelationshipDefStoreV1.updateByGuid({})", guid);
@@ -280,7 +280,7 @@ public class AtlasRelationshipDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasRe
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update relationship-Def ", (existingDef != null ? existingDef.getName() : guid));
 
-        validateType(relationshipDef);
+        validateType(relationshipDef, allowDuplicateDisplayName);
 
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 

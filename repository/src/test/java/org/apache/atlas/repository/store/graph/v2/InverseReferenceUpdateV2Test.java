@@ -95,7 +95,7 @@ public abstract class InverseReferenceUpdateV2Test extends AtlasTestBase {
             AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesDef, typeRegistry);
 
             if (!typesToCreate.isEmpty()) {
-                typeDefStore.createTypesDef(typesToCreate);
+                typeDefStore.createTypesDef(typesToCreate, false);
             }
         }
 

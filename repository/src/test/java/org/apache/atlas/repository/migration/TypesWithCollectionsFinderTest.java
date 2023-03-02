@@ -25,7 +25,6 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.apache.atlas.repository.graphdb.janus.migration.TypesWithCollectionsFinder;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.TestResourceFileUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
@@ -49,7 +48,7 @@ public class TypesWithCollectionsFinderTest extends MigrationBaseAsserts {
     public void setup() throws IOException, AtlasBaseException {
         loadTypesFromJson();
 
-        typeDefStore.createTypesDef(TestResourceFileUtils.readObjectFromJson(".", "typesDef-classification-with-map", AtlasTypesDef.class));
+        typeDefStore.createTypesDef(TestResourceFileUtils.readObjectFromJson(".", "typesDef-classification-with-map", AtlasTypesDef.class), false);
     }
 
     @Test

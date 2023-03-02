@@ -47,12 +47,12 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
     }
 
     @Override
-    public AtlasVertex preCreate(AtlasEnumDef enumDef) throws AtlasBaseException {
+    public AtlasVertex preCreate(AtlasEnumDef enumDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
           LOG.debug("==> AtlasEnumDefStoreV2.preCreate({})", enumDef);
         }
 
-        validateType(enumDef);
+        validateType(enumDef, allowDuplicateDisplayName);
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, enumDef), "create enum-def ", enumDef.getName());
 
@@ -74,13 +74,13 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
     }
 
     @Override
-    public AtlasEnumDef create(AtlasEnumDef enumDef, AtlasVertex preCreateResult) throws AtlasBaseException {
+    public AtlasEnumDef create(AtlasEnumDef enumDef, AtlasVertex preCreateResult, boolean allowDuplicateDisplayName) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
           LOG.debug("==> AtlasEnumDefStoreV2.create({}, {})", enumDef, preCreateResult);
         }
 
 
-        AtlasVertex vertex = (preCreateResult == null) ? preCreate(enumDef) : preCreateResult;
+        AtlasVertex vertex = (preCreateResult == null) ? preCreate(enumDef, allowDuplicateDisplayName) : preCreateResult;
 
         AtlasEnumDef ret = toEnumDef(vertex);
 
@@ -156,15 +156,15 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
     }
 
     @Override
-    public AtlasEnumDef update(AtlasEnumDef enumDef) throws AtlasBaseException {
+    public AtlasEnumDef update(AtlasEnumDef enumDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEnumDefStoreV2.update({})", enumDef);
         }
 
-        validateType(enumDef);
+        validateType(enumDef, allowDuplicateDisplayName);
 
-        AtlasEnumDef ret = StringUtils.isNotBlank(enumDef.getGuid()) ? updateByGuid(enumDef.getGuid(), enumDef)
-                                                                     : updateByName(enumDef.getName(), enumDef);
+        AtlasEnumDef ret = StringUtils.isNotBlank(enumDef.getGuid()) ? updateByGuid(enumDef.getGuid(), enumDef, allowDuplicateDisplayName)
+                                                                     : updateByName(enumDef.getName(), enumDef, allowDuplicateDisplayName);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasEnumDefStoreV2.update({}): {}", enumDef, ret);
@@ -174,7 +174,7 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
     }
 
     @Override
-    public AtlasEnumDef updateByName(String name, AtlasEnumDef enumDef) throws AtlasBaseException {
+    public AtlasEnumDef updateByName(String name, AtlasEnumDef enumDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEnumDefStoreV2.updateByName({}, {})", name, enumDef);
         }
@@ -183,7 +183,7 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update enum-def ", name);
 
-        validateType(enumDef);
+        validateType(enumDef, allowDuplicateDisplayName);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.ENUM);
 
@@ -205,7 +205,7 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
     }
 
     @Override
-    public AtlasEnumDef updateByGuid(String guid, AtlasEnumDef enumDef) throws AtlasBaseException {
+    public AtlasEnumDef updateByGuid(String guid, AtlasEnumDef enumDef, boolean allowDuplicateDisplayName) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEnumDefStoreV2.updateByGuid({})", guid);
         }
@@ -214,7 +214,7 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update enum-def ", (existingDef != null ? existingDef.getName() : guid));
 
-        validateType(enumDef);
+        validateType(enumDef, allowDuplicateDisplayName);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.ENUM);
 

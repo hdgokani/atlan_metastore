@@ -119,7 +119,7 @@ public class TestEntitiesREST {
             AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesDef, typeRegistry);
 
             if (!typesToCreate.isEmpty()) {
-                typeStore.createTypesDef(typesToCreate);
+                typeStore.createTypesDef(typesToCreate, false);
             }
         }
 

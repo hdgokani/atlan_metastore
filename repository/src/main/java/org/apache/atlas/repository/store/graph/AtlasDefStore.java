@@ -27,9 +27,9 @@ import java.util.List;
  * Interface for graph persistence store for AtlasTypeDef
  */
 public interface AtlasDefStore<T extends AtlasBaseTypeDef> {
-    AtlasVertex preCreate(T typeDef) throws AtlasBaseException;
+    AtlasVertex preCreate(T typeDef, boolean allowDuplicateDisplayName) throws AtlasBaseException;
 
-    T create(T typeDef, AtlasVertex preCreateResult) throws AtlasBaseException;
+    T create(T typeDef, AtlasVertex preCreateResult, boolean allowDuplicateDisplayName) throws AtlasBaseException;
 
     List<T> getAll() throws AtlasBaseException;
 
@@ -37,11 +37,11 @@ public interface AtlasDefStore<T extends AtlasBaseTypeDef> {
 
     T getByGuid(String guid) throws AtlasBaseException;
 
-    T update(T typeDef) throws AtlasBaseException;
+    T update(T typeDef, boolean allowDuplicateDisplayName) throws AtlasBaseException;
 
-    T updateByName(String name, T typeDef) throws AtlasBaseException;
+    T updateByName(String name, T typeDef, boolean allowDuplicateDisplayName) throws AtlasBaseException;
 
-    T updateByGuid(String guid, T typeDef) throws AtlasBaseException;
+    T updateByGuid(String guid, T typeDef, boolean allowDuplicateDisplayName) throws AtlasBaseException;
 
     AtlasVertex preDeleteByName(String name) throws AtlasBaseException;
 

@@ -111,7 +111,7 @@ public class TypesResource {
             }
 
             AtlasTypesDef createTypesDef  = TypeConverterUtil.toAtlasTypesDef(typeDefinition, typeRegistry);
-            AtlasTypesDef createdTypesDef = typesREST.createAtlasTypeDefs(createTypesDef);
+            AtlasTypesDef createdTypesDef = typesREST.createAtlasTypeDefs(createTypesDef, false);
             List<String>  typeNames       = TypeConverterUtil.getTypeNames(createdTypesDef);
             List<Map<String, Object>> typesResponse = new ArrayList<>(typeNames.size());
 

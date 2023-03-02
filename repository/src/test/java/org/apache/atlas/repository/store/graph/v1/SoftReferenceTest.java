@@ -92,7 +92,7 @@ public class SoftReferenceTest {
         AtlasTypesDef typesDef = AtlasType.fromJson(typesDefJson, AtlasTypesDef.class);
         assertNotNull(typesDef);
 
-        typeDefStore.createTypesDef(typesDef);
+        typeDefStore.createTypesDef(typesDef, false);
 
         dbType = typeRegistry.getType(TYPE_RDBMS_DB);
         assertNotNull(dbType);

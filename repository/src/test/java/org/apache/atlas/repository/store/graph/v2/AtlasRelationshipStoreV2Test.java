@@ -113,7 +113,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
 
         // create employee relationship types
         AtlasTypesDef employeeTypes = getDepartmentEmployeeTypes();
-        typeDefStore.createTypesDef(employeeTypes);
+        typeDefStore.createTypesDef(employeeTypes, false);
 
         AtlasEntitiesWithExtInfo employeeInstances = getDepartmentEmployeeInstances();
         EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(employeeInstances), false);
@@ -128,7 +128,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
         AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesDef, typeRegistry);
 
         if (!typesToCreate.isEmpty()) {
-            typeDefStore.createTypesDef(typesToCreate);
+            typeDefStore.createTypesDef(typesToCreate, false);
         }
     }
 

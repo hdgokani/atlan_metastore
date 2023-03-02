@@ -98,7 +98,7 @@ public class ImportTransformsShaper {
         classificationDef = new AtlasClassificationDef(classificationName);
         AtlasTypesDef typesDef = new AtlasTypesDef();
         typesDef.setClassificationDefs(Collections.singletonList(classificationDef));
-        typeDefStore.createTypesDef(typesDef);
+        typeDefStore.createTypesDef(typesDef, false);
         LOG.info("created classification: {}", classificationName);
         return classificationName;
     }

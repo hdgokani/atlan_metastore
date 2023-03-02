@@ -113,7 +113,7 @@ public class AtlasBusinessMetadataDefStoreV2Test {
         List<AtlasBusinessMetadataDef> businessMetadataDefs = new ArrayList(typesDefs.getBusinessMetadataDefs());
         businessMetadataDefs.add(createBusinessMetadataDefWithoutAttributes(businessMetadataName));
         typesDefs.setBusinessMetadataDefs(businessMetadataDefs);
-        typeDefStore.createTypesDef(typesDefs);
+        typeDefStore.createTypesDef(typesDefs, false);
     }
 
     private AtlasBusinessMetadataDef createBusinessMetadataDefWithoutAttributes(String businessMetadataName) {
@@ -137,7 +137,7 @@ public class AtlasBusinessMetadataDefStoreV2Test {
         List<AtlasBusinessMetadataDef> businessMetadataDefs = new ArrayList(typesDefs.getBusinessMetadataDefs());
         businessMetadataDefs.add(createBusinessMetadataDefIsOptionalIsUnique(businessMetadataName));
         typesDefs.setBusinessMetadataDefs(businessMetadataDefs);
-        typeDefStore.createTypesDef(typesDefs);
+        typeDefStore.createTypesDef(typesDefs, false);
     }
 
     private AtlasBusinessMetadataDef createBusinessMetadataDefIsOptionalIsUnique(String businessMetadataName) {
@@ -174,7 +174,7 @@ public class AtlasBusinessMetadataDefStoreV2Test {
         List<AtlasBusinessMetadataDef> businessMetadataDefs = new ArrayList(typesDefs.getBusinessMetadataDefs());
         businessMetadataDefs.add(createBusinessMetadataDefParentApplicableType(businessMetadataName));
         typesDefs.setBusinessMetadataDefs(businessMetadataDefs);
-        typeDefStore.createTypesDef(typesDefs);
+        typeDefStore.createTypesDef(typesDefs, false);
     }
 
     private AtlasBusinessMetadataDef createBusinessMetadataDefParentApplicableType(String businessMetadataName) {
@@ -217,7 +217,7 @@ public class AtlasBusinessMetadataDefStoreV2Test {
         List<AtlasBusinessMetadataDef> businessMetadataDefs = new ArrayList(typesDefs.getBusinessMetadataDefs());
         businessMetadataDefs.add(createBusinessMetadataDefMultivaluedAttributes(businessMetadataName));
         typesDefs.setBusinessMetadataDefs(businessMetadataDefs);
-        typeDefStore.createTypesDef(typesDefs);
+        typeDefStore.createTypesDef(typesDefs, false);
     }
 
     private AtlasBusinessMetadataDef createBusinessMetadataDefMultivaluedAttributes(String businessMetadataName) {
@@ -272,7 +272,7 @@ public class AtlasBusinessMetadataDefStoreV2Test {
                 String.format("array<%s>", "string"), AtlasStructDef.AtlasAttributeDef.Cardinality.LIST);
 
         updateBusinessMetadataDefs(businessMetadataDef);
-        typeDefStore.updateTypesDef(typesDefs);
+        typeDefStore.updateTypesDef(typesDefs, false);
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName("hive_table");
         Map<String, Map<String, AtlasBusinessAttribute>> m1 = entityType.getBusinessAttributes();
         Assert.assertEquals(m1.get(businessMetadataName).size(), 3);
@@ -295,7 +295,7 @@ public class AtlasBusinessMetadataDefStoreV2Test {
 
         try {
             typesDefs.setBusinessMetadataDefs(Arrays.asList(businessMetadataDef));
-            typeDefStore.updateTypesDef(typesDefs);
+            typeDefStore.updateTypesDef(typesDefs, false);
         } catch (AtlasBaseException e) {
             Assert.assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.ATTRIBUTE_DELETION_NOT_SUPPORTED);
         } finally {
@@ -321,7 +321,7 @@ public class AtlasBusinessMetadataDefStoreV2Test {
 
         try {
             typesDefs.setBusinessMetadataDefs(Arrays.asList(businessMetadataDef));
-            typeDefStore.updateTypesDef(typesDefs);
+            typeDefStore.updateTypesDef(typesDefs, false);
         } catch (AtlasBaseException e) {
             Assert.assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED);
         } finally {
@@ -348,7 +348,7 @@ public class AtlasBusinessMetadataDefStoreV2Test {
 
         try {
             typesDefs.setBusinessMetadataDefs(Arrays.asList(businessMetadataDef));
-            typeDefStore.updateTypesDef(typesDefs);
+            typeDefStore.updateTypesDef(typesDefs, false);
         } catch (AtlasBaseException e) {
             Assert.assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED);
         } finally {
@@ -375,7 +375,7 @@ public class AtlasBusinessMetadataDefStoreV2Test {
 
         updateBusinessMetadataDefs(businessMetadataDef);
 
-        typeDefStore.updateTypesDef(typesDefs);
+        typeDefStore.updateTypesDef(typesDefs, false);
 
         businessMetadataDef = findBusinessMetadataDef(businessMetadataName);
         businessAttributeDef1 = businessMetadataDef.getAttributeDefs().get(0);
@@ -393,7 +393,7 @@ public class AtlasBusinessMetadataDefStoreV2Test {
                 AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
         typesDefs.setBusinessMetadataDefs(Arrays.asList(businessMetadataDef1));
         try {
-            typeDefStore.createTypesDef(typesDefs);
+            typeDefStore.createTypesDef(typesDefs, false);
         } catch (AtlasBaseException exception) {
             Assert.assertEquals(exception.getAtlasErrorCode(), AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE);
         } finally {
@@ -426,7 +426,7 @@ public class AtlasBusinessMetadataDefStoreV2Test {
         List<AtlasBusinessMetadataDef> businessMetadataDefs = new ArrayList(typesDefs.getBusinessMetadataDefs());
         businessMetadataDefs.add(createBusinessMetadataDef(businessMetadataName));
         typesDefs.setBusinessMetadataDefs(businessMetadataDefs);
-        AtlasTypesDef createdTypesDef = typeDefStore.createTypesDef(typesDefs);
+        AtlasTypesDef createdTypesDef = typeDefStore.createTypesDef(typesDefs, false);
 
         Assert.assertEquals(createdTypesDef.getBusinessMetadataDefs(), businessMetadataDefs, "Data integrity issue while persisting");
     }
