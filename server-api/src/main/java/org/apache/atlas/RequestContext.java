@@ -86,7 +86,7 @@ public class RequestContext {
     private AtlasTask   currentTask;
     private String traceId;
     private final Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = new HashMap<>();
-    private boolean     allowDuplicateDisplayName = true;
+    private boolean     allowDuplicateDisplayName;
 
     private RequestContext() {
     }
