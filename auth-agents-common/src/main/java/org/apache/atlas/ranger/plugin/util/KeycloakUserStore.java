@@ -78,6 +78,7 @@ public class KeycloakUserStore {
     }
 
     public long getKeycloakSubjectsStoreUpdatedTime() {
+        LOG.info("Fetching getKeycloakSubjectsStoreUpdatedTime");
 
         //TODO: String vriables
         List<String> operationTypes = Arrays.asList("CREATE", "UPDATE", "DELETE");
@@ -92,6 +93,8 @@ public class KeycloakUserStore {
         if (CollectionUtils.isNotEmpty(adminEvents)) {
             latestEventTime = adminEvents.get(0).getTime();
         }
+
+        LOG.info("getKeycloakSubjectsStoreUpdatedTime - {}", latestEventTime);
 
         return latestEventTime;
     }
