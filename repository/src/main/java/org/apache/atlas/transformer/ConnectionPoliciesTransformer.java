@@ -36,6 +36,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.getStaticFileAsString;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ROLES;
 import static org.apache.atlas.util.AtlasEntityUtils.*;
@@ -43,7 +44,7 @@ import static org.apache.atlas.util.AtlasEntityUtils.*;
 public class ConnectionPoliciesTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionPreProcessor.class);
 
-    static final String TEMPLATE_FILE_NAME = "/policytemplates/connection_bootstrap_policies.json";
+    static final String TEMPLATE_FILE_NAME = "templates/connection_bootstrap_policies.json";
     static final String PLACEHOLDER_ENTITY = "{entity}";
     static final String PLACEHOLDER_CONN_GUID = "{connection_guid}";
     static final String PLACEHOLDER_CONN_NAME = "{connection_name}";
@@ -52,10 +53,10 @@ public class ConnectionPoliciesTransformer {
 
     static {
         //connectionPolicies
-        File jsonTemplateFile = new File(ConnectionPoliciesTransformer.class.getResource(TEMPLATE_FILE_NAME).getPath());
+        //File jsonTemplateFile = new File(ConnectionPoliciesTransformer.class.getResource(TEMPLATE_FILE_NAME).getPath());
         String jsonTemplate = null;
         try {
-            jsonTemplate = FileCopyUtils.copyToString(new FileReader(jsonTemplateFile));
+            jsonTemplate = getStaticFileAsString(TEMPLATE_FILE_NAME);
         } catch (IOException e) {
             LOG.error("Failed to load template for connection policies: {}", TEMPLATE_FILE_NAME);
         }

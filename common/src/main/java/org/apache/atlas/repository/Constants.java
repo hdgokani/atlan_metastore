@@ -21,7 +21,16 @@ package org.apache.atlas.repository;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,6 +42,7 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropert
  *
  */
 public final class Constants {
+    private static final Logger LOG = LoggerFactory.getLogger(Constants.class);
 
     /**
      * Globally Unique identifier property key.
@@ -377,5 +387,22 @@ public final class Constants {
         } catch (AtlasException e) {
             return encodePropertyKey(defaultKey);
         }
+    }
+
+    public static String getStaticFileAsString(String fileName) throws IOException {
+        String atlasHomeDir  = System.getProperty("atlas.home");
+        atlasHomeDir = StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir;
+
+        String elasticsearchFilePath = atlasHomeDir + File.separator + "static" + File.separator + fileName;
+        Path es_schema_path = Paths.get(elasticsearchFilePath);
+        String resourceAsString = null;
+        try {
+            resourceAsString = new String(Files.readAllBytes(es_schema_path), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            LOG.error("Failed to get static file as string: {}", fileName);
+            throw e;
+        }
+
+        return resourceAsString;
     }
 }

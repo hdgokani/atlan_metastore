@@ -58,6 +58,10 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -68,6 +72,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.repository.Constants.getStaticFileAsString;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
 
 @Component
@@ -101,6 +106,8 @@ public class PolicyTransformerImpl {
     private static final String RESOURCE_SERVICE_DEF_ATLAS = RESOURCE_SERVICE_DEF_PATH + "ranger-servicedef-atlas.json";
     private static final String RESOURCE_SERVICE_DEF_ATLAS_TAG = RESOURCE_SERVICE_DEF_PATH + "ranger-servicedef-tag.json";
 
+    private static final String RESOURCE_POLICY_TRANSFORMER = "templates/PolicyCacheTransformer.json";
+
     private EntityDiscoveryService discoveryService;
     private AtlasGraph                graph = null;
     private AtlasTypeRegistry         typeRegistry = null;
@@ -111,20 +118,11 @@ public class PolicyTransformerImpl {
     static {
         String jsonTemplate = null;
         try {
-            File jsonTemplateFile = new File(PolicyTransformerImpl.class.getResource("/PolicyCacheTransformer.json").getPath());
+            //File jsonTemplateFile = new File(PolicyTransformerImpl.class.getResource("/PolicyCacheTransformer.json").getPath());
 
-            jsonTemplate = FileCopyUtils.copyToString(new FileReader(jsonTemplateFile));
+            //jsonTemplate = FileCopyUtils.copyToString(new FileReader(jsonTemplateFile));
+            jsonTemplate = getStaticFileAsString(RESOURCE_POLICY_TRANSFORMER);
         } catch (IOException e) {
-            LOG.error("Failed to load PolicyCacheTransformer.json: {}", e.getMessage());
-            try {
-                File jsonTemplateFile = new File(PolicyTransformerImpl.class.getResource("PolicyCacheTransformer.json").getPath());
-
-                jsonTemplate = FileCopyUtils.copyToString(new FileReader(jsonTemplateFile));
-            } catch (IOException e0) {
-                LOG.error("Failed to load PolicyCacheTransformer.json: {}", e0.getMessage());
-                e.printStackTrace();
-            }
-
             LOG.error("Failed to load PolicyCacheTransformer.json: {}", e.getMessage());
             e.printStackTrace();
         }

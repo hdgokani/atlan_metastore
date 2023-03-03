@@ -24,28 +24,18 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.codehaus.jettison.json.JSONTokener;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.GroupRepresentation;
-import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.omg.CORBA.PRIVATE_MEMBER;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import javax.ws.rs.client.ClientBuilder;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -123,7 +113,8 @@ public class KeycloakClient {
                         .clientId(CLIENT_ID)
                         .clientSecret(CLIENT_SECRET)
                         .grantType(GRANT_TYPE)
-                        .resteasyClient(new ResteasyClientBuilder().build())
+                        //.resteasyClient(new ResteasyClientBuilder().build())
+                        .resteasyClient(ClientBuilder.newBuilder().build())
                         .build();
 
                 keycloakClient = new KeycloakClient();
