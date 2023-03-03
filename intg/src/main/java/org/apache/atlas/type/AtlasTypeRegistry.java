@@ -757,20 +757,12 @@ public class AtlasTypeRegistry {
 
         public List<AtlasBaseTypeDef> getDeleteedTypes() { return deletedTypes; }
 
-        void validateTypeCreation(AtlasBaseTypeDef typeDef) throws AtlasBaseException{
-            if(this.isRegisteredType(typeDef.getName()) && (this.getType(typeDef.getName()).getTypeCategory().equals(TypeCategory.PRIMITIVE)||(this.getType(typeDef.getName()).getTypeCategory().equals(TypeCategory.OBJECT_ID_TYPE)))){
-                throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
-            }
-        }
-
         private void addTypeWithNoRefResolve(AtlasBaseTypeDef typeDef) throws AtlasBaseException{
             if (LOG.isDebugEnabled()) {
                 LOG.debug("==> AtlasTypeRegistry.addTypeWithNoRefResolve({})", typeDef);
             }
 
             if (typeDef != null) {
-                if(typeDef.getClass().equals(AtlasEnumDef.class) || typeDef.getClass().equals(AtlasStructDef.class) || typeDef.getClass().equals(AtlasEntityDef.class))
-                    validateTypeCreation(typeDef);
 
                 if (typeDef.getClass().equals(AtlasEnumDef.class)) {
                     AtlasEnumDef enumDef = (AtlasEnumDef) typeDef;
@@ -848,8 +840,6 @@ public class AtlasTypeRegistry {
             }
 
             if (guid != null && typeDef != null) {
-                if(typeDef.getClass().equals(AtlasEnumDef.class) || typeDef.getClass().equals(AtlasStructDef.class) || typeDef.getClass().equals(AtlasEntityDef.class))
-                    validateTypeCreation(typeDef);
 
                 // ignore
                 if (typeDef.getClass().equals(AtlasEnumDef.class)) {
@@ -899,8 +889,6 @@ public class AtlasTypeRegistry {
             }
 
             if (name != null && typeDef != null) {
-                if(typeDef.getClass().equals(AtlasEnumDef.class) || typeDef.getClass().equals(AtlasStructDef.class) || typeDef.getClass().equals(AtlasEntityDef.class))
-                    validateTypeCreation(typeDef);
 
                 if (typeDef.getClass().equals(AtlasEnumDef.class)) {
                     AtlasEnumDef enumDef = (AtlasEnumDef) typeDef;
