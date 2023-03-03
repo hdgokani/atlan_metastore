@@ -44,7 +44,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 
 @Component
-@Order(8)
+@Order(9)
 public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Service {
     public static final Logger LOG = LoggerFactory.getLogger(AuthPoliciesBootstrapper.class);
 
