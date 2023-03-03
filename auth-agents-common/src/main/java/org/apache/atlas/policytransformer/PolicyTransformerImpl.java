@@ -115,7 +115,8 @@ public class PolicyTransformerImpl {
 
             jsonTemplate = FileCopyUtils.copyToString(new FileReader(jsonTemplateFile));
         } catch (IOException e) {
-            LOG.error("");
+            LOG.error("Failed to load PolicyCacheTransformer.json: {}", e.getMessage());
+            e.printStackTrace();
         }
         jsonTemplate =  jsonTemplate.replaceAll("\n", "");
         jsonTemplate =  jsonTemplate.replaceAll("\\s", "");
