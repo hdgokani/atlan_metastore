@@ -51,8 +51,9 @@ public class AtlasAuthorizerFactory {
                         LOG.error("Exception while fetching configuration", e);
                     }
 
-                    String authorizerClass = configuration != null ? configuration.getString("atlas.authorizer.impl") : "SIMPLE";
-
+                    //String authorizerClass = configuration != null ? configuration.getString("atlas.authorizer.impl") : "SIMPLE";
+                    String authorizerClass = "org.apache.atlas.ranger.authorization.atlas.authorizer.RangerAtlasAuthorizer";
+                    
                     if (StringUtils.isNotEmpty(authorizerClass)) {
                         if (StringUtils.equalsIgnoreCase(authorizerClass, "SIMPLE")) {
                             authorizerClass = SIMPLE_AUTHORIZER;
