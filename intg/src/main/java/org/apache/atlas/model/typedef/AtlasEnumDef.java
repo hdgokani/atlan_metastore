@@ -29,6 +29,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
@@ -209,6 +211,13 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
         }
 
         return ret;
+    }
+
+    public static void validateTypeName(AtlasEnumDef type) throws AtlasBaseException{
+        for(String builtinTypeName: ATLAS_BUILTIN_TYPES){
+            if(builtinTypeName.equals(type.getName()))
+                throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, builtinTypeName);
+        }
     }
 
     @Override

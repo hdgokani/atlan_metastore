@@ -39,6 +39,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
@@ -107,6 +109,12 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
     public List<AtlasAttributeDef> getAttributeDefs() {
         return attributeDefs;
+    }
+
+    public static void validateTypeName(AtlasStructDef type) throws AtlasBaseException {
+        for(String builtinTypeName: ATLAS_BUILTIN_TYPES)
+            if (builtinTypeName.equals(type.getName()))
+                throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, builtinTypeName);
     }
 
     public void setAttributeDefs(List<AtlasAttributeDef> attributeDefs) {
