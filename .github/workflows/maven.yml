@@ -112,7 +112,7 @@ jobs:
       - name: Check out into atlan repo
         uses: actions/checkout@v2
         with:
-          ref: main
+          ref: accesscontrol
           repository: atlanhq/atlan
           token: ${{ secrets.my_pat }}
 
