@@ -131,4 +131,4 @@ jobs:
           author_email: it@atlan.com
           message: '${{ github.event.repository.name }}'
           default_author: user_info
-          push: origin main
+          push: origin accesscontrol
