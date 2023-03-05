@@ -78,6 +78,7 @@ public class KeycloakUserStore {
     }
 
     public long getKeycloakSubjectsStoreUpdatedTime() {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getKeycloakSubjectsStoreUpdatedTime");
         LOG.info("Fetching getKeycloakSubjectsStoreUpdatedTime");
 
         //TODO: String vriables
@@ -96,14 +97,16 @@ public class KeycloakUserStore {
 
         LOG.info("getKeycloakSubjectsStoreUpdatedTime - {}", latestEventTime);
 
+        RequestContext.get().endMetricRecord(metricRecorder);
         return latestEventTime;
     }
 
     public RangerRoles loadRolesIfUpdated(long lastUpdatedTime) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadRoles");
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadRolesIfUpdated");
 
         long keycloakUpdateTime = getKeycloakSubjectsStoreUpdatedTime();
         if (keycloakUpdateTime <= lastUpdatedTime) {
+            LOG.info("loadRolesIfUpdated: Skipping as no update found");
             return null;
         }
 
@@ -133,10 +136,11 @@ public class KeycloakUserStore {
     }
 
     public RangerUserStore loadUserStoreIfUpdated(long lastUpdatedTime) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadUserStore");
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("loadUserStoreIfUpdated");
 
         long keycloakUpdateTime = getKeycloakSubjectsStoreUpdatedTime();
         if (keycloakUpdateTime <= lastUpdatedTime) {
+            LOG.info("loadUserStoreIfUpdated: Skipping as no update found");
             return null;
         }
 
@@ -274,7 +278,7 @@ public class KeycloakUserStore {
         }
     }
 
-    static class RoleSubjectsFetcher implements Callable<RangerRole> {
+    static class RoleSubjectsFetcher implements Callable {
         private Set<RangerRole> roleSet;
         private RoleRepresentation kRole;
         List<UserRepresentation> userNamesList;
@@ -288,66 +292,73 @@ public class KeycloakUserStore {
         }
 
         @Override
-        public RangerRole call() throws Exception {
+        public Object call() throws Exception {
             AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("roleSubjectsFetcher");
 
-            RangerRole rangerRole = keycloakRoleToRangerRole(kRole);
-            RoleResource roleResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(kRole.getName());
-
-            //get all groups for Roles
-            Thread groupsFetcher = new Thread(() -> {
-                int start = 0;
-                int size = 100;
-                Set<GroupRepresentation> ret = new HashSet<>();
-
-                do {
-                    Set<GroupRepresentation> kGroups = roleResource.getRoleGroupMembers(start, size);
-                    ret.addAll(kGroups);
-                    start += size;
-
-                } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
-
-                rangerRole.setGroups(keycloakGroupsToRangerRoleMember(ret));
-            });
-            groupsFetcher.start();
-
-            //get all users for Roles
-            Thread usersFetcher = new Thread(() -> {
-                int start = 0;
-                int size = 100;
-                Set<UserRepresentation> ret = new HashSet<>();
-
-                do {
-                    Set<UserRepresentation> userRepresentations = roleResource.getRoleUserMembers(start, size);
-                    ret.addAll(userRepresentations);
-                    start += size;
-
-                } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
-
-                rangerRole.setUsers(keycloakUsersToRangerRoleMember(ret));
-                userNamesList.addAll(ret);
-            });
-            usersFetcher.start();
-
-            //get all roles for Roles
-            Thread subRolesFetcher = new Thread(() -> {
-                Set<RoleRepresentation> kSubRoles = roleResource.getRoleComposites();
-                rangerRole.setRoles(keycloakRolesToRangerRoleMember(kSubRoles));
-            });
-            subRolesFetcher.start();
-
             try {
-                groupsFetcher.join();
-                usersFetcher.join();
-                subRolesFetcher.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                RangerRole rangerRole = keycloakRoleToRangerRole(kRole);
+                RoleResource roleResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(kRole.getName());
+
+                //get all groups for Roles
+                Thread groupsFetcher = new Thread(() -> {
+                    int start = 0;
+                    int size = 100;
+                    Set<GroupRepresentation> ret = new HashSet<>();
+
+                    do {
+                        Set<GroupRepresentation> kGroups = roleResource.getRoleGroupMembers(start, size);
+                        ret.addAll(kGroups);
+                        start += size;
+
+                    } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+
+                    rangerRole.setGroups(keycloakGroupsToRangerRoleMember(ret));
+                });
+                groupsFetcher.start();
+
+                //get all users for Roles
+                Thread usersFetcher = new Thread(() -> {
+                    int start = 0;
+                    int size = 100;
+                    Set<UserRepresentation> ret = new HashSet<>();
+
+                    do {
+                        Set<UserRepresentation> userRepresentations = roleResource.getRoleUserMembers(start, size);
+                        ret.addAll(userRepresentations);
+                        start += size;
+
+                    } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+
+                    rangerRole.setUsers(keycloakUsersToRangerRoleMember(ret));
+                    userNamesList.addAll(ret);
+                });
+                usersFetcher.start();
+
+                //get all roles for Roles
+                Thread subRolesFetcher = new Thread(() -> {
+                    Set<RoleRepresentation> kSubRoles = roleResource.getRoleComposites();
+                    rangerRole.setRoles(keycloakRolesToRangerRoleMember(kSubRoles));
+                });
+                subRolesFetcher.start();
+
+                try {
+                    groupsFetcher.join();
+                    usersFetcher.join();
+                    subRolesFetcher.join();
+                } catch (InterruptedException e) {
+                    LOG.error("Failed to wait for threads to complete: {}", kRole.getName());
+                    e.printStackTrace();
+                }
+
+                RequestContext.get().endMetricRecord(recorder);
+                roleSet.add(rangerRole);
+            } catch (Exception e) {
+                LOG.error("RoleSubjectsFetcher: Failed to process role {}: {}", kRole.getName(), e.getMessage());
+            } finally {
+                RequestContext.get().endMetricRecord(recorder);
             }
 
-            RequestContext.get().endMetricRecord(recorder);
-            roleSet.add(rangerRole);
-
-            return rangerRole;
+            return null;
         }
     }
 
@@ -364,13 +375,18 @@ public class KeycloakUserStore {
         public Object call() throws Exception {
             AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("userGroupsFetcher");
 
-            List<GroupRepresentation> kGroups = KeycloakClient.getKeycloakClient().getRealm().users().get(kUser.getId()).groups();
-            userGroupMapping.put(kUser.getUsername(),
-                    kGroups.stream()
-                            .map(GroupRepresentation::getName)
-                            .collect(Collectors.toSet()));
+            try {
+                List<GroupRepresentation> kGroups = KeycloakClient.getKeycloakClient().getRealm().users().get(kUser.getId()).groups();
+                userGroupMapping.put(kUser.getUsername(),
+                        kGroups.stream()
+                                .map(GroupRepresentation::getName)
+                                .collect(Collectors.toSet()));
 
-            RequestContext.get().endMetricRecord(recorder);
+            } catch (Exception e) {
+                LOG.error("UserGroupsFetcher: Failed to process user {}: {}", kUser.getUsername(), e.getMessage());
+            } finally {
+                RequestContext.get().endMetricRecord(recorder);
+            }
 
             return null;
         }
