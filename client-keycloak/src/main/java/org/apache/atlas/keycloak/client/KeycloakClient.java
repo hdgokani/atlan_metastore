@@ -18,7 +18,6 @@
 
 package org.apache.atlas.keycloak.client;
 
-import com.fasterxml.jackson.core.JsonParser;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
