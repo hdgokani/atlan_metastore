@@ -152,7 +152,7 @@ public class KeycloakUserStore {
         List<Callable<Object>> callables = new ArrayList<>();
         kUsers.forEach(x -> callables.add(new UserGroupsFetcher(x, userGroupMapping)));
 
-        submitCallablesAndWaitToFinish("RoleSubjectsFetcher", callables);
+        submitCallablesAndWaitToFinish("UserGroupsFetcher", callables);
 
         RangerUserStore userStore = new RangerUserStore();
         userStore.setUserGroupMapping(userGroupMapping);
@@ -267,7 +267,8 @@ public class KeycloakUserStore {
             LOG.info("Shutting down executor: {}", threadName);
             service.shutdown();
             LOG.info("Shut down executor: {}", threadName);
-            boolean terminated = service.awaitTermination(60, TimeUnit.SECONDS);
+            //boolean terminated = service.awaitTermination(60, TimeUnit.SECONDS);
+            boolean terminated = service.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
             LOG.info("awaitTermination done: {}", threadName);
 
             if (!terminated) {
