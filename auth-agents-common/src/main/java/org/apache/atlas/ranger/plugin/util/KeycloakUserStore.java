@@ -278,7 +278,7 @@ public class KeycloakUserStore {
         }
     }
 
-    static class RoleSubjectsFetcher implements Callable {
+    static class RoleSubjectsFetcher implements Callable<RangerRole> {
         private Set<RangerRole> roleSet;
         private RoleRepresentation kRole;
         List<UserRepresentation> userNamesList;
@@ -292,11 +292,11 @@ public class KeycloakUserStore {
         }
 
         @Override
-        public Object call() throws Exception {
+        public RangerRole call() throws Exception {
             AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("roleSubjectsFetcher");
+            final RangerRole rangerRole = keycloakRoleToRangerRole(kRole);
 
             try {
-                RangerRole rangerRole = keycloakRoleToRangerRole(kRole);
                 RoleResource roleResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(kRole.getName());
 
                 //get all groups for Roles
@@ -358,7 +358,7 @@ public class KeycloakUserStore {
                 RequestContext.get().endMetricRecord(recorder);
             }
 
-            return null;
+            return rangerRole;
         }
     }
 
