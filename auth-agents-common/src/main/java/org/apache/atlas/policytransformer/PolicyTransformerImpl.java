@@ -118,9 +118,6 @@ public class PolicyTransformerImpl {
     static {
         String jsonTemplate = null;
         try {
-            //File jsonTemplateFile = new File(PolicyTransformerImpl.class.getResource("/PolicyCacheTransformer.json").getPath());
-
-            //jsonTemplate = FileCopyUtils.copyToString(new FileReader(jsonTemplateFile));
             jsonTemplate = getStaticFileAsString(RESOURCE_POLICY_TRANSFORMER);
         } catch (IOException e) {
             LOG.error("Failed to load PolicyCacheTransformer.json: {}", e.getMessage());
@@ -196,8 +193,7 @@ public class PolicyTransformerImpl {
                     }
                 }
 
-                //LOG.info("policies ");
-                LOG.info(AtlasType.toJson(servicePolicies));
+                LOG.info("Found {} policies", servicePolicies.getPolicies().size());
             }
 
 

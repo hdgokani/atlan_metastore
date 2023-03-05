@@ -18,7 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol;
 
 
-import atlas.keycloak.client.KeycloakClient;
+import org.apache.atlas.keycloak.client.KeycloakClient;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
 import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;

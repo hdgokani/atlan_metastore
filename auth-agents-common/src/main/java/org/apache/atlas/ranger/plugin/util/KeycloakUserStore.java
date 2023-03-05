@@ -19,7 +19,7 @@
 
 package org.apache.atlas.ranger.plugin.util;
 
-import atlas.keycloak.client.KeycloakClient;
+import org.apache.atlas.keycloak.client.KeycloakClient;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;

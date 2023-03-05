@@ -80,4 +80,9 @@
 			RangerRestClient read Timeout in Milli Seconds
 		</description>
 	</property>
+
+	<property>
+		<name>ranger.plugin.atlas.policyengine.option.disable.tag.retriever</name>
+		<value>true</value>
+	</property>
 </configuration>

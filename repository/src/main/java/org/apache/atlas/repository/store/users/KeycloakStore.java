@@ -18,7 +18,7 @@
 
 package org.apache.atlas.repository.store.users;
 
-import atlas.keycloak.client.KeycloakClient;
+import org.apache.atlas.keycloak.client.KeycloakClient;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.CollectionUtils;

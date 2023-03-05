@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package atlas.keycloak.client;
+package org.apache.atlas.keycloak.client;
 
 import com.fasterxml.jackson.core.JsonParser;
 import org.apache.atlas.exception.AtlasBaseException;
