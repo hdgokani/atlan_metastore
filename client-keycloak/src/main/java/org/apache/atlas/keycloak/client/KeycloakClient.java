@@ -48,7 +48,7 @@ public class KeycloakClient {
     public static final Logger LOG = LoggerFactory.getLogger(KeycloakClient.class);
 
     private static KeycloakClient keycloakClient = null;
-    private static Keycloak keycloak = null;
+    public static Keycloak keycloak = null;
 
     public static final String KEYCLOAK_PROPERTIES = "keycloak.json";
     private static final String ATLAS_LOG_DIR = "atlas.log.dir";
@@ -78,6 +78,12 @@ public class KeycloakClient {
             init();
             LOG.info("Initialized Keycloak client..");
         }
+
+        if (keycloak.isClosed()) {
+            LOG.info("Re-initializing keycloak client");
+            init();
+        }
+
         return keycloakClient;
     }
 

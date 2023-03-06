@@ -82,6 +82,8 @@ public class KeycloakStore {
         List<UserRepresentation> roleUsers = new ArrayList<>();
         UsersResource usersResource = null;
 
+        LOG.info("KeycloakClient.keycloak.isClosed(): {}", KeycloakClient.keycloak.isClosed());
+
         if (CollectionUtils.isNotEmpty(users)) {
             usersResource = KeycloakClient.getKeycloakClient().getRealm().users();
 
