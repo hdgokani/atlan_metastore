@@ -35,6 +35,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.repository.store.users.KeycloakStore;
 import org.apache.atlas.transformer.ConnectionPoliciesTransformer;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.keycloak.representations.idm.RoleRepresentation;
@@ -108,10 +109,13 @@ public class ConnectionPreProcessor implements PreProcessor {
 
         //create connection bootstrap policies
         AtlasEntitiesWithExtInfo policies = transformer.transform(connection, role.getName());
+
+        LOG.info("Bootstrap policies for connection : \n {}\n", AtlasType.toJson(policies));
         try {
             RequestContext.get().setPoliciesBootstrappingInProgress(true);
             EntityStream entityStream = new AtlasEntityStream(policies);
             entityStore.createOrUpdate(entityStream, false);
+            LOG.info("Created bootstrap policies for connection");
         } finally {
             RequestContext.get().setPoliciesBootstrappingInProgress(false);
         }

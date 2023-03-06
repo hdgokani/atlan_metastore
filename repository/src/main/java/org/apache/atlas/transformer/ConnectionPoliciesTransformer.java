@@ -70,6 +70,7 @@ public class ConnectionPoliciesTransformer {
     }
 
     public AtlasEntitiesWithExtInfo transform(AtlasEntity connection, String roleName) {
+        LOG.info("transforming connection bootstrap policies");
         String qualifiedName = getQualifiedName(connection);
         String guid = connection.getGuid();
         String name = getName(connection);
@@ -98,6 +99,7 @@ public class ConnectionPoliciesTransformer {
             bootPolicy.setAttribute(ATTR_POLICY_RESOURCES, resourcesFinal);
 
             policiesExtInfo.addEntity(bootPolicy);
+            LOG.info("transformed connection bootstrap policies");
         }
 
         return policiesExtInfo;
