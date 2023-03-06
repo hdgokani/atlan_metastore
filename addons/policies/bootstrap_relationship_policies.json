@@ -495,80 +495,79 @@
                 ]
             }
         },
-        [
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
             {
-                "typeName": "AuthPolicy",
-                "attributes":
-                {
-                    "name": "LINK_ACCESS_CONTROL_POLICY",
-                    "qualifiedName": "LINK_ACCESS_CONTROL_POLICY",
-                    "policyCategory": "bootstrap",
-                    "policyServiceName": "atlas",
-                    "policyType": "allow",
-                    "policyUsers":
-                    [],
-                    "policyGroups":
-                    [],
-                    "policyRoles":
-                    [
-                        "$admin"
-                    ],
-                    "policyResourceCategory": "RELATIONSHIP",
-                    "policyResources":
-                    [
-                        "end-one-entity-classification:*",
-                        "end-two-entity-classification:*",
-                        "end-one-entity:*",
-                        "end-two-entity:*",
-                        "end-one-entity-type:AccessControl",
-                        "end-two-entity-type:AuthPolicy",
-                        "relationship-type:*"
-                    ],
-                    "policyActions":
-                    [
-                        "add-relationship",
-                        "update-relationship",
-                        "remove-relationship"
-                    ]
-                }
-            },
-            {
-                "typeName": "AuthPolicy",
-                "attributes":
-                {
-                    "name": "LINK_ACCESS_CONTROL_RESOURCE",
-                    "qualifiedName": "LINK_ACCESS_CONTROL_RESOURCE",
-                    "policyCategory": "bootstrap",
-                    "policyServiceName": "atlas",
-                    "policyType": "allow",
-                    "policyUsers":
-                    [],
-                    "policyGroups":
-                    [],
-                    "policyRoles":
-                    [
-                        "$admin"
-                    ],
-                    "policyResourceCategory": "RELATIONSHIP",
-                    "policyResources":
-                    [
-                        "end-one-entity-classification:*",
-                        "end-two-entity-classification:*",
-                        "end-one-entity:*",
-                        "end-two-entity:*",
-                        "end-one-entity-type:AccessControl",
-                        "end-two-entity-type:Readme",
-                        "end-two-entity-type:Link",
-                        "relationship-type:*"
-                    ],
-                    "policyActions":
-                    [
-                        "add-relationship",
-                        "update-relationship",
-                        "remove-relationship"
-                    ]
-                }
+                "name": "LINK_ACCESS_CONTROL_POLICY",
+                "qualifiedName": "LINK_ACCESS_CONTROL_POLICY",
+                "policyCategory": "bootstrap",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin"
+                ],
+                "policyResourceCategory": "RELATIONSHIP",
+                "policyResources":
+                [
+                    "end-one-entity-classification:*",
+                    "end-two-entity-classification:*",
+                    "end-one-entity:*",
+                    "end-two-entity:*",
+                    "end-one-entity-type:AccessControl",
+                    "end-two-entity-type:AuthPolicy",
+                    "relationship-type:*"
+                ],
+                "policyActions":
+                [
+                    "add-relationship",
+                    "update-relationship",
+                    "remove-relationship"
+                ]
             }
-        ]
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "LINK_ACCESS_CONTROL_RESOURCE",
+                "qualifiedName": "LINK_ACCESS_CONTROL_RESOURCE",
+                "policyCategory": "bootstrap",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin"
+                ],
+                "policyResourceCategory": "RELATIONSHIP",
+                "policyResources":
+                [
+                    "end-one-entity-classification:*",
+                    "end-two-entity-classification:*",
+                    "end-one-entity:*",
+                    "end-two-entity:*",
+                    "end-one-entity-type:AccessControl",
+                    "end-two-entity-type:Readme",
+                    "end-two-entity-type:Link",
+                    "relationship-type:*"
+                ],
+                "policyActions":
+                [
+                    "add-relationship",
+                    "update-relationship",
+                    "remove-relationship"
+                ]
+            }
+        }
+
     ]
 }
