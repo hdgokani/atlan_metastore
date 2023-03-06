@@ -70,7 +70,7 @@ public class ConnectionPreProcessor implements PreProcessor {
 
         aliasStore = new ESAliasStore(graph, entityRetriever);
         transformer = new ConnectionPoliciesTransformer();
-        keycloakStore = new KeycloakStore(true, true);
+        keycloakStore = new KeycloakStore();
     }
 
     @Override
@@ -104,7 +104,7 @@ public class ConnectionPreProcessor implements PreProcessor {
         List<String> adminGroups = (List<String>) connection.getAttribute("adminGroups");
         List<String> adminRoles = (List<String>) connection.getAttribute("adminRoles");
 
-        RoleRepresentation role = keycloakStore.createRole(roleName, true, adminUsers, adminGroups, adminRoles);
+        RoleRepresentation role = keycloakStore.createRoleForConnection(roleName, true, adminUsers, adminGroups, adminRoles);
 
         //create connection bootstrap policies
         AtlasEntitiesWithExtInfo policies = transformer.transform(connection, role.getName());

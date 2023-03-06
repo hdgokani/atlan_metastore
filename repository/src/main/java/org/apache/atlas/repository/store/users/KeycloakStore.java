@@ -25,6 +25,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.keycloak.admin.client.resource.GroupResource;
 import org.keycloak.admin.client.resource.GroupsResource;
+import org.keycloak.admin.client.resource.RoleByIdResource;
 import org.keycloak.admin.client.resource.RoleResource;
 import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.admin.client.resource.UserResource;
@@ -68,9 +69,101 @@ public class KeycloakStore {
         return createRole(name, false, users, groups, roles, null);
     }
 
-    public RoleRepresentation createRole(String name, boolean isComposite,
+    public RoleRepresentation createRoleForConnection(String name, boolean isComposite,
                                          List<String> users, List<String> groups, List<String> roles) throws AtlasBaseException {
-        return createRole(name, isComposite, users, groups, roles, null);
+
+        RolesResource rolesResource      = KeycloakClient.getKeycloakClient().getRealm().roles();
+        RoleByIdResource rolesIdResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
+
+        List<UserRepresentation> roleUsers = new ArrayList<>();
+        UsersResource usersResource = null;
+
+        if (CollectionUtils.isNotEmpty(users)) {
+            usersResource = KeycloakClient.getKeycloakClient().getRealm().users();
+
+            for (String userName : users) {
+                List<UserRepresentation> matchedUsers = usersResource.search(userName);
+                Optional<UserRepresentation> keyUserOptional = matchedUsers.stream().filter(x -> userName.equals(x.getUsername())).findFirst();
+
+                if (keyUserOptional.isPresent()) {
+                    roleUsers.add(keyUserOptional.get());
+                } else {
+                    throw new AtlasBaseException("Keycloak user not found with userName " + userName);
+                }
+            }
+        }
+
+        List<GroupRepresentation> roleGroups = new ArrayList<>();
+        GroupsResource groupsResource = null;
+
+        if (CollectionUtils.isNotEmpty(groups)) {
+            groupsResource = KeycloakClient.getKeycloakClient().getRealm().groups();
+
+            for (String groupName : groups) {
+                List<GroupRepresentation> matchedGroups = groupsResource.groups(groupName, 0, 100);
+                Optional<GroupRepresentation> keyGroupOptional = matchedGroups.stream().filter(x -> groupName.equals(x.getName())).findFirst();
+
+                if (keyGroupOptional.isPresent()) {
+                    roleGroups.add(keyGroupOptional.get());
+                } else {
+                    throw new AtlasBaseException("Keycloak group not found with name " + groupName);
+                }
+            }
+        }
+
+        //TODO: remove discrepency to pass roleName instead of roleId
+        List<RoleRepresentation> roleRoles = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(roles)) {
+            for (String roleId : roles) {
+                roleRoles.add(rolesIdResource.getRole(roleId));
+            }
+        }
+
+        RoleRepresentation role = new RoleRepresentation();
+        role.setName(name);
+        role.setComposite(isComposite);
+
+        RoleRepresentation createdRole = createRole(role);
+        if (createdRole == null) {
+            throw new AtlasBaseException("Failed to create a keycloak role " + name);
+        }
+        LOG.info("Created keycloak role with name {}", name);
+
+        //add realm role into users
+        if (CollectionUtils.isNotEmpty(roleUsers)) {
+            for (UserRepresentation kUser : roleUsers) {
+                UserResource userResource = usersResource.get(kUser.getId());
+
+                userResource.roles().realmLevel().add(Collections.singletonList(createdRole));
+                userResource.update(kUser);
+            }
+        }
+
+        //add realm role into groups
+        if (CollectionUtils.isNotEmpty(roleGroups)) {
+            for (GroupRepresentation kGroup : roleGroups) {
+                GroupResource groupResource = groupsResource.group(kGroup.getId());
+
+                groupResource.roles().realmLevel().add(Collections.singletonList(createdRole));
+                groupResource.update(kGroup);
+            }
+        }
+
+        //add realm role into roles
+        if (CollectionUtils.isNotEmpty(roleRoles)) {
+            RoleResource connectionRoleResource = rolesResource.get(createdRole.getName());
+
+            for (RoleRepresentation kRole : roleRoles) {
+                RoleResource roleResource = rolesResource.get(kRole.getName());
+
+                connectionRoleResource.addComposites(Collections.singletonList(roleResource.toRepresentation()));
+                connectionRoleResource.update(connectionRoleResource.toRepresentation());
+            }
+        }
+
+        return createdRole;
+
+        //return createRole(name, isComposite, users, groups, roles, null);
     }
 
     public RoleRepresentation createRole(String name, boolean isComposite,
@@ -81,8 +174,6 @@ public class KeycloakStore {
 
         List<UserRepresentation> roleUsers = new ArrayList<>();
         UsersResource usersResource = null;
-
-        LOG.info("KeycloakClient.keycloak.isClosed(): {}", KeycloakClient.keycloak.isClosed());
 
         if (CollectionUtils.isNotEmpty(users)) {
             usersResource = KeycloakClient.getKeycloakClient().getRealm().users();
