@@ -121,6 +121,7 @@ public class KeycloakStore {
 
         if (CollectionUtils.isNotEmpty(roles)) {
             for (String roleName : roles) {
+                LOG.info("Searching role {}", roleName);
                 RoleRepresentation roleRepresentation = rolesResource.get(roleName).toRepresentation();
 
                 if (roleRepresentation != null) {
