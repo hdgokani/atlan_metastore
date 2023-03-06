@@ -568,6 +568,126 @@
                         "remove-relationship"
                     ]
                 }
+            },
+            {
+                "typeName": "AuthPolicy",
+                "attributes":
+                {
+                    "name": "CREATE_AUTH_POLICIES",
+                    "qualifiedName": "CREATE_AUTH_POLICIES",
+                    "policyCategory": "bootstrap",
+                    "policyServiceName": "atlas",
+                    "policyType": "allow",
+                    "policyUsers":
+                    [],
+                    "policyGroups":
+                    [],
+                    "policyRoles":
+                    [
+                        "$admin"
+                    ],
+                    "policyResourceCategory": "ENTITY",
+                    "policyResources":
+                    [
+                        "entity-type:AuthPolicy",
+                        "entity-classification:*",
+                        "entity:*"
+                    ],
+                    "policyActions":
+                    [
+                        "entity-create"
+                    ]
+                }
+            },
+            {
+                "typeName": "AuthPolicy",
+                "attributes":
+                {
+                    "name": "READ_AUTH_POLICIES",
+                    "qualifiedName": "READ_AUTH_POLICIES",
+                    "policyCategory": "bootstrap",
+                    "policyServiceName": "atlas",
+                    "policyType": "allow",
+                    "policyUsers":
+                    [],
+                    "policyGroups":
+                    [],
+                    "policyRoles":
+                    [
+                        "$admin"
+                    ],
+                    "policyResourceCategory": "ENTITY",
+                    "policyResources":
+                    [
+                        "entity-type:AuthPolicy",
+                        "entity-classification:*",
+                        "entity:*"
+                    ],
+                    "policyActions":
+                    [
+                        "entity-read"
+                    ]
+                }
+            },
+            {
+                "typeName": "AuthPolicy",
+                "attributes":
+                {
+                    "name": "UPDATE_AUTH_POLICIES",
+                    "qualifiedName": "UPDATE_AUTH_POLICIES",
+                    "policyCategory": "bootstrap",
+                    "policyServiceName": "atlas",
+                    "policyType": "allow",
+                    "policyUsers":
+                    [],
+                    "policyGroups":
+                    [],
+                    "policyRoles":
+                    [
+                        "$admin"
+                    ],
+                    "policyResourceCategory": "ENTITY",
+                    "policyResources":
+                    [
+                        "entity-type:AuthPolicy",
+                        "entity-classification:*",
+                        "entity:*"
+                    ],
+                    "policyActions":
+                    [
+                        "entity-update"
+                    ]
+                }
+            },
+            {
+                "typeName": "AuthPolicy",
+                "attributes":
+                {
+                    "name": "DELETE_AUTH_POLICIES",
+                    "qualifiedName": "DELETE_AUTH_POLICIES",
+                    "policyCategory": "bootstrap",
+                    "policyServiceName": "atlas",
+                    "policyType": "allow",
+                    "policyUsers":
+                    [],
+                    "policyGroups":
+                    [],
+                    "policyRoles":
+                    [
+                        "$admin"
+                    ],
+                    "policyResourceCategory": "ENTITY",
+                    "policyResources":
+                    [
+                        "entity-type:AuthPolicy",
+                        "entity-classification:*",
+                        "entity:*"
+                    ],
+                    "policyActions":
+                    [
+                        "entity-delete"
+                    ]
+                }
             }
         ]
     ]
