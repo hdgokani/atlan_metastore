@@ -31,6 +31,7 @@ import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.service.CuratorFactory;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.http.annotation.Experimental;
@@ -443,6 +444,7 @@ public class TypesREST {
             lock = attemptAcquiringLock();
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
+            validateTypeCreateOrUpdate(typesDef);
             AtlasTypesDef atlasTypesDef = typeDefStore.createTypesDef(typesDef);
             typeCacheRefresher.refreshAllHostCache();
             return atlasTypesDef;
@@ -456,6 +458,25 @@ public class TypesREST {
         finally {
             releaseLock(lock);
             AtlasPerfTracer.log(perf);
+        }
+    }
+
+    private void validateTypeCreateOrUpdate(AtlasTypesDef typesDef) throws AtlasBaseException {
+
+        if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
+            AtlasBaseTypeDef type = typesDef.getEnumDefs().stream().filter(typeDefStore::validateTypeName).findFirst().orElse(null);
+            if (type != null)
+                throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, type.getName());
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
+            AtlasBaseTypeDef type = typesDef.getEntityDefs().stream().filter(typeDefStore::validateTypeName).findFirst().orElse(null);
+            if (type != null)
+                throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, type.getName());
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
+            AtlasBaseTypeDef type = typesDef.getStructDefs().stream().filter(typeDefStore::validateTypeName).findFirst().orElse(null);
+            if (type != null)
+                throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, type.getName());
         }
     }
 
@@ -505,6 +526,7 @@ public class TypesREST {
             }
             RequestContext.get().setInTypePatching(patch);
             LOG.info("TypesRest.updateAtlasTypeDefs:: Typedef patch enabled:" + patch);
+            validateTypeCreateOrUpdate(typesDef);
             AtlasTypesDef atlasTypesDef = typeDefStore.updateTypesDef(typesDef);
             typeCacheRefresher.refreshAllHostCache();
             return atlasTypesDef;
