@@ -23,6 +23,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
@@ -115,8 +116,8 @@ public class KeycloakClient {
                         .clientId(CLIENT_ID)
                         .clientSecret(CLIENT_SECRET)
                         .grantType(GRANT_TYPE)
-                        //.resteasyClient(new ResteasyClientBuilder().build())
-                        .resteasyClient(ClientBuilder.newBuilder().build())
+                        .resteasyClient(new ResteasyClientBuilder().build())
+                        //.resteasyClient(ClientBuilder.newBuilder().build())
                         .build();
 
                 keycloakClient = new KeycloakClient();

@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -55,6 +56,9 @@ public class KeycloakUserStore {
     private static final Logger LOG = LoggerFactory.getLogger(KeycloakUserStore.class);
 
     private static int NUM_THREADS = 5;
+
+    List<String> OPERATION_TYPES = Arrays.asList("CREATE", "UPDATE", "DELETE");
+    List<String> RESOURCE_TYPES = Arrays.asList("USER", "GROUP", "REALM_ROLE", "REALM_ROLE_MAPPING", "GROUP_MEMBERSHIP");
 
     private final String serviceName;
 
@@ -81,18 +85,26 @@ public class KeycloakUserStore {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getKeycloakSubjectsStoreUpdatedTime");
         LOG.info("Fetching getKeycloakSubjectsStoreUpdatedTime");
 
-        //TODO: String vriables
-        List<String> operationTypes = Arrays.asList("CREATE", "UPDATE", "DELETE");
-        List<String> resourceTypes = Arrays.asList("USER", "GROUP", "REALM_ROLE", "REALM_ROLE_MAPPING", "GROUP_MEMBERSHIP");
-        List<AdminEventRepresentation> adminEvents = KeycloakClient.getKeycloakClient().getRealm().getAdminEvents(operationTypes,
+        /*List<AdminEventRepresentation> adminEvents = KeycloakClient.getKeycloakClient().getRealm().getAdminEvents(operationTypes,
                 null, null, null, null, null,
                 resourceTypes,
                 null, null,
-                0,1);
+                0,1);*/
 
         long latestEventTime = -1L;
-        if (CollectionUtils.isNotEmpty(adminEvents)) {
-            latestEventTime = adminEvents.get(0).getTime();
+        int from = 0;
+        int size = 100;
+
+        while (latestEventTime == -1L) {
+            List<AdminEventRepresentation> adminEvents = KeycloakClient.getKeycloakClient().getRealm().getAdminEvents(OPERATION_TYPES,
+                    null, null, null, null, null, null, null,
+                    from, size);
+
+            Optional<AdminEventRepresentation> event = adminEvents.stream().filter(x -> RESOURCE_TYPES.contains(x.getResourceType())).findFirst();
+            if (event.isPresent()) {
+                latestEventTime = event.get().getTime();
+            }
+            from += size;
         }
 
         LOG.info("getKeycloakSubjectsStoreUpdatedTime - {}", latestEventTime);
@@ -267,7 +279,7 @@ public class KeycloakUserStore {
             LOG.info("Shutting down executor: {}", threadName);
             service.shutdown();
             LOG.info("Shut down executor: {}", threadName);
-            //boolean terminated = service.awaitTermination(60, TimeUnit.SECONDS);
+            //boolean terminated = service.awaitTermination(60, TimeUnit.SECONDS);//TODO: implement  countdown lotch for undefinite wait
             boolean terminated = service.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
             LOG.info("awaitTermination done: {}", threadName);
 
