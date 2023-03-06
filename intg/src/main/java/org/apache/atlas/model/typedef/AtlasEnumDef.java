@@ -213,13 +213,6 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
         return ret;
     }
 
-//    public static void validateTypeName(AtlasEnumDef type) throws AtlasBaseException{
-//        for(String builtinTypeName: ATLAS_BUILTIN_TYPES){
-//            if(builtinTypeName.equals(type.getName()))
-//                throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, builtinTypeName);
-//        }
-//    }
-
     @Override
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
