@@ -77,7 +77,8 @@ public class ConnectionPoliciesTransformer {
 
         AtlasEntitiesWithExtInfo policiesExtInfo = new AtlasEntitiesWithExtInfo();
 
-        for (AtlasEntity bootPolicy : new ArrayList<>(connectionPolicies)) {
+        for (AtlasEntity connBootPolicy : new ArrayList<>(connectionPolicies)) {
+            AtlasEntity bootPolicy = new AtlasEntity(connBootPolicy);
             String bootPolicyName = getName(bootPolicy);
             String bootPolicyQn = getQualifiedName(bootPolicy);
 
