@@ -111,11 +111,11 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         return attributeDefs;
     }
 
-    public static void validateTypeName(AtlasStructDef type) throws AtlasBaseException {
-        for(String builtinTypeName: ATLAS_BUILTIN_TYPES)
-            if (builtinTypeName.equals(type.getName()))
-                throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, builtinTypeName);
-    }
+//    public static void validateTypeName(AtlasStructDef type) throws AtlasBaseException {
+//        for(String builtinTypeName: ATLAS_BUILTIN_TYPES)
+//            if (builtinTypeName.equals(type.getName()))
+//                throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, builtinTypeName);
+//    }
 
     public void setAttributeDefs(List<AtlasAttributeDef> attributeDefs) {
         setAttributeDefs(attributeDefs, true);
