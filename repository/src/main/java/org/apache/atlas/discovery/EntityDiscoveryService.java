@@ -18,6 +18,7 @@
 package org.apache.atlas.discovery;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.util.stream.Collectors;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -26,6 +27,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
+import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -79,6 +81,8 @@ import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.
 public class EntityDiscoveryService implements AtlasDiscoveryService {
     private static final Logger LOG = LoggerFactory.getLogger(EntityDiscoveryService.class);
     private static final String DEFAULT_SORT_ATTRIBUTE_NAME = "name";
+    private static final String MEANINGS = "meanings";
+    private static final String CLASSIFICATIONS = "classifications";
 
     private final AtlasGraph                      graph;
     private final EntityGraphRetriever            entityRetriever;
@@ -990,7 +994,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
 
-            prepareSearchResult(ret, indexQueryResult, resultAttributes, true);
+            prepareSearchResult(ret, indexQueryResult, resultAttributes, true,
+                ((IndexSearchParams) searchParams).getIncludeFilters());
 
             ret.setAggregations(indexQueryResult.getAggregationMap());
             ret.setApproximateCount(indexQuery.vertexTotals());
@@ -1001,7 +1006,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return ret;
     }
 
-    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
+    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults, List<String> includeFilters) throws AtlasBaseException {
         SearchParams searchParams = ret.getSearchParameters();
         try {
             if(LOG.isDebugEnabled()){
@@ -1020,7 +1025,18 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 }
 
                 AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
-                header.setClassifications(entityRetriever.getAllClassifications(vertex));
+
+                if(includeFilters.contains(MEANINGS)) {
+                    header.setMeanings(entityRetriever.mapAssignedTerms(vertex));
+                    header.setMeaningNames(header.getMeanings().stream()
+                        .map(AtlasTermAssignmentHeader::getDisplayText).collect(
+                            Collectors.toList()));
+                }
+
+                if(includeFilters.contains(CLASSIFICATIONS)) {
+                    header.setClassifications(entityRetriever.getAllClassifications(vertex));
+                }
+
                 if (showSearchScore) {
                     ret.addEntityScore(header.getGuid(), result.getScore());
                 }
@@ -1046,7 +1062,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
                         DirectIndexQueryResult indexQueryCollapsedResult = result.getCollapseVertices(collapseKey);
                         collapseRet.setApproximateCount(indexQueryCollapsedResult.getApproximateCount());
-                        prepareSearchResult(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false);
+                        prepareSearchResult(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false, includeFilters);
 
                         collapseRet.setSearchParameters(null);
                         collapse.put(collapseKey, collapseRet);

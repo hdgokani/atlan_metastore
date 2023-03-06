@@ -3,6 +3,8 @@ package org.apache.atlas.model.discovery;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +29,7 @@ public class IndexSearchParams extends SearchParams {
 
     private Map dsl;
     private String queryString;
+    private List<String> includeFilters = new ArrayList<String>(0);
 
     /*
     * Indexsearch includes all relations (if requested with param attributes) even if relationshipStatus is DELETED
@@ -62,10 +65,15 @@ public class IndexSearchParams extends SearchParams {
     @Override
     public String toString() {
         return "IndexSearchParams{" +
-                "dsl='" + dsl + '\'' +
-                ", queryString='" + queryString + '\'' +
-                ", attributes=" + attributes +
-                ", relationAttributes=" + relationAttributes +
-                '}';
+            "dsl='" + dsl + '\'' +
+            ", queryString='" + queryString + '\'' +
+            ", attributes=" + attributes +
+            ", relationAttributes=" + relationAttributes +
+            ", includeFilters=" + includeFilters +
+            '}';
+    }
+
+    public List<String> getIncludeFilters() {
+        return this.includeFilters;
     }
 }

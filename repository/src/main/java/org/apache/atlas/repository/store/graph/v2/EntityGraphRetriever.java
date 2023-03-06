@@ -121,7 +121,6 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -986,10 +985,6 @@ public class EntityGraphRetriever {
         ret.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
         ret.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
         ret.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
-
-        List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
-        ret.setMeanings(termAssignmentHeaders);
-        ret.setMeaningNames(termAssignmentHeaders.stream().map(AtlasTermAssignmentHeader::getDisplayText).collect(Collectors.toList()));
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
