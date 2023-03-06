@@ -77,7 +77,7 @@ public class ConnectionPoliciesTransformer {
 
         AtlasEntitiesWithExtInfo policiesExtInfo = new AtlasEntitiesWithExtInfo();
 
-        for (AtlasEntity bootPolicy : connectionPolicies) {
+        for (AtlasEntity bootPolicy : new ArrayList<>(connectionPolicies)) {
             String bootPolicyName = getName(bootPolicy);
             String bootPolicyQn = getQualifiedName(bootPolicy);
 
@@ -99,8 +99,8 @@ public class ConnectionPoliciesTransformer {
             bootPolicy.setAttribute(ATTR_POLICY_RESOURCES, resourcesFinal);
 
             policiesExtInfo.addEntity(bootPolicy);
-            LOG.info("transformed connection bootstrap policies");
         }
+        LOG.info("transformed connection bootstrap policies");
 
         return policiesExtInfo;
     }
