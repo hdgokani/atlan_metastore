@@ -98,8 +98,7 @@ public class PolicyTransformerImpl {
     private static final String PLACEHOLDER_ENTITY              = "{entity}";
     private static final String PLACEHOLDER_ENTITY_TYPE         = "{entity-type}";
 
-    private static final String RESOURCE_ENTITY              = "entity:%s";
-    private static final String RESOURCE_ENTITY_TYPE         = "entity-type:%s";
+    private static final String RESOURCE_ENTITY              = "%s:%s";
 
     private static final String RESOURCE_SERVICE_DEF_PATH = "/service-defs/";
 
@@ -308,9 +307,13 @@ public class PolicyTransformerImpl {
                 for (String templateResource : templatePolicy.getResources()) {
                     if (templateResource.contains(PLACEHOLDER_ENTITY)) {
                         for (String atlasResource : atlasResources) {
-                            String resourceValue = atlasResource.split(RESOURCES_SPLITTER)[1];
+                            String[] resourcesSplit = atlasResource.split(RESOURCES_SPLITTER);
+
+                            String resourceKey = resourcesSplit[0];
+                            String resourceValue = resourcesSplit[1];
+
                             finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY, resourceValue));
-                            finalResources.add(String.format(RESOURCE_ENTITY, resourceValue + "/*"));
+                            finalResources.add(String.format(RESOURCE_ENTITY, resourceKey, resourceValue + "/*"));
                         }
 
                     } else if (templateResource.contains(PLACEHOLDER_ENTITY_TYPE)) {
