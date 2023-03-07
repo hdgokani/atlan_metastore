@@ -307,10 +307,8 @@ public class PolicyTransformerImpl {
                 for (String templateResource : templatePolicy.getResources()) {
                     if (templateResource.contains(PLACEHOLDER_ENTITY)) {
                         for (String atlasResource : atlasResources) {
-                            String[] resourcesSplit = atlasResource.split(RESOURCES_SPLITTER);
-
-                            String resourceKey = resourcesSplit[0];
-                            String resourceValue = resourcesSplit[1];
+                            String resourceKey = templateResource.split(RESOURCES_SPLITTER)[0];
+                            String resourceValue = atlasResource.split(RESOURCES_SPLITTER)[1];
 
                             finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY, resourceValue));
                             finalResources.add(String.format(RESOURCE_ENTITY, resourceKey, resourceValue + "/*"));
