@@ -97,7 +97,6 @@ public class AtlasClassificationDef extends AtlasStructDef implements AtlasNamed
 
     public AtlasClassificationDef(String name, String displayName, String description, String typeVersion,
                                   List<AtlasAttributeDef> attributeDefs, Set<String> superTypes,
-                                  Set<String> entityTypes, Map<String, String> options) {
         super(TypeCategory.CLASSIFICATION, name, description, typeVersion, attributeDefs, options);
         this.setDisplayName(displayName);
         setSuperTypes(superTypes);

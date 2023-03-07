@@ -392,6 +392,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
             ret.setSuperTypes(typeDefStore.getSuperTypeNames(vertex));
             ret.setEntityTypes(typeDefStore.getEntityTypeNames(vertex));
+            ret.setAllowDuplicateDisplayName(typeDefStore.getAllowDuplicateDisplayNameProperty(vertex));
         }
 
         return ret;

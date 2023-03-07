@@ -495,6 +495,11 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         return getTypeNamesFromEdges(vertex, AtlasGraphUtilsV2.ENTITYTYPE_EDGE_LABEL);
     }
 
+    boolean getAllowDuplicateDisplayNameProperty(AtlasVertex vertex) {
+        Boolean allowDuplicateDisplayNameProperty =  vertex.getProperty(Constants.TYPE_ALLOW_DUPLICATE_DISPLAY_NAME, Boolean.class);
+        return allowDuplicateDisplayNameProperty != null ? allowDuplicateDisplayNameProperty : false;
+    }
+
     /**
      * Get the typename properties from the edges, that are associated with the vertex and have the supplied edge label.
      * @param vertex
