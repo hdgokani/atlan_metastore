@@ -84,7 +84,7 @@ public class AccessAuditLogsIndexCreator {
 
     private static final long DEFAULT_ES_TIME_INTERVAL_MS = 60000L;
     private static final int TRY_UNTIL_SUCCESS = -1;
-    private static final int DEFAULT_ES_BOOTSTRAP_MAX_RETRY = 30;
+    private static final int DEFAULT_ES_BOOTSTRAP_MAX_RETRY = 3;
 
     private final AtomicLong lastLoggedAt = new AtomicLong(0);
     private volatile RestClient client = null;

@@ -362,7 +362,9 @@
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
-                [],
+                [
+                    "nikhil.bonte"
+                ],
                 "policyGroups":
                 [],
                 "policyRoles":
@@ -423,7 +425,9 @@
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
-                [],
+                [
+                    "nikhil.bonte"
+                ],
                 "policyGroups":
                 [],
                 "policyRoles":
@@ -450,7 +454,9 @@
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
-                [],
+                [
+                    "nikhil.bonte"
+                ],
                 "policyGroups":
                 [],
                 "policyRoles":
