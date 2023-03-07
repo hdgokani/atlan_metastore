@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
@@ -80,7 +81,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
         if (ret != null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_ALREADY_EXISTS, classificationDef.getName());
         }
-        if(!classificationDef.getAllowDuplicateDisplayName()) {
+        if(!RequestContext.get().getAllowDuplicateDisplayName()) {
             ret = typeDefStore.findTypeVertexByDisplayName(
                     classificationDef.getDisplayName(), TypeCategory.TRAIT);
             if (ret != null) {
@@ -190,7 +191,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
             throw new AtlasBaseException(AtlasErrorCode.MISSING_CLASSIFICATION_DISPLAY_NAME);
         }
 
-        if(!classifiDef.getAllowDuplicateDisplayName()){
+        if(!RequestContext.get().getAllowDuplicateDisplayName()){
             AtlasVertex ret = typeDefStore.findTypeVertexByDisplayName(
                     classifiDef.getDisplayName(), DataTypes.TypeCategory.TRAIT);
             if (ret != null && (classifiDef.getGuid() == null || !classifiDef.getGuid().equals(ret.getProperty(Constants.GUID_PROPERTY_KEY, String.class)))){
