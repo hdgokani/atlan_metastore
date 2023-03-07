@@ -1,7 +1,6 @@
 package org.apache.atlas.model.lineage;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -237,6 +236,10 @@ public class AtlasLineageOnDemandInfo implements Serializable {
             return inputRelationsCount;
         }
 
+        public void setInputRelationsCount(int inputRelationsCount) {
+            this.inputRelationsCount = inputRelationsCount;
+        }
+
         public void incrementInputRelationsCount() {
             if (hasMoreInputs) {
                 return;
@@ -257,6 +260,10 @@ public class AtlasLineageOnDemandInfo implements Serializable {
 
         public int getOutputRelationsCount() {
             return outputRelationsCount;
+        }
+
+        public void setOutputRelationsCount(int outputRelationsCount) {
+            this.outputRelationsCount = outputRelationsCount;
         }
 
         public void incrementOutputRelationsCount() {
