@@ -310,6 +310,7 @@ public class PolicyTransformerImpl {
                         for (String atlasResource : atlasResources) {
                             String resourceValue = atlasResource.split(RESOURCES_SPLITTER)[1];
                             finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY, resourceValue));
+                            finalResources.add(String.format(RESOURCE_ENTITY, resourceValue + "/*"));
                         }
 
                     } else if (templateResource.contains(PLACEHOLDER_ENTITY_TYPE)) {
