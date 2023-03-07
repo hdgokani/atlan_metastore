@@ -109,7 +109,7 @@ public class AccessControlUtils {
     public static String getPersonaRoleId(AtlasEntity entity) throws AtlasBaseException {
         String roleId = (String) entity.getAttribute(ATTR_PERSONA_ROLE_ID);
         if (roleId == null) {
-            throw new AtlasBaseException("rangerRoleId not found for Persona with GUID " + entity.getGuid());
+            LOG.warn("roleId not found for Persona with GUID " + entity.getGuid());
         }
         return roleId;
     }
