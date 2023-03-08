@@ -301,12 +301,6 @@ public class EntityLineageService implements AtlasLineageService {
                 traverseEdgesOnDemand(datasetVertex, true, depth, new HashSet<>(), atlasLineageOnDemandContext, ret, guid);
             }
 
-            // Handle the case of cyclic lineage on base entity
-            LineageInfoOnDemand lineageInfo = ret.getRelationsOnDemand().get(guid);
-            if (lineageInfo != null) {
-                lineageInfo.setOutputRelationsCount(0);
-            }
-
             if (direction == AtlasLineageOnDemandInfo.LineageDirection.OUTPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH) {
                 traverseEdgesOnDemand(datasetVertex, false, depth, new HashSet<>(), atlasLineageOnDemandContext, ret, guid);
             }
@@ -346,7 +340,7 @@ public class EntityLineageService implements AtlasLineageService {
             }
 
             boolean isInputEdge  = processEdge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
-            if (incrementAndCheckIfRelationsLimitReached(processEdge, isInputEdge, atlasLineageOnDemandContext, ret, depth, baseGuid, direction)) {
+            if (incrementAndCheckIfRelationsLimitReached(processEdge, isInputEdge, atlasLineageOnDemandContext, ret, depth, false)) {
                 break;
             } else {
                 addEdgeToResult(processEdge, ret, atlasLineageOnDemandContext);
@@ -367,8 +361,6 @@ public class EntityLineageService implements AtlasLineageService {
         if (depth != 0) { // base condition of recursion for depth
             AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseEdgesOnDemand");
 
-            AtlasLineageOnDemandInfo.LineageDirection direction = isInput ? AtlasLineageOnDemandInfo.LineageDirection.INPUT : AtlasLineageOnDemandInfo.LineageDirection.OUTPUT;
-
             // keep track of visited vertices to avoid circular loop
             visitedVertices.add(getId(datasetVertex));
 
@@ -387,7 +379,7 @@ public class EntityLineageService implements AtlasLineageService {
                     continue;
                 }
 
-                if (incrementAndCheckIfRelationsLimitReached(incomingEdge, !isInput, atlasLineageOnDemandContext, ret, depth, baseGuid, direction)) {
+                if (incrementAndCheckIfRelationsLimitReached(incomingEdge, !isInput, atlasLineageOnDemandContext, ret, depth, false)) {
                     break;
                 } else {
                     addEdgeToResult(incomingEdge, ret, atlasLineageOnDemandContext);
@@ -408,7 +400,12 @@ public class EntityLineageService implements AtlasLineageService {
                         continue;
                     }
 
-                    if (incrementAndCheckIfRelationsLimitReached(outgoingEdge, isInput, atlasLineageOnDemandContext, ret, depth, baseGuid, direction)) {
+                    // Check for self-cyclic relation on base entity
+                    String datasetGuid = AtlasGraphUtilsV2.getIdFromVertex(datasetVertex);
+                    String entityGuid = AtlasGraphUtilsV2.getIdFromVertex(entityVertex);
+                    boolean baseEntityHasSelfCyclic = datasetGuid.equals(baseGuid) && datasetGuid.equals(entityGuid);
+
+                    if (incrementAndCheckIfRelationsLimitReached(outgoingEdge, isInput, atlasLineageOnDemandContext, ret, depth, baseEntityHasSelfCyclic)) {
                         break;
                     } else {
                         addEdgeToResult(outgoingEdge, ret, atlasLineageOnDemandContext);
@@ -443,7 +440,7 @@ public class EntityLineageService implements AtlasLineageService {
         return vertex.getIdForDisplay();
     }
 
-    private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, int depth, String baseGuid, AtlasLineageOnDemandInfo.LineageDirection direction) {
+    private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, int depth, boolean baseEntityHasSelfCyclic) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("incrementAndCheckIfRelationsLimitReached");
 
         boolean hasRelationsLimitReached = false;
@@ -456,12 +453,12 @@ public class EntityLineageService implements AtlasLineageService {
         String                     outGuid                   = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
         LineageOnDemandConstraints outGuidLineageConstraints = getAndValidateLineageConstraintsByGuid(outGuid, atlasLineageOnDemandContext);
 
-        boolean lineageContainsVisitedEdge = lineageContainsVisitedEdgeV2(ret, atlasEdge);
-        boolean isOutput = AtlasLineageOnDemandInfo.LineageDirection.OUTPUT.equals(direction);
-        boolean isOutVertexBaseVertex = baseGuid.equals(outGuid);
-        boolean isCyclic = lineageContainsVisitedEdge && isOutput && isOutVertexBaseVertex;
+        // Special checks to handle self cyclic lineage on base entity
+        boolean areBothDirectionsRequested = baseEntityHasSelfCyclic && AtlasLineageOnDemandInfo.LineageDirection.BOTH.equals(outGuidLineageConstraints.getDirection());
+        boolean skipOutputIncrement = baseEntityHasSelfCyclic && isInput && areBothDirectionsRequested;
+        boolean skipVisitedEdgeCheck = baseEntityHasSelfCyclic && !isInput && areBothDirectionsRequested;
 
-        if (lineageContainsVisitedEdge && !isCyclic) {
+        if (!skipVisitedEdgeCheck && lineageContainsVisitedEdgeV2(ret, atlasEdge)) {
             return false;
         }
 
@@ -482,12 +479,8 @@ public class EntityLineageService implements AtlasLineageService {
         if (outLineageInfo.isOutputRelationsReachedLimit()) {
             outLineageInfo.setHasMoreOutputs(true);
             hasRelationsLimitReached = true;
-        } else {
+        } else if (!skipOutputIncrement){
             outLineageInfo.incrementOutputRelationsCount();
-        }
-
-        if (lineageContainsVisitedEdge) {
-            return false;
         }
 
         // Handle horizontal pagination

@@ -176,6 +176,10 @@ public class AtlasLineageOnDemandInfo implements Serializable {
             this.fromCounter                   = 0;
         }
 
+        public LineageOnDemandConstraints getOnDemandConstraints() {
+            return onDemandConstraints;
+        }
+
         public boolean isInputRelationsReachedLimit() {
             return isInputRelationsReachedLimit;
         }
