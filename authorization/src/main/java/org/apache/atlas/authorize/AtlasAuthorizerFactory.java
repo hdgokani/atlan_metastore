@@ -78,6 +78,7 @@ public class AtlasAuthorizerFactory {
                     }
 
                     LOG.info("Initializing Authorizer {}", authorizerClass);
+                    LOG.info("Initializing authorizer {}", authorizer);
 
                     try {
                         Class authorizerMetaObject = Class.forName(authorizerClass);
@@ -85,12 +86,15 @@ public class AtlasAuthorizerFactory {
                         if (authorizerMetaObject != null) {
                             INSTANCE = (AtlasAuthorizer) authorizerMetaObject.newInstance();
 
+
+                            INSTANCE.init(typeRegistry);
+
                             if (StringUtils.equalsIgnoreCase(authorizer, "ATLAS")) {
                                 LOG.info("nikhil: in INSTANCE.init(typeRegistry)");
-                                INSTANCE.init(typeRegistry);
+                                //INSTANCE.init(typeRegistry);
                             } else {
                                 LOG.info("nikhil: in INSTANCE.init();");
-                                INSTANCE.init();
+                                //INSTANCE.init();
                             }
                         }
                     } catch (Exception e) {
