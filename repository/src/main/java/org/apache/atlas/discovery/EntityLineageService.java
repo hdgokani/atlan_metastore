@@ -450,10 +450,10 @@ public class EntityLineageService implements AtlasLineageService {
         String                     outGuid                   = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
         LineageOnDemandConstraints outGuidLineageConstraints = getAndValidateLineageConstraintsByGuid(outGuid, atlasLineageOnDemandContext);
 
-        boolean selfCyclic = (direction.equals(AtlasLineageOnDemandInfo.LineageDirection.INPUT) && isInput && outGuid.equals(baseGuid)) ||
-                (direction.equals(AtlasLineageOnDemandInfo.LineageDirection.OUTPUT) && !isInput && inGuid.equals(baseGuid));
+        boolean selfCyclic = AtlasLineageOnDemandInfo.LineageDirection.OUTPUT.equals(direction) && baseGuid.equals(outGuid) && isSelfCyclic(ret, inGuid, outGuid);
+        boolean skipIncrement = AtlasLineageOnDemandInfo.LineageDirection.INPUT.equals(direction) && baseGuid.equals(outGuid);
 
-        if (lineageContainsVisitedEdgeV2(ret, atlasEdge) && (direction.equals(AtlasLineageOnDemandInfo.LineageDirection.INPUT) && !selfCyclic)) {
+        if (lineageContainsVisitedEdgeV2(ret, atlasEdge) && !selfCyclic) {
             return false;
         }
 
@@ -474,14 +474,8 @@ public class EntityLineageService implements AtlasLineageService {
         if (outLineageInfo.isOutputRelationsReachedLimit()) {
             outLineageInfo.setHasMoreOutputs(true);
             hasRelationsLimitReached = true;
-        } else {
-            if (! (direction.equals(AtlasLineageOnDemandInfo.LineageDirection.INPUT) && selfCyclic)) {
-                outLineageInfo.incrementOutputRelationsCount();
-            }
-        }
-
-        if (lineageContainsVisitedEdgeV2(ret, atlasEdge) && selfCyclic) {
-            return hasRelationsLimitReached;
+        } else if (! skipIncrement) {
+            outLineageInfo.incrementOutputRelationsCount();
         }
 
         // Handle horizontal pagination
@@ -500,6 +494,13 @@ public class EntityLineageService implements AtlasLineageService {
         RequestContext.get().endMetricRecord(metricRecorder);
 
         return hasRelationsLimitReached;
+    }
+
+    private boolean isSelfCyclic(AtlasLineageOnDemandInfo ret, String inGuid, String outGuid) {
+        return ret.getRelations().stream().anyMatch(r -> r.getFromEntityId().equals(inGuid)) &&
+                ret.getRelations().stream().anyMatch(r -> r.getToEntityId().equals(outGuid)) &&
+                ret.getRelations().stream().anyMatch(r -> r.getFromEntityId().equals(outGuid)) &&
+                ret.getRelations().stream().anyMatch(r -> r.getToEntityId().equals(inGuid));
     }
 
     @Override
