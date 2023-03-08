@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v2;
 
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.GraphTransactionInterceptor;
@@ -1699,7 +1700,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case CONNECTION_ENTITY_TYPE:
-                preProcessor = new ConnectionPreProcessor(graph, typeRegistry, entityRetriever, this);
+                try {
+                    String authorizer = ApplicationProperties.get().getString("atlas.authorizer.impl");
+                    if (StringUtils.isNotEmpty(authorizer) && authorizer.equalsIgnoreCase("ATLAS")) {
+                        preProcessor = new ConnectionPreProcessor(graph, typeRegistry, entityRetriever, this);
+                    }
+                } catch (AtlasException e) {
+                    e.printStackTrace();
+                }
+
                 break;
         }
 
