@@ -59,6 +59,7 @@ public class AtlasAuthorizerFactory {
 
                     //String authorizerClass = RANGER_AUTHORIZER;
                     String authorizerClass = ATLAS_AUTHORIZER;
+                    authorizer = "atlas";
 
                     if (StringUtils.isNotEmpty(authorizer)) {
                         if (StringUtils.equalsIgnoreCase(authorizer, "SIMPLE")) {
