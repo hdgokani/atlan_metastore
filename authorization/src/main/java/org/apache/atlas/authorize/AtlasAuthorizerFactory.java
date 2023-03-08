@@ -57,8 +57,9 @@ public class AtlasAuthorizerFactory {
                     LOG.info("nikhil: authorizer {}", configuration != null);
                     LOG.info("nikhil: authorizer {}", authorizer);
 
-                    String authorizerClass = SIMPLE_AUTHORIZER;
-                    
+                    String authorizerClass = RANGER_AUTHORIZER;
+                    //String authorizerClass = ATLAS_AUTHORIZER;
+
                     if (StringUtils.isNotEmpty(authorizer)) {
                         if (StringUtils.equalsIgnoreCase(authorizer, "SIMPLE")) {
                             authorizerClass = SIMPLE_AUTHORIZER;
