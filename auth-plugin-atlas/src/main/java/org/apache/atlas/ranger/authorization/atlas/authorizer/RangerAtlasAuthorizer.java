@@ -81,6 +81,11 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
 
     @Override
     public void init() {
+
+    }
+
+    @Override
+    public void init(AtlasTypeRegistry typeRegistry) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> RangerAtlasPlugin.init()");
         }
@@ -92,7 +97,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                 plugin = atlasPlugin;
 
                 if (plugin == null) {
-                    plugin = new RangerAtlasPlugin();
+                    plugin = new RangerAtlasPlugin(typeRegistry);
 
                     plugin.init();
 
@@ -829,8 +834,8 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
     }
 
     class RangerAtlasPlugin extends RangerBasePlugin {
-        RangerAtlasPlugin() {
-            super("atlas", "atlas");
+        RangerAtlasPlugin(AtlasTypeRegistry typeRegistry) {
+            super("atlas", "atlas", typeRegistry);
         }
     }
 

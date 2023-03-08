@@ -229,9 +229,9 @@ public class RangerPluginConfig extends RangerConfiguration {
     }
 
     private void addResourcesForServiceType(String serviceType) {
-        String auditCfg    = "ranger-" + serviceType + "-audit.xml";
-        String securityCfg = "ranger-" + serviceType + "-security.xml";
-        String sslCfg 	   = "ranger-" + serviceType + "-policymgr-ssl.xml";
+        String auditCfg    = "atlas-" + serviceType + "-audit.xml";
+        String securityCfg = "atlas-" + serviceType + "-security.xml";
+        String sslCfg 	   = "atlas-" + serviceType + "-policymgr-ssl.xml";
 
         if (!addResourceIfReadable(auditCfg)) {
             addAuditResource(serviceType);
@@ -249,9 +249,9 @@ public class RangerPluginConfig extends RangerConfiguration {
     // load service specific config overrides, if config files are available
     private void addResourcesForServiceName(String serviceType, String serviceName) {
         if (StringUtils.isNotBlank(serviceType) && StringUtils.isNotBlank(serviceName)) {
-            String serviceAuditCfg    = "ranger-" + serviceType + "-" + serviceName + "-audit.xml";
-            String serviceSecurityCfg = "ranger-" + serviceType + "-" + serviceName + "-security.xml";
-            String serviceSslCfg      = "ranger-" + serviceType + "-" + serviceName + "-policymgr-ssl.xml";
+            String serviceAuditCfg    = "atlas-" + serviceType + "-" + serviceName + "-audit.xml";
+            String serviceSecurityCfg = "atlas-" + serviceType + "-" + serviceName + "-security.xml";
+            String serviceSslCfg      = "atlas-" + serviceType + "-" + serviceName + "-policymgr-ssl.xml";
 
             addResourceIfReadable(serviceAuditCfg);
             addResourceIfReadable(serviceSecurityCfg);

@@ -75,7 +75,7 @@ public class SolrAuditDestination extends AuditDestination {
 	public static final String PROP_SOLR_COLLECTION = "collection";
 	public static final String PROP_SOLR_FORCE_USE_INMEMORY_JAAS_CONFIG = "force.use.inmemory.jaas.config";
 
-	public static final String DEFAULT_COLLECTION_NAME = "ranger_audits";
+	public static final String DEFAULT_COLLECTION_NAME = "atlas_auth_audits";
 	public static final String PROP_JAVA_SECURITY_AUTH_LOGIN_CONFIG = "java.security.auth.login.config";
 
 	private volatile SolrClient solrClient = null;

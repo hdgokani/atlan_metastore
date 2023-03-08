@@ -67,22 +67,22 @@ import static org.apache.atlas.repository.audit.ESBasedAuditRepository.INDEX_BAC
 public class AccessAuditLogsIndexCreator {
     private static final Logger LOG = LoggerFactory.getLogger(AccessAuditLogsIndexCreator.class);
 
-    private static final String ES_CONFIG_USERNAME = "ranger.audit.elasticsearch.user";
-    private static final String ES_CONFIG_PASSWORD = "ranger.audit.elasticsearch.password";
-    private static final String ES_CONFIG_PORT = "ranger.audit.elasticsearch.port";
-    private static final String ES_CONFIG_PROTOCOL = "ranger.audit.elasticsearch.protocol";
-    private static final String ES_CONFIG_INDEX = "ranger.audit.elasticsearch.index";
-    private static final String ES_TIME_INTERVAL = "ranger.audit.elasticsearch.time.interval";
-    private static final String ES_NO_SHARDS = "ranger.audit.elasticsearch.no.shards";
-    private static final String ES_NO_REPLICA = "ranger.audit.elasticsearch.no.replica";
-    private static final String ES_CREDENTIAL_PROVIDER_PATH = "ranger.credential.provider.path";
-    private static final String ES_CREDENTIAL_ALIAS = "ranger.audit.elasticsearch.credential.alias";
-    private static final String ES_BOOTSTRAP_MAX_RETRY = "ranger.audit.elasticsearch.max.retry";
+    private static final String ES_CONFIG_USERNAME = "atlas.audit.elasticsearch.user";
+    private static final String ES_CONFIG_PASSWORD = "atlas.audit.elasticsearch.password";
+    private static final String ES_CONFIG_PORT = "atlas.audit.elasticsearch.port";
+    private static final String ES_CONFIG_PROTOCOL = "atlas.audit.elasticsearch.protocol";
+    private static final String ES_CONFIG_INDEX = "atlas.audit.elasticsearch.index";
+    private static final String ES_TIME_INTERVAL = "atlas.audit.elasticsearch.time.interval";
+    private static final String ES_NO_SHARDS = "atlas.audit.elasticsearch.no.shards";
+    private static final String ES_NO_REPLICA = "atlas.audit.elasticsearch.no.replica";
+    private static final String ES_CREDENTIAL_PROVIDER_PATH = "atlas.credential.provider.path";
+    private static final String ES_CREDENTIAL_ALIAS = "atlas.audit.elasticsearch.credential.alias";
+    private static final String ES_BOOTSTRAP_MAX_RETRY = "atlas.audit.elasticsearch.max.retry";
 
-    private static final String DEFAULT_INDEX_NAME = "ranger_audits";
-    private static final String ES_RANGER_AUDIT_SCHEMA_FILE = "ranger_es_schema.json";
+    private static final String DEFAULT_INDEX_NAME = "atlas_auth_audits";
+    private static final String ES_RANGER_AUDIT_SCHEMA_FILE = "atlas_auth_es_schema.json";
 
-    private static final long DEFAULT_ES_TIME_INTERVAL_MS = 60000L;
+    private static final long DEFAULT_ES_TIME_INTERVAL_MS = 30000L;
     private static final int TRY_UNTIL_SUCCESS = -1;
     private static final int DEFAULT_ES_BOOTSTRAP_MAX_RETRY = 3;
 
