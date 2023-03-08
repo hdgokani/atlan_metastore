@@ -403,9 +403,9 @@ public class EntityLineageService implements AtlasLineageService {
                     // Check for self-cyclic relation on base entity
                     String datasetGuid = AtlasGraphUtilsV2.getIdFromVertex(datasetVertex);
                     String entityGuid = AtlasGraphUtilsV2.getIdFromVertex(entityVertex);
-                    boolean baseEntityHasSelfCyclic = datasetGuid.equals(baseGuid) && datasetGuid.equals(entityGuid);
+                    boolean baseEntityHasSelfCyclicLineage = datasetGuid.equals(baseGuid) && datasetGuid.equals(entityGuid);
 
-                    if (incrementAndCheckIfRelationsLimitReached(outgoingEdge, isInput, atlasLineageOnDemandContext, ret, depth, baseEntityHasSelfCyclic)) {
+                    if (incrementAndCheckIfRelationsLimitReached(outgoingEdge, isInput, atlasLineageOnDemandContext, ret, depth, baseEntityHasSelfCyclicLineage)) {
                         break;
                     } else {
                         addEdgeToResult(outgoingEdge, ret, atlasLineageOnDemandContext);
@@ -440,7 +440,7 @@ public class EntityLineageService implements AtlasLineageService {
         return vertex.getIdForDisplay();
     }
 
-    private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, int depth, boolean baseEntityHasSelfCyclic) {
+    private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, int depth, boolean baseEntityHasSelfCyclicLineage) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("incrementAndCheckIfRelationsLimitReached");
 
         boolean hasRelationsLimitReached = false;
@@ -454,9 +454,9 @@ public class EntityLineageService implements AtlasLineageService {
         LineageOnDemandConstraints outGuidLineageConstraints = getAndValidateLineageConstraintsByGuid(outGuid, atlasLineageOnDemandContext);
 
         // Special checks to handle self cyclic lineage on base entity
-        boolean areBothDirectionsRequested = baseEntityHasSelfCyclic && AtlasLineageOnDemandInfo.LineageDirection.BOTH.equals(outGuidLineageConstraints.getDirection());
-        boolean skipOutputIncrement = baseEntityHasSelfCyclic && isInput && areBothDirectionsRequested;
-        boolean skipVisitedEdgeCheck = baseEntityHasSelfCyclic && !isInput && areBothDirectionsRequested;
+        boolean areBothDirectionsRequested = baseEntityHasSelfCyclicLineage && AtlasLineageOnDemandInfo.LineageDirection.BOTH.equals(outGuidLineageConstraints.getDirection());
+        boolean skipOutputIncrement = baseEntityHasSelfCyclicLineage && isInput && areBothDirectionsRequested;
+        boolean skipVisitedEdgeCheck = baseEntityHasSelfCyclicLineage && !isInput && areBothDirectionsRequested;
 
         if (!skipVisitedEdgeCheck && lineageContainsVisitedEdgeV2(ret, atlasEdge)) {
             return false;
