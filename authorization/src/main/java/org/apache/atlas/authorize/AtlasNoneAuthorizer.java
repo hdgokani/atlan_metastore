@@ -18,7 +18,6 @@
 
 package org.apache.atlas.authorize;
 
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +25,7 @@ import org.slf4j.LoggerFactory;
 public class AtlasNoneAuthorizer implements AtlasAuthorizer {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasNoneAuthorizer.class);
 
-    public void init(AtlasTypeRegistry typeRegistry) {
+    public void init() {
         LOG.info("AtlasNoneAuthorizer.init()");
     }
 

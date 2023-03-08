@@ -27,7 +27,7 @@
 
 	<property>
 		<name>ranger.plugin.atlas.policy.source.impl</name>
-		<value>org.apache.atlas.ranger.admin.client.RangerAdminRESTClient</value>
+		<value>org.apache.ranger.admin.client.RangerAdminRESTClient</value>
 		<description>
 			Class to retrieve policies from the source
 		</description>
@@ -79,10 +79,5 @@
 		<description>
 			RangerRestClient read Timeout in Milli Seconds
 		</description>
-	</property>
-
-	<property>
-		<name>ranger.plugin.atlas.policyengine.option.disable.tag.retriever</name>
-		<value>true</value>
 	</property>
 </configuration>

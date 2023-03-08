@@ -28,7 +28,7 @@ public interface AtlasAuthorizer {
     /**
      * initialization of authorizer implementation
      */
-    void init(AtlasTypeRegistry typeRegistry);
+    void init();
 
     /**
      * cleanup of authorizer implementation

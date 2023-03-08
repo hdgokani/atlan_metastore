@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.store.bootstrap;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -63,7 +64,13 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
 
     private void startInternal() {
         try {
-            loadBootstrapAuthPolicies();
+            String authorizer = ApplicationProperties.get().getString("atlas.authorizer.impl");
+
+            if (StringUtils.isNotEmpty(authorizer) && "atlas".equals(authorizer)) {
+                loadBootstrapAuthPolicies();
+            } else {
+                LOG.info("AuthPoliciesBootstrapper: startInternal: Skipping as not needed");
+            }
         } catch (Exception e) {
             LOG.error("Failed to init after becoming active", e);
         } finally {

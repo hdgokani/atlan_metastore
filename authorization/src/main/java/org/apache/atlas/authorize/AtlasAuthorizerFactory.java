@@ -21,7 +21,6 @@ package org.apache.atlas.authorize;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.authorize.simple.AtlasSimpleAuthorizer;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -33,11 +32,12 @@ public class AtlasAuthorizerFactory {
 
     private static final String NONE_AUTHORIZER   = AtlasNoneAuthorizer.class.getName();
     private static final String SIMPLE_AUTHORIZER = AtlasSimpleAuthorizer.class.getName();
-    private static final String RANGER_AUTHORIZER = "org.apache.atlas.ranger.authorization.atlas.authorizer.RangerAtlasAuthorizer";
+    private static final String RANGER_AUTHORIZER = "org.apache.ranger.authorization.atlas.authorizer.RangerAtlasAuthorizer";
+    private static final String ATLAS_AUTHORIZER = "org.apache.atlas.ranger.authorization.atlas.authorizer.RangerAtlasAuthorizer";
 
     private static volatile AtlasAuthorizer INSTANCE = null;
 
-    public static AtlasAuthorizer getAtlasAuthorizer(AtlasTypeRegistry typeRegistry) throws AtlasAuthorizationException {
+    public static AtlasAuthorizer getAtlasAuthorizer() throws AtlasAuthorizationException {
         AtlasAuthorizer ret = INSTANCE;
 
         if (ret == null) {
@@ -51,14 +51,17 @@ public class AtlasAuthorizerFactory {
                         LOG.error("Exception while fetching configuration", e);
                     }
 
-                    //String authorizerClass = configuration != null ? configuration.getString("atlas.authorizer.impl") : "SIMPLE";
-                    String authorizerClass = "org.apache.atlas.ranger.authorization.atlas.authorizer.RangerAtlasAuthorizer";
+                    String authorizerClass = configuration != null ? configuration.getString("atlas.authorizer.impl") : "SIMPLE";
                     
                     if (StringUtils.isNotEmpty(authorizerClass)) {
                         if (StringUtils.equalsIgnoreCase(authorizerClass, "SIMPLE")) {
                             authorizerClass = SIMPLE_AUTHORIZER;
                         } else if (StringUtils.equalsIgnoreCase(authorizerClass, "RANGER")) {
+                            LOG.info("Selecting Ranger authorizer");
                             authorizerClass = RANGER_AUTHORIZER;
+                        } else if (StringUtils.equalsIgnoreCase(authorizerClass, "ATLAS")) {
+                            LOG.info("Selecting Atlas authorizer");
+                            authorizerClass = ATLAS_AUTHORIZER;
                         } else if (StringUtils.equalsIgnoreCase(authorizerClass, "NONE")) {
                             authorizerClass = NONE_AUTHORIZER;
                         }
@@ -74,7 +77,7 @@ public class AtlasAuthorizerFactory {
                         if (authorizerMetaObject != null) {
                             INSTANCE = (AtlasAuthorizer) authorizerMetaObject.newInstance();
 
-                            INSTANCE.init(typeRegistry);
+                            INSTANCE.init();
                         }
                     } catch (Exception e) {
                         LOG.error("Error while creating authorizer of type {}", authorizerClass, e);
@@ -88,9 +91,5 @@ public class AtlasAuthorizerFactory {
         }
 
         return ret;
-    }
-
-    public static AtlasAuthorizer getAtlasAuthorizer() throws AtlasAuthorizationException {
-        return INSTANCE;
     }
 }
