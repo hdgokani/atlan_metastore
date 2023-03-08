@@ -93,12 +93,14 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         RangerBasePlugin plugin = atlasPlugin;
 
         if (plugin == null) {
+            LOG.info("nikhil: 0");
             synchronized (RangerAtlasPlugin.class) {
                 plugin = atlasPlugin;
 
                 if (plugin == null) {
+                    LOG.info("nikhil: 2");
                     plugin = new RangerAtlasPlugin(typeRegistry);
-
+                    LOG.info("nikhil: 3");
                     plugin.init();
 
                     plugin.setResultProcessor(new RangerDefaultAuditHandler(plugin.getConfig()));

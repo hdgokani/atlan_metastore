@@ -85,8 +85,10 @@ public class AtlasAuthorizerFactory {
                             INSTANCE = (AtlasAuthorizer) authorizerMetaObject.newInstance();
 
                             if (StringUtils.equalsIgnoreCase(authorizer, "ATLAS")) {
+                                LOG.info("nikhil: in INSTANCE.init(typeRegistry)");
                                 INSTANCE.init(typeRegistry);
                             } else {
+                                LOG.info("nikhil: in INSTANCE.init();");
                                 INSTANCE.init();
                             }
                         }
