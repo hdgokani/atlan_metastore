@@ -110,7 +110,6 @@ public class ConnectionPreProcessor implements PreProcessor {
         //create connection bootstrap policies
         AtlasEntitiesWithExtInfo policies = transformer.transform(connection, role.getName());
 
-        LOG.info("Bootstrap policies for connection : \n {}\n", AtlasType.toJson(policies));
         try {
             RequestContext.get().setPoliciesBootstrappingInProgress(true);
             EntityStream entityStream = new AtlasEntityStream(policies);

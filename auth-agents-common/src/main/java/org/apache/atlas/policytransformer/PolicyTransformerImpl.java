@@ -195,8 +195,6 @@ public class PolicyTransformerImpl {
                 LOG.info("Found {} policies", servicePolicies.getPolicies().size());
             }
 
-
-
         } catch (Exception e) {
             LOG.error("ERROR in getPolicies {}: ", e.getMessage());
             return null;
