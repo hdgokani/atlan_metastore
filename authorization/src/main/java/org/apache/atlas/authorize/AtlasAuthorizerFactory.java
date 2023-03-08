@@ -53,6 +53,10 @@ public class AtlasAuthorizerFactory {
                     }
 
                     String authorizer = configuration != null ? configuration.getString("atlas.authorizer.impl") : "SIMPLE";
+
+                    LOG.info("nikhil: authorizer {}", configuration != null);
+                    LOG.info("nikhil: authorizer {}", authorizer);
+
                     String authorizerClass = SIMPLE_AUTHORIZER;
                     
                     if (StringUtils.isNotEmpty(authorizer)) {
