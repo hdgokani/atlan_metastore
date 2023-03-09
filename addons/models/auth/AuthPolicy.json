@@ -141,7 +141,7 @@
       "superTypes": [],
       "description": "",
       "serviceType": "atlan",
-      "typeVersion": "1.0",
+      "typeVersion": "2.0",
       "attributeDefs":
       [
         {
@@ -237,6 +237,17 @@
         },
         {
           "name": "policyCategory",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "policySubCategory",
           "typeName": "string",
           "indexType": "STRING",
           "cardinality": "SINGLE",
