@@ -1702,9 +1702,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             case CONNECTION_ENTITY_TYPE:
                 try {
                     String authorizer = ApplicationProperties.get().getString("atlas.authorizer.impl");
-                    if (StringUtils.isNotEmpty(authorizer) && authorizer.equalsIgnoreCase("ATLAS")) {
+                    //if (StringUtils.isNotEmpty(authorizer) && authorizer.equalsIgnoreCase("ATLAS")) {
                         preProcessor = new ConnectionPreProcessor(graph, typeRegistry, entityRetriever, this);
-                    }
+                    //}
                 } catch (AtlasException e) {
                     e.printStackTrace();
                 }
