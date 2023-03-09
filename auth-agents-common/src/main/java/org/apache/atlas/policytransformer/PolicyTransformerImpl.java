@@ -286,6 +286,12 @@ public class PolicyTransformerImpl {
         List<String> atlasResources = (List<String>) atlasPolicy.getAttribute(ATTR_POLICY_RESOURCES);
 
         for (String atlasAction : atlasActions) {
+            LOG.info("nikhil: atlasAction {}", atlasAction);
+            LOG.info("nikhil: templates {}", templates == null);
+            LOG.info("nikhil: templates keys {}", templates.getTemplates().keySet());
+
+            LOG.info("nikhil: atlasPolicy {}", AtlasType.toJson(atlasPolicy));
+
             List<TemplatePolicy> currentTemplates = templates.getTemplate(atlasAction);
 
             for (int i = 0 ; i < currentTemplates.size(); i++) {

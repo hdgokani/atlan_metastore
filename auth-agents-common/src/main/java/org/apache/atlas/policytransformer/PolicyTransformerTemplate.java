@@ -39,6 +39,10 @@ public class PolicyTransformerTemplate {
         return actionToPoliciesMap.get(action);
     }
 
+    public Map<String, List<TemplatePolicy>> getTemplates() {
+        return actionToPoliciesMap;
+    }
+
     public void fromJsonString(String json) {
 
         Map<String, List<Map>> templates = AtlasType.fromJson(json, Map.class);
