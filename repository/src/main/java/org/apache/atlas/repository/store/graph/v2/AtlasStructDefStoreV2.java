@@ -24,7 +24,6 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
@@ -50,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.repository.Constants.TYPE_ALLOW_DUPLICATE_DISPLAY_NAME;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 
 /**
@@ -374,9 +372,6 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         String encodedtypeNamePropertyKey = AtlasGraphUtilsV2.encodePropertyKey(typeNamePropertyKey);
 
         vertex.setProperty(encodedtypeNamePropertyKey, attrNames);
-        if(structDef instanceof AtlasClassificationDef) {
-            vertex.setProperty(TYPE_ALLOW_DUPLICATE_DISPLAY_NAME, ((AtlasClassificationDef) structDef).getAllowDuplicateDisplayName());
-        }
     }
 
     public static void updateVertexPreUpdate(AtlasStructDef structDef, AtlasStructType structType,
@@ -472,9 +467,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
                 AtlasGraphUtilsV2.setProperty(vertex, propertyKey, toJsonFromAttribute(structType.getAttribute(attributeDef.getName())));
             }
         }
-        if(structDef instanceof AtlasClassificationDef) {
-            vertex.setProperty(TYPE_ALLOW_DUPLICATE_DISPLAY_NAME, ((AtlasClassificationDef) structDef).getAllowDuplicateDisplayName());
-        }
+
         AtlasGraphUtilsV2.setEncodedProperty(vertex, encodedStructDefPropertyKey, attrNames);
     }
 
