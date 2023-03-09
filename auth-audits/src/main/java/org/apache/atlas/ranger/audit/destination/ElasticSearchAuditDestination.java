@@ -110,6 +110,10 @@ public class ElasticSearchAuditDestination extends AuditDestination {
 
     @Override
     public boolean log(Collection<AuditEventBase> events) {
+        //TODO: remove once client issue is fixed
+        LOG.info("Acces audits - ");
+        events.forEach(x -> LOG.info(((AuthzAuditEvent) x).toString()));
+
         boolean ret = false;
         try {
             logStatusIfRequired();
