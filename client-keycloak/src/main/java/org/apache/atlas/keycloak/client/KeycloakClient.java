@@ -40,6 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.atlas.ApplicationProperties.ATLAS_CONFIGURATION_DIRECTORY_PROPERTY;
 
@@ -122,7 +123,7 @@ public class KeycloakClient {
                         .clientId(CLIENT_ID)
                         .clientSecret(CLIENT_SECRET)
                         .grantType(GRANT_TYPE)
-                        .resteasyClient(new ResteasyClientBuilder().build())
+                        .resteasyClient(new ResteasyClientBuilder().connectionPoolSize(100).maxPooledPerRoute(10).connectionCheckoutTimeout(2, TimeUnit.SECONDS).build())
                         //.resteasyClient(ClientBuilder.newBuilder().build())
                         .build();
 
