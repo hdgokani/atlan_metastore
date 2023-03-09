@@ -293,6 +293,10 @@ public class PolicyTransformerImpl {
             LOG.info("nikhil: atlasPolicy {}", AtlasType.toJson(atlasPolicy));
 
             List<TemplatePolicy> currentTemplates = templates.getTemplate(atlasAction);
+            if (CollectionUtils.isEmpty(currentTemplates)) {
+                LOG.warn("PolicyTransformerImpl: Skipping unknown action {} while transforming policy {}", atlasAction, atlasPolicy.getGuid());
+                continue;
+            }
 
             for (int i = 0 ; i < currentTemplates.size(); i++) {
                 TemplatePolicy templatePolicy = currentTemplates.get(i);
