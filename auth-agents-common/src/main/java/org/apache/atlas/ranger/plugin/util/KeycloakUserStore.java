@@ -23,8 +23,10 @@ import org.apache.atlas.keycloak.client.KeycloakClient;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.atlas.ranger.plugin.model.RangerRole;
 import org.apache.atlas.ranger.plugin.service.RangerBasePlugin;
@@ -53,6 +55,7 @@ import java.util.stream.Collectors;
 
 
 public class KeycloakUserStore {
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("KeycloakUserStore");
     private static final Logger LOG = LoggerFactory.getLogger(KeycloakUserStore.class);
 
     private static int NUM_THREADS = 5;
@@ -85,6 +88,7 @@ public class KeycloakUserStore {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getKeycloakSubjectsStoreUpdatedTime");
         LOG.info("Fetching getKeycloakSubjectsStoreUpdatedTime");
         long latestEventTime = -1L;
+        int count = 0;
 
         try {
             /*List<AdminEventRepresentation> adminEvents = KeycloakClient.getKeycloakClient().getRealm().getAdminEvents(operationTypes,
@@ -96,23 +100,27 @@ public class KeycloakUserStore {
             int from = 0;
             int size = 100;
 
+
             while (latestEventTime == -1L) {
+                count = count+1;
+                AtlasPerfTracer perf =  AtlasPerfTracer.getPerfTracer(PERF_LOG, "Keycloak.getKeycloakSubjectsStoreUpdatedTime");
                 List<AdminEventRepresentation> adminEvents = KeycloakClient.getKeycloakClient().getRealm().getAdminEvents(OPERATION_TYPES,
                         null, null, null, null, null, null, null,
                         from, size);
-
+                AtlasPerfTracer.log(perf);
                 Optional<AdminEventRepresentation> event = adminEvents.stream().filter(x -> RESOURCE_TYPES.contains(x.getResourceType())).findFirst();
                 if (event.isPresent()) {
                     latestEventTime = event.get().getTime();
                 }
                 from += size;
             }
-
+            count = 0;
+            LOG.info("Number of retries - {}", count);
             LOG.info("getKeycloakSubjectsStoreUpdatedTime - {}", latestEventTime);
         } catch (Exception e) {
+            LOG.info("Number of retries - {}", count);
             LOG.error("Error while fetching latest event time", e);
-        }
-         finally {
+        } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
         return latestEventTime;
