@@ -123,7 +123,7 @@ public class KeycloakClient {
                         .clientId(CLIENT_ID)
                         .clientSecret(CLIENT_SECRET)
                         .grantType(GRANT_TYPE)
-                        .resteasyClient(new ResteasyClientBuilder().connectionPoolSize(100).maxPooledPerRoute(10).connectionCheckoutTimeout(2, TimeUnit.SECONDS).build())
+                        .resteasyClient(new ResteasyClientBuilder().connectionPoolSize(100).maxPooledPerRoute(10).build())
                         //.resteasyClient(ClientBuilder.newBuilder().build())
                         .build();
 
