@@ -44,6 +44,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaGroups;
+
 public class KeycloakStore {
     private static final Logger LOG = LoggerFactory.getLogger(KeycloakStore.class);
 
@@ -291,5 +293,101 @@ public class KeycloakStore {
                 .roles()
                 .get(role.getName())
                 .toRepresentation();
+    }
+
+    public void updateRoleUsers(String roleId, String roleName,
+                                List<String> existingUsers, List<String> newUsers,
+                                RoleByIdResource rolesResource, RoleRepresentation roleRepresentation) throws AtlasBaseException {
+
+        List<String> usersToAdd     = (List<String>) CollectionUtils.removeAll(newUsers, existingUsers);
+        List<String> usersToRemove  = (List<String>) CollectionUtils.removeAll(existingUsers, newUsers);
+
+        if (rolesResource == null) {
+            rolesResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
+        }
+
+        if (roleRepresentation == null) {
+            roleRepresentation = rolesResource.getRole(roleId);
+        }
+
+        UsersResource usersResource = KeycloakClient.getKeycloakClient().getRealm().users();
+
+        for (String userName : usersToAdd) {
+            LOG.info("Adding user {} to role {}", userName, roleName);
+            List<UserRepresentation> matchedUsers = usersResource.search(userName);
+            Optional<UserRepresentation> keyUserOptional = matchedUsers.stream().filter(x -> userName.equals(x.getUsername())).findFirst();
+
+            if (keyUserOptional.isPresent()) {
+                final UserResource userResource = usersResource.get(keyUserOptional.get().getId());
+
+                userResource.roles().realmLevel().add(Collections.singletonList(roleRepresentation));
+                userResource.update(keyUserOptional.get());
+            } else {
+                throw new AtlasBaseException("Keycloak user not found with userName " + userName);
+            }
+        }
+
+        for (String userName : usersToRemove) {
+            LOG.info("Removing user {} from role {}", userName, roleName);
+            List<UserRepresentation> matchedUsers = usersResource.search(userName);
+            Optional<UserRepresentation> keyUserOptional = matchedUsers.stream().filter(x -> userName.equals(x.getUsername())).findFirst();
+
+            if (keyUserOptional.isPresent()) {
+                final UserResource userResource = usersResource.get(keyUserOptional.get().getId());
+
+                userResource.roles().realmLevel().remove(Collections.singletonList(roleRepresentation));
+                userResource.update(keyUserOptional.get());
+            } else {
+                LOG.warn("Keycloak user not found with userName " + userName);
+            }
+        }
+    }
+
+    public void updateRoleGroups(String roleId, String roleName,
+                                List<String> existingGroups, List<String> newGroups,
+                                RoleByIdResource rolesResource, RoleRepresentation roleRepresentation) throws AtlasBaseException {
+
+        if (rolesResource == null) {
+            rolesResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
+        }
+
+        if (roleRepresentation == null) {
+            roleRepresentation = rolesResource.getRole(roleId);
+        }
+
+        GroupsResource groupsResource = KeycloakClient.getKeycloakClient().getRealm().groups();
+
+        List<String> groupsToAdd    = (List<String>) CollectionUtils.removeAll(newGroups, existingGroups);
+        List<String> groupsToRemove = (List<String>) CollectionUtils.removeAll(existingGroups, newGroups);
+
+        for (String groupName : groupsToAdd) {
+            LOG.info("Adding group {} to role {}", groupName, roleName);
+            List<GroupRepresentation> matchedGroups = groupsResource.groups(groupName, 0, 100);
+            Optional<GroupRepresentation> keyGroupOptional = matchedGroups.stream().filter(x -> groupName.equals(x.getName())).findFirst();
+
+            if (keyGroupOptional.isPresent()) {
+                final GroupResource groupResource = groupsResource.group(keyGroupOptional.get().getId());
+
+                groupResource.roles().realmLevel().add(Collections.singletonList(roleRepresentation));
+                groupResource.update(keyGroupOptional.get());
+            } else {
+                throw new AtlasBaseException("Keycloak group not found with userName " + groupName);
+            }
+        }
+
+        for (String groupName : groupsToRemove) {
+            LOG.info("removing group {} from role {}", groupName, roleName);
+            List<GroupRepresentation> matchedGroups = groupsResource.groups(groupName, 0, 100);
+            Optional<GroupRepresentation> keyGroupOptional = matchedGroups.stream().filter(x -> groupName.equals(x.getName())).findFirst();
+
+            if (keyGroupOptional.isPresent()) {
+                final GroupResource groupResource = groupsResource.group(keyGroupOptional.get().getId());
+
+                groupResource.roles().realmLevel().remove(Collections.singletonList(roleRepresentation));
+                groupResource.update(keyGroupOptional.get());
+            } else {
+                LOG.warn("Keycloak group not found with userName " + groupName);
+            }
+        }
     }
 }
