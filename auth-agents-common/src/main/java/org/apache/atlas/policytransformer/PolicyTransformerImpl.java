@@ -197,6 +197,8 @@ public class PolicyTransformerImpl {
 
         } catch (Exception e) {
             LOG.error("ERROR in getPolicies {}: ", e.getMessage());
+            LOG.error("ERROR in getPolicies {}: ", e.getStackTrace()[0]);
+            LOG.error("ERROR in getPolicies {}: ", e.getStackTrace()[1]);
             return null;
         }
 
