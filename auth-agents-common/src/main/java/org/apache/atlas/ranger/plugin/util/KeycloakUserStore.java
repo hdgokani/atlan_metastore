@@ -84,32 +84,37 @@ public class KeycloakUserStore {
     public long getKeycloakSubjectsStoreUpdatedTime() {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getKeycloakSubjectsStoreUpdatedTime");
         LOG.info("Fetching getKeycloakSubjectsStoreUpdatedTime");
+        long latestEventTime = -1L;
 
-        /*List<AdminEventRepresentation> adminEvents = KeycloakClient.getKeycloakClient().getRealm().getAdminEvents(operationTypes,
+        try {
+            /*List<AdminEventRepresentation> adminEvents = KeycloakClient.getKeycloakClient().getRealm().getAdminEvents(operationTypes,
                 null, null, null, null, null,
                 resourceTypes,
                 null, null,
                 0,1);*/
 
-        long latestEventTime = -1L;
-        int from = 0;
-        int size = 100;
+            int from = 0;
+            int size = 100;
 
-        while (latestEventTime == -1L) {
-            List<AdminEventRepresentation> adminEvents = KeycloakClient.getKeycloakClient().getRealm().getAdminEvents(OPERATION_TYPES,
-                    null, null, null, null, null, null, null,
-                    from, size);
+            while (latestEventTime == -1L) {
+                List<AdminEventRepresentation> adminEvents = KeycloakClient.getKeycloakClient().getRealm().getAdminEvents(OPERATION_TYPES,
+                        null, null, null, null, null, null, null,
+                        from, size);
 
-            Optional<AdminEventRepresentation> event = adminEvents.stream().filter(x -> RESOURCE_TYPES.contains(x.getResourceType())).findFirst();
-            if (event.isPresent()) {
-                latestEventTime = event.get().getTime();
+                Optional<AdminEventRepresentation> event = adminEvents.stream().filter(x -> RESOURCE_TYPES.contains(x.getResourceType())).findFirst();
+                if (event.isPresent()) {
+                    latestEventTime = event.get().getTime();
+                }
+                from += size;
             }
-            from += size;
+
+            LOG.info("getKeycloakSubjectsStoreUpdatedTime - {}", latestEventTime);
+        } catch (Exception e) {
+            LOG.error("Error while fetching latest event time", e);
         }
-
-        LOG.info("getKeycloakSubjectsStoreUpdatedTime - {}", latestEventTime);
-
-        RequestContext.get().endMetricRecord(metricRecorder);
+         finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
         return latestEventTime;
     }
 
