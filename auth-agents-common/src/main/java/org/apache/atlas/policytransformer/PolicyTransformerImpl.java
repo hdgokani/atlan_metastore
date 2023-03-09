@@ -286,12 +286,6 @@ public class PolicyTransformerImpl {
         List<String> atlasResources = (List<String>) atlasPolicy.getAttribute(ATTR_POLICY_RESOURCES);
 
         for (String atlasAction : atlasActions) {
-            LOG.info("nikhil: atlasAction {}", atlasAction);
-            LOG.info("nikhil: templates {}", templates == null);
-            LOG.info("nikhil: templates keys {}", templates.getTemplates().keySet());
-
-            LOG.info("nikhil: atlasPolicy {}", AtlasType.toJson(atlasPolicy));
-
             List<TemplatePolicy> currentTemplates = templates.getTemplate(atlasAction);
             if (CollectionUtils.isEmpty(currentTemplates)) {
                 LOG.warn("PolicyTransformerImpl: Skipping unknown action {} while transforming policy {}", atlasAction, atlasPolicy.getGuid());
@@ -551,6 +545,7 @@ public class PolicyTransformerImpl {
         List<Map<String, Object>> mustClauseList = new ArrayList<>();
         mustClauseList.add(getMap("match", getMap("__typeName", "AuthService")));
         mustClauseList.add(getMap("term", getMap("name.keyword", serviceName)));
+        mustClauseList.add(getMap("match", getMap("__state", Id.EntityState.ACTIVE)));
 
         dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
 
