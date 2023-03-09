@@ -19,7 +19,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class IndexSearchParams extends SearchParams {
     private static final Logger LOG = LoggerFactory.getLogger(IndexSearchParams.class);
 

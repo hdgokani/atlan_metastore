@@ -1,7 +1,10 @@
 package org.apache.atlas.model.discovery;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.Set;
 
+@JsonIgnoreProperties(ignoreUnknown=true)
 public abstract class SearchParams {
 
     Set<String> attributes;
