@@ -881,15 +881,12 @@ public class AtlasTypeRegistry {
             }
         }
 
-        private void updateTypeByNameWithNoRefResolve(String name, AtlasBaseTypeDef typeDef) throws AtlasBaseException{
+        private void updateTypeByNameWithNoRefResolve(String name, AtlasBaseTypeDef typeDef) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("==> AtlasTypeRegistry.updateTypeByNameWithNoRefResolve({})", name);
             }
 
             if (name != null && typeDef != null) {
-                if(typeDef.getClass().equals(AtlasEnumDef.class) || typeDef.getClass().equals(AtlasStructDef.class) || typeDef.getClass().equals(AtlasEntityDef.class))
-                    validateTypeCreation(typeDef);
-
                 if (typeDef.getClass().equals(AtlasEnumDef.class)) {
                     AtlasEnumDef enumDef = (AtlasEnumDef) typeDef;
 
