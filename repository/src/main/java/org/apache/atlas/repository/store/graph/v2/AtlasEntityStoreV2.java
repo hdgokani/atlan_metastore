@@ -1703,7 +1703,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 try {
                     String authorizer = ApplicationProperties.get().getString("atlas.authorizer.impl");
                     //if (StringUtils.isNotEmpty(authorizer) && authorizer.equalsIgnoreCase("ATLAS")) {
-                        preProcessor = new ConnectionPreProcessor(graph, typeRegistry, entityRetriever, this);
+                        preProcessor = new ConnectionPreProcessor(graph, discovery, entityRetriever, this);
                     //}
                 } catch (AtlasException e) {
                     e.printStackTrace();

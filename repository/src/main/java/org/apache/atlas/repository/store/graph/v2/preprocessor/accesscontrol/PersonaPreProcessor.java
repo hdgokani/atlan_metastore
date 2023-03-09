@@ -144,7 +144,7 @@ public class PersonaPreProcessor implements PreProcessor {
         }
 
         //remove role
-        removeKeycloakRole(getPersonaRoleId(persona));
+        keycloakStore.removeRole(getPersonaRoleId(persona));
 
         //delete ES alias
         aliasStore.deleteAlias(getESAliasName(persona));
@@ -256,9 +256,9 @@ public class PersonaPreProcessor implements PreProcessor {
         RoleByIdResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
         RoleRepresentation roleRepresentation = rolesResource.getRole(roleId);
 
-        keycloakStore.updateRoleUsers(roleId, roleName, existingUsers, newUsers, rolesResource, roleRepresentation);
+        keycloakStore.updateRoleUsers(roleName, existingUsers, newUsers, roleRepresentation);
 
-        keycloakStore.updateRoleGroups(roleId, roleName, existingGroups, newGroups, rolesResource, roleRepresentation);
+        keycloakStore.updateRoleGroups(roleName, existingGroups, newGroups, roleRepresentation);
 
 
         Map<String, List<String>> attributes = new HashMap<>();
@@ -274,14 +274,5 @@ public class PersonaPreProcessor implements PreProcessor {
 
         rolesResource.updateRole(roleId, roleRepresentation);
         LOG.info("Updated keycloak role with name {}", roleName);
-    }
-
-    private void removeKeycloakRole(String roleId) {
-        if (StringUtils.isNotEmpty(roleId)) {
-            RoleByIdResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
-
-            rolesResource.deleteRole(roleId);
-            LOG.info("Removed keycloak role with id {}", roleId);
-        }
     }
 }

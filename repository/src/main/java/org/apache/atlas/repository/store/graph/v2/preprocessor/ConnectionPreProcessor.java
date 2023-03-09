@@ -19,6 +19,12 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.discovery.EntityDiscoveryService;
+import org.apache.atlas.keycloak.client.KeycloakClient;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.IndexSearchParams;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
 import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -36,16 +42,25 @@ import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.repository.store.users.KeycloakStore;
 import org.apache.atlas.transformer.ConnectionPoliciesTransformer;
 import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
+import org.keycloak.admin.client.resource.RoleByIdResource;
+import org.keycloak.admin.client.resource.RoleResource;
+import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import static org.apache.atlas.repository.Constants.ACTIVE_STATE_VALUE;
+import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.util.AccessControlUtils.getUUID;
+import static org.apache.atlas.util.AtlasEntityUtils.mapOf;
 
 public class ConnectionPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionPreProcessor.class);
@@ -53,23 +68,21 @@ public class ConnectionPreProcessor implements PreProcessor {
     private static final String CONN_NAME_PATTERN = "connection_admins_%s";
 
     private final AtlasGraph graph;
-    private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
-    private IndexAliasStore aliasStore;
     private AtlasEntityStore entityStore;
+    private EntityDiscoveryService discovery;
     private ConnectionPoliciesTransformer transformer;
     private KeycloakStore keycloakStore;
 
     public ConnectionPreProcessor(AtlasGraph graph,
-                                  AtlasTypeRegistry typeRegistry,
+                                  EntityDiscoveryService discovery,
                                   EntityGraphRetriever entityRetriever,
                                   AtlasEntityStore entityStore) {
         this.graph = graph;
-        this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
         this.entityStore = entityStore;
+        this.discovery = discovery;
 
-        aliasStore = new ESAliasStore(graph, entityRetriever);
         transformer = new ConnectionPoliciesTransformer();
         keycloakStore = new KeycloakStore();
     }
@@ -88,7 +101,7 @@ public class ConnectionPreProcessor implements PreProcessor {
                 processCreateConnection(entity);
                 break;
             case UPDATE:
-                processUpdateConnection(context, entity, context.getVertex(entity.getGuid()));
+                processUpdateConnection(context, entity);
                 break;
         }
     }
@@ -123,11 +136,42 @@ public class ConnectionPreProcessor implements PreProcessor {
     }
 
     private void processUpdateConnection(EntityMutationContext context,
-                                      AtlasStruct entity,
-                                      AtlasVertex vertex) throws AtlasBaseException {
+                                      AtlasStruct entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateConnection");
 
-        //TODO
+        AtlasEntity connection = (AtlasEntity) entity;
+
+        AtlasVertex vertex = context.getVertex(connection.getGuid());
+        AtlasEntity existingConnEntity = entityRetriever.toAtlasEntity(vertex);
+
+        //create connection role
+        String roleName = String.format(CONN_NAME_PATTERN, connection.getGuid());
+
+        String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
+        entity.setAttribute(QUALIFIED_NAME, vertexQName);
+
+        List<String> newAdminUsers = (List<String>) connection.getAttribute("adminUsers");
+        List<String> newAdminGroups = (List<String>) connection.getAttribute("adminGroups");
+        List<String> newAdminRoles = (List<String>) connection.getAttribute("adminRoles");
+
+        List<String> currentAdminUsers = (List<String>) existingConnEntity.getAttribute("adminUsers");
+        List<String> currentAdminGroups =(List<String>)  existingConnEntity.getAttribute("adminGroups");
+        List<String> currentAdminRoles = (List<String>) existingConnEntity.getAttribute("adminRoles");
+
+        RoleResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(roleName);
+        RoleRepresentation representation = rolesResource.toRepresentation();
+
+        if (CollectionUtils.isNotEmpty(newAdminUsers) || CollectionUtils.isNotEmpty(currentAdminUsers)) {
+            keycloakStore.updateRoleUsers(roleName, currentAdminUsers, newAdminUsers, representation);
+        }
+
+        if (CollectionUtils.isNotEmpty(newAdminGroups) || CollectionUtils.isNotEmpty(currentAdminGroups)) {
+            keycloakStore.updateRoleGroups(roleName, currentAdminGroups, newAdminGroups, representation);
+        }
+
+        if (CollectionUtils.isNotEmpty(newAdminRoles) || CollectionUtils.isNotEmpty(currentAdminRoles)) {
+            keycloakStore.updateRoleRoles(roleName, currentAdminRoles, newAdminRoles, rolesResource, representation);
+        }
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
@@ -136,16 +180,44 @@ public class ConnectionPreProcessor implements PreProcessor {
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
 
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(vertex);
-        AtlasEntity purpose = entityWithExtInfo.getEntity();
+        AtlasEntity connection = entityWithExtInfo.getEntity();
+        String roleName = String.format(CONN_NAME_PATTERN, connection.getGuid());
 
-        //TODO
+        if (!AtlasEntity.Status.ACTIVE.equals(connection.getStatus())) {
+            throw new AtlasBaseException("Connection is already deleted/purged");
+        }
+
         //delete connection policies
+        List<AtlasEntityHeader> policies = getConnectionPolicies(connection, roleName);
+        EntityMutationResponse response = entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 
         //delete connection role
-
+        keycloakStore.removeRoleByName(roleName);
     }
 
-    public static String createQualifiedName() {
-        return getUUID();
+    private List<AtlasEntityHeader> getConnectionPolicies(AtlasEntity connection, String roleName) throws AtlasBaseException {
+        List<AtlasEntityHeader> ret = new ArrayList<>();
+        
+        IndexSearchParams indexSearchParams = new IndexSearchParams();
+        Map<String, Object> dsl = new HashMap<>();
+
+        List mustClauseList = new ArrayList();
+        mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", POLICY_ENTITY_TYPE)));
+        mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
+
+
+        mustClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, connection.getGuid() + "/*")));
+        mustClauseList.add(mapOf("term", mapOf("policyRoles", roleName)));
+
+        dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
+
+        indexSearchParams.setDsl(dsl);
+
+        AtlasSearchResult result = discovery.directIndexSearch(indexSearchParams);
+        if (result != null) {
+            ret = result.getEntities();
+        }
+
+        return ret;
     }
 }

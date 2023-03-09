@@ -23,6 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.keycloak.admin.client.resource.GroupResource;
 import org.keycloak.admin.client.resource.GroupsResource;
 import org.keycloak.admin.client.resource.RoleByIdResource;
@@ -113,11 +114,18 @@ public class KeycloakStore {
             }
         }
 
-        //TODO: remove discrepency to pass roleName instead of roleId
+        //TODO: remove discrepancy to pass roleName instead of roleId
         List<RoleRepresentation> roleRoles = new ArrayList<>();
+/*
         if (CollectionUtils.isNotEmpty(roles)) {
             for (String roleId : roles) {
                 roleRoles.add(rolesIdResource.getRole(roleId));
+            }
+        }
+*/
+        if (CollectionUtils.isNotEmpty(roles)) {
+            for (String roleName : roles) {
+                roleRoles.add(rolesResource.get(roleName).toRepresentation());
             }
         }
 
@@ -295,20 +303,24 @@ public class KeycloakStore {
                 .toRepresentation();
     }
 
-    public void updateRoleUsers(String roleId, String roleName,
+    public void updateRoleUsers(String roleName,
                                 List<String> existingUsers, List<String> newUsers,
-                                RoleByIdResource rolesResource, RoleRepresentation roleRepresentation) throws AtlasBaseException {
+                                RoleRepresentation roleRepresentation) throws AtlasBaseException {
+
+        if (roleRepresentation == null) {
+            throw new AtlasBaseException("Failed to updateRoleUsers as roleRepresentation is null");
+        }
+
+        if (newUsers == null) {
+            newUsers = new ArrayList<>();
+        }
+
+        if (existingUsers == null) {
+            existingUsers = new ArrayList<>();
+        }
 
         List<String> usersToAdd     = (List<String>) CollectionUtils.removeAll(newUsers, existingUsers);
         List<String> usersToRemove  = (List<String>) CollectionUtils.removeAll(existingUsers, newUsers);
-
-        if (rolesResource == null) {
-            rolesResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
-        }
-
-        if (roleRepresentation == null) {
-            roleRepresentation = rolesResource.getRole(roleId);
-        }
 
         UsersResource usersResource = KeycloakClient.getKeycloakClient().getRealm().users();
 
@@ -343,19 +355,23 @@ public class KeycloakStore {
         }
     }
 
-    public void updateRoleGroups(String roleId, String roleName,
+    public void updateRoleGroups(String roleName,
                                 List<String> existingGroups, List<String> newGroups,
-                                RoleByIdResource rolesResource, RoleRepresentation roleRepresentation) throws AtlasBaseException {
-
-        if (rolesResource == null) {
-            rolesResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
-        }
+                                RoleRepresentation roleRepresentation) throws AtlasBaseException {
 
         if (roleRepresentation == null) {
-            roleRepresentation = rolesResource.getRole(roleId);
+            throw new AtlasBaseException("Failed to updateRoleGroups as roleRepresentation is null");
         }
 
         GroupsResource groupsResource = KeycloakClient.getKeycloakClient().getRealm().groups();
+
+        if (newGroups == null) {
+            newGroups = new ArrayList<>();
+        }
+
+        if (existingGroups == null) {
+            existingGroups = new ArrayList<>();
+        }
 
         List<String> groupsToAdd    = (List<String>) CollectionUtils.removeAll(newGroups, existingGroups);
         List<String> groupsToRemove = (List<String>) CollectionUtils.removeAll(existingGroups, newGroups);
@@ -388,6 +404,61 @@ public class KeycloakStore {
             } else {
                 LOG.warn("Keycloak group not found with userName " + groupName);
             }
+        }
+    }
+
+    public void updateRoleRoles(String roleName,
+                                List<String> existingRoles, List<String> newRoles,
+                                RoleResource connRoleResource, RoleRepresentation roleRepresentation) throws AtlasBaseException {
+
+        if (roleRepresentation == null) {
+            throw new AtlasBaseException("Failed to updateRoleRoles as roleRepresentation is null");
+        }
+
+        RolesResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles();
+
+        if (newRoles == null) {
+            newRoles = new ArrayList<>();
+        }
+
+        if (existingRoles == null) {
+            existingRoles = new ArrayList<>();
+        }
+
+        List<String> rolesToAdd    = (List<String>) CollectionUtils.removeAll(newRoles, existingRoles);
+        List<String> rolesToRemove = (List<String>) CollectionUtils.removeAll(existingRoles, newRoles);
+
+        for (String subRoleName : rolesToAdd) {
+            LOG.info("Adding role {} to role {}", subRoleName, roleName);
+            RoleResource subrRoleResource = rolesResource.get(subRoleName);
+
+            connRoleResource.addComposites(Collections.singletonList(subrRoleResource.toRepresentation()));
+            connRoleResource.update(connRoleResource.toRepresentation());
+        }
+
+        for (String subRoleName : rolesToRemove) {
+            LOG.info("removing role {} from role {}", subRoleName, roleName);
+            RoleResource subrRoleResource = rolesResource.get(subRoleName);
+
+            connRoleResource.deleteComposites(Collections.singletonList(subrRoleResource.toRepresentation()));
+            connRoleResource.update(connRoleResource.toRepresentation());
+        }
+    }
+
+    public void removeRole(String roleId) {
+        if (StringUtils.isNotEmpty(roleId)) {
+            RoleByIdResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
+
+            rolesResource.deleteRole(roleId);
+            LOG.info("Removed keycloak role with id {}", roleId);
+        }
+    }
+    public void removeRoleByName(String roleName) {
+        if (StringUtils.isNotEmpty(roleName)) {
+            RoleResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(roleName);
+
+            rolesResource.remove();
+            LOG.info("Removed keycloak role with name {}", roleName);
         }
     }
 }
