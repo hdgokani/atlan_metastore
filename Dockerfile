@@ -71,8 +71,6 @@ RUN cd /opt/apache-atlas/bin \
 #     && patch -b -f < atlas_start.py.patch \
 #     && patch -b -f < atlas_config.py.patch \
 
-RUN rm -rf /opt/apache-atlas/server/webapp/atlas/WEB-INF/lib/jsr311-api-1.1.1.jar
-
 RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true
 
