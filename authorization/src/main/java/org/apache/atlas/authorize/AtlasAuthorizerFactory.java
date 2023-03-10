@@ -54,7 +54,6 @@ public class AtlasAuthorizerFactory {
 
                     String authorizer = configuration != null ? configuration.getString("atlas.authorizer.impl") : "SIMPLE";
 
-                    LOG.info("nikhil: authorizer {}", configuration != null);
                     LOG.info("nikhil: authorizer {}", authorizer);
 
                     //String authorizerClass = RANGER_AUTHORIZER;
@@ -86,14 +85,12 @@ public class AtlasAuthorizerFactory {
                         if (authorizerMetaObject != null) {
                             INSTANCE = (AtlasAuthorizer) authorizerMetaObject.newInstance();
 
-
+                            //TOOO: remove
                             INSTANCE.init(typeRegistry);
 
                             if (StringUtils.equalsIgnoreCase(authorizer, "ATLAS")) {
-                                LOG.info("nikhil: in INSTANCE.init(typeRegistry)");
                                 //INSTANCE.init(typeRegistry);
                             } else {
-                                LOG.info("nikhil: in INSTANCE.init();");
                                 //INSTANCE.init();
                             }
                         }

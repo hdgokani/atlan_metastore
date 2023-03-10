@@ -244,24 +244,19 @@ public class RangerBasePlugin {
 
 	public void init() {
 		cleanup();
-		LOG.info("nikhil: 4");
 
 		AuditProviderFactory providerFactory = AuditProviderFactory.getInstance();
-		LOG.info("nikhil: 5");
 
 		if (!providerFactory.isInitDone()) {
-			LOG.info("nikhil: 6");
 			if (pluginConfig.getProperties() != null) {
-				LOG.info("nikhil: 7");
 				providerFactory.init(pluginConfig.getProperties(), getAppId());
 			} else {
 				LOG.error("Audit subsystem is not initialized correctly. Please check audit configuration. ");
 				LOG.error("No authorization audits will be generated. ");
 			}
 		}
-		LOG.info("nikhil: disablePolicyRefresher " + pluginConfig.getPolicyEngineOptions().disablePolicyRefresher);
+
 		if (!pluginConfig.getPolicyEngineOptions().disablePolicyRefresher) {
-			LOG.info("nikhil: 8");
 			refresher = new PolicyRefresher(this);
 			LOG.info("Created PolicyRefresher Thread(" + refresher.getName() + ")");
 			refresher.setDaemon(true);
