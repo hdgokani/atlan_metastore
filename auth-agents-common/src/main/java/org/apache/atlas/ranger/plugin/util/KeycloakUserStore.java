@@ -87,6 +87,7 @@ public class KeycloakUserStore {
     public long getKeycloakSubjectsStoreUpdatedTime() {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getKeycloakSubjectsStoreUpdatedTime");
         LOG.info("Fetching getKeycloakSubjectsStoreUpdatedTime");
+        KeycloakClient keycloakClient = KeycloakClient.getKeycloakClient();
         long latestEventTime = -1L;
         int count = 0;
 
@@ -103,11 +104,9 @@ public class KeycloakUserStore {
 
             while (latestEventTime == -1L) {
                 count = count+1;
-                AtlasPerfTracer perf =  AtlasPerfTracer.getPerfTracer(PERF_LOG, "Keycloak.getKeycloakSubjectsStoreUpdatedTime");
-                List<AdminEventRepresentation> adminEvents = KeycloakClient.getKeycloakClient().getRealm().getAdminEvents(OPERATION_TYPES,
+                List<AdminEventRepresentation> adminEvents = keycloakClient.getRealm().getAdminEvents(OPERATION_TYPES,
                         null, null, null, null, null, null, null,
                         from, size);
-                AtlasPerfTracer.log(perf);
                 Optional<AdminEventRepresentation> event = adminEvents.stream().filter(x -> RESOURCE_TYPES.contains(x.getResourceType())).findFirst();
                 if (event.isPresent()) {
                     latestEventTime = event.get().getTime();
@@ -121,6 +120,7 @@ public class KeycloakUserStore {
             LOG.info("Number of retries - {}", count);
             LOG.error("Error while fetching latest event time", e);
         } finally {
+            keycloakClient.getRealm().getClientSessionStats();
             RequestContext.get().endMetricRecord(metricRecorder);
         }
         return latestEventTime;
