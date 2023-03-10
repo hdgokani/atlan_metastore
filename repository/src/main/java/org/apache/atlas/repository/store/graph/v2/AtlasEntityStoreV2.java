@@ -1701,12 +1701,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             case CONNECTION_ENTITY_TYPE:
                 try {
-                    String authorizer = ApplicationProperties.get().getString("atlas.authorizer.impl");
-                    //if (StringUtils.isNotEmpty(authorizer) && authorizer.equalsIgnoreCase("ATLAS")) {
+                    String authorizer = ApplicationProperties.get().getString("atlas.authorizer.impl", "");
+                    if ("atlas".equalsIgnoreCase(authorizer)) {
                         preProcessor = new ConnectionPreProcessor(graph, discovery, entityRetriever, this);
-                    //}
+                    }
                 } catch (AtlasException e) {
+                    LOG.error("Could not fetch conf atlas.authorizer.impl");
                     e.printStackTrace();
+                    throw new AtlasBaseException("Could not fetch conf atlas.authorizer.impl");
                 }
 
                 break;

@@ -64,9 +64,9 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
 
     private void startInternal() {
         try {
-            String authorizer = ApplicationProperties.get().getString("atlas.authorizer.impl");
+            String authorizer = ApplicationProperties.get().getString("atlas.authorizer.impl", "");
 
-            if (StringUtils.isNotEmpty(authorizer) && "atlas".equals(authorizer)) {
+            if ("atlas".equals(authorizer)) {
                 loadBootstrapAuthPolicies();
             } else {
                 LOG.info("AuthPoliciesBootstrapper: startInternal: Skipping as not needed");
