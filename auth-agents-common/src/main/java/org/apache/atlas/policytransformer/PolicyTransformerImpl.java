@@ -285,6 +285,7 @@ public class PolicyTransformerImpl {
         List<String> atlasActions = (List<String>) atlasPolicy.getAttribute(ATTR_POLICY_ACTIONS);
         List<String> atlasResources = (List<String>) atlasPolicy.getAttribute(ATTR_POLICY_RESOURCES);
 
+        int index = 0;
         for (String atlasAction : atlasActions) {
             List<TemplatePolicy> currentTemplates = templates.getTemplate(atlasAction);
             if (CollectionUtils.isEmpty(currentTemplates)) {
@@ -296,7 +297,7 @@ public class PolicyTransformerImpl {
                 TemplatePolicy templatePolicy = currentTemplates.get(i);
                 AtlasEntityHeader header = new AtlasEntityHeader(atlasPolicy);
 
-                header.setGuid(atlasPolicy.getGuid() + "-" + i);
+                header.setGuid(atlasPolicy.getGuid() + "-" + index++);
 
                 header.setAttribute(ATTR_POLICY_ACTIONS, templatePolicy.getActions());
                 header.setAttribute(ATTR_POLICY_RESOURCES_CATEGORY, templatePolicy.getPolicyResourceCategory());

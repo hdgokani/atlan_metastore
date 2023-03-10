@@ -75,7 +75,7 @@
         "entity:{entity}",
         "entity-type:{entity-type}",
         "entity-classification:*",
-        "entity-business:*"
+        "entity-business-metadata:*"
       ],
       "actions": ["entity-business-update-metadata"]
     }
@@ -278,7 +278,7 @@
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
         "entity-classification:*",
-        "entity-business:*"
+        "entity-business-metadata:*"
       ],
       "actions": ["entity-business-update-metadata"]
     }
