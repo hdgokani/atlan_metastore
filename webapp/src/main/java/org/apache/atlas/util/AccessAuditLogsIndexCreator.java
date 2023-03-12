@@ -79,7 +79,7 @@ public class AccessAuditLogsIndexCreator {
     private static final String ES_CREDENTIAL_ALIAS = "atlas.audit.elasticsearch.credential.alias";
     private static final String ES_BOOTSTRAP_MAX_RETRY = "atlas.audit.elasticsearch.max.retry";
 
-    private static final String DEFAULT_INDEX_NAME = "atlas_auth_audits";
+    private static final String DEFAULT_INDEX_NAME = "atlas-authz-audits";
     private static final String ES_RANGER_AUDIT_SCHEMA_FILE = "atlas_auth_es_schema.json";
 
     private static final long DEFAULT_ES_TIME_INTERVAL_MS = 30000L;

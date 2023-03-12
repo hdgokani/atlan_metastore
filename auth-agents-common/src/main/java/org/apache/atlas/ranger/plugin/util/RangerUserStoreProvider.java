@@ -21,11 +21,11 @@ package org.apache.atlas.ranger.plugin.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.atlas.ranger.admin.client.RangerAdminClient;
 import org.apache.atlas.ranger.plugin.service.RangerBasePlugin;
 
 import java.io.File;
@@ -44,7 +44,7 @@ public class RangerUserStoreProvider {
 
 	private final String            serviceType;
 	private final String            serviceName;
-	private final RangerAdminClient rangerAdmin;
+	private final AtlasAuthAdminClient atlasAuthAdminClient;
 	private final KeycloakUserStore keycloakUserStore;
 
 	private final String            cacheFileName;
@@ -59,14 +59,15 @@ public class RangerUserStoreProvider {
 	private boolean rangerUserStoreSetInPlugin;
 	private boolean serviceDefSetInPlugin;
 
-	public RangerUserStoreProvider(String serviceType, String appId, String serviceName, RangerAdminClient rangerAdmin, String cacheDir, Configuration config) {
+	public RangerUserStoreProvider(String serviceType, String appId, String serviceName, AtlasAuthAdminClient atlasAuthAdminClient, String cacheDir, Configuration config) {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerUserStoreProvider(serviceName=" + serviceName + ").RangerUserStoreProvider()");
 		}
 
 		this.serviceType = serviceType;
 		this.serviceName = serviceName;
-		this.rangerAdmin = rangerAdmin;
+		this.atlasAuthAdminClient = atlasAuthAdminClient;
+
 		this.keycloakUserStore = new KeycloakUserStore(serviceType);
 
 		if (StringUtils.isEmpty(appId)) {
@@ -196,7 +197,7 @@ public class RangerUserStoreProvider {
 				LOG.info("RangerUserStoreProvider: fetching using keycloak directly for atlas service");
 				userStore = keycloakUserStore.loadUserStoreIfUpdated(lastUpdateTimeInMillis);
 			} else {
-				userStore = rangerAdmin.getUserStoreIfUpdated(lastUpdateTimeInMillis, lastActivationTimeInMillis);
+				userStore = atlasAuthAdminClient.getUserStoreIfUpdated(lastUpdateTimeInMillis);
 			}
 
 			boolean isUpdated = userStore != null;
