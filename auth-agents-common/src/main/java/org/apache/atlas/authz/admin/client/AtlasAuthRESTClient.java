@@ -44,7 +44,7 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
             url = url.substring(0, url.length() - 1);
         }
         adminUrl = url;
-        long tmpReadTimeout = config.getLong(configPropertyPrefix + ".atlas.auth.rest.read.timeout", 3000);
+        long tmpReadTimeout = config.getLong(configPropertyPrefix + ".atlas.authz.rest.read.timeout", 3000);
         init(serviceName, tmpReadTimeout);
     }
 
@@ -100,7 +100,7 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
         Request request = new Request.Builder().url(uri.toURL()).build();
         Response response = httpClient.newCall(request).execute();
 
-        if (response.code() == HttpServletResponse.SC_NOT_MODIFIED) {
+        if (response.code() == HttpServletResponse.SC_NO_CONTENT) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AtlasAuthRESTClient.sendRequestAndGetResponse(): Not Modified");
             }
