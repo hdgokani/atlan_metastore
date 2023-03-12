@@ -69,7 +69,7 @@ public class ElasticSearchAuditDestination extends AuditDestination {
     public static final String CONFIG_PROTOCOL = "protocol";
     public static final String CONFIG_INDEX = "index";
     public static final String CONFIG_PREFIX = "atlas.audit.elasticsearch";
-    public static final String DEFAULT_INDEX = "atlas_auth_audits";
+    public static final String DEFAULT_INDEX = "atlas-auth-audits";
 
     private String index = "index";
     private volatile RestHighLevelClient client = null;

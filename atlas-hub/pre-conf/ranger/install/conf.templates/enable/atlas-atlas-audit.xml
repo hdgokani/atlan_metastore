@@ -134,6 +134,6 @@
 	</property>
 	<property>
 		<name>xasecure.audit.destination.elasticsearch.index</name>
-		<value>atlas_auth_audits</value>
+		<value>atlas-auth-audits</value>
 	</property>
 </configuration>

@@ -21,8 +21,8 @@ package org.apache.atlas.ranger.plugin.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.atlas.policytransformer.PolicyTransformerImpl;
-import org.apache.atlas.ranger.plugin.model.RangerServiceDef;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,7 +30,6 @@ import org.apache.atlas.ranger.admin.client.RangerAdminClient;
 import org.apache.atlas.ranger.authorization.hadoop.config.RangerPluginConfig;
 import org.apache.atlas.ranger.plugin.policyengine.RangerPluginContext;
 import org.apache.atlas.ranger.plugin.service.RangerBasePlugin;
-import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.FileReader;
@@ -50,6 +49,7 @@ public class PolicyRefresher extends Thread {
 	private final String                         serviceType;
 	private final String                         serviceName;
 	private final RangerAdminClient              rangerAdmin;
+	private final AtlasAuthAdminClient			 atlasAuthAdminClient;
 	private final RangerRolesProvider            rolesProvider;
 	private final RangerUserStoreProvider		 userStoreProvider;
 	private final long                           pollingIntervalMs;
@@ -86,6 +86,8 @@ public class PolicyRefresher extends Thread {
 		cacheFilename = cacheFilename.replace(File.pathSeparatorChar,  '_');
 
 		this.cacheFileName = cacheFilename;
+		//TODO: Remove this
+		rangerAdmin = getRangerAdminClient();
 
 		Gson gson = null;
 		try {
@@ -95,11 +97,11 @@ public class PolicyRefresher extends Thread {
 		}
 
 		RangerPluginContext pluginContext  = plugIn.getPluginContext();
-		RangerAdminClient   adminClient    = pluginContext.getAdminClient();
-		this.rangerAdmin                   = (adminClient != null) ? adminClient : pluginContext.createAdminClient(pluginConfig);
+		AtlasAuthAdminClient   adminClient = pluginContext.getAtlasAuthAdminClient();
+		this.atlasAuthAdminClient          = (adminClient != null) ? adminClient : pluginContext.createAtlasAuthAdminClient(pluginConfig);
 		this.gson                          = gson;
-		this.rolesProvider                 = new RangerRolesProvider(getServiceType(), appId, getServiceName(), rangerAdmin,  cacheDir, pluginConfig);
-		this.userStoreProvider             = new RangerUserStoreProvider(getServiceType(), appId, getServiceName(), rangerAdmin,  cacheDir, pluginConfig);
+		this.rolesProvider                 = new RangerRolesProvider(getServiceType(), appId, getServiceName(), atlasAuthAdminClient, cacheDir, pluginConfig);
+		this.userStoreProvider             = new RangerUserStoreProvider(getServiceType(), appId, getServiceName(), atlasAuthAdminClient,  cacheDir, pluginConfig);
 		this.pollingIntervalMs             = pluginConfig.getLong(propertyPrefix + ".policy.pollIntervalMs", 30 * 1000);
 
 		setName("PolicyRefresher(serviceName=" + serviceName + ")-" + getId());
@@ -322,7 +324,7 @@ public class PolicyRefresher extends Thread {
 														restUtils.getPluginId(serviceName, plugIn.getAppId()),
 														lastUpdatedTiemInMillis);
 			} else {
-				svcPolicies = rangerAdmin.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis, lastActivationTimeInMillis);
+				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis);
 			}
 
 			boolean isUpdated = svcPolicies != null;
