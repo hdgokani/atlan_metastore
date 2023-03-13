@@ -21,6 +21,8 @@ mkdir -p ~/.m2/repository/org/keycloak
 wget  https://atlan-public.s3.eu-west-1.amazonaws.com/artifact/keycloak-15.0.2.1.zip
 unzip -o keycloak-15.0.2.1.zip -d ~/.m2/repository/org
 
+mvn install:install-file -DgroupId=com.twitter -DartifactId=carbonite -Dversion=1.5.0 -Dpackaging=jar -Dfile=addons/ext-jar/carbonite-1.5.0.jar
+
 echo "Maven Building"
 
 if [ "$1" == "build_without_dashboard" ]; then
