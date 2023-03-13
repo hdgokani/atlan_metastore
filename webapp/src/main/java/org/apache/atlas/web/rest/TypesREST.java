@@ -435,6 +435,7 @@ public class TypesREST {
     public AtlasTypesDef createAtlasTypeDefs(final AtlasTypesDef typesDef, @QueryParam("allowDuplicateDisplayName") @DefaultValue("false") boolean allowDuplicateDisplayName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         InterProcessMutex lock = null;
+        validateTypeCreateOrUpdate(typesDef);
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
         try {
             typeCacheRefresher.verifyCacheRefresherHealth();
@@ -446,7 +447,6 @@ public class TypesREST {
             RequestContext.get().setAllowDuplicateDisplayName(allowDuplicateDisplayName);
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
-            validateTypeCreateOrUpdate(typesDef);
             AtlasTypesDef atlasTypesDef = typeDefStore.createTypesDef(typesDef);
             typeCacheRefresher.refreshAllHostCache();
             return atlasTypesDef;
@@ -466,26 +466,24 @@ public class TypesREST {
     private void validateTypeCreateOrUpdate(AtlasTypesDef typesDef) throws AtlasBaseException {
 
         if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
-            AtlasBaseTypeDef type = typesDef.getEnumDefs().stream().filter(typeDefStore::validateTypeName).findFirst().orElse(null);
-            if (type != null)
-                throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, type.getName());
+            for (AtlasBaseTypeDef typeDef : typesDef.getEnumDefs())
+                if (typeDefStore.hasBuiltInTypeName(typeDef))
+                    throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
         }
         if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
-            AtlasBaseTypeDef type = typesDef.getEntityDefs().stream().filter(typeDefStore::validateTypeName).findFirst().orElse(null);
-            if (type != null)
-                throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, type.getName());
+            for (AtlasBaseTypeDef typeDef : typesDef.getEntityDefs())
+                if (typeDefStore.hasBuiltInTypeName(typeDef))
+                    throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
         }
         if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
-            AtlasBaseTypeDef type = typesDef.getStructDefs().stream().filter(typeDefStore::validateTypeName).findFirst().orElse(null);
-            if (type != null)
-                throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, type.getName());
+            for (AtlasBaseTypeDef typeDef : typesDef.getStructDefs())
+                if (typeDefStore.hasBuiltInTypeName(typeDef))
+                    throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
         }
     }
-
     /**
      * Bulk update API for all types, changes detected in the type definitions would be persisted
      * @param typesDef A composite object that captures all type definition changes
-     * @param allowDuplicateDisplayName
      * @return A composite object with lists of type definitions that were updated
      * @throws Exception
      * @HTTP 200 On successful update of requested type definitions
@@ -499,6 +497,7 @@ public class TypesREST {
                                              @QueryParam("allowDuplicateDisplayName") @DefaultValue("false") boolean allowDuplicateDisplayName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         InterProcessMutex lock = null;
+        validateTypeCreateOrUpdate(typesDef);
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
         try {
             typeCacheRefresher.verifyCacheRefresherHealth();
@@ -531,7 +530,6 @@ public class TypesREST {
             RequestContext.get().setInTypePatching(patch);
             RequestContext.get().setAllowDuplicateDisplayName(allowDuplicateDisplayName);
             LOG.info("TypesRest.updateAtlasTypeDefs:: Typedef patch enabled:" + patch);
-            validateTypeCreateOrUpdate(typesDef);
             AtlasTypesDef atlasTypesDef = typeDefStore.updateTypesDef(typesDef);
             typeCacheRefresher.refreshAllHostCache();
             return atlasTypesDef;
