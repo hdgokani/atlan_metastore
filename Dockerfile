@@ -28,10 +28,10 @@ RUN apt-get update \
     && apt-get -y install apt-utils \
     && apt-get -y install \
         wget \
-        python3 \
+        python \
         openjdk-8-jdk-headless \
         patch \
-        netcat-traditional \
+        netcat \
         curl \
     && cd / \
     && mkdir /opt/ranger-atlas-plugin \
@@ -49,9 +49,6 @@ RUN cd / \
     && mkdir /opt/apache-atlas/libext \
     && mv /atlas-index-repair-tool-${VERSION}.jar /opt/apache-atlas/libext/ \
     && rm -rf /atlas-index-repair-tool-${VERSION}.tar.gz
-
-RUN ln -s /usr/bin/python3 /usr/bin/python & \
-    ln -s /usr/bin/pip3 /usr/bin/pip
 
 COPY atlas-hub/repair_index.py /opt/apache-atlas/bin/
 
@@ -77,11 +74,6 @@ RUN cd /opt/apache-atlas/bin \
 RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true
 
-RUN groupadd atlas && \
-    useradd -g atlas -ms /bin/bash atlas && \
-    mkdir -p /home/atlas/dist && \
-    mkdir -p /home/atlas/scripts && \
-    chown -R atlas:atlas /home/atlas
 
 
 VOLUME ["/opt/apache-atlas/conf", "/opt/apache-atlas/logs"]
