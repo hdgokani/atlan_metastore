@@ -579,14 +579,13 @@ public class EntityGraphMapper {
                 preProcessor = new QueryFolderPreProcessor(typeRegistry, entityRetriever);
                 break;
 
-            case QUERY_COLLECTION_ENTITY_TYPE:
-                preProcessor = new QueryCollectionPreProcessor(typeRegistry, entityRetriever);
-                break;
-
             case README_ENTITY_TYPE:
                 preProcessor = new ReadmePreProcessor(typeRegistry, entityRetriever, graph, restoreHandlerV1);
                 break;
 
+            case QUERY_COLLECTION_ENTITY_TYPE:
+                preProcessor = new QueryCollectionPreProcessor(typeRegistry, entityRetriever);
+                break;
         }
 
         return preProcessor;
