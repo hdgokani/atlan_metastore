@@ -4,6 +4,7 @@ import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
@@ -22,6 +23,7 @@ import java.util.Collections;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.ASSET;
 
 public class ReadmePreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ReadmePreProcessor.class);
@@ -71,7 +73,9 @@ public class ReadmePreProcessor implements PreProcessor {
                 GraphTransactionInterceptor.addToVertexStateCache(vertex.getId(), AtlasEntity.Status.ACTIVE);
                 restoreHandlerV1.restoreEntities(Collections.singletonList(vertex));
             }
-            context.cacheEntity(entity.getGuid(), vertex, entityType);
+            String localGuid = context.getDiscoveryContext().getReferencedGuids().get(((AtlasObjectId) entity.getRelationshipAttribute(ASSET)).getGuid());
+            entity.setGuid(GraphHelper.getGuid(vertex));
+            context.updateEntityReferences(localGuid, entity, entityType, vertex);
         }
         requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(vertex, entity.getAttributes().keySet()));
         requestContext.cacheDifferentialEntity(entity);
@@ -89,7 +93,7 @@ public class ReadmePreProcessor implements PreProcessor {
     }
 
     public String createQualifiedName(AtlasEntity entity) throws AtlasBaseException {
-        AtlasObjectId asset = (AtlasObjectId) entity.getRelationshipAttribute("asset");
+        AtlasObjectId asset = (AtlasObjectId) entity.getRelationshipAttribute(ASSET);
         String guid = asset.getGuid();
         if(StringUtils.isEmpty(guid))
             guid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(graph, typeRegistry.getEntityTypeByName(asset.getTypeName()), asset.getUniqueAttributes());
