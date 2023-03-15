@@ -72,6 +72,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.getStaticFileAsString;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
 
@@ -103,7 +104,7 @@ public class PolicyTransformerImpl {
     private static final String RESOURCE_SERVICE_DEF_PATH = "/service-defs/";
 
     private static final String RESOURCE_SERVICE_DEF_ATLAS = RESOURCE_SERVICE_DEF_PATH + "ranger-servicedef-atlas.json";
-    private static final String RESOURCE_SERVICE_DEF_ATLAS_TAG = RESOURCE_SERVICE_DEF_PATH + "ranger-servicedef-tag.json";
+    private static final String RESOURCE_SERVICE_DEF_ATLAS_TAG = RESOURCE_SERVICE_DEF_PATH + "ranger-servicedef-atlas_tag.json";
 
     private static final String RESOURCE_POLICY_TRANSFORMER = "templates/PolicyCacheTransformer.json";
 
@@ -169,7 +170,8 @@ public class PolicyTransformerImpl {
                 servicePolicies.setPolicies(policies);
                 servicePolicies.setServiceId(service.getGuid());
 
-                servicePolicies.setServiceDef(getResourceAsObject(RESOURCE_SERVICE_DEF_ATLAS, RangerServiceDef.class));
+                String serviceDefName = RESOURCE_SERVICE_DEF_PATH + "atlas-servicedef-" + serviceName;
+                servicePolicies.setServiceDef(getResourceAsObject(serviceDefName, RangerServiceDef.class));
 
 
                 //Process tag based policies
@@ -186,7 +188,8 @@ public class PolicyTransformerImpl {
                         tagPolicies.setPolicyUpdateTime(new Date());
                         tagPolicies.setServiceId(tagService.getGuid());
 
-                        tagPolicies.setServiceDef(getResourceAsObject(RESOURCE_SERVICE_DEF_ATLAS_TAG, RangerServiceDef.class));
+                        String tagServiceDefName = RESOURCE_SERVICE_DEF_PATH + "atlas-servicedef-" + tagService.getAttribute(NAME);
+                        tagPolicies.setServiceDef(getResourceAsObject(tagServiceDefName, RangerServiceDef.class));
 
                         servicePolicies.setTagPolicies(tagPolicies);
                     }
