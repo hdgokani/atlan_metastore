@@ -1,6 +1,5 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.readme;
 
-import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
@@ -20,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Collections;
 
+import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
@@ -60,26 +60,29 @@ public class ReadmePreProcessor implements PreProcessor {
     }
 
     private void processCreateReadme(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
-        RequestContext requestContext = RequestContext.get();
-        AtlasPerfMetrics.MetricRecorder metricRecorder = requestContext.startMetricRecord("processCreateReadme");
-        String entityQualifiedName = createQualifiedName(entity);
+        AtlasObjectId asset = (AtlasObjectId) entity.getRelationshipAttribute(ASSET);
+        if (asset != null) {
+            RequestContext requestContext = RequestContext.get();
+            AtlasPerfMetrics.MetricRecorder metricRecorder = requestContext.startMetricRecord("processCreateReadme");
+            String entityQualifiedName = createQualifiedName(asset);
 
-        entity.setAttribute(QUALIFIED_NAME, entityQualifiedName);
+            entity.setAttribute(QUALIFIED_NAME, entityQualifiedName);
 
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-        AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(graph, entityType, entity.getAttributes());
-        if(vertex != null){
-            if(vertex.getProperty(STATE_PROPERTY_KEY, String.class).equals(DELETED.name())){
-                GraphTransactionInterceptor.addToVertexStateCache(vertex.getId(), AtlasEntity.Status.ACTIVE);
-                restoreHandlerV1.restoreEntities(Collections.singletonList(vertex));
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+            AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(graph, entityType, entity.getAttributes());
+            if (vertex != null) {
+                if (vertex.getProperty(STATE_PROPERTY_KEY, String.class).equals(DELETED.name())) {
+                    vertex.setProperty(STATE_PROPERTY_KEY, ACTIVE.name());
+                    restoreHandlerV1.restoreEntities(Collections.singletonList(vertex));
+                }
+                String internalGuidOfReadme = context.getDiscoveryContext().getReferencedGuids().get(asset.getGuid());
+                entity.setGuid(GraphHelper.getGuid(vertex));
+                context.updateEntityReferences(internalGuidOfReadme, entity, entityType, vertex);
             }
-            String localGuid = context.getDiscoveryContext().getReferencedGuids().get(((AtlasObjectId) entity.getRelationshipAttribute(ASSET)).getGuid());
-            entity.setGuid(GraphHelper.getGuid(vertex));
-            context.updateEntityReferences(localGuid, entity, entityType, vertex);
+            requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(vertex, entity.getAttributes().keySet()));
+            requestContext.cacheDifferentialEntity(entity);
+            requestContext.endMetricRecord(metricRecorder);
         }
-        requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(vertex, entity.getAttributes().keySet()));
-        requestContext.cacheDifferentialEntity(entity);
-        requestContext.endMetricRecord(metricRecorder);
     }
     private void processUpdateReadme(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         RequestContext requestContext = RequestContext.get();
@@ -92,8 +95,7 @@ public class ReadmePreProcessor implements PreProcessor {
         requestContext.endMetricRecord(metricRecorder);
     }
 
-    public String createQualifiedName(AtlasEntity entity) throws AtlasBaseException {
-        AtlasObjectId asset = (AtlasObjectId) entity.getRelationshipAttribute(ASSET);
+    public String createQualifiedName(AtlasObjectId asset) throws AtlasBaseException {
         String guid = asset.getGuid();
         if(StringUtils.isEmpty(guid))
             guid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(graph, typeRegistry.getEntityTypeByName(asset.getTypeName()), asset.getUniqueAttributes());
