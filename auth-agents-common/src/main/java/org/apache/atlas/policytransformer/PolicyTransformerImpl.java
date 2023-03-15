@@ -170,7 +170,7 @@ public class PolicyTransformerImpl {
                 servicePolicies.setPolicies(policies);
                 servicePolicies.setServiceId(service.getGuid());
 
-                String serviceDefName = RESOURCE_SERVICE_DEF_PATH + "atlas-servicedef-" + serviceName;
+                String serviceDefName = RESOURCE_SERVICE_DEF_PATH + "atlas-servicedef-" + serviceName + ".json";
                 servicePolicies.setServiceDef(getResourceAsObject(serviceDefName, RangerServiceDef.class));
 
 
@@ -188,7 +188,7 @@ public class PolicyTransformerImpl {
                         tagPolicies.setPolicyUpdateTime(new Date());
                         tagPolicies.setServiceId(tagService.getGuid());
 
-                        String tagServiceDefName = RESOURCE_SERVICE_DEF_PATH + "atlas-servicedef-" + tagService.getAttribute(NAME);
+                        String tagServiceDefName = RESOURCE_SERVICE_DEF_PATH + "atlas-servicedef-" + tagService.getAttribute(NAME) + ".json";
                         tagPolicies.setServiceDef(getResourceAsObject(tagServiceDefName, RangerServiceDef.class));
 
                         servicePolicies.setTagPolicies(tagPolicies);
