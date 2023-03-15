@@ -26,6 +26,18 @@
           "ranger.plugin.audit.filters": "[ {'accessResult': 'DENIED', 'isAudited': true}, {'users':['atlas'] ,'isAudited':false} ]"
         }
       }
+    },
+    {
+      "typeName": "AuthService",
+      "guid": -3,
+      "attributes":
+      {
+        "qualifiedName": "auth_service_heka",
+        "name": "heka",
+        "authServiceType": "heka",
+        "tagService": "atlas_tag",
+        "authServiceConfig": {}
+      }
     }
   ]
 }
