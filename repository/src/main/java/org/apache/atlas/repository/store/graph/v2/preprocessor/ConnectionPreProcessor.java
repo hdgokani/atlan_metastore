@@ -25,8 +25,6 @@ import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
-import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -40,13 +38,10 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.repository.store.users.KeycloakStore;
-import org.apache.atlas.transformer.ConnectionPoliciesTransformer;
-import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.transformer.PreProcessorPoliciesTransformer;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
-import org.keycloak.admin.client.resource.RoleByIdResource;
 import org.keycloak.admin.client.resource.RoleResource;
-import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +52,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.repository.Constants.ACTIVE_STATE_VALUE;
+import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
+import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
+import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.util.AtlasEntityUtils.mapOf;
@@ -71,7 +68,7 @@ public class ConnectionPreProcessor implements PreProcessor {
     private final EntityGraphRetriever entityRetriever;
     private AtlasEntityStore entityStore;
     private EntityDiscoveryService discovery;
-    private ConnectionPoliciesTransformer transformer;
+    private PreProcessorPoliciesTransformer transformer;
     private KeycloakStore keycloakStore;
 
     public ConnectionPreProcessor(AtlasGraph graph,
@@ -83,7 +80,7 @@ public class ConnectionPreProcessor implements PreProcessor {
         this.entityStore = entityStore;
         this.discovery = discovery;
 
-        transformer = new ConnectionPoliciesTransformer();
+        transformer = new PreProcessorPoliciesTransformer();
         keycloakStore = new KeycloakStore();
     }
 
@@ -114,14 +111,14 @@ public class ConnectionPreProcessor implements PreProcessor {
         //create connection role
         String roleName = String.format(CONN_NAME_PATTERN, connection.getGuid());
 
-        List<String> adminUsers = (List<String>) connection.getAttribute("adminUsers");
-        List<String> adminGroups = (List<String>) connection.getAttribute("adminGroups");
-        List<String> adminRoles = (List<String>) connection.getAttribute("adminRoles");
+        List<String> adminUsers = (List<String>) connection.getAttribute(ATTR_ADMIN_USERS);
+        List<String> adminGroups = (List<String>) connection.getAttribute(ATTR_ADMIN_GROUPS);
+        List<String> adminRoles = (List<String>) connection.getAttribute(ATTR_ADMIN_ROLES);
 
         RoleRepresentation role = keycloakStore.createRoleForConnection(roleName, true, adminUsers, adminGroups, adminRoles);
 
         //create connection bootstrap policies
-        AtlasEntitiesWithExtInfo policies = transformer.transform(connection, role.getName());
+        AtlasEntitiesWithExtInfo policies = transformer.transform(connection);
 
         try {
             RequestContext.get().setPoliciesBootstrappingInProgress(true);
@@ -144,19 +141,18 @@ public class ConnectionPreProcessor implements PreProcessor {
         AtlasVertex vertex = context.getVertex(connection.getGuid());
         AtlasEntity existingConnEntity = entityRetriever.toAtlasEntity(vertex);
 
-        //create connection role
         String roleName = String.format(CONN_NAME_PATTERN, connection.getGuid());
 
         String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
         entity.setAttribute(QUALIFIED_NAME, vertexQName);
 
-        List<String> newAdminUsers = (List<String>) connection.getAttribute("adminUsers");
-        List<String> newAdminGroups = (List<String>) connection.getAttribute("adminGroups");
-        List<String> newAdminRoles = (List<String>) connection.getAttribute("adminRoles");
+        List<String> newAdminUsers = (List<String>) connection.getAttribute(ATTR_ADMIN_USERS);
+        List<String> newAdminGroups = (List<String>) connection.getAttribute(ATTR_ADMIN_GROUPS);
+        List<String> newAdminRoles = (List<String>) connection.getAttribute(ATTR_ADMIN_ROLES);
 
-        List<String> currentAdminUsers = (List<String>) existingConnEntity.getAttribute("adminUsers");
-        List<String> currentAdminGroups =(List<String>)  existingConnEntity.getAttribute("adminGroups");
-        List<String> currentAdminRoles = (List<String>) existingConnEntity.getAttribute("adminRoles");
+        List<String> currentAdminUsers = (List<String>) existingConnEntity.getAttribute(ATTR_ADMIN_USERS);
+        List<String> currentAdminGroups =(List<String>)  existingConnEntity.getAttribute(ATTR_ADMIN_GROUPS);
+        List<String> currentAdminRoles = (List<String>) existingConnEntity.getAttribute(ATTR_ADMIN_ROLES);
 
         RoleResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(roleName);
         RoleRepresentation representation = rolesResource.toRepresentation();
@@ -188,14 +184,14 @@ public class ConnectionPreProcessor implements PreProcessor {
         }
 
         //delete connection policies
-        List<AtlasEntityHeader> policies = getConnectionPolicies(connection, roleName);
+        List<AtlasEntityHeader> policies = getConnectionPolicies(connection.getGuid(), roleName);
         EntityMutationResponse response = entityStore.deleteByIds(policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 
         //delete connection role
         keycloakStore.removeRoleByName(roleName);
     }
 
-    private List<AtlasEntityHeader> getConnectionPolicies(AtlasEntity connection, String roleName) throws AtlasBaseException {
+    private List<AtlasEntityHeader> getConnectionPolicies(String guid, String roleName) throws AtlasBaseException {
         List<AtlasEntityHeader> ret = new ArrayList<>();
         
         IndexSearchParams indexSearchParams = new IndexSearchParams();
@@ -206,7 +202,7 @@ public class ConnectionPreProcessor implements PreProcessor {
         mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
 
 
-        mustClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, connection.getGuid() + "/*")));
+        mustClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, guid + "/*")));
         mustClauseList.add(mapOf("term", mapOf("policyRoles", roleName)));
 
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));

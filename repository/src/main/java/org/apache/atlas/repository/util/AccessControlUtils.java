@@ -187,7 +187,19 @@ public class AccessControlUtils {
         return getListAttribute(policyEntity, ATTR_POLICY_RESOURCES);
     }
 
+    public static List<String> getPolicyResources(AtlasEntityHeader policyEntity) throws AtlasBaseException {
+        return getListAttribute(policyEntity, ATTR_POLICY_RESOURCES);
+    }
+
+    public static List<String> getPolicyRoles(AtlasEntity policyEntity) throws AtlasBaseException {
+        return getListAttribute(policyEntity, ATTR_POLICY_ROLES);
+    }
+
     public static String getPolicyResourceCategory(AtlasEntity policyEntity) {
+        return getStringAttribute(policyEntity, ATTR_POLICY_RESOURCES_CATEGORY);
+    }
+
+    public static String getPolicyResourceCategory(AtlasEntityHeader policyEntity) {
         return getStringAttribute(policyEntity, ATTR_POLICY_RESOURCES_CATEGORY);
     }
 

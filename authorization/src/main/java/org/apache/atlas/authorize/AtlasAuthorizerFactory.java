@@ -38,6 +38,9 @@ public class AtlasAuthorizerFactory {
 
     private static volatile AtlasAuthorizer INSTANCE = null;
 
+    public static String CURRENT_AUTHORIZER_IMPL;
+    public static final String ATLAS_AUTHORIZER_IMPL = "atlas";
+
     public static AtlasAuthorizer getAtlasAuthorizer(AtlasTypeRegistry typeRegistry) throws AtlasAuthorizationException {
         AtlasAuthorizer ret = INSTANCE;
 
@@ -52,20 +55,17 @@ public class AtlasAuthorizerFactory {
                         LOG.error("Exception while fetching configuration", e);
                     }
 
-                    String authorizer = configuration != null ? configuration.getString("atlas.authorizer.impl") : "SIMPLE";
+                    CURRENT_AUTHORIZER_IMPL = configuration != null ? configuration.getString("atlas.authorizer.impl") : "SIMPLE";
                     String authorizerClass = ATLAS_AUTHORIZER;
-                    LOG.info("nikhil: authorizer {}", authorizer);
 
-                    if (StringUtils.isNotEmpty(authorizer)) {
-                        if (StringUtils.equalsIgnoreCase(authorizer, "SIMPLE")) {
+                    if (StringUtils.isNotEmpty(CURRENT_AUTHORIZER_IMPL)) {
+                        if (StringUtils.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL, "SIMPLE")) {
                             authorizerClass = SIMPLE_AUTHORIZER;
-                        } else if (StringUtils.equalsIgnoreCase(authorizer, "RANGER")) {
-                            LOG.info("Selecting Ranger authorizer");
+                        } else if (StringUtils.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL, "RANGER")) {
                             authorizerClass = RANGER_AUTHORIZER;
-                        } else if (StringUtils.equalsIgnoreCase(authorizer, "ATLAS")) {
-                            LOG.info("Selecting Atlas authorizer");
+                        } else if (StringUtils.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL, ATLAS_AUTHORIZER_IMPL)) {
                             authorizerClass = ATLAS_AUTHORIZER;
-                        } else if (StringUtils.equalsIgnoreCase(authorizer, "NONE")) {
+                        } else if (StringUtils.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL, "NONE")) {
                             authorizerClass = NONE_AUTHORIZER;
                         }
                     } else {
@@ -80,7 +80,7 @@ public class AtlasAuthorizerFactory {
                         if (authorizerMetaObject != null) {
                             INSTANCE = (AtlasAuthorizer) authorizerMetaObject.newInstance();
 
-                            if (StringUtils.equalsIgnoreCase(authorizer, "ATLAS")) {
+                            if (StringUtils.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL, ATLAS_AUTHORIZER_IMPL)) {
                                 INSTANCE.init(typeRegistry);
                             } else {
                                 INSTANCE.init();

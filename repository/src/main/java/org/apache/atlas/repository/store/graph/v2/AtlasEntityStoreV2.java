@@ -20,7 +20,6 @@ package org.apache.atlas.repository.store.graph.v2;
 
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.GraphTransactionInterceptor;
@@ -99,6 +98,8 @@ import java.util.stream.Collectors;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
+import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER_IMPL;
+import static org.apache.atlas.authorize.AtlasAuthorizerFactory.CURRENT_AUTHORIZER_IMPL;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
@@ -1684,7 +1685,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case QUERY_COLLECTION_ENTITY_TYPE:
-                preProcessor = new QueryCollectionPreProcessor(typeRegistry, entityRetriever);
+                preProcessor = new QueryCollectionPreProcessor(typeRegistry, discovery, entityRetriever, this);
                 break;
 
             case PERSONA_ENTITY_TYPE:
@@ -1700,17 +1701,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case CONNECTION_ENTITY_TYPE:
-                try {
-                    String authorizer = ApplicationProperties.get().getString("atlas.authorizer.impl", "");
-                    if ("atlas".equalsIgnoreCase(authorizer)) {
-                        preProcessor = new ConnectionPreProcessor(graph, discovery, entityRetriever, this);
-                    }
-                } catch (AtlasException e) {
-                    LOG.error("Could not fetch conf atlas.authorizer.impl");
-                    e.printStackTrace();
-                    throw new AtlasBaseException("Could not fetch conf atlas.authorizer.impl");
+                if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
+                    preProcessor = new ConnectionPreProcessor(graph, discovery, entityRetriever, this);
                 }
-
                 break;
         }
 
