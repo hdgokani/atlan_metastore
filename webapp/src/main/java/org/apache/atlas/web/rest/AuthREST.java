@@ -19,9 +19,7 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.tasks.TaskSearchParams;
-import org.apache.atlas.model.tasks.TaskSearchResult;
-import org.apache.atlas.policytransformer.PolicyTransformerImpl;
+import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.atlas.ranger.plugin.util.KeycloakUserStore;
 import org.apache.atlas.ranger.plugin.util.RangerRoles;
 import org.apache.atlas.ranger.plugin.util.RangerUserStore;
@@ -31,25 +29,20 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.io.IOException;
 
 /**
  * REST interface for CRUD operations on tasks
@@ -63,10 +56,10 @@ public class AuthREST {
     private static final Logger LOG      = LoggerFactory.getLogger(AuthREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.AuthREST");
 
-    private PolicyTransformerImpl policyTransformer;
+    private CachePolicyTransformerImpl policyTransformer;
 
     @Inject
-    public AuthREST(PolicyTransformerImpl policyTransformer) {
+    public AuthREST(CachePolicyTransformerImpl policyTransformer) {
         this.policyTransformer = policyTransformer;
     }
 
