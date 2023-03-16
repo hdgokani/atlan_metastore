@@ -9,7 +9,7 @@
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
-                "collection-admins-{guid}"
+                "collection_admins_{guid}"
             ],
             "policyActions": [
                 "add-relationship",
@@ -45,7 +45,7 @@
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
-                "collection-admins-{guid}"
+                "collection_admins_{guid}"
             ],
             "policyActions": [
                 "add-relationship",
@@ -76,7 +76,7 @@
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
-                "collection-admins-{guid}"
+                "collection_admins_{guid}"
             ],
             "policyActions": [
                 "entity-read",
@@ -103,7 +103,7 @@
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
-                "collection-viewer-{guid}"
+                "collection_viewer_{guid}"
             ],
             "policyActions": [
                 "entity-read"
@@ -128,7 +128,7 @@
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
-                "collection-admins-{guid}"
+                "collection_admins_{guid}"
             ],
             "policyActions": [
                 "entity-update-business-metadata"
@@ -153,7 +153,7 @@
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
-                "collection-admins-{guid}"
+                "collection_admins_{guid}"
             ],
             "policyActions": [
                 "entity-add-classification",
@@ -180,7 +180,7 @@
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
-                "collection-admins-{guid}"
+                "collection_admins_{guid}"
             ],
             "policyActions": [
                 "entity-add-label",
@@ -206,7 +206,7 @@
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
-                "collection-admins-{guid}"
+                "collection_admins_{guid}"
             ],
             "policyActions": [
                 "remove-relationship"
@@ -237,7 +237,7 @@
             "policyType": "allow",
             "policyServiceName": "heka",
             "policyRoles": [
-                "collection-admins-{guid}"
+                "collection_admins_{guid}"
             ],
             "policyActions": [
                 "select"

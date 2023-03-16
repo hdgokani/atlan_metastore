@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
 import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -32,6 +33,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
+import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -43,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
@@ -50,11 +53,14 @@ import static org.apache.atlas.AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_F
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_GUID_NOT_FOUND;
 
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
+import static org.apache.atlas.AtlasErrorCode.UNAUTHORIZED_CONNECTION_ADMIN;
+import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserName;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.ConnectionPreProcessor.CONN_NAME_PATTERN;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_ACCESS_CONTROL_ENABLED;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ACTIONS;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
@@ -70,6 +76,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGOR
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_ACCESS_CONTROL;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
+import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionForPolicy;
 import static org.apache.atlas.repository.util.AccessControlUtils.getEntityQualifiedName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsEnabled;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaRoleName;
@@ -133,6 +140,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             AtlasEntity parentEntity = parent.getEntity();
 
             validatePersonaPolicyRequest(policy, null, parentEntity, CREATE);
+            validateConnectionAdmin(policy);
 
             policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
             entity.setAttribute(ATTR_ACCESS_CONTROL_ENABLED, true);
@@ -144,6 +152,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
             policy.setAttribute(ATTR_POLICY_USERS, new ArrayList<>());
             policy.setAttribute(ATTR_POLICY_GROUPS, new ArrayList<>());
+
 
             //create ES alias
             aliasStore.updateAlias(parent, policy);
@@ -189,6 +198,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             AtlasEntity parentEntity = parent.getEntity();
 
             validatePersonaPolicyRequest(policy, existingPolicy, parentEntity, UPDATE);
+            validateConnectionAdmin(policy);
 
             String qName = getEntityQualifiedName(existingPolicy);
             policy.setAttribute(QUALIFIED_NAME, qName);
@@ -253,6 +263,24 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             }
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
+    private void validateConnectionAdmin(AtlasEntity policy) throws AtlasBaseException {
+
+        String subCategory = getPolicySubCategory(policy);
+        if ("metadata".equals(subCategory) || "data".equals(subCategory)) {
+            //connectionAdmins check
+
+            List<String> resources = (List<String>) policy.getAttribute(ATTR_POLICY_RESOURCES);
+            AtlasEntity connection = getConnectionForPolicy(entityRetriever, resources);
+            String connectionRoleName = String.format(CONN_NAME_PATTERN, connection.getGuid());
+
+            Set<String> userRoles = AtlasAuthorizationUtils.getRolesForCurrentUser();
+
+            if (!userRoles.contains(connectionRoleName) || !userRoles.contains("$admin")) {
+                throw new AtlasBaseException(UNAUTHORIZED_CONNECTION_ADMIN, getCurrentUserName(), connection.getGuid());
+            }
         }
     }
 

@@ -307,7 +307,9 @@ public class PolicyTransformerImpl {
 
                 boolean isConnection = false;
                 String policyCategory = getPolicyCategory(atlasPolicy);
-                if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
+                String subCategory = getPolicySubCategory(atlasPolicy);
+
+                if (POLICY_CATEGORY_PERSONA.equals(policyCategory) && ("metadata".equals(subCategory) || "data".equals(subCategory))) {
                     isConnection = isConnectionPolicy(atlasPolicy);
                 }
 

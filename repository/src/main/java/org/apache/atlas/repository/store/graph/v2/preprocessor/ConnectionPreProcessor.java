@@ -62,7 +62,7 @@ import static org.apache.atlas.util.AtlasEntityUtils.mapOf;
 public class ConnectionPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionPreProcessor.class);
 
-    private static final String CONN_NAME_PATTERN = "connection_admins_%s";
+    public static final String CONN_NAME_PATTERN = "connection_admins_%s";
 
     private final AtlasGraph graph;
     private final EntityGraphRetriever entityRetriever;

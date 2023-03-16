@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.util;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -34,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +51,7 @@ import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
 import static org.apache.atlas.util.AtlasEntityUtils.getListAttribute;
+import static org.apache.atlas.util.AtlasEntityUtils.getQualifiedName;
 import static org.apache.atlas.util.AtlasEntityUtils.getStringAttribute;
 import static org.apache.atlas.util.AtlasEntityUtils.mapOf;
 
@@ -223,6 +226,10 @@ public class AccessControlUtils {
         return getStringAttribute(policyEntity, ATTR_POLICY_SUB_CATEGORY);
     }
 
+    public static String getPolicySubCategory(AtlasEntityHeader policyEntity) {
+        return getStringAttribute(policyEntity, ATTR_POLICY_SUB_CATEGORY);
+    }
+
     public static String getPolicyType(AtlasEntity policyEntity) {
         return getStringAttribute(policyEntity, ATTR_POLICY_TYPE);
     }
@@ -253,7 +260,15 @@ public class AccessControlUtils {
             throw new AtlasBaseException("Policy assets could not be null");
         }
 
-        String[] splitted = assets.get(0).split("/");
+        AtlasEntity connection = extractConnectionFromResource(entityRetriever, assets.get(0));
+
+        return getQualifiedName(connection);
+    }
+
+    private static AtlasEntity extractConnectionFromResource(EntityGraphRetriever entityRetriever, String assetQName) throws AtlasBaseException {
+        AtlasEntity connection = null;
+
+        String[] splitted = assetQName.split("/");
         String connectionQName;
         try {
             connectionQName = String.format(CONNECTION_QN, splitted[0], splitted[1], splitted[2]);
@@ -261,11 +276,9 @@ public class AccessControlUtils {
             throw new AtlasBaseException("Failed to extract qualifiedName of the connection");
         }
 
-        if (getConnectionEntity(entityRetriever, connectionQName) != null) {
-            return connectionQName;
-        }
+        connection = getConnectionEntity(entityRetriever, connectionQName);
 
-        throw new AtlasBaseException("Could not find connection for policy");
+        return connection;
     }
 
     public static void validateUniquenessByName(AtlasGraph graph, String name, String typeName) throws AtlasBaseException {
@@ -308,6 +321,18 @@ public class AccessControlUtils {
         if (hasMatchingVertex(graph, tags, indexSearchParams)){
             throw new AtlasBaseException(String.format("Entity already exists, typeName:tags, %s:%s", typeName, tags));
         }
+    }
+
+    public static AtlasEntity getConnectionForPolicy(EntityGraphRetriever entityRetriever, List<String> resources) throws AtlasBaseException {
+        AtlasEntity ret = null;
+        if (CollectionUtils.isNotEmpty(resources)) {
+
+            String entityId = resources.get(0).split(":")[1];
+
+            ret = extractConnectionFromResource(entityRetriever, entityId);
+        }
+
+        return ret;
     }
 
     protected static boolean hasMatchingVertex(AtlasGraph graph, List<String> newTags,

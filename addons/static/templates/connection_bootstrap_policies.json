@@ -76,7 +76,7 @@
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
-                "connection-admins-{guid}"
+                "connection_admins_{guid}"
             ],
             "policyActions": [
                 "entity-read",
@@ -104,7 +104,7 @@
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
-                "connection-admins-{guid}"
+                "connection_admins_{guid}"
             ],
             "policyActions": [
                 "entity-update-business-metadata"
@@ -129,7 +129,7 @@
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
-                "connection-admins-{guid}"
+                "connection_admins_{guid}"
             ],
             "policyActions": [
                 "entity-add-classification",
@@ -156,7 +156,7 @@
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
-                "connection-admins-{guid}"
+                "connection_admins_{guid}"
             ],
             "policyActions": [
                 "entity-add-label",
@@ -182,7 +182,7 @@
             "policyType": "allow",
             "policyServiceName": "heka",
             "policyRoles": [
-                "connection-admins-{guid}"
+                "connection_admins_{guid}"
             ],
             "policyActions": [
                 "select"

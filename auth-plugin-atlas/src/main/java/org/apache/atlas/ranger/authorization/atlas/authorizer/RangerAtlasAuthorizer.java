@@ -53,6 +53,7 @@ import org.apache.atlas.ranger.plugin.policyresourcematcher.RangerPolicyResource
 import org.apache.atlas.ranger.plugin.service.RangerBasePlugin;
 import org.apache.atlas.ranger.plugin.util.RangerPerfTracer;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -63,6 +64,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Objects;
 
+import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserGroups;
+import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserName;
 import static org.apache.atlas.ranger.authorization.atlas.authorizer.RangerAtlasAuthorizerUtil.*;
 import static org.apache.atlas.ranger.services.atlas.RangerServiceAtlas.*;
 
@@ -525,6 +528,19 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         }
         return ret;
     }
+
+    @Override
+    public Set<String> getRolesForCurrentUser() {
+        Set<String> ret = new HashSet<>();
+
+        RangerBasePlugin plugin = atlasPlugin;
+        String userName = getCurrentUserName();
+
+        ret = plugin.getRolesFromUserAndGroups(userName, getCurrentUserGroups());
+
+        return ret;
+    }
+
 
     @Override
     public void scrubSearchResults(AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {
