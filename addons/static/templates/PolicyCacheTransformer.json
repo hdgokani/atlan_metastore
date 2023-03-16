@@ -5,6 +5,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*"
       ],
@@ -17,6 +18,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*"
       ],
@@ -31,6 +33,7 @@
         "end-one-entity-type:*",
         "end-one-entity-classification:*",
         "end-one-entity:{entity}",
+        "end-one-entity:{entity}/*",
 
         "end-two-entity-type:Catalog",
         "end-two-entity-type:Connection",
@@ -49,6 +52,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*"
       ],
@@ -61,6 +65,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*"
       ],
@@ -73,6 +78,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*",
         "entity-business-metadata:*"
@@ -86,6 +92,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*",
         "classification:*"
@@ -99,6 +106,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*",
         "classification:*"
@@ -112,6 +120,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*",
         "classification:*"
@@ -132,7 +141,8 @@
 
         "end-two-entity-type:*",
         "end-two-entity-classification:*",
-        "end-two-entity:{entity}"
+        "end-two-entity:{entity}",
+        "end-two-entity:{entity}/*"
       ],
       "actions": ["add-relationship"]
     }
@@ -150,7 +160,8 @@
 
         "end-two-entity-type:*",
         "end-two-entity-classification:*",
-        "end-two-entity:{entity}"
+        "end-two-entity:{entity}",
+        "end-two-entity:{entity}/*"
       ],
       "actions": ["remove-relationship"]
     }
@@ -164,6 +175,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -182,12 +194,14 @@
         "end-one-entity-type:AtlasGlossaryCategory",
         "end-one-entity-classification:*",
         "end-one-entity:{entity}",
+        "end-one-entity:{entity}/*",
 
         "end-two-entity-type:AtlasGlossary",
         "end-two-entity-type:AtlasGlossaryTerm",
         "end-two-entity-type:AtlasGlossaryCategory",
         "end-two-entity-classification:*",
-        "end-two-entity:{entity}"
+        "end-two-entity:{entity}",
+        "end-two-entity:{entity}/*"
       ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
@@ -198,6 +212,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -216,6 +231,7 @@
         "end-one-entity-type:AtlasGlossaryCategory",
         "end-one-entity-classification:*",
         "end-one-entity:{entity}",
+        "end-one-entity:{entity}/*",
 
         "end-two-entity-type:*",
         "end-two-entity-classification:*",
@@ -235,7 +251,8 @@
 
         "end-two-entity-type:*",
         "end-two-entity-classification:*",
-        "end-two-entity:{entity}"
+        "end-two-entity:{entity}",
+        "end-two-entity:{entity}/*"
       ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
@@ -246,6 +263,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -260,6 +278,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -274,6 +293,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -289,6 +309,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -304,6 +325,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -319,6 +341,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
+        "entity:{entity}/*",
         "entity-type:AtlasGlossary",
         "entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryCategory",
@@ -326,6 +349,18 @@
         "classification:*"
       ],
       "actions": ["entity-remove-classification"]
+    }
+  ],
+  "select": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity:{entity}/*",
+        "entity-type:*"
+      ],
+      "actions": ["select"]
     }
   ]
 }

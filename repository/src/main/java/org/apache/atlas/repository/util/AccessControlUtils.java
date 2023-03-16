@@ -94,6 +94,12 @@ public class AccessControlUtils {
     public static final String POLICY_CATEGORY_PURPOSE  = "purpose";
     public static final String POLICY_CATEGORY_BOOTSTRAP  = "bootstrap";
 
+    public static final String POLICY_SUB_CATEGORY_METADATA  = "metadata";
+    public static final String POLICY_SUB_CATEGORY_GLOSSARY  = "glossary";
+    public static final String POLICY_SUB_CATEGORY_DATA  = "data";
+
+
+
     private static final String CONNECTION_QN = "%s/%s/%s";
 
     public static String getTenantId(AtlasStruct entity) {
@@ -190,11 +196,11 @@ public class AccessControlUtils {
         return getListAttribute(policyEntity, ATTR_POLICY_RESOURCES);
     }
 
-    public static List<String> getPolicyResources(AtlasEntityHeader policyEntity) throws AtlasBaseException {
+    public static List<String> getPolicyResources(AtlasEntityHeader policyEntity) {
         return getListAttribute(policyEntity, ATTR_POLICY_RESOURCES);
     }
 
-    public static List<String> getPolicyRoles(AtlasEntity policyEntity) throws AtlasBaseException {
+    public static List<String> getPolicyRoles(AtlasEntity policyEntity) {
         return getListAttribute(policyEntity, ATTR_POLICY_ROLES);
     }
 
@@ -207,6 +213,10 @@ public class AccessControlUtils {
     }
 
     public static List<String> getPolicyActions(AtlasEntity policyEntity) {
+        return getListAttribute(policyEntity, ATTR_POLICY_ACTIONS);
+    }
+
+    public static List<String> getPolicyActions(AtlasEntityHeader policyEntity) {
         return getListAttribute(policyEntity, ATTR_POLICY_ACTIONS);
     }
 
@@ -265,7 +275,7 @@ public class AccessControlUtils {
         return getQualifiedName(connection);
     }
 
-    private static AtlasEntity extractConnectionFromResource(EntityGraphRetriever entityRetriever, String assetQName) throws AtlasBaseException {
+    public static AtlasEntity extractConnectionFromResource(EntityGraphRetriever entityRetriever, String assetQName) throws AtlasBaseException {
         AtlasEntity connection = null;
 
         String[] splitted = assetQName.split("/");

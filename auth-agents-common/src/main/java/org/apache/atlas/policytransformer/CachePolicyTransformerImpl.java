@@ -18,15 +18,12 @@
 
 package org.apache.atlas.policytransformer;
 
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.policytransformer.PolicyTransformerTemplate.TemplatePolicy;
 import org.apache.atlas.ranger.plugin.model.RangerPolicy;
 import org.apache.atlas.ranger.plugin.model.RangerPolicy.RangerDataMaskPolicyItem;
 import org.apache.atlas.ranger.plugin.model.RangerPolicy.RangerPolicyItem;
@@ -48,20 +45,9 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-import org.springframework.util.FileCopyUtils;
 
-
-import javax.inject.Inject;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -74,20 +60,21 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.getStaticFileAsString;
-import static org.apache.atlas.repository.util.AccessControlUtils.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
 
-@Component
-public class PolicyTransformerImpl {
-    private static final Logger LOG = LoggerFactory.getLogger(PolicyTransformerImpl.class);
+public class CachePolicyTransformerImpl {
+    private static final Logger LOG = LoggerFactory.getLogger(CachePolicyTransformerImpl.class);
 
     private static final String RESOURCES_SPLITTER = ":";
 
-    private static final String ATTR_QUALIFIED_NAME = "qualifiedName";
-    private static final String ATTR_NAME           = "name";
+    static final String ATTR_QUALIFIED_NAME = "qualifiedName";
+    static final String ATTR_NAME           = "name";
 
-    private static final String ATTR_POLICY_ACTIONS            = "policyActions";
-    private static final String ATTR_POLICY_TYPE               = "policyType";
-    private static final String ATTR_POLICY_RESOURCES          = "policyResources";
+    public static final String ATTR_POLICY_ACTIONS            = "policyActions";
+    public static final String ATTR_POLICY_TYPE               = "policyType";
+    public static final String ATTR_POLICY_RESOURCES          = "policyResources";
     private static final String ATTR_POLICY_RESOURCES_CATEGORY = "policyResourceCategory";
     private static final String ATTR_POLICY_GROUPS             = "policyGroups";
     private static final String ATTR_POLICY_USERS              = "policyUsers";
@@ -96,61 +83,27 @@ public class PolicyTransformerImpl {
     private static final String ATTR_POLICY_CONDITIONS         = "policyConditions";
     private static final String ATTR_POLICY_MASK_TYPE          = "policyMaskType";
 
-    private static final String PLACEHOLDER_ENTITY              = "{entity}";
-    private static final String PLACEHOLDER_ENTITY_TYPE         = "{entity-type}";
-
-    private static final String RESOURCE_ENTITY              = "%s:%s";
-
     private static final String RESOURCE_SERVICE_DEF_PATH = "/service-defs/";
-
-    private static final String RESOURCE_SERVICE_DEF_ATLAS = RESOURCE_SERVICE_DEF_PATH + "ranger-servicedef-atlas.json";
-    private static final String RESOURCE_SERVICE_DEF_ATLAS_TAG = RESOURCE_SERVICE_DEF_PATH + "ranger-servicedef-atlas_tag.json";
-
-    private static final String RESOURCE_POLICY_TRANSFORMER = "templates/PolicyCacheTransformer.json";
+    private static final String RESOURCE_SERVICE_DEF_PATTERN = RESOURCE_SERVICE_DEF_PATH + "atlas-servicedef-%s.json";
 
     private EntityDiscoveryService discoveryService;
-    private AtlasGraph                graph = null;
-    private AtlasTypeRegistry         typeRegistry = null;
-    private EntityGraphRetriever      entityRetriever = null;
+    private AtlasGraph                graph;
+    private EntityGraphRetriever      entityRetriever;
 
-    private static PolicyTransformerTemplate templates;
+    private PersonaCachePolicyTransformer personaTransformer;
 
-    static {
-        String jsonTemplate = null;
-        try {
-            jsonTemplate = getStaticFileAsString(RESOURCE_POLICY_TRANSFORMER);
-        } catch (IOException e) {
-            LOG.error("Failed to load PolicyCacheTransformer.json: {}", e.getMessage());
-            e.printStackTrace();
-        }
-        jsonTemplate =  jsonTemplate.replaceAll("\n", "");
-        jsonTemplate =  jsonTemplate.replaceAll("\\s", "");
-
-
-        templates = new PolicyTransformerTemplate();
-        templates.fromJsonString(jsonTemplate);
-    }
-
-    public PolicyTransformerImpl(AtlasTypeRegistry typeRegistry) {
+    public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         this.graph                = new AtlasJanusGraph();
-        this.typeRegistry         = typeRegistry;
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
+
+        personaTransformer = new PersonaCachePolicyTransformer(entityRetriever);
+
         try {
             this.discoveryService = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
         } catch (AtlasException e) {
             LOG.error("Failed to initialize discoveryService");
+            throw new AtlasBaseException(e.getCause());
         }
-    }
-
-    @Inject
-    public PolicyTransformerImpl(AtlasGraph graph,
-                                 AtlasTypeRegistry typeRegistry,
-                                 EntityGraphRetriever entityRetriever,
-                                 EntityDiscoveryService discoveryService) {
-        this.graph = graph;
-        this.typeRegistry = typeRegistry;
-        this.entityRetriever = entityRetriever;
-        this.discoveryService = discoveryService;
     }
 
     public ServicePolicies getPolicies(String serviceName, String pluginId, Long lastUpdatedTime) {
@@ -170,7 +123,7 @@ public class PolicyTransformerImpl {
                 servicePolicies.setPolicies(policies);
                 servicePolicies.setServiceId(service.getGuid());
 
-                String serviceDefName = RESOURCE_SERVICE_DEF_PATH + "atlas-servicedef-" + serviceName + ".json";
+                String serviceDefName = String.format(RESOURCE_SERVICE_DEF_PATTERN, serviceName);
                 servicePolicies.setServiceDef(getResourceAsObject(serviceDefName, RangerServiceDef.class));
 
 
@@ -188,7 +141,7 @@ public class PolicyTransformerImpl {
                         tagPolicies.setPolicyUpdateTime(new Date());
                         tagPolicies.setServiceId(tagService.getGuid());
 
-                        String tagServiceDefName = RESOURCE_SERVICE_DEF_PATH + "atlas-servicedef-" + tagService.getAttribute(NAME) + ".json";
+                        String tagServiceDefName =  String.format(RESOURCE_SERVICE_DEF_PATTERN, tagService.getAttribute(NAME));
                         tagPolicies.setServiceDef(getResourceAsObject(tagServiceDefName, RangerServiceDef.class));
 
                         servicePolicies.setTagPolicies(tagPolicies);
@@ -200,8 +153,6 @@ public class PolicyTransformerImpl {
 
         } catch (Exception e) {
             LOG.error("ERROR in getPolicies {}: ", e.getMessage());
-            LOG.error("ERROR in getPolicies {}: ", e.getStackTrace()[0]);
-            LOG.error("ERROR in getPolicies {}: ", e.getStackTrace()[1]);
             return null;
         }
 
@@ -230,27 +181,35 @@ public class PolicyTransformerImpl {
 
         for (AtlasEntityHeader atlasPolicy : atlasPolicies) {
 
-            if ("CUSTOM".equals((String) atlasPolicy.getAttribute("policyResourceCategory"))) {
+            String policyCategory = getPolicyCategory(atlasPolicy);
+            if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
 
-                List<AtlasEntityHeader> transformedAtlasPolicies = transformCustomPoliciesToAtlasPolicies(atlasPolicy);
-                List<RangerPolicy> transformedRangerPolicies = transformAtlasPoliciesToRangerPolicies(transformedAtlasPolicies, serviceType);
-                rangerPolicies.addAll(transformedRangerPolicies);
+                List<AtlasEntityHeader> transformedAtlasPolicies = personaTransformer.transform(atlasPolicy);
+                for (AtlasEntityHeader transformedPolicy : transformedAtlasPolicies) {
+                    rangerPolicies.add(toRangerPolicy(transformedPolicy, serviceType));
+                }
+
+            } else if (POLICY_CATEGORY_PURPOSE.equals(policyCategory)) {
+                rangerPolicies.add(toRangerPolicy(atlasPolicy, serviceType));
 
             } else {
-
-                RangerPolicy rangerPolicy = getRangerPolicy(atlasPolicy, serviceType);
-
-                //GET policy Item
-                setPolicyItems(rangerPolicy, atlasPolicy);
-
-                //GET policy Resources
-                setPolicyResources(rangerPolicy, atlasPolicy);
-
-                rangerPolicies.add(rangerPolicy);
+                rangerPolicies.add(toRangerPolicy(atlasPolicy, serviceType));
             }
         }
 
         return rangerPolicies;
+    }
+
+    private RangerPolicy toRangerPolicy(AtlasEntityHeader atlasPolicy, String serviceType) throws AtlasBaseException, IOException {
+        RangerPolicy rangerPolicy = getRangerPolicy(atlasPolicy, serviceType);
+
+        //GET policy Item
+        setPolicyItems(rangerPolicy, atlasPolicy);
+
+        //GET policy Resources
+        setPolicyResources(rangerPolicy, atlasPolicy);
+
+        return rangerPolicy;
     }
 
     private void setPolicyResources(RangerPolicy rangerPolicy, AtlasEntityHeader atlasPolicy) throws IOException {
@@ -280,98 +239,6 @@ public class PolicyTransformerImpl {
     private <T> T getResourceAsObject(String resourceName, Class<T> clazz) throws IOException {
         InputStream stream = getClass().getResourceAsStream(resourceName);
         return AtlasType.fromJson(stream, clazz);
-    }
-
-    private List<AtlasEntityHeader> transformCustomPoliciesToAtlasPolicies(AtlasEntityHeader atlasPolicy) throws IOException {
-        List<AtlasEntityHeader> ret = new ArrayList<>();
-
-        List<String> atlasActions = (List<String>) atlasPolicy.getAttribute(ATTR_POLICY_ACTIONS);
-        List<String> atlasResources = (List<String>) atlasPolicy.getAttribute(ATTR_POLICY_RESOURCES);
-
-        int index = 0;
-        for (String atlasAction : atlasActions) {
-            List<TemplatePolicy> currentTemplates = templates.getTemplate(atlasAction);
-            if (CollectionUtils.isEmpty(currentTemplates)) {
-                LOG.warn("PolicyTransformerImpl: Skipping unknown action {} while transforming policy {}", atlasAction, atlasPolicy.getGuid());
-                continue;
-            }
-
-            for (int i = 0 ; i < currentTemplates.size(); i++) {
-                TemplatePolicy templatePolicy = currentTemplates.get(i);
-                AtlasEntityHeader header = new AtlasEntityHeader(atlasPolicy);
-
-                header.setGuid(atlasPolicy.getGuid() + "-" + index++);
-
-                header.setAttribute(ATTR_POLICY_ACTIONS, templatePolicy.getActions());
-                header.setAttribute(ATTR_POLICY_RESOURCES_CATEGORY, templatePolicy.getPolicyResourceCategory());
-
-                boolean isConnection = false;
-                String policyCategory = getPolicyCategory(atlasPolicy);
-                String subCategory = getPolicySubCategory(atlasPolicy);
-
-                if (POLICY_CATEGORY_PERSONA.equals(policyCategory) && ("metadata".equals(subCategory) || "data".equals(subCategory))) {
-                    isConnection = isConnectionPolicy(atlasPolicy);
-                }
-
-                List<String> finalResources = new ArrayList<>();
-                for (String templateResource : templatePolicy.getResources()) {
-                    if (templateResource.contains(PLACEHOLDER_ENTITY)) {
-                        for (String atlasResource : atlasResources) {
-                            String resourceKey = templateResource.split(RESOURCES_SPLITTER)[0];
-                            String resourceValue = atlasResource.split(RESOURCES_SPLITTER)[1];
-
-                            finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY, resourceValue));
-                            finalResources.add(String.format(RESOURCE_ENTITY, resourceKey, resourceValue + "/*"));
-                        }
-
-                    } else if (templateResource.contains(PLACEHOLDER_ENTITY_TYPE)) {
-
-                        if (isConnection) {
-                            finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY_TYPE, "*"));
-                        } else {
-                            finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY_TYPE, "Process"));
-                            finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY_TYPE, "Catalog"));
-                        }
-                    } else {
-                        finalResources.add(templateResource);
-                    }
-                }
-                header.setAttribute(ATTR_POLICY_RESOURCES, finalResources);
-
-                ret.add(header);
-            }
-        }
-
-        return ret;
-    }
-
-    private boolean isConnectionPolicy(AtlasEntityHeader atlasPolicy) {
-        List<String> resources = (List<String>) atlasPolicy.getAttribute(ATTR_POLICY_RESOURCES);
-
-        if (resources.size() == 1) {
-            Map<String, Object> uniqueAttributes = new HashMap<>();
-            uniqueAttributes.put(ATTR_QUALIFIED_NAME, resources.get(0).split(":")[1]);
-
-            try {
-                entityRetriever.toAtlasEntity(new AtlasObjectId("Connection", uniqueAttributes));
-            } catch (AtlasBaseException abe) {
-                if (AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND != abe.getAtlasErrorCode()) {
-                    LOG.error("Failed to find connection entity for resource {}", resources.get(0));
-                }
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private AtlasEntityHeader getAtlasEntityHeaderForPolicy(AtlasEntityHeader atlasPolicy) {
-        AtlasEntityHeader header = new AtlasEntityHeader(atlasPolicy);
-
-        //header.setTypeName("");
-
-        return header;
     }
 
     private void setPolicyItems(RangerPolicy rangerPolicy, AtlasEntityHeader atlasPolicy) throws AtlasBaseException {
