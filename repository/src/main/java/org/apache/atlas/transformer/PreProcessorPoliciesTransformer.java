@@ -114,7 +114,7 @@ public class PreProcessorPoliciesTransformer {
 
         private static List<AtlasEntity> loadTemplate(String entityTypeName) {
             String jsonTemplate = null;
-            String templateName = String.format(TEMPLATE_FILE_NAME_PATTERN, entityTypeName);
+            String templateName = String.format(TEMPLATE_FILE_NAME_PATTERN, entityTypeName.toLowerCase());
 
             try {
                 jsonTemplate = getStaticFileAsString(templateName);
