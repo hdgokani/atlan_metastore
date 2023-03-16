@@ -185,9 +185,6 @@ public class EntityLineageService implements AtlasLineageService {
 
         appendLineageOnDemandPayload(ret, lineageOnDemandRequest);
 
-        // filtering out on-demand relations which has input & output nodes within the limit
-        cleanupRelationsOnDemand(ret);
-
         scrubLineageEntities(ret.getGuidEntityMap().values());
 
         RequestContext.get().endMetricRecord(metricRecorder);
