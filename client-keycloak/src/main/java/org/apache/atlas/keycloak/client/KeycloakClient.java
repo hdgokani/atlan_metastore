@@ -1,4 +1,22 @@
-package org.apache.atlas.web.security.client;
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.atlas.keycloak.client;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.collections.CollectionUtils;
@@ -83,7 +101,7 @@ public class KeycloakClient {
                 JSONObject object = new JSONObject(keyConf);
 
                 REALM_ID = object.getString("realm");
-                AUTH_SERVER_URL = "https://beta.atlan.dev/auth";
+                AUTH_SERVER_URL = "http://keycloak-http.keycloak.svc.cluster.local/auth";
                 CLIENT_ID = object.getString("resource");
                 GRANT_TYPE = "client_credentials";
                 CLIENT_SECRET = object.getJSONObject("credentials").getString("secret");
@@ -116,13 +134,6 @@ public class KeycloakClient {
 
     public RealmResource getRealm() {
         return keycloak.realm(REALM_ID);
-    }
-
-    public boolean isClient(String clientId) {
-      //List clientList =   keycloak.realm(REALM_ID).clients().findByClientId("apikey-04772573-d9ce-4212-a304-c24073b5875e");
-
-      LOG.info(" client List" + keycloak.realm(REALM_ID));
-      return false;
     }
 
     public List<UserRepresentation> getAllUsers() {
