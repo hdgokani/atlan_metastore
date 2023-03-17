@@ -17,9 +17,12 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.web.security.client.KeycloakClient;
 import org.apache.commons.configuration.Configuration;
 import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
 import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -31,14 +34,17 @@ import java.util.Map;
 
 @Component
 public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
+  private static final Logger LOG1 = LoggerFactory.getLogger(AtlasKeycloakAuthenticationProvider.class);
+
   private final boolean groupsFromUGI;
   private final String groupsClaim;
 
   private final KeycloakAuthenticationProvider keycloakAuthenticationProvider;
+  private final KeycloakClient keycloakClient;
 
   public AtlasKeycloakAuthenticationProvider() throws Exception {
     this.keycloakAuthenticationProvider = new KeycloakAuthenticationProvider();
-
+    this.keycloakClient = KeycloakClient.getKeycloakClient();
     Configuration configuration = ApplicationProperties.get();
     this.groupsFromUGI = configuration.getBoolean("atlas.authentication.method.keycloak.ugi-groups", true);
     this.groupsClaim = configuration.getString("atlas.authentication.method.keycloak.groups_claim");
@@ -65,6 +71,9 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
         authentication = new KeycloakAuthenticationToken(token.getAccount(), token.isInteractive(), grantedAuthorities);
       }
     }
+
+    LOG1.info(" logged in with principal {}", authentication.getPrincipal());
+    keycloakClient.isClient(authentication.getName());
 
     return authentication;
   }

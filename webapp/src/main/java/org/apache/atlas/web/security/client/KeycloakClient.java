@@ -1,0 +1,176 @@
+package org.apache.atlas.web.security.client;
+
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.KeycloakBuilder;
+import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.representations.idm.GroupRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.ws.rs.client.ClientBuilder;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static org.apache.atlas.ApplicationProperties.ATLAS_CONFIGURATION_DIRECTORY_PROPERTY;
+
+//@Component
+public class KeycloakClient {
+    public static final Logger LOG = LoggerFactory.getLogger(KeycloakClient.class);
+
+    private static KeycloakClient keycloakClient = null;
+    public static Keycloak keycloak = null;
+
+    public static final String KEYCLOAK_PROPERTIES = "keycloak.json";
+    private static final String ATLAS_LOG_DIR = "atlas.log.dir";
+
+    private static String REALM_ID;
+    private static String AUTH_SERVER_URL;
+    private static String CLIENT_ID;
+    private static String CLIENT_SECRET;
+    private static String GRANT_TYPE;
+
+
+    private KeycloakClient() {
+    }
+
+    public static KeycloakClient getKeycloakClient() {
+        if (keycloakClient == null) {
+            LOG.info("Initializing Keycloak client..");
+            try {
+                initConf();
+            } catch (IOException e) {
+                LOG.error("Failed to fetch Keycloak conf {}", e.getMessage());
+            } catch (JSONException e) {
+                LOG.error("Failed to parsing Keycloak conf {}", e.getMessage());
+            } catch (Exception e) {
+                LOG.error("Failed to connect to Keycloak {}", e.getMessage());
+            }
+            init();
+            LOG.info("Initialized Keycloak client..");
+        }
+
+        if (keycloak.isClosed()) {
+            LOG.info("Re-initializing keycloak client");
+            init();
+        }
+
+        return keycloakClient;
+    }
+
+    private static void initConf() throws Exception {
+        String confLocation = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
+
+        File confFile;
+        if (StringUtils.isNotEmpty(confLocation)) {
+            confFile = new File(confLocation, KEYCLOAK_PROPERTIES);
+
+            if (confFile.exists()) {
+                String keyConf = new String(Files.readAllBytes(confFile.toPath()), StandardCharsets.UTF_8);
+
+                JSONObject object = new JSONObject(keyConf);
+
+                REALM_ID = object.getString("realm");
+                AUTH_SERVER_URL = "https://beta.atlan.dev/auth";
+                CLIENT_ID = object.getString("resource");
+                GRANT_TYPE = "client_credentials";
+                CLIENT_SECRET = object.getJSONObject("credentials").getString("secret");
+
+                LOG.info("Keycloak conf: REALM_ID:{}, AUTH_SERVER_URL:{}, CLIENT_ID:{}, CLIENT_SECRET:{}",
+                        REALM_ID, AUTH_SERVER_URL, CLIENT_ID, CLIENT_SECRET);
+            } else {
+                throw new AtlasBaseException("Keycloak configuration file not found in location " + confLocation);
+            }
+        }
+    }
+
+    private static void init() {
+        synchronized (KeycloakClient.class) {
+            if (keycloakClient == null) {
+                keycloak = KeycloakBuilder.builder()
+                        .serverUrl(AUTH_SERVER_URL)
+                        .realm(REALM_ID)
+                        .clientId(CLIENT_ID)
+                        .clientSecret(CLIENT_SECRET)
+                        .grantType(GRANT_TYPE)
+                        .resteasyClient(new ResteasyClientBuilder().build())
+                        //.resteasyClient(ClientBuilder.newBuilder().build())
+                        .build();
+
+                keycloakClient = new KeycloakClient();
+            }
+        }
+    }
+
+    public RealmResource getRealm() {
+        return keycloak.realm(REALM_ID);
+    }
+
+    public boolean isClient(String clientId) {
+      //List clientList =   keycloak.realm(REALM_ID).clients().findByClientId("apikey-04772573-d9ce-4212-a304-c24073b5875e");
+
+      LOG.info(" client List" + keycloak.realm(REALM_ID));
+      return false;
+    }
+
+    public List<UserRepresentation> getAllUsers() {
+        int start = 0;
+        int size = 100;
+
+        List<UserRepresentation> ret = new ArrayList<>();
+
+        do {
+            List<UserRepresentation> userRepresentations = getRealm().users().list(start, size);
+            ret.addAll(userRepresentations);
+            start += size;
+
+        } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+
+        return ret;
+    }
+
+    public List<GroupRepresentation> getAllGroups() {
+
+        int start = 0;
+        int size = 100;
+
+        List<GroupRepresentation> ret = new ArrayList<>();
+
+        do {
+            List<GroupRepresentation> groupRepresentations = getRealm().groups().groups(start, size);
+            ret.addAll(groupRepresentations);
+            start += size;
+
+        } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+
+        return ret;
+    }
+
+    public List<RoleRepresentation> getAllRoles() {
+        int start = 0;
+        int size = 100;
+
+        List<RoleRepresentation> ret = new ArrayList<>();
+
+        do {
+            List<RoleRepresentation> roleRepresentations = getRealm().roles().list(start, size);
+            ret.addAll(roleRepresentations);
+            start += size;
+
+        } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+
+        return ret;
+    }
+}

@@ -525,6 +525,20 @@
             </exclusions>
         </dependency>
 
+
+
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-admin-client</artifactId>
+            <version>15.0.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.ws.rs</groupId>
+                    <artifactId>jsr311-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <!-- sentry.io dependency in webapp/pom.xml -->
         <dependency>
             <groupId>io.sentry</groupId>
