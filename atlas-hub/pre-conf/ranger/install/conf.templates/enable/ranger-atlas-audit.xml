@@ -134,6 +134,6 @@
 	</property>
 	<property>
 		<name>xasecure.audit.destination.elasticsearch.index</name>
-		<value>ranger-audit</value>
+		<value>atlas-authz-audit</value>
 	</property>
 </configuration>

@@ -69,7 +69,7 @@ public class ElasticSearchAuditDestination extends AuditDestination {
     public static final String CONFIG_PROTOCOL = "protocol";
     public static final String CONFIG_INDEX = "index";
     public static final String CONFIG_PREFIX = "atlas.audit.elasticsearch";
-    public static final String DEFAULT_INDEX = "ranger-audit";
+    public static final String DEFAULT_INDEX = "atlas-authz-audit";
 
     private String index = "index";
     private volatile RestHighLevelClient client = null;
@@ -305,6 +305,7 @@ public class ElasticSearchAuditDestination extends AuditDestination {
         doc.put("repo", auditEvent.getRepositoryName());
         doc.put("sess", auditEvent.getSessionId());
         doc.put("reqUser", auditEvent.getUser());
+        doc.put("reqEntityGuid", auditEvent.getEntityGuid());
         doc.put("reqData", auditEvent.getRequestData());
         doc.put("resource", auditEvent.getResourcePath());
         doc.put("cliIP", auditEvent.getClientIP());

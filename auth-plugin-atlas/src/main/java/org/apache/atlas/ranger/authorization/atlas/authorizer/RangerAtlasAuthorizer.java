@@ -887,6 +887,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
     class RangerAtlasAuditHandler extends RangerDefaultAuditHandler {
         private final Map<String, AuthzAuditEvent> auditEvents;
         private final String                       resourcePath;
+        private final String                        entityGuid;
         private       boolean                      denyExists = false;
 
         public RangerAtlasAuditHandler(AtlasEntityAccessRequest request, RangerServiceDef serviceDef) {
@@ -912,6 +913,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
 
             auditEvents  = new HashMap<>();
             resourcePath = rangerResource.getAsString();
+            entityGuid = request.getEntity() != null ? request.getEntity().getGuid() : null;
         }
 
         @Override
@@ -926,6 +928,11 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                 // audit event might have list of entity-types and classification-types; overwrite with the values in original request
                 if (resourcePath != null) {
                     auditEvent.setResourcePath(resourcePath);
+                }
+
+                //If entity Guid is not null set it in audit event
+                if (this.entityGuid != null) {
+                    auditEvent.setEntityGuid(this.entityGuid);
                 }
 
                 if (!result.getIsAllowed()) {

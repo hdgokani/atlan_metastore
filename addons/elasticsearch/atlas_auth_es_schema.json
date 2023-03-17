@@ -89,6 +89,9 @@
       "reqUser": {
         "type": "keyword"
       },
+      "reqEntityGuid": {
+        "type": "keyword"
+      },
       "resType": {
         "type": "keyword"
       },

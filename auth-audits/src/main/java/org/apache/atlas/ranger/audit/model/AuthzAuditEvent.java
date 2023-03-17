@@ -41,6 +41,9 @@ public class AuthzAuditEvent extends AuditEventBase {
 	@SerializedName("reqUser")
 	protected String user = null;
 
+	@SerializedName("reqEntityGuid")
+	protected String entityGuid = null;
+
 	@SerializedName("evtTime")
 	protected Date eventTime = new Date();
 
@@ -219,6 +222,14 @@ public class AuthzAuditEvent extends AuditEventBase {
 	 */
 	public void setUser(String user) {
 		this.user = user;
+	}
+
+	public String getEntityGuid() {
+		return entityGuid;
+	}
+
+	public void setEntityGuid(String entityGuid) {
+		this.entityGuid = entityGuid;
 	}
 
 	/**
@@ -534,6 +545,8 @@ public class AuthzAuditEvent extends AuditEventBase {
 		sb.append("repositoryType=").append(repositoryType)
 				.append(FIELD_SEPARATOR).append("repositoryName=")
 				.append(repositoryName).append(FIELD_SEPARATOR).append("user=")
+				.append(user).append(FIELD_SEPARATOR).append("entityGuid=")
+				.append(entityGuid).append(FIELD_SEPARATOR).append("eventTime=")
 				.append(user).append(FIELD_SEPARATOR).append("eventTime=")
 				.append(eventTime).append(FIELD_SEPARATOR)
 				.append("accessType=").append(accessType)
