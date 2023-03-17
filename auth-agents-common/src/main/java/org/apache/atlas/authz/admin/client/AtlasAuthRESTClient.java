@@ -44,7 +44,7 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
             url = url.substring(0, url.length() - 1);
         }
         adminUrl = url;
-        long tmpReadTimeout = config.getLong(configPropertyPrefix + ".atlas.authz.rest.read.timeout", 3000);
+        long tmpReadTimeout = config.getLong(configPropertyPrefix + ".policy.rest.client.read.timeoutMs", 20000);
         init(serviceName, tmpReadTimeout);
     }
 

@@ -27,14 +27,14 @@
 
 	<property>
 		<name>atlas.plugin.atlas.policy.source.impl</name>
-		<value>org.apache.atlas.ranger.admin.client.RangerAdminRESTClient</value>
+		<value>org.apache.atlas.authz.admin.client.AtlasAuthRESTClient</value>
 		<description>
 			Class to retrieve policies from the source
 		</description>
 	</property>
 
 	<property>
-		<name>atlas.plugin.atlas.policy.rest.url</name>
+		<name>atlas.plugin.atlas.authz.rest.url</name>
 		<value>http://policymanagerhost:port</value>
 		<description>
 			URL to Ranger Admin
@@ -77,7 +77,7 @@
 		<name>atlas.plugin.atlas.policy.rest.client.read.timeoutMs</name>
 		<value>30000</value>
 		<description>
-			RangerRestClient read Timeout in Milli Seconds
+			AtlasAuth read Timeout in Milli Seconds
 		</description>
 	</property>
 
