@@ -17,7 +17,8 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.web.security.client.KeycloakClient;
+import org.apache.atlas.keycloak.client.KeycloakClient;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.configuration.Configuration;
 import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
 import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
@@ -38,13 +39,13 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
 
   private final boolean groupsFromUGI;
   private final String groupsClaim;
+  private static final Logger LOG = LoggerFactory.getLogger(AtlasKeycloakAuthenticationProvider.class);
+  private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("auth.Keycloak");
 
   private final KeycloakAuthenticationProvider keycloakAuthenticationProvider;
-  private final KeycloakClient keycloakClient;
 
   public AtlasKeycloakAuthenticationProvider() throws Exception {
     this.keycloakAuthenticationProvider = new KeycloakAuthenticationProvider();
-    this.keycloakClient = KeycloakClient.getKeycloakClient();
     Configuration configuration = ApplicationProperties.get();
     this.groupsFromUGI = configuration.getBoolean("atlas.authentication.method.keycloak.ugi-groups", true);
     this.groupsClaim = configuration.getString("atlas.authentication.method.keycloak.groups_claim");
@@ -72,8 +73,29 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
       }
     }
 
-    LOG1.info(" logged in with principal {}", authentication.getPrincipal());
-    keycloakClient.isClient(authentication.getName());
+    AtlasPerfTracer perf = null;
+    try {
+
+      if (authentication.getName().startsWith("service-account-apikey")) {
+        String serviceAccountUserName = authentication.getName();
+        String apiKey = serviceAccountUserName.substring("service-account-".length());
+
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+          perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "auth.keycloak(  apiKey = " + serviceAccountUserName );
+        }
+        KeycloakClient client = KeycloakClient.getKeycloakClient();
+
+        List client1 = client.getRealm().clients().findByClientId(apiKey);
+
+        if (client1 == null || client1.size() == 0) {
+          authentication.setAuthenticated(false);
+          LOG.info("service-account-apikey is not present");
+        }
+      }
+    } finally {
+      AtlasPerfTracer.log(perf);
+    }
+
 
     return authentication;
   }
