@@ -9,7 +9,7 @@
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
-                "connection-admins-{guid}"
+                "connection_admins_{guid}"
             ],
             "policyActions": [
                 "add-relationship",
@@ -45,7 +45,7 @@
             "policyType": "allow",
             "policyServiceName": "atlas",
             "policyRoles": [
-                "connection-admins-{guid}"
+                "connection_admins_{guid}"
             ],
             "policyActions": [
                 "add-relationship",
@@ -196,5 +196,3 @@
         }
     }
 ]
-
-
