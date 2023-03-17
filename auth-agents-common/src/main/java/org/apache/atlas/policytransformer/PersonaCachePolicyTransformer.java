@@ -95,9 +95,8 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
 
                 for (String templateResource : templatePolicy.getResources()) {
                     if (templateResource.contains(PLACEHOLDER_ENTITY)) {
-                        for (String atlasResource : entityResources) {
-                            String resourceValue = atlasResource.split(RESOURCES_SPLITTER)[1];
-                            finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY, resourceValue));
+                        for (String entityResource : entityResources) {
+                            finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY, entityResource));
                         }
 
                     } else if (templateResource.contains(PLACEHOLDER_ENTITY_TYPE)) {
@@ -129,15 +128,15 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
         return ret;
     }
 
-    private boolean isConnectionPolicy(List<String> resources) {
+    private boolean isConnectionPolicy(List<String> assets) {
 
-        if (resources.size() > 1) {
+        if (assets.size() == 1) {
             try {
                 //entityRetriever.toAtlasEntity(new AtlasObjectId("Connection", uniqueAttributes));
-                extractConnectionFromResource(entityRetriever, resources.get(0));
+                extractConnectionFromResource(entityRetriever, assets.get(0));
             } catch (AtlasBaseException abe) {
                 if (AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND != abe.getAtlasErrorCode()) {
-                    LOG.error("Failed to find connection entity for resource {}", resources.get(0));
+                    LOG.error("Failed to find connection entity for resource {}", assets.get(0));
                 }
             }
 
