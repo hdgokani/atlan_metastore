@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_NAME;
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_POLICY_RESOURCES;
@@ -66,6 +67,10 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
 
         List<String> atlasActions = getPolicyActions(atlasPolicy);
         List<String> atlasResources = getPolicyResources(atlasPolicy);
+        List<String> entityResources = atlasResources.stream()
+                            .filter(x -> x.startsWith(RESOURCES_ENTITY))
+                            .map(x -> x.split(RESOURCES_SPLITTER)[1])
+                            .collect(Collectors.toList());
 
         int index = 0;
         for (String atlasAction : atlasActions) {
@@ -90,7 +95,7 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
 
                 for (String templateResource : templatePolicy.getResources()) {
                     if (templateResource.contains(PLACEHOLDER_ENTITY)) {
-                        for (String atlasResource : atlasResources) {
+                        for (String atlasResource : entityResources) {
                             String resourceValue = atlasResource.split(RESOURCES_SPLITTER)[1];
                             finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY, resourceValue));
                         }
@@ -99,7 +104,7 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                         boolean isConnection = false;
 
                         if (POLICY_SUB_CATEGORY_METADATA.equals(subCategory) || POLICY_SUB_CATEGORY_DATA.equals(subCategory)) {
-                            isConnection = isConnectionPolicy(atlasResources);
+                            isConnection = isConnectionPolicy(entityResources);
                         }
 
                         if (isConnection) {

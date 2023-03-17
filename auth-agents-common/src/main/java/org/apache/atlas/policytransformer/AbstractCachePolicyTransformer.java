@@ -32,6 +32,7 @@ public abstract class AbstractCachePolicyTransformer implements CachePolicyTrans
     public static final String PLACEHOLDER_ENTITY_TYPE = "{entity-type}";
 
     public static final String RESOURCES_SPLITTER = ":";
+    public static final String RESOURCES_ENTITY = "entity:";
     public static final String RESOURCE_ENTITY    = "%s:%s";
 
     private static final String RESOURCE_POLICY_TRANSFORMER = "templates/PolicyCacheTransformer.json";
