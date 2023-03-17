@@ -283,7 +283,8 @@ public class AccessControlUtils {
         try {
             connectionQName = String.format(CONNECTION_QN, splitted[0], splitted[1], splitted[2]);
         } catch (ArrayIndexOutOfBoundsException aib) {
-            throw new AtlasBaseException("Failed to extract qualifiedName of the connection: " + assetQName);
+            LOG.error("Failed to extract qualifiedName of the connection: " + assetQName);
+            return null;
         }
 
         connection = getConnectionEntity(entityRetriever, connectionQName);
