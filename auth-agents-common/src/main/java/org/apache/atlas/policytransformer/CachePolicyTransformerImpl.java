@@ -112,6 +112,8 @@ public class CachePolicyTransformerImpl {
     public ServicePolicies getPolicies(String serviceName, String pluginId, Long lastUpdatedTime) {
         //TODO: return only if updated
 
+        serviceName = "heka";
+
         ServicePolicies servicePolicies = new ServicePolicies();
 
         try {
