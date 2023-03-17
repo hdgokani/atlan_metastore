@@ -391,7 +391,7 @@ public class AccessControlUtils {
         }
     }
 
-    private static AtlasEntity getConnectionEntity(EntityGraphRetriever entityRetriever, String connectionQualifiedName) throws AtlasBaseException {
+    public static AtlasEntity getConnectionEntity(EntityGraphRetriever entityRetriever, String connectionQualifiedName) throws AtlasBaseException {
         AtlasObjectId objectId = new AtlasObjectId(CONNECTION_ENTITY_TYPE, mapOf(QUALIFIED_NAME, connectionQualifiedName));
 
         AtlasEntity entity = entityRetriever.toAtlasEntity(objectId);

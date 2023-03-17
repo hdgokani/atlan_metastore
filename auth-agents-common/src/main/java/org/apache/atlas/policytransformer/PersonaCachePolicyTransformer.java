@@ -44,6 +44,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGOR
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_DATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.extractConnectionFromResource;
+import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionEntity;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyActions;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResources;
@@ -133,8 +134,8 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
         if (assets.size() == 1) {
             AtlasEntity connection;
             try {
-                //entityRetriever.toAtlasEntity(new AtlasObjectId("Connection", uniqueAttributes));
-                connection = extractConnectionFromResource(entityRetriever, assets.get(0));
+                //connection = extractConnectionFromResource(entityRetriever, assets.get(0));
+                connection = getConnectionEntity(entityRetriever, assets.get(0));
             } catch (AtlasBaseException abe) {
                 LOG.error("Failed to find connection entity for resource {}", assets.get(0));
                 return false;
