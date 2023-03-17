@@ -1,9 +1,9 @@
 package org.apache.atlas.authz.admin.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.apache.atlas.ranger.authorization.utils.StringUtil;
 import org.apache.atlas.ranger.plugin.util.RangerRoles;
 import org.apache.atlas.ranger.plugin.util.RangerUserStore;
@@ -74,7 +74,7 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
     private void init(String serviceName, long readTimeout) {
         this.serviceName = serviceName;
         this.httpClient = new OkHttpClient();
-        this.httpClient.setReadTimeout(readTimeout, TimeUnit.MILLISECONDS);
+        this.httpClient.newBuilder().readTimeout(readTimeout, TimeUnit.MILLISECONDS);
     }
 
 
