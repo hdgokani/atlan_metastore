@@ -73,7 +73,6 @@ import static org.apache.atlas.ranger.services.atlas.RangerServiceAtlas.*;
 public class RangerAtlasAuthorizer implements AtlasAuthorizer {
     private static final Log LOG      = LogFactory.getLog(RangerAtlasAuthorizer.class);
     private static final Log PERF_LOG = RangerPerfTracer.getPerfLogger("atlasauth.request");
-    public String serviceId = Objects.toString(System.getenv("ATLAS_AUTHZ_SERVICE_ID"), "atlas");
 
     private static volatile RangerBasePlugin atlasPlugin = null;
     private static volatile RangerGroupUtil groupUtil = null;
@@ -877,11 +876,11 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
     class RangerAtlasPlugin extends RangerBasePlugin {
 
         RangerAtlasPlugin() {
-            super(serviceId, serviceId);
+            super("atlas", "atlas");
         }
 
         RangerAtlasPlugin(AtlasTypeRegistry typeRegistry) {
-            super(serviceId, serviceId, typeRegistry);
+            super("atlas", "atlas", typeRegistry);
         }
     }
 
