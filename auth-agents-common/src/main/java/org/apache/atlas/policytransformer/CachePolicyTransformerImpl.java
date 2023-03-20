@@ -363,6 +363,7 @@ public class CachePolicyTransformerImpl {
         Set<String> attributes = new HashSet<>();
         attributes.add("name");
         attributes.add("policyCategory");
+        attributes.add("policySubCategory");
         attributes.add("policyType");
         attributes.add("policyServiceName");
         attributes.add("policyUsers");

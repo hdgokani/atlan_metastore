@@ -283,7 +283,8 @@ public class AccessControlUtils {
         try {
             connectionQName = String.format(CONNECTION_QN, splitted[0], splitted[1], splitted[2]);
         } catch (ArrayIndexOutOfBoundsException aib) {
-            throw new AtlasBaseException("Failed to extract qualifiedName of the connection: " + assetQName);
+            LOG.error("Failed to extract qualifiedName of the connection: " + assetQName);
+            return null;
         }
 
         connection = getConnectionEntity(entityRetriever, connectionQName);
@@ -390,7 +391,7 @@ public class AccessControlUtils {
         }
     }
 
-    private static AtlasEntity getConnectionEntity(EntityGraphRetriever entityRetriever, String connectionQualifiedName) throws AtlasBaseException {
+    public static AtlasEntity getConnectionEntity(EntityGraphRetriever entityRetriever, String connectionQualifiedName) throws AtlasBaseException {
         AtlasObjectId objectId = new AtlasObjectId(CONNECTION_ENTITY_TYPE, mapOf(QUALIFIED_NAME, connectionQualifiedName));
 
         AtlasEntity entity = entityRetriever.toAtlasEntity(objectId);

@@ -44,6 +44,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGOR
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_DATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.extractConnectionFromResource;
+import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionEntity;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyActions;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResources;
@@ -131,19 +132,17 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
     private boolean isConnectionPolicy(List<String> assets) {
 
         if (assets.size() == 1) {
+            AtlasEntity connection;
             try {
-                //entityRetriever.toAtlasEntity(new AtlasObjectId("Connection", uniqueAttributes));
-                extractConnectionFromResource(entityRetriever, assets.get(0));
+                //connection = extractConnectionFromResource(entityRetriever, assets.get(0));
+                connection = getConnectionEntity(entityRetriever, assets.get(0));
             } catch (AtlasBaseException abe) {
-                if (AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND != abe.getAtlasErrorCode()) {
-                    LOG.error("Failed to find connection entity for resource {}", assets.get(0));
-                }
+                LOG.error("Failed to find connection entity for resource {}", assets.get(0));
+                return false;
             }
-
-            return true;
+            return connection != null;
         }
 
         return false;
     }
-
 }
