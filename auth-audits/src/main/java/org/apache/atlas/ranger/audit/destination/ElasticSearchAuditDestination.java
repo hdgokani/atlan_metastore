@@ -311,7 +311,7 @@ public class ElasticSearchAuditDestination extends AuditDestination {
         doc.put("cliIP", auditEvent.getClientIP());
         doc.put("logType", auditEvent.getLogType());
         doc.put("result", auditEvent.getAccessResult());
-        doc.put("policy", auditEvent.getPolicyId());
+        doc.put("policyId", auditEvent.getPolicyId());
         doc.put("repoType", auditEvent.getRepositoryType());
         doc.put("resType", auditEvent.getResourceType());
         doc.put("reason", auditEvent.getResultReason());
