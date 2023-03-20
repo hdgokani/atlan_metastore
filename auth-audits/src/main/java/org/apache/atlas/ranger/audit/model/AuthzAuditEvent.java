@@ -66,8 +66,8 @@ public class AuthzAuditEvent extends AuditEventBase {
 	@SerializedName("agent")
 	protected String agentId = null;
 
-	@SerializedName("policy")
-	protected String policyId = "0";
+	@SerializedName("policyId")
+	protected String policyId = "-1";
 
 	@SerializedName("reason")
 	protected String resultReason = null;
