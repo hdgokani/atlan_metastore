@@ -19,6 +19,7 @@
 package org.apache.atlas.policytransformer;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
@@ -40,6 +41,7 @@ import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -111,6 +113,7 @@ public class CachePolicyTransformerImpl {
 
     public ServicePolicies getPolicies(String serviceName, String pluginId, Long lastUpdatedTime) {
         //TODO: return only if updated
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getPolicies" + serviceName);
 
         ServicePolicies servicePolicies = new ServicePolicies();
 
@@ -159,11 +162,12 @@ public class CachePolicyTransformerImpl {
             return null;
         }
 
-
+        RequestContext.get().endMetricRecord(recorder);
         return servicePolicies;
     }
 
     private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service) throws AtlasBaseException, IOException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getServicePolicies");
         List<RangerPolicy> servicePolicies = new ArrayList<>();
 
         String serviceName = (String) service.getAttribute("name");
@@ -175,6 +179,7 @@ public class CachePolicyTransformerImpl {
             servicePolicies = transformAtlasPoliciesToRangerPolicies(atlasPolicies, serviceType);
         }
 
+        RequestContext.get().endMetricRecord(recorder);
         return servicePolicies;
     }
 

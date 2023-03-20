@@ -137,7 +137,6 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                 //connection = extractConnectionFromResource(entityRetriever, assets.get(0));
                 connection = getConnectionEntity(entityRetriever, assets.get(0));
             } catch (AtlasBaseException abe) {
-                LOG.error("Failed to find connection entity for resource {}", assets.get(0));
                 return false;
             }
             return connection != null;
