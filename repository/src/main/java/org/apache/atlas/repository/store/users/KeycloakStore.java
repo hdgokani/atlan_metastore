@@ -37,6 +37,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.NotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,6 +46,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasErrorCode.RESOURCE_NOT_FOUND;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaGroups;
 
 public class KeycloakStore {
@@ -74,9 +76,6 @@ public class KeycloakStore {
 
     public RoleRepresentation createRoleForConnection(String name, boolean isComposite,
                                          List<String> users, List<String> groups, List<String> roles) throws AtlasBaseException {
-
-        RolesResource rolesResource      = KeycloakClient.getKeycloakClient().getRealm().roles();
-        RoleByIdResource rolesIdResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
 
         List<UserRepresentation> roleUsers = new ArrayList<>();
         UsersResource usersResource = null;
@@ -114,18 +113,14 @@ public class KeycloakStore {
             }
         }
 
-        //TODO: remove discrepancy to pass roleName instead of roleId
         List<RoleRepresentation> roleRoles = new ArrayList<>();
-/*
+        RolesResource rolesResource      = KeycloakClient.getKeycloakClient().getRealm().roles();
+        RoleByIdResource rolesIdResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
+
         if (CollectionUtils.isNotEmpty(roles)) {
             for (String roleId : roles) {
-                roleRoles.add(rolesIdResource.getRole(roleId));
-            }
-        }
-*/
-        if (CollectionUtils.isNotEmpty(roles)) {
-            for (String roleName : roles) {
-                roleRoles.add(rolesResource.get(roleName).toRepresentation());
+                RoleRepresentation role = getRoleById(rolesIdResource, roleId);
+                roleRoles.add(role);
             }
         }
 
@@ -416,6 +411,7 @@ public class KeycloakStore {
         }
 
         RolesResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles();
+        RoleByIdResource rolesIdResource = KeycloakClient.getKeycloakClient().getRealm().rolesById();
 
         if (newRoles == null) {
             newRoles = new ArrayList<>();
@@ -428,17 +424,19 @@ public class KeycloakStore {
         List<String> rolesToAdd    = (List<String>) CollectionUtils.removeAll(newRoles, existingRoles);
         List<String> rolesToRemove = (List<String>) CollectionUtils.removeAll(existingRoles, newRoles);
 
-        for (String subRoleName : rolesToAdd) {
-            LOG.info("Adding role {} to role {}", subRoleName, roleName);
-            RoleResource subrRoleResource = rolesResource.get(subRoleName);
+        for (String subRoleId : rolesToAdd) {
+            LOG.info("Adding role {} to role {}", subRoleId, roleName);
+            RoleRepresentation keyRole = getRoleById(rolesIdResource, subRoleId);
+            RoleResource subrRoleResource = rolesResource.get(keyRole.getName());
 
             connRoleResource.addComposites(Collections.singletonList(subrRoleResource.toRepresentation()));
             connRoleResource.update(connRoleResource.toRepresentation());
         }
 
-        for (String subRoleName : rolesToRemove) {
-            LOG.info("removing role {} from role {}", subRoleName, roleName);
-            RoleResource subrRoleResource = rolesResource.get(subRoleName);
+        for (String subRoleId : rolesToRemove) {
+            LOG.info("removing role {} from role {}", subRoleId, roleName);
+            RoleRepresentation keyRole = getRoleById(rolesIdResource, subRoleId);
+            RoleResource subrRoleResource = rolesResource.get(keyRole.getName());
 
             connRoleResource.deleteComposites(Collections.singletonList(subrRoleResource.toRepresentation()));
             connRoleResource.update(connRoleResource.toRepresentation());
@@ -459,6 +457,19 @@ public class KeycloakStore {
 
             rolesResource.remove();
             LOG.info("Removed keycloak role with name {}", roleName);
+        }
+    }
+
+    private RoleRepresentation getRoleById(RoleByIdResource idResource, String roleId) throws AtlasBaseException {
+
+        try {
+            return idResource.getRole(roleId);
+        } catch (NotFoundException nfe) {
+            LOG.error("Role not found with id {}", roleId);
+            throw new AtlasBaseException(RESOURCE_NOT_FOUND, "Role with id " + roleId);
+        } catch (Exception e) {
+            LOG.error("Role not found with id/name {}: {}", roleId, e.getMessage());
+            throw new AtlasBaseException(e);
         }
     }
 }
