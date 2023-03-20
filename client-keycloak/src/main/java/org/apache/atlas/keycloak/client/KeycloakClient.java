@@ -101,13 +101,13 @@ public class KeycloakClient {
                 JSONObject object = new JSONObject(keyConf);
 
                 REALM_ID = object.getString("realm");
-                AUTH_SERVER_URL = "http://keycloak-http.keycloak.svc.cluster.local/auth";
+                AUTH_SERVER_URL = object.getString("auth-server-url");
                 CLIENT_ID = object.getString("resource");
                 GRANT_TYPE = "client_credentials";
                 CLIENT_SECRET = object.getJSONObject("credentials").getString("secret");
 
-                LOG.info("Keycloak conf: REALM_ID:{}, AUTH_SERVER_URL:{}, CLIENT_ID:{}, CLIENT_SECRET:{}",
-                        REALM_ID, AUTH_SERVER_URL, CLIENT_ID, CLIENT_SECRET);
+                LOG.info("Keycloak conf: REALM_ID:{}, AUTH_SERVER_URL:{}, CLIENT_ID:{}",
+                        REALM_ID, AUTH_SERVER_URL, CLIENT_ID);
             } else {
                 throw new AtlasBaseException("Keycloak configuration file not found in location " + confLocation);
             }
