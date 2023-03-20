@@ -1,5 +1,6 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.readme;
 
+import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
@@ -72,7 +73,7 @@ public class ReadmePreProcessor implements PreProcessor {
             AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(graph, entityType, entity.getAttributes());
             if (vertex != null) {
                 if (vertex.getProperty(STATE_PROPERTY_KEY, String.class).equals(DELETED.name())) {
-                    vertex.setProperty(STATE_PROPERTY_KEY, ACTIVE.name());
+                    GraphTransactionInterceptor.addToVertexStateCache(vertex.getId(), AtlasEntity.Status.ACTIVE);
                     restoreHandlerV1.restoreEntities(Collections.singletonList(vertex));
                 }
                 String internalGuidOfReadme = context.getDiscoveryContext().getReferencedGuids().get(asset.getGuid());
