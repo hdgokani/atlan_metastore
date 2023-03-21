@@ -63,7 +63,7 @@ import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import static org.apache.atlas.accesscontrol.AccessControlUtil.RESOURCE_PREFIX;
 
-@Component
+//@Component
 public class RangerClient {
     private static final Logger LOG = LoggerFactory.getLogger(RangerClient.class);
 
