@@ -265,6 +265,7 @@ public enum AtlasErrorCode {
     FAILED_TO_CREATE_GLOSSARY_TERM(500, "ATLAS-500-00-016", "Error occurred while creating glossary term: {0}"),
     FAILED_TO_UPDATE_GLOSSARY_TERM(500, "ATLAS-500-00-017", "Error occurred while updating glossary term: {0}"),
     REPAIR_INDEX_FAILED(500, "ATLAS-500-00-018", "Error occurred while repairing indices: {0}"),
+    INDEX_SEARCH_FAILED(400, "ATLAS-400-00-102", "Error occurred while running direct index query on ES: {0}"),
     DEPRECATED_API(400, "ATLAS-400-00-103", "Deprecated API. Use {0} instead"),
     DISABLED_API(400, "ATLAS-400-00-104", "API temporarily disabled. Reason: {0}"),
     HAS_LINEAGE_GET_EDGE_FAILED(500, "ATLAS-500-00-019", "Error occurred while getting edge between vertices for hasLineage migration: {0}"),
@@ -278,12 +279,12 @@ public enum AtlasErrorCode {
     NO_LINEAGE_CONSTRAINTS_FOR_GUID(404, "ATLAS-404-00-016", "No lineage constraints found for requested entity with guid : {0}"),
     LINEAGE_ON_DEMAND_NOT_ENABLED(400, "ATLAS-400-00-100", "Lineage on demand config: {0} is not enabled"),
 
-    INDEX_SEARCH_FAILED(400, "ATLAS-400-00-107", "Error occurred while running direct index query on ES: {0}"),
     INDEX_ALIAS_FAILED(400, "ATLAS-400-00-108", "Error occurred while {0} ES alias: {1}"),
     JSON_ERROR(400, "ATLAS-400-00-109", "Error occurred putting object into JSONObject: {0}"),
     RANGER_ROLE_MUTATION_FAILED(400, "ATLAS-400-00-110", "Failed to {0} Ranger role {1}: {2}"),
     RANGER_POLICY_MUTATION_FAILED(400, "ATLAS-400-00-111", "Failed to {0} Ranger policy: {1}"),
-    RANGER_POLICY_FIND_FAILED(400, "ATLAS-400-00-112", "Failed to find Ranger policy by {0}: {1}");
+    RANGER_POLICY_FIND_FAILED(400, "ATLAS-400-00-112", "Failed to find Ranger policy by {0}: {1}"),
+    INVALID_LINEAGE_REQUEST(400, "ATLAS-400-00-108", "Invalid Lineage get request.");
 
     private String errorCode;
     private String errorMessage;
