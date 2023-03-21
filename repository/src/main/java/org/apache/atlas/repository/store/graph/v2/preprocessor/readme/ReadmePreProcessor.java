@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Collections;
 
-import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
+import static org.apache.atlas.AtlasErrorCode.README_FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
@@ -83,6 +83,9 @@ public class ReadmePreProcessor implements PreProcessor {
             requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(vertex, entity.getAttributes().keySet()));
             requestContext.cacheDifferentialEntity(entity);
             requestContext.endMetricRecord(metricRecorder);
+        }
+        else{
+            throw new AtlasBaseException(README_FAILED);
         }
     }
     private void processUpdateReadme(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
