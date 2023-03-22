@@ -784,7 +784,9 @@
         <module>server-api</module>
         <module>notification</module>
         <module>client</module>
+        <module>client-keycloak</module>
         <module>graphdb</module>
+        
         <module>repository</module>
         <module>authorization</module>
         <module>dashboardv2</module>
@@ -818,6 +820,7 @@
 
         <module>distro</module>
         <module>atlas-examples</module>
+        <module>client-keycloak</module>
     </modules>
 
     <repositories>
