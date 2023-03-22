@@ -377,8 +377,9 @@ public class EntityGraphMapper {
                     PreProcessor preProcessor = getPreProcessor(entityType.getTypeName());
                     if (preProcessor != null) {
                         preProcessor.processAttributes(createdEntity, context, CREATE);
-                        if(entityType.getTypeName().equals(README_ENTITY_TYPE))
+                        if(entityType.getTypeName().equals(README_ENTITY_TYPE)) {
                             guid = createdEntity.getGuid();
+                        }
                     }
                     AtlasVertex vertex = context.getVertex(guid);
 
