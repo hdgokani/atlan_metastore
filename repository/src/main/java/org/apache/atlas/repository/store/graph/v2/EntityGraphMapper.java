@@ -589,7 +589,7 @@ public class EntityGraphMapper {
             case README_ENTITY_TYPE:
                 preProcessor = new ReadmePreProcessor(typeRegistry, entityRetriever, graph, restoreHandlerV1);
                 break;
-                
+
             case PERSONA_ENTITY_TYPE:
             case PURPOSE_ENTITY_TYPE:
                 preProcessor = new AccessControlPreProcessor(typeRegistry, graph, entityRetriever);
