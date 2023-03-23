@@ -113,8 +113,8 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "LINK_FOLDERS",
-                "qualifiedName": "LINK_FOLDERS",
+                "name": "LINK_FOLDERS_USER",
+                "qualifiedName": "LINK_FOLDERS_USER",
                 "policyCategory": "bootstrap",
                 "policyServiceName": "atlas",
                 "policyType": "allow",

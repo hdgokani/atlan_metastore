@@ -2047,36 +2047,6 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "DENY_CONNECTION_UPDATE",
-                "qualifiedName": "DENY_CONNECTION_UPDATE",
-                "policyCategory": "bootstrap",
-                "policyServiceName": "atlas",
-                "policyType": "deny",
-                "policyUsers":
-                [
-                    "{USER}"
-                ],
-                "policyGroups":
-                [],
-                "policyRoles":
-                [],
-                "policyResourceCategory": "ENTITY",
-                "policyResources":
-                [
-                    "entity-type:Connection",
-                    "entity-classification:*",
-                    "entity:*"
-                ],
-                "policyActions":
-                [
-                    "entity-update"
-                ]
-            }
-        },
-        {
-            "typeName": "AuthPolicy",
-            "attributes":
-            {
                 "name": "EIPA_ATLAS_SERVICE",
                 "qualifiedName": "EIPA_ATLAS_SERVICE",
                 "policyCategory": "bootstrap",

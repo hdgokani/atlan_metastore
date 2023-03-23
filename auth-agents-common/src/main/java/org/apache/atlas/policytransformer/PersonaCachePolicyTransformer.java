@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.policytransformer;
 
+import joptsimple.internal.Strings;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -72,6 +73,12 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                             .filter(x -> x.startsWith(RESOURCES_ENTITY))
                             .map(x -> x.split(RESOURCES_SPLITTER)[1])
                             .collect(Collectors.toList());
+
+        if (atlasPolicy.getGuid().equals("00c1dbb4-bfbe-49b4-91e2-881a4fa85ebc")) {
+            LOG.info("nikhil:");
+            LOG.info(Strings.join(atlasResources, ", "));
+            LOG.info(Strings.join(entityResources, ", "));
+        }
 
         int index = 0;
         for (String atlasAction : atlasActions) {
@@ -137,7 +144,6 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                 //connection = extractConnectionFromResource(entityRetriever, assets.get(0));
                 connection = getConnectionEntity(entityRetriever, assets.get(0));
             } catch (AtlasBaseException abe) {
-                LOG.error("Failed to find connection entity for resource {}", assets.get(0));
                 return false;
             }
             return connection != null;
