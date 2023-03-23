@@ -184,7 +184,7 @@ public enum AtlasErrorCode {
     PAGINATION_CAN_ONLY_BE_USED_WITH_DEPTH_ONE(400, "ATLAS-400-00-103", "Pagination can be used only when depth is 1"),
     CANT_CALCULATE_VERTEX_COUNTS_WITHOUT_PAGINATION(400, "ATLAS-400-00-104", "Vertex counts can't be calculated without pagination"),
     FORBIDDEN_TYPENAME(400,"ATLAS-400-00-107", "Forbidden type: Can not pass builtin type {0}"),
-    README_FAILED(400,"ATLAS-400-00-108", "Asset is required for readme creation"),
+    README_FAILED(400,"ATLAS-400-00-108", "Readme creation failed for {0}: Asset is required"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
