@@ -154,7 +154,7 @@ public class PersonaPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreatePersona");
 
         validateNoPoliciesAttached((AtlasEntity) entity);
-        validateUniquenessByName(graph, getEntityName((AtlasEntity) entity), PERSONA_ENTITY_TYPE);
+        //validateUniquenessByName(graph, getEntityName((AtlasEntity) entity), PERSONA_ENTITY_TYPE);
 
         String tenantId = getTenantId(entity);
 
@@ -189,10 +189,10 @@ public class PersonaPreProcessor implements PreProcessor {
         entity.setAttribute(QUALIFIED_NAME, vertexQName);
         entity.setAttribute(ATTR_PERSONA_ROLE_ID, getPersonaRoleId(existingPersonaEntity));
 
-        String newName = getEntityName(persona);
+        /*String newName = getEntityName(persona);
         if (!newName.equals(getEntityName(existingPersonaEntity))) {
             validateUniquenessByName(graph, getEntityName(persona), PERSONA_ENTITY_TYPE);
-        }
+        }*/
 
         boolean isEnabled = getIsEnabled(persona);
         if (getIsEnabled(existingPersonaEntity) != isEnabled) {

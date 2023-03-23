@@ -139,10 +139,10 @@ public class PurposePreProcessor implements PreProcessor {
             updatePoliciesIsEnabledAttr(context, existingPurposeEntity, isEnabled);
         }
 
-        String newName = getEntityName(purpose);
+        /*String newName = getEntityName(purpose);
         if (!newName.equals(getEntityName(existingPurposeEntity))) {
             validateUniquenessByName(graph, newName, PURPOSE_ENTITY_TYPE);
-        }
+        }*/
 
         List<String> newTags = getPurposeTags(purpose);
 
@@ -203,7 +203,7 @@ public class PurposePreProcessor implements PreProcessor {
             throw new AtlasBaseException(BAD_REQUEST, "Please provide purposeClassifications for Purpose");
         }
 
-        validateUniquenessByName(graph, getEntityName(purpose), PURPOSE_ENTITY_TYPE);
+        //validateUniquenessByName(graph, getEntityName(purpose), PURPOSE_ENTITY_TYPE);
         validateUniquenessByTags(graph, tags, PURPOSE_ENTITY_TYPE);
     }
 
