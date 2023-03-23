@@ -180,7 +180,8 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
             "/api/atlas/admin/pushMetricsToStatsd",
             "/api/atlas/v2/auth/download/policies/*",
             "/api/atlas/v2/auth/download/roles/*",
-            "/api/atlas/v2/auth/download/users/*"
+            "/api/atlas/v2/auth/download/users/*",
+            "/api/atlas/v2/migration/bootstrap/*"
             ));
 
         if (!keycloakEnabled) {
