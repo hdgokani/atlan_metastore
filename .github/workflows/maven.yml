@@ -99,11 +99,7 @@ jobs:
       - name: Check out into atlan repo
         uses: actions/checkout@v2
         with:
-<<<<<<< HEAD
-          ref: accesscontrol
-=======
           ref: ${{ steps.get_branch.outputs.branch }}
->>>>>>> beta
           repository: atlanhq/atlan
           token: ${{ secrets.my_pat }}
 
@@ -116,17 +112,9 @@ jobs:
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
-<<<<<<< HEAD
-          branch: accesscontrol
-=======
           branch: ${{ steps.get_branch.outputs.branch }}
->>>>>>> beta
           author_name: atlan-ci
           author_email: it@atlan.com
           message: '${{ github.event.repository.name }}'
           default_author: user_info
-<<<<<<< HEAD
-          push: origin accesscontrol
-=======
           push: origin ${{ steps.get_branch.outputs.branch }}
->>>>>>> beta
