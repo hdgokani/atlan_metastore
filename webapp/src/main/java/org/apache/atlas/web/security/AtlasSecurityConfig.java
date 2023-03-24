@@ -56,7 +56,6 @@ import org.springframework.security.web.authentication.DelegatingAuthenticationE
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
-import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -72,6 +71,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 import static org.apache.atlas.web.filters.HeadersUtil.SERVER_KEY;
@@ -89,11 +89,14 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
     private final AtlasAuthenticationFilter atlasAuthenticationFilter;
     private final AtlasCSRFPreventionFilter csrfPreventionFilter;
     private final AtlasAuthenticationEntryPoint atlasAuthenticationEntryPoint;
+    private final AtlasXSSPreventionFilter      atlasXSSPreventionFilter;
 
     // Our own Atlas filters need to be registered as well
     private final Configuration configuration;
     private final StaleTransactionCleanupFilter staleTransactionCleanupFilter;
     private final ActiveServerFilter activeServerFilter;
+    private final boolean isAlbEnabled = Boolean.valueOf(System.getenv("ALB_ENABLED")).booleanValue();
+
 
     public static final RequestMatcher KEYCLOAK_REQUEST_MATCHER = new OrRequestMatcher(new RequestMatcher[]{new AntPathRequestMatcher("/login.jsp"), new RequestHeaderRequestMatcher("Authorization"), new QueryParamPresenceRequestMatcher("access_token")});
 
@@ -112,6 +115,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
                                AtlasAuthenticationSuccessHandler successHandler,
                                AtlasAuthenticationFailureHandler failureHandler,
                                AtlasAuthenticationEntryPoint atlasAuthenticationEntryPoint,
+                               AtlasXSSPreventionFilter atlasXSSPreventionFilter,
                                Configuration configuration,
                                StaleTransactionCleanupFilter staleTransactionCleanupFilter,
                                ActiveServerFilter activeServerFilter) {
@@ -122,6 +126,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         this.successHandler = successHandler;
         this.failureHandler = failureHandler;
         this.atlasAuthenticationEntryPoint = atlasAuthenticationEntryPoint;
+        this.atlasXSSPreventionFilter = atlasXSSPreventionFilter;
         this.configuration = configuration;
         this.staleTransactionCleanupFilter = staleTransactionCleanupFilter;
         this.activeServerFilter = activeServerFilter;
@@ -234,6 +239,14 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
             LOG.info("Atlas is in Migration Mode, enabling ActiveServerFilter");
         } else {
             LOG.info("Atlas is in HA or HS Mode, enabling ActiveServerFilter");
+        }
+
+        //XSS filter at first
+        if(isAlbEnabled) {
+            httpSecurity.addFilterBefore(atlasXSSPreventionFilter, BasicAuthenticationFilter.class);
+            LOG.info("XSS filter is enabled from Atlas");
+        } else {
+            LOG.info("XSS filter is disabled from Atlas");
         }
         //Enable activeServerFilter regardless of HA or HS
         httpSecurity.addFilterAfter(activeServerFilter, BasicAuthenticationFilter.class);

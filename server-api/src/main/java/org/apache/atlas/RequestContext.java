@@ -83,10 +83,13 @@ public class RequestContext {
     private boolean     createShellEntityForNonExistingReference = false;
     private boolean     skipFailedEntities = false;
     private boolean     allowDeletedRelationsIndexsearch = false;
+    private boolean     includeMeanings = true;
+    private boolean     includeClassifications = true;
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
     private final Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = new HashMap<>();
+    private boolean     allowDuplicateDisplayName;
 
     private RequestContext() {
     }
@@ -304,6 +307,13 @@ public class RequestContext {
 
     public void setAllowDeletedRelationsIndexsearch(boolean allowDeletedRelationsIndexsearch) {
         this.allowDeletedRelationsIndexsearch = allowDeletedRelationsIndexsearch;
+    }
+
+    public void setAllowDuplicateDisplayName(boolean allowDuplicateDisplayName){
+        this.allowDuplicateDisplayName = allowDuplicateDisplayName;
+    }
+    public boolean getAllowDuplicateDisplayName(){
+        return allowDuplicateDisplayName;
     }
 
     public String getCurrentTypePatchAction() {
@@ -584,6 +594,22 @@ public class RequestContext {
 
     public void setTraceId(String traceId) {
         this.traceId = traceId;
+    }
+
+    public void setIncludeMeanings(boolean includeMeanings) {
+        this.includeMeanings = includeMeanings;
+    }
+
+    public boolean includeMeanings() {
+        return this.includeMeanings;
+    }
+
+    public void setIncludeClassifications(boolean includeClassifications) {
+        this.includeClassifications = includeClassifications;
+    }
+
+    public boolean includeClassifications() {
+        return this.includeClassifications;
     }
 
     public class EntityGuidPair {

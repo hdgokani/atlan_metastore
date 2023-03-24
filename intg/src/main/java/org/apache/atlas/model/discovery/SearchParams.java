@@ -13,6 +13,8 @@ public abstract class SearchParams {
     Set<String> collapseRelationAttributes;
     boolean showSearchScore;
     boolean suppressLogs;
+    boolean excludeMeanings;
+    boolean excludeClassifications;
 
     public abstract String getQuery();
 
@@ -62,5 +64,21 @@ public abstract class SearchParams {
 
     public void setSuppressLogs(boolean suppressLogs) {
         this.suppressLogs = suppressLogs;
+    }
+
+    public boolean isExcludeClassifications() {
+        return excludeClassifications;
+    }
+
+    public void setExcludeClassifications(boolean excludeClassifications) {
+        this.excludeClassifications = excludeClassifications;
+    }
+
+    public boolean isExcludeMeanings() {
+        return excludeMeanings;
+    }
+
+    public void setExcludeMeanings(boolean excludeMeanings) {
+        this.excludeMeanings = excludeMeanings;
     }
 }
