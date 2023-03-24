@@ -181,7 +181,8 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
             "/api/atlas/v2/auth/download/policies/*",
             "/api/atlas/v2/auth/download/roles/*",
             "/api/atlas/v2/auth/download/users/*",
-            "/api/atlas/v2/migration/bootstrap/*"
+            "/api/atlas/v2/migration/bootstrap/connections/*",
+            "/api/atlas/v2/migration/bootstrap/collections/*"
             ));
 
         if (!keycloakEnabled) {

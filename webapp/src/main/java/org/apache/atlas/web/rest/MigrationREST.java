@@ -1,6 +1,6 @@
 package org.apache.atlas.web.rest;
 
-import com.carrotsearch.ant.tasks.junit4.dependencies.org.simpleframework.xml.Path;
+import javax.ws.rs.Path;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
