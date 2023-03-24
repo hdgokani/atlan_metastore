@@ -236,7 +236,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
             //create ES alias
             parent.addReferredEntity(policy);
-            aliasStore.updateAlias(parent, null);
+            //aliasStore.updateAlias(parent, null);
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);

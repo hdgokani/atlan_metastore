@@ -74,7 +74,12 @@ public class ESAliasStore implements IndexAliasStore {
         String aliasName = getAliasName(entity);
 
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
-        requestBuilder.addAction(ADD, new AliasAction(VERTEX_INDEX_NAME, aliasName, getEmptyFilter()));
+
+        if (PERSONA_ENTITY_TYPE.equals(entity.getTypeName())) {
+            requestBuilder.addAction(ADD, new AliasAction(VERTEX_INDEX_NAME, aliasName));
+        } else {
+            requestBuilder.addAction(ADD, new AliasAction(VERTEX_INDEX_NAME, aliasName, getFilterForPurpose(entity)));
+        }
 
         graph.createOrUpdateESAlias(requestBuilder);
         return true;
@@ -89,7 +94,7 @@ public class ESAliasStore implements IndexAliasStore {
         if (PERSONA_ENTITY_TYPE.equals(accessControl.getEntity().getTypeName())) {
             filter = getFilterForPersona(accessControl, policy);
         } else {
-            filter = getFilterForPurpose(accessControl, policy);
+            filter = getFilterForPurpose(accessControl.getEntity());
         }
 
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
@@ -120,27 +125,12 @@ public class ESAliasStore implements IndexAliasStore {
         return esClausesToFilter(allowClauseList);
     }
 
-    private Map<String, Object> getFilterForPurpose(AtlasEntity.AtlasEntityWithExtInfo purpose, AtlasEntity policy) throws AtlasBaseException {
+    private Map<String, Object> getFilterForPurpose(AtlasEntity purpose) throws AtlasBaseException {
 
         List<Map<String, Object>> allowClauseList = new ArrayList<>();
 
-        List<AtlasEntity> policies = getPolicies(purpose);
-        if (policy != null) {
-            policies.add(policy);
-        }
-        List<String> tags = getPurposeTags(purpose.getEntity());
-
-        if (CollectionUtils.isNotEmpty(policies)) {
-            for (AtlasEntity entity: policies) {
-                if (entity.getStatus() == null || AtlasEntity.Status.ACTIVE.equals(entity.getStatus())) {
-                    if (getPolicyActions(entity).contains(ACCESS_READ_PURPOSE_METADATA)) {
-                        if (getIsAllow(entity)) {
-                            addPurposeMetadataFilterClauses(tags, allowClauseList);
-                        }
-                    }
-                }
-            }
-        }
+        List<String> tags = getPurposeTags(purpose);
+        addPurposeMetadataFilterClauses(tags, allowClauseList);
 
         return esClausesToFilter(allowClauseList);
     }
@@ -175,9 +165,11 @@ public class ESAliasStore implements IndexAliasStore {
     private Map<String, Object> esClausesToFilter(List<Map<String, Object>> allowClauseList) {
         if (CollectionUtils.isNotEmpty(allowClauseList)) {
             return mapOf("bool", mapOf("should", allowClauseList));
-        } else {
-            return getEmptyFilter();
         }
+        /*else {
+            return getEmptyFilter();
+        }*/
+        return null;
     }
 
     private Map<String, Object> getEmptyFilter() {
