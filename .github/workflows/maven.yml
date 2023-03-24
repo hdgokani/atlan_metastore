@@ -25,8 +25,8 @@ on:
       - beta
       - development
       - master
+      - staging
       - lineageondemand
-      - killranger
 
 jobs:
   build:
@@ -68,7 +68,7 @@ jobs:
         shell: bash
 
       - name: Get version tag
-        run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.my_pat }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7`)abcd"
+        run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.my_pat }}@github.com/atlanhq/${REPOSITORY_NAME}.git refs/heads/${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7`)abcd"
         id: get_version
 
       - name: Set up Buildx 
@@ -99,7 +99,11 @@ jobs:
       - name: Check out into atlan repo
         uses: actions/checkout@v2
         with:
+<<<<<<< HEAD
           ref: accesscontrol
+=======
+          ref: ${{ steps.get_branch.outputs.branch }}
+>>>>>>> beta
           repository: atlanhq/atlan
           token: ${{ secrets.my_pat }}
 
@@ -109,13 +113,20 @@ jobs:
           echo "- ${{ github.event.head_commit.message }}">>gitlog/${{ github.event.repository.name }}.txt
           chmod +x ./scripts/create_changelog.sh
           ./scripts/create_changelog.sh
-
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
+<<<<<<< HEAD
           branch: accesscontrol
+=======
+          branch: ${{ steps.get_branch.outputs.branch }}
+>>>>>>> beta
           author_name: atlan-ci
           author_email: it@atlan.com
           message: '${{ github.event.repository.name }}'
           default_author: user_info
+<<<<<<< HEAD
           push: origin accesscontrol
+=======
+          push: origin ${{ steps.get_branch.outputs.branch }}
+>>>>>>> beta

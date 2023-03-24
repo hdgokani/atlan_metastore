@@ -324,6 +324,15 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
     @Override
+    public AtlasElasticsearchQuery elasticsearchQuery(String indexName) throws AtlasBaseException {
+        if (restClient == null) {
+            LOG.error("restClient is not initiated, failed to run query on ES");
+            throw new AtlasBaseException(INDEX_SEARCH_FAILED, "restClient is not initiated");
+        }
+        return new AtlasElasticsearchQuery(this, indexName, restClient);
+    }
+
+    @Override
     public void createOrUpdateESAlias(ESAliasRequestBuilder builder) throws AtlasBaseException {
         String aliasRequest = builder.build();
 
@@ -368,15 +377,6 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         if (statusCode != 200) {
             throw new AtlasBaseException(AtlasErrorCode.INDEX_ALIAS_FAILED, "deleting", "Status code " + statusCode);
         }
-    }
-
-    @Override
-    public AtlasIndexQuery elasticsearchQuery(String indexName) throws AtlasBaseException {
-        if (restClient == null) {
-            LOG.error("restClient is not initiated, failed to run query on ES");
-            throw new AtlasBaseException(INDEX_SEARCH_FAILED, "restClient is not initiated");
-        }
-        return new AtlasElasticsearchQuery(this, indexName, restClient);
     }
 
     @Override

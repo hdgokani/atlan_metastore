@@ -184,6 +184,7 @@ public enum AtlasErrorCode {
     PAGINATION_CAN_ONLY_BE_USED_WITH_DEPTH_ONE(400, "ATLAS-400-00-103", "Pagination can be used only when depth is 1"),
     CANT_CALCULATE_VERTEX_COUNTS_WITHOUT_PAGINATION(400, "ATLAS-400-00-104", "Vertex counts can't be calculated without pagination"),
     FORBIDDEN_TYPENAME(400,"ATLAS-400-00-107", "Forbidden type: Can not pass builtin type {0}"),
+    README_FAILED(400,"ATLAS-400-00-108", "Readme creation failed for {0}: Asset is required"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
@@ -268,6 +269,8 @@ public enum AtlasErrorCode {
     FAILED_TO_REFRESH_TYPE_DEF_CACHE(500, "ATLAS-500-00-20", "Failed to refresh type-def cache"),
     CINV_UNHEALTHY(500, "ATLAS-500-00-21", "Unable to process type-definition operations"),
     RUNTIME_EXCEPTION(500, "ATLAS-500-00-020", "Runtime exception {0}"),
+    ES_DIRECT_UPDATE_FAILED(500, "ATLAS-500-00-021", "Error occurred while running _update query on ES: {0}"),
+    ES_BULK_UPDATE_FAILED(500, "ATLAS-500-00-022", "Error occurred while running bulk update on ES: {0}"),
     CLASSIFICATION_CURRENTLY_BEING_PROPAGATED(400, "ATLAS-400-00-105", "Classification {0} is currently being propagated."),
     TASK_STATUS_NOT_APPROPRIATE(400, "ATLAS-400-00-106", "Unable to restart the task with guid {0} whose status is {1}. "),
     NO_LINEAGE_CONSTRAINTS_FOR_GUID(404, "ATLAS-404-00-016", "No lineage constraints found for requested entity with guid : {0}"),
@@ -275,8 +278,7 @@ public enum AtlasErrorCode {
 
     INDEX_ALIAS_FAILED(400, "ATLAS-400-00-108", "Error occurred while {0} ES alias: {1}"),
     JSON_ERROR(400, "ATLAS-400-00-109", "Error occurred putting object into JSONObject: {0}"),
-    RANGER_ROLE_MUTATION_FAILED(400, "ATLAS-400-00-110", "Failed to {0} Ranger role {1}: {2}");
-
+    INVALID_LINEAGE_REQUEST(400, "ATLAS-400-00-108", "Invalid Lineage get request.");
 
     private String errorCode;
     private String errorMessage;

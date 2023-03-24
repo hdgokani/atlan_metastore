@@ -23,6 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.type.AtlasType;
+import org.codehaus.jettison.json.JSONException;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import javax.script.ScriptEngine;
@@ -205,6 +206,7 @@ public interface AtlasGraph<V, E> {
      *
      */
     AtlasIndexQuery<V, E> elasticsearchQuery(String indexName, SearchSourceBuilder sourceBuilder);
+
 
     AtlasIndexQuery<V, E> elasticsearchQuery(String indexName, SearchParams searchParams)throws AtlasBaseException;
 
