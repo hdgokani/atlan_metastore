@@ -31,7 +31,7 @@ import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.CURRENT_AUTHORIZER_IMPL;
 import static org.apache.atlas.repository.Constants.*;
 
-@Path("v2/migration")
+@Path("migration")
 @Singleton
 @Service
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
