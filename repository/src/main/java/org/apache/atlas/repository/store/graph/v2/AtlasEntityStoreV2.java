@@ -62,6 +62,7 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.Pur
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.readme.ReadmePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryFolderPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryPreProcessor;
@@ -1704,6 +1705,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
                     preProcessor = new ConnectionPreProcessor(graph, discovery, entityRetriever, this);
                 }
+                break;
+
+            case README_ENTITY_TYPE:
+                preProcessor = new ReadmePreProcessor(typeRegistry, entityRetriever, graph);
                 break;
         }
 
