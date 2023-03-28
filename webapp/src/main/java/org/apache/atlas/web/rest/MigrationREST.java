@@ -42,6 +42,7 @@ public class MigrationREST {
 
     private static final String COLL_ADMIN_ROLE_PATTERN = "collection_admins_%s";
     private static final String COLL_VIEWER_ROLE_PATTERN = "collection_viewer_%s";
+    public static final String CONN_NAME_PATTERN = "connection_admins_%s";
 
     private final AtlasEntityStore entityStore;
     private final PreProcessorPoliciesTransformer transformer;
@@ -70,6 +71,14 @@ public class MigrationREST {
             if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
                 for (AtlasEntity entity : entities.getEntities()) {
                     if (entity.getTypeName().equalsIgnoreCase(CONNECTION_ENTITY_TYPE)) {
+                        //create connection role
+                        String roleName = String.format(CONN_NAME_PATTERN, entity.getGuid());
+
+                        List<String> adminUsers = (List<String>) entity.getAttribute(ATTR_ADMIN_USERS);
+                        List<String> adminGroups = (List<String>) entity.getAttribute(ATTR_ADMIN_GROUPS);
+                        List<String> adminRoles = (List<String>) entity.getAttribute(ATTR_ADMIN_ROLES);
+
+                        RoleRepresentation role = keycloakStore.createRoleForConnection(roleName, true, adminUsers, adminGroups, adminRoles);
 
                         AtlasEntity.AtlasEntitiesWithExtInfo policiesExtInfo = transformer.transform(entity);
                         try {
