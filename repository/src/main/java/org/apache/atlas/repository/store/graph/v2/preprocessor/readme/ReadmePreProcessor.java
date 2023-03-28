@@ -30,13 +30,11 @@ public class ReadmePreProcessor implements PreProcessor {
     private final AtlasTypeRegistry    typeRegistry;
     private final EntityGraphRetriever entityRetriever;
     private final AtlasGraph           graph;
-    private final RestoreHandlerV1     restoreHandlerV1;
 
-    public ReadmePreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, RestoreHandlerV1 restoreHandlerV1) {
+    public ReadmePreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
         this.graph = graph;
-        this.restoreHandlerV1 = restoreHandlerV1;
     }
 
     @Override
@@ -50,7 +48,7 @@ public class ReadmePreProcessor implements PreProcessor {
 
         switch (operation) {
             case CREATE:
-                processCreateReadme(entity, context);
+                processCreateReadme(entity);
                 break;
             case UPDATE:
                 processUpdateReadme(entity, context.getVertex(entity.getGuid()));
@@ -60,7 +58,7 @@ public class ReadmePreProcessor implements PreProcessor {
         }
     }
 
-    private void processCreateReadme(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
+    private void processCreateReadme(AtlasEntity entity) throws AtlasBaseException {
         AtlasObjectId asset = (AtlasObjectId) entity.getRelationshipAttribute(ASSET);
         RequestContext requestContext = RequestContext.get();
         AtlasPerfMetrics.MetricRecorder metricRecorder = requestContext.startMetricRecord("processCreateReadme");
@@ -76,7 +74,6 @@ public class ReadmePreProcessor implements PreProcessor {
                     LOG.error("Readme already exists for the asset.");
                     throw new AtlasBaseException(README_ALREADY_PRESENT);
                 }
-                requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(vertex, entity.getAttributes().keySet()));
                 requestContext.cacheDifferentialEntity(entity);
             } else {
                 LOG.error("Asset is required for readme creation");
