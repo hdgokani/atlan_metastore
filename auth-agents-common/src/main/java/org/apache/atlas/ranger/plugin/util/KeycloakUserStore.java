@@ -350,20 +350,20 @@ public class KeycloakUserStore {
                 //get all users for Roles
                 Thread usersFetcher = new Thread(() -> {
                     int start = 0;
-                    int size = 100;
+                    int size = 500;
                     Set<UserRepresentation> ret = new HashSet<>();
 
                     do {
                         Set<UserRepresentation> userRepresentations = roleResource.getRoleUserMembers(start, size);
-                        if (isAdminRole) {
-                            LOG.info("Users in admin role - ");
-                            List<String> names = userRepresentations.stream().map(x -> x.getUsername()).collect(Collectors.toList());
-                            LOG.info(AtlasType.toJson(names));
-                        }
                         ret.addAll(userRepresentations);
                         start += size;
 
                     } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+
+                    if (isAdminRole) {
+                        LOG.info(AtlasType.toJson(ret.stream().map(x -> x.getUsername()).collect(Collectors.toList())));
+                        LOG.info("total users {}",  ret.stream().map(x -> x.getUsername()).collect(Collectors.toSet()).size());
+                    }
 
                     rangerRole.setUsers(keycloakUsersToRangerRoleMember(ret));
                     userNamesList.addAll(ret);
