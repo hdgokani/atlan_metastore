@@ -19,10 +19,12 @@
 
 package org.apache.atlas.ranger.plugin.util;
 
+import joptsimple.internal.Strings;
 import org.apache.atlas.keycloak.client.KeycloakClient;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 
@@ -344,6 +346,7 @@ public class KeycloakUserStore {
                 });
                 groupsFetcher.start();
 
+                boolean isAdminRole = roleResource.toRepresentation().getName().equals("$admin");
                 //get all users for Roles
                 Thread usersFetcher = new Thread(() -> {
                     int start = 0;
@@ -352,6 +355,11 @@ public class KeycloakUserStore {
 
                     do {
                         Set<UserRepresentation> userRepresentations = roleResource.getRoleUserMembers(start, size);
+                        if (isAdminRole) {
+                            LOG.info("Users in admin role - ");
+                            List<String> names = userRepresentations.stream().map(x -> x.getUsername()).collect(Collectors.toList());
+                            LOG.info(AtlasType.toJson(names));
+                        }
                         ret.addAll(userRepresentations);
                         start += size;
 
