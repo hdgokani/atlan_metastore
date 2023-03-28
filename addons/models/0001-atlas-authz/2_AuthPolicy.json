@@ -4,8 +4,8 @@
     {
       "category": "ENUM",
       "name": "AuthPolicyType",
-      "description": "",
-      "serviceType": "atlan",
+      "description": "Policy Item type",
+      "serviceType": "atlas_core",
       "typeVersion": "1.0",
       "elementDefs":
       [
@@ -37,9 +37,30 @@
     },
     {
       "category": "ENUM",
+      "name": "AuthPolicyCategory",
+      "description": "Policy category",
+      "serviceType": "atlas_core",
+      "typeVersion": "1.0",
+      "elementDefs": [
+        {
+          "value": "bootstrap",
+          "ordinal": 0
+        },
+        {
+          "value": "persona",
+          "ordinal": 1
+        },
+        {
+          "value": "purpose",
+          "ordinal": 2
+        }
+      ]
+    },
+    {
+      "category": "ENUM",
       "name": "AuthPolicyResourceCategory",
-      "description": "",
-      "serviceType": "atlan",
+      "description": "Policy resource category",
+      "serviceType": "atlas_core",
       "typeVersion": "1.0",
       "elementDefs":
       [
@@ -74,7 +95,7 @@
   [
     {
       "name": "AuthPolicyValiditySchedule",
-      "description": "",
+      "description": "Validity schedule struct for policy",
       "serviceType": "atlan",
       "typeVersion": "1.0",
       "attributeDefs":
@@ -110,7 +131,7 @@
     },
     {
       "name": "AuthPolicyCondition",
-      "description": "",
+      "description": "Policy condition schedule struct",
       "serviceType": "atlan",
       "typeVersion": "1.0",
       "attributeDefs":
@@ -138,81 +159,14 @@
   [
     {
       "name": "AuthPolicy",
-      "superTypes": [],
-      "description": "",
+      "description": "Model to store an accesscontrol policy in Atlas",
+      "superTypes": [
+        "Asset"
+      ],
       "serviceType": "atlan",
-      "typeVersion": "2.0",
+      "typeVersion": "1.0",
       "attributeDefs":
       [
-        {
-          "name": "qualifiedName",
-          "typeName": "string",
-          "indexType": "STRING",
-          "cardinality": "SINGLE",
-          "isIndexable": true,
-          "isOptional": false,
-          "isUnique": true,
-          "skipScrubbing": true,
-          "includeInNotification": true,
-          "indexTypeESFields": {
-            "text": {
-              "type": "text",
-              "analyzer": "atlan_text_analyzer"
-            }
-          }
-        },
-        {
-          "name": "name",
-          "typeName": "string",
-          "cardinality": "SINGLE",
-          "isIndexable": true,
-          "isOptional": false,
-          "isUnique": false,
-          "searchWeight": 10,
-          "skipScrubbing": true,
-          "indexTypeESConfig": {
-            "analyzer": "atlan_text_analyzer"
-          },
-          "indexTypeESFields": {
-            "keyword": {
-              "type": "keyword",
-              "normalizer": "atlan_normalizer"
-            },
-            "stemmed": {
-              "type": "text",
-              "analyzer": "atlan_text_stemmer"
-            }
-          }
-        },
-        {
-          "name": "description",
-          "typeName": "string",
-          "cardinality": "SINGLE",
-          "isIndexable": false,
-          "isOptional": true,
-          "isUnique": false,
-          "searchWeight": 9,
-          "skipScrubbing": true,
-          "includeInNotification": true,
-          "indexTypeESConfig": {
-            "analyzer": "atlan_text_analyzer"
-          },
-          "indexTypeESFields": {
-            "keyword": {
-              "type": "keyword",
-              "normalizer": "atlan_normalizer"
-            }
-          }
-        },
-        {
-          "name": "tenantId",
-          "typeName": "string",
-          "cardinality": "SINGLE",
-          "isIndexable": true,
-          "isOptional": true,
-          "isUnique": false,
-          "skipScrubbing": true
-        },
         {
           "name": "policyType",
           "typeName": "AuthPolicyType",
@@ -249,17 +203,6 @@
         {
           "name": "policySubCategory",
           "typeName": "string",
-          "indexType": "STRING",
-          "cardinality": "SINGLE",
-          "isIndexable": false,
-          "isOptional": true,
-          "isUnique": false,
-          "skipScrubbing": true,
-          "includeInNotification": true
-        },
-        {
-          "name": "policyResourceCategory",
-          "typeName": "AuthPolicyResourceCategory",
           "indexType": "STRING",
           "cardinality": "SINGLE",
           "isIndexable": false,
@@ -346,6 +289,17 @@
           "includeInNotification": true
         },
         {
+          "name": "policyMaskType",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
           "name": "policyValiditySchedule",
           "typeName": "array<AuthPolicyValiditySchedule>",
           "cardinality": "SINGLE",
@@ -365,7 +319,7 @@
           "isOptional": true,
           "isUnique": false,
           "skipScrubbing": true,
-          "includeInNotification": true
+          "includeInNotification": false
         },
         {
           "name": "policyDelegateAdmin",
@@ -387,17 +341,6 @@
           "isUnique": false,
           "skipScrubbing": true,
           "includeInNotification": false
-        },
-        {
-          "name": "policyMaskType",
-          "typeName": "string",
-          "indexType": "STRING",
-          "cardinality": "SINGLE",
-          "isIndexable": false,
-          "isOptional": true,
-          "isUnique": false,
-          "skipScrubbing": true,
-          "includeInNotification": true
         }
       ]
     }
