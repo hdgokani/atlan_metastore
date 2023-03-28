@@ -213,9 +213,7 @@ public enum AtlasErrorCode {
     RELATIONSHIP_LABEL_NOT_FOUND(404, "ATLAS-404-00-016", "Given relationshipLabel {0} was invalid"),
     INVALID_LINEAGE_ENTITY_TYPE_HIDE_PROCESS(404, "ATLAS-404-00-017", "Given instance guid {0} with type {1} is not a valid lineage entity type with hideProcess as true."),
     TASK_NOT_FOUND(404, "ATLAS-404-00-018", "Given task guid {0} is invalid/not found"),
-    RANGER_ROLE_NOT_FOUND(404, "ATLAS-404-00-019", "Ranger role {0} not found: {1}"),
-    RANGER_USER_NOT_FOUND(404, "ATLAS-404-00-020", "Ranger user with {0}:{1} not found: {2}"),
-    ES_INDEX_NOT_FOUND(404, "ATLAS-404-00-021", "ElasticSearch index not found"),
+    RESOURCE_NOT_FOUND(404, "ATLAS-404-00-019", "{0} not found"),
 
     METHOD_NOT_ALLOWED(405, "ATLAS-405-00-001", "Error 405 - The request method {0} is inappropriate for the URL: {1}"),
     DELETE_TAG_PROPAGATION_NOT_ALLOWED(406, "ATLAS-406-00-001", "Classification delete is not allowed; Add/Update classification propagation is in queue for classification: {0} and entity: {1}. Please try again"),
@@ -237,8 +235,6 @@ public enum AtlasErrorCode {
     RELATIONSHIP_CREATE_INVALID_PARAMS(409, "ATLAS-409-00-014", "Relationship create between same vertex not allowed, vertex guid: {0}"),
     OPERATION_NOT_SUPPORTED(409, "ATLAS-409-00-015", "Operation not supported: {0}"),
     ACCESS_CONTROL_ALREADY_EXISTS(409, "ATLAS-409-00-016", "{0} with name {1} already exists"),
-    POLICY_ALREADY_EXISTS(409, "ATLAS-409-00-017", "Policy with name {0} already exists"),
-    RANGER_DUPLICATE_POLICY(409, "ATLAS-409-00-018", "Not allowed to create duplicate policy for same set of assets, duplicate policy: {0}:{1}"),
 
     CATEGORY_PARENT_FROM_OTHER_GLOSSARY(409, "ATLAS-400-00-0015", "Parent category from another Anchor(glossary) not supported"),
     CLASSIFICATION_TYPE_HAS_REFERENCES(409, "ATLAS-400-00-0016", "Given classification {0} [{1}] has references"),
@@ -283,9 +279,6 @@ public enum AtlasErrorCode {
 
     INDEX_ALIAS_FAILED(400, "ATLAS-400-00-108", "Error occurred while {0} ES alias: {1}"),
     JSON_ERROR(400, "ATLAS-400-00-109", "Error occurred putting object into JSONObject: {0}"),
-    RANGER_ROLE_MUTATION_FAILED(400, "ATLAS-400-00-110", "Failed to {0} Ranger role {1}: {2}"),
-    RANGER_POLICY_MUTATION_FAILED(400, "ATLAS-400-00-111", "Failed to {0} Ranger policy: {1}"),
-    RANGER_POLICY_FIND_FAILED(400, "ATLAS-400-00-112", "Failed to find Ranger policy by {0}: {1}"),
     INVALID_LINEAGE_REQUEST(400, "ATLAS-400-00-108", "Invalid Lineage get request.");
 
     private String errorCode;
