@@ -77,9 +77,10 @@ public class MigrationREST {
                         List<String> adminUsers = (List<String>) entity.getAttribute(ATTR_ADMIN_USERS);
                         List<String> adminGroups = (List<String>) entity.getAttribute(ATTR_ADMIN_GROUPS);
                         List<String> adminRoles = (List<String>) entity.getAttribute(ATTR_ADMIN_ROLES);
-
-                        RoleRepresentation role = keycloakStore.createRoleForConnection(roleName, true, adminUsers, adminGroups, adminRoles);
-
+                        RoleRepresentation role = keycloakStore.getRole(roleName);
+                        if (role == null) {
+                            role = keycloakStore.createRoleForConnection(roleName, true, adminUsers, adminGroups, adminRoles);
+                        }
                         AtlasEntity.AtlasEntitiesWithExtInfo policiesExtInfo = transformer.transform(entity);
                         try {
                             RequestContext.get().setPoliciesBootstrappingInProgress(true);
@@ -149,7 +150,12 @@ public class MigrationREST {
         }
 
         String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collection.getGuid());
-        return keycloakStore.createRoleForConnection(adminRoleName, true, adminUsers, adminGroups, adminRoles);
+        RoleRepresentation role = keycloakStore.getRole(adminRoleName);
+        if (role == null) {
+            role = keycloakStore.createRoleForConnection(adminRoleName, true, adminUsers, adminGroups, adminRoles);
+        }
+
+        return role;
     }
 
     private RoleRepresentation createCollectionViewerRole(AtlasEntity collection) throws AtlasBaseException {
@@ -157,7 +163,10 @@ public class MigrationREST {
         String viewerRoleName = String.format(COLL_VIEWER_ROLE_PATTERN, collection.getGuid());
         List<String> viewerUsers = (List<String>) collection.getAttribute(ATTR_VIEWER_USERS);
         List<String> viewerGroups = (List<String>) collection.getAttribute(ATTR_VIEWER_GROUPS);
-
-        return keycloakStore.createRoleForConnection(viewerRoleName, true, viewerUsers, viewerGroups, null);
+        RoleRepresentation role = keycloakStore.getRole(viewerRoleName);
+        if (role == null) {
+            role = keycloakStore.createRoleForConnection(viewerRoleName, true, viewerUsers, viewerGroups, null);
+        }
+        return role;
     }
 }
