@@ -47,7 +47,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.RESOURCE_NOT_FOUND;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaGroups;
 
 public class KeycloakStore {
     private static final Logger LOG = LoggerFactory.getLogger(KeycloakStore.class);
@@ -296,6 +295,19 @@ public class KeycloakStore {
                 .roles()
                 .get(role.getName())
                 .toRepresentation();
+    }
+
+    public RoleRepresentation getRole(String roleName) {
+        RoleRepresentation roleRepresentation = null;
+        try{
+            roleRepresentation =  KeycloakClient.getKeycloakClient().getRealm()
+                    .roles()
+                    .get(roleName)
+                    .toRepresentation();
+        } catch (NotFoundException e) {
+            return null;
+        }
+        return roleRepresentation;
     }
 
     public void updateRoleUsers(String roleName,
