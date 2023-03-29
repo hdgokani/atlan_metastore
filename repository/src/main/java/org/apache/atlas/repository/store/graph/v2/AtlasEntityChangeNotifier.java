@@ -80,6 +80,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     private static final List<String> ALLOWED_RELATIONSHIP_TYPES = Arrays.asList(AtlasConfiguration.SUPPORTED_RELATIONSHIP_EVENTS.getStringArray());
     private static final List<String> ALLOWED_LINEAGE_RELATIONSHIP_TYPES_VIA_FEATURE_FLAG = Arrays.asList(AtlasConfiguration.SUPPORTED_LINEAGE_RELATIONSHIP_EVENTS_VIA_FEATURE_FLAG.getStringArray());
     private final static String LINEAGE_EVENTS_FEATURE_FLAG_KEY =  "metastore-enable-lineage-events-for-pipeline";
+
     @Inject
     public AtlasEntityChangeNotifier(Set<EntityChangeListener> entityChangeListeners,
                                      Set<EntityChangeListenerV2> entityChangeListenersV2,
@@ -131,7 +132,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         }
 
         List<AtlasRelationship> featureFlagBasedEvents = new ArrayList<>();
-        if (isLineageBasedEventsEnabled())
+        if (isLineageBasedEventsEnabled())      //TODO: Remove feature flag once tested on few prod tenants
             featureFlagBasedEvents.addAll(relationships.stream().filter(r -> ALLOWED_LINEAGE_RELATIONSHIP_TYPES_VIA_FEATURE_FLAG.contains(r.getTypeName())).collect(Collectors.toList()));
 
         relationships = relationships.stream().filter(r -> ALLOWED_RELATIONSHIP_TYPES.contains(r.getTypeName())).collect(Collectors.toList());
