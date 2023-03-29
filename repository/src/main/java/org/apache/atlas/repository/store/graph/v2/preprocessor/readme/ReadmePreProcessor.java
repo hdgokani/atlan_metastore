@@ -3,9 +3,9 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.readme;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
@@ -71,7 +71,7 @@ public class ReadmePreProcessor implements PreProcessor {
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
                 AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(graph, entityType, entity.getAttributes());
                 if (vertex != null) {
-                    LOG.error("Readme already exists for the asset.");
+                    LOG.error("Readme of guid {} already exists for the asset.", GraphHelper.getGuid(vertex));
                     throw new AtlasBaseException(README_ALREADY_PRESENT);
                 }
                 requestContext.cacheDifferentialEntity(entity);
