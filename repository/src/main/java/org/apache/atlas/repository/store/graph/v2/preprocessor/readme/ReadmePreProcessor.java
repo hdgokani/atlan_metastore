@@ -71,8 +71,9 @@ public class ReadmePreProcessor implements PreProcessor {
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
                 AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(graph, entityType, entity.getAttributes());
                 if (vertex != null) {
-                    LOG.error("Readme of guid {} already exists for the asset.", GraphHelper.getGuid(vertex));
-                    throw new AtlasBaseException(README_ALREADY_PRESENT);
+                    String guidOfReadme = GraphHelper.getGuid(vertex);
+                    LOG.error("Readme of guid {} already exists for the asset.", guidOfReadme);
+                    throw new AtlasBaseException(README_ALREADY_PRESENT, guidOfReadme);
                 }
                 requestContext.cacheDifferentialEntity(entity);
             } else {
