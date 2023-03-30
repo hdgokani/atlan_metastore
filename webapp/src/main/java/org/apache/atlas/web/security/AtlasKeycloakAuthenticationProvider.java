@@ -43,6 +43,7 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
   private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("auth.Keycloak");
   private final boolean validateServiceToken;
 
+
   private final KeycloakAuthenticationProvider keycloakAuthenticationProvider;
 
   public AtlasKeycloakAuthenticationProvider() throws Exception {
