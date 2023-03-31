@@ -85,6 +85,8 @@ public class MigrationREST {
                             adminUsers.add(entity.getCreatedBy());
                         }
 
+                        entity.setAttribute(ATTR_ADMIN_USERS, adminUsers);
+
                         RoleRepresentation role = keycloakStore.getRole(roleName);
                         if (role == null) {
                             role = keycloakStore.createRoleForConnection(roleName, true, adminUsers, adminGroups, adminRoles);
