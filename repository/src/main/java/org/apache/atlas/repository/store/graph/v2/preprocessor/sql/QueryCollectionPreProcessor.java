@@ -56,13 +56,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER_IMPL;
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.CURRENT_AUTHORIZER_IMPL;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
-import static org.apache.atlas.repository.Constants.ATTR_VIEWER_GROUPS;
-import static org.apache.atlas.repository.Constants.ATTR_VIEWER_USERS;
-import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.PREFIX_QUERY_QN;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.getUUID;
 import static org.apache.atlas.util.AtlasEntityUtils.mapOf;
@@ -146,7 +140,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
             AtlasEntity existingCollEntity = entityRetriever.toAtlasEntity(vertex);
 
 
-            updateCollectionAdminRole(collection, existingCollEntity);
+            updateCollectionAdminRole(collection, existingCollEntity, vertex);
             updateCollectionViewerRole(collection, existingCollEntity);
         }
 
@@ -193,8 +187,9 @@ public class QueryCollectionPreProcessor implements PreProcessor {
         if (adminUsers == null) {
             adminUsers = new ArrayList<>();
         }
-        if (StringUtils.isNotEmpty(collection.getCreatedBy())) {
-            adminUsers.add(collection.getCreatedBy());
+        String creatorUser = RequestContext.get().getUser();
+        if (StringUtils.isNotEmpty(creatorUser)) {
+            adminUsers.add(creatorUser);
         }
 
         String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collection.getGuid());
@@ -210,17 +205,21 @@ public class QueryCollectionPreProcessor implements PreProcessor {
         return keycloakStore.createRoleForConnection(viewerRoleName, true, viewerUsers, viewerGroups, null);
     }
 
-    private void updateCollectionAdminRole(AtlasEntity collection, AtlasEntity existingCollEntity) throws AtlasBaseException {
+    private void updateCollectionAdminRole(AtlasEntity collection, AtlasEntity existingCollEntity, AtlasVertex vertex) throws AtlasBaseException {
         String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collection.getGuid());
 
         RoleResource rolesResource = KeycloakClient.getKeycloakClient().getRealm().roles().get(adminRoleName);
         RoleRepresentation representation = rolesResource.toRepresentation();
+        String creatorUser = vertex.getProperty(CREATED_BY_KEY, String.class);
 
         if (collection.hasAttribute(ATTR_ADMIN_USERS)) {
             List<String> newAdminUsers = (List<String>) collection.getAttribute(ATTR_ADMIN_USERS);
             List<String> currentAdminUsers = (List<String>) existingCollEntity.getAttribute(ATTR_ADMIN_USERS);
 
             if (CollectionUtils.isNotEmpty(newAdminUsers) || CollectionUtils.isNotEmpty(currentAdminUsers)) {
+                if (StringUtils.isNotEmpty(creatorUser) && !newAdminUsers.contains(creatorUser)) {
+                    newAdminUsers.add(creatorUser);
+                }
                 keycloakStore.updateRoleUsers(adminRoleName, currentAdminUsers, newAdminUsers, representation);
             }
         }
