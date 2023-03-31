@@ -77,6 +77,14 @@ public class MigrationREST {
                         List<String> adminUsers = (List<String>) entity.getAttribute(ATTR_ADMIN_USERS);
                         List<String> adminGroups = (List<String>) entity.getAttribute(ATTR_ADMIN_GROUPS);
                         List<String> adminRoles = (List<String>) entity.getAttribute(ATTR_ADMIN_ROLES);
+                        if (CollectionUtils.isEmpty(adminUsers)) {
+                            adminUsers = new ArrayList<>();
+                        }
+
+                        if (StringUtils.isNotEmpty(entity.getCreatedBy())) {
+                            adminUsers.add(entity.getCreatedBy());
+                        }
+
                         RoleRepresentation role = keycloakStore.getRole(roleName);
                         if (role == null) {
                             role = keycloakStore.createRoleForConnection(roleName, true, adminUsers, adminGroups, adminRoles);
