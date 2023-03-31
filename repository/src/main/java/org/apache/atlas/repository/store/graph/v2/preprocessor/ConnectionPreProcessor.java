@@ -119,6 +119,7 @@ public class ConnectionPreProcessor implements PreProcessor {
         if(StringUtils.isNotEmpty(creatorUser) && !adminUsers.contains(creatorUser)) {
             adminUsers.add(creatorUser);
         }
+        connection.setAttribute(ATTR_ADMIN_USERS, adminUsers);
 
         RoleRepresentation role = keycloakStore.createRoleForConnection(roleName, true, adminUsers, adminGroups, adminRoles);
 
@@ -161,6 +162,7 @@ public class ConnectionPreProcessor implements PreProcessor {
             if (StringUtils.isNotEmpty(creatorUser) && !newAdminUsers.contains(creatorUser)) {
                 newAdminUsers.add(creatorUser);
             }
+            connection.setAttribute(ATTR_ADMIN_USERS, newAdminUsers);
             if (CollectionUtils.isNotEmpty(newAdminUsers) || CollectionUtils.isNotEmpty(currentAdminUsers)) {
                 keycloakStore.updateRoleUsers(roleName, currentAdminUsers, newAdminUsers, representation);
             }

@@ -191,6 +191,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
         if (StringUtils.isNotEmpty(creatorUser)) {
             adminUsers.add(creatorUser);
         }
+        collection.setAttribute(ATTR_ADMIN_USERS, adminUsers);
 
         String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collection.getGuid());
         return keycloakStore.createRoleForConnection(adminRoleName, true, adminUsers, adminGroups, adminRoles);
@@ -220,6 +221,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
                 if (StringUtils.isNotEmpty(creatorUser) && !newAdminUsers.contains(creatorUser)) {
                     newAdminUsers.add(creatorUser);
                 }
+                collection.setAttribute(ATTR_ADMIN_USERS, newAdminUsers);
                 keycloakStore.updateRoleUsers(adminRoleName, currentAdminUsers, newAdminUsers, representation);
             }
         }
