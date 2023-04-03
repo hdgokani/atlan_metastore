@@ -138,7 +138,7 @@ public class KeycloakClient {
 
     public List<UserRepresentation> getAllUsers() {
         int start = 0;
-        int size = 100;
+        int size = 500;
 
         List<UserRepresentation> ret = new ArrayList<>();
 
@@ -155,7 +155,7 @@ public class KeycloakClient {
     public List<GroupRepresentation> getAllGroups() {
 
         int start = 0;
-        int size = 100;
+        int size = 500;
 
         List<GroupRepresentation> ret = new ArrayList<>();
 
@@ -171,7 +171,7 @@ public class KeycloakClient {
 
     public List<RoleRepresentation> getAllRoles() {
         int start = 0;
-        int size = 100;
+        int size = 500;
 
         List<RoleRepresentation> ret = new ArrayList<>();
 

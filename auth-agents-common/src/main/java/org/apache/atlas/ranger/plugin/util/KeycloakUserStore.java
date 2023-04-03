@@ -332,7 +332,7 @@ public class KeycloakUserStore {
                 //get all groups for Roles
                 Thread groupsFetcher = new Thread(() -> {
                     int start = 0;
-                    int size = 100;
+                    int size = 500;
                     Set<GroupRepresentation> ret = new HashSet<>();
 
                     do {
