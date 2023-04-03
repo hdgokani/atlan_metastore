@@ -139,15 +139,20 @@ public class KeycloakClient {
     public List<UserRepresentation> getAllUsers() {
         int start = 0;
         int size = 500;
+        boolean found = true;
 
         List<UserRepresentation> ret = new ArrayList<>();
 
         do {
             List<UserRepresentation> userRepresentations = getRealm().users().list(start, size);
-            ret.addAll(userRepresentations);
-            start += size;
+            if (CollectionUtils.isNotEmpty(userRepresentations)) {
+                ret.addAll(userRepresentations);
+                start += size;
+            } else {
+                found = false;
+            }
 
-        } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+        } while (found && ret.size() % size == 0);
 
         return ret;
     }
@@ -156,15 +161,20 @@ public class KeycloakClient {
 
         int start = 0;
         int size = 500;
+        boolean found = true;
 
         List<GroupRepresentation> ret = new ArrayList<>();
 
         do {
             List<GroupRepresentation> groupRepresentations = getRealm().groups().groups(start, size);
-            ret.addAll(groupRepresentations);
-            start += size;
+            if (CollectionUtils.isNotEmpty(groupRepresentations)) {
+                ret.addAll(groupRepresentations);
+                start += size;
+            } else {
+                found = false;
+            }
 
-        } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+        } while (found && ret.size() % size == 0);
 
         return ret;
     }
@@ -172,15 +182,20 @@ public class KeycloakClient {
     public List<RoleRepresentation> getAllRoles() {
         int start = 0;
         int size = 500;
+        boolean found = true;
 
         List<RoleRepresentation> ret = new ArrayList<>();
 
         do {
             List<RoleRepresentation> roleRepresentations = getRealm().roles().list(start, size);
-            ret.addAll(roleRepresentations);
-            start += size;
+            if (CollectionUtils.isNotEmpty(roleRepresentations)) {
+                ret.addAll(roleRepresentations);
+                start += size;
+            } else {
+                found = false;
+            }
 
-        } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+        } while (found && ret.size() % size == 0);
 
         return ret;
     }

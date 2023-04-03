@@ -333,14 +333,20 @@ public class KeycloakUserStore {
                 Thread groupsFetcher = new Thread(() -> {
                     int start = 0;
                     int size = 500;
+                    boolean found = true;
                     Set<GroupRepresentation> ret = new HashSet<>();
 
                     do {
                         Set<GroupRepresentation> kGroups = roleResource.getRoleGroupMembers(start, size);
-                        ret.addAll(kGroups);
-                        start += size;
+                        if (CollectionUtils.isNotEmpty(kGroups)) {
+                            ret.addAll(kGroups);
+                            start += size;
+                        } else {
+                            found = false;
+                        }
 
-                    } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+                    } while (found && ret.size() % size == 0);
+
 
                     rangerRole.setGroups(keycloakGroupsToRangerRoleMember(ret));
                 });
@@ -351,14 +357,19 @@ public class KeycloakUserStore {
                 Thread usersFetcher = new Thread(() -> {
                     int start = 0;
                     int size = 500;
+                    boolean found = true;
                     Set<UserRepresentation> ret = new HashSet<>();
 
                     do {
                         Set<UserRepresentation> userRepresentations = roleResource.getRoleUserMembers(start, size);
-                        ret.addAll(userRepresentations);
-                        start += size;
+                        if (CollectionUtils.isNotEmpty(userRepresentations)) {
+                            ret.addAll(userRepresentations);
+                            start += size;
+                        } else {
+                            found = false;
+                        }
 
-                    } while (CollectionUtils.isNotEmpty(ret) && ret.size() % size == 0);
+                    } while (found && ret.size() % size == 0);
 
                     if (isAdminRole) {
                         LOG.info(AtlasType.toJson(ret.stream().map(x -> x.getUsername()).collect(Collectors.toList())));
