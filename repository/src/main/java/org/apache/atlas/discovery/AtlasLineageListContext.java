@@ -6,7 +6,9 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.Predicate;
+import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.LinkedList;
 import java.util.Set;
 
 public class AtlasLineageListContext {
@@ -20,6 +22,7 @@ public class AtlasLineageListContext {
     private Set<String>                         attributes;
     private Set<String>                         relationAttributes;
     private boolean                             fetchProcesses;
+    private LinkedList<Pair<String, Integer>>   traversalQueue;
 
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageListRequest.getGuid();
@@ -32,6 +35,7 @@ public class AtlasLineageListContext {
         this.attributes = lineageListRequest.getAttributes();
         this.relationAttributes = lineageListRequest.getRelationAttributes();
         this.fetchProcesses = lineageListRequest.isFetchProcesses();
+        this.traversalQueue = new LinkedList<>();
     }
 
     public String getGuid() {
@@ -112,6 +116,26 @@ public class AtlasLineageListContext {
 
     public void setFetchProcesses(boolean fetchProcesses) {
         this.fetchProcesses = fetchProcesses;
+    }
+
+    public LinkedList<Pair<String, Integer>> getTraversalQueue() {
+        return traversalQueue;
+    }
+
+    public void setTraversalQueue(LinkedList<Pair<String, Integer>> traversalQueue) {
+        this.traversalQueue = traversalQueue;
+    }
+
+    public void addToTraversalQueue(Pair<String, Integer> entity) {
+        traversalQueue.add(entity);
+    }
+
+    public Pair<String, Integer> popFromTraversalQueue() {
+        return traversalQueue.pop();
+    }
+
+    public boolean isTraversalQueueEmpty() {
+        return traversalQueue.isEmpty();
     }
 
     protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteria) {
