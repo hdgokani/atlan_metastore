@@ -395,7 +395,7 @@ public class EntityGraphMapper {
                         if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore())) {
                             isRestoreEntity = context.getEntitiesToRestore().contains(vertex);
                         }
-                        addHasLineage(inOutEdges, isRestoreEntity);
+                        addHasLineage(inOutEdges, isRestoreEntity, guid);
                     }
 
                     Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
@@ -451,20 +451,17 @@ public class EntityGraphMapper {
                             addOrUpdateBusinessAttributes(guid, updatedEntity.getBusinessAttributes(), isOverwriteBusinessAttribute);
                         }
                     }
-                    
-                    setSystemAttributesToEntity(vertex,updatedEntity);
-                    resp.addEntity(updateType, constructHeader(updatedEntity, vertex, entityType.getAllAttributes()));
 
                     // Add hasLineage for newly created edges
                     Set<AtlasEdge> newlyCreatedEdges = getNewCreatedInputOutputEdges(guid);
                     if (newlyCreatedEdges.size() > 0) {
-                        addHasLineage(newlyCreatedEdges, false);
+                        addHasLineage(newlyCreatedEdges, false, guid);
                     }
 
                     // Add hasLineage for restored edges
                     if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore()) && context.getEntitiesToRestore().contains(vertex)) {
                         Set<AtlasEdge> restoredInputOutputEdges = getRestoredInputOutputEdges(vertex);
-                        addHasLineage(restoredInputOutputEdges, true);
+                        addHasLineage(restoredInputOutputEdges, true, guid);
                     }
 
                     Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
@@ -474,6 +471,9 @@ public class EntityGraphMapper {
                     }
 
                     reqContext.cache(updatedEntity);
+                    setSystemAttributesToEntity(vertex,updatedEntity);
+                    resp.addEntity(updateType, constructHeader(updatedEntity, vertex, entityType.getAllAttributes()));
+
 
                     if (DEFERRED_ACTION_ENABLED) {
                         Set<String> deletedEdgeIds = reqContext.getDeletedEdgesIds();
@@ -4016,7 +4016,7 @@ public class EntityGraphMapper {
     }
 
 
-    public void addHasLineage(Set<AtlasEdge> inputOutputEdges, boolean isRestoreEntity) {
+    public void addHasLineage(Set<AtlasEdge> inputOutputEdges, boolean isRestoreEntity, String guid) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addHasLineage");
 
         for (AtlasEdge atlasEdge : inputOutputEdges) {
@@ -4043,6 +4043,11 @@ public class EntityGraphMapper {
                     if (!isHasLineageSet) {
                         AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
                         AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
+                        AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(guid);
+                        if(diffEntity != null) {
+                            diffEntity.setAttribute(HAS_LINEAGE, true);
+                            RequestContext.get().cacheDifferentialEntity(diffEntity);
+                        }
                         isHasLineageSet = true;
                     }
 
