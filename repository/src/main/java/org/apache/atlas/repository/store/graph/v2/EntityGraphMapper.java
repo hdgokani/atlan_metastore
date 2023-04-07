@@ -4083,8 +4083,10 @@ public class EntityGraphMapper {
                         AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
                         AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
                         AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(guid);
-                        diffEntity.setAttribute(HAS_LINEAGE, true);
-                        RequestContext.get().cacheDifferentialEntity(diffEntity);
+                        if(diffEntity != null) {
+                            diffEntity.setAttribute(HAS_LINEAGE, true);
+                            RequestContext.get().cacheDifferentialEntity(diffEntity);
+                        }
                         isHasLineageSet = true;
                     }
 
