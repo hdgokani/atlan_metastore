@@ -1508,6 +1508,11 @@ public abstract class DeleteHandlerV1 {
 
                 if (!activeEdgeFound) {
                     AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, false);
+                    AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(GraphHelper.getGuid(processVertex));
+                    if(diffEntity != null) {
+                        diffEntity.setAttribute(HAS_LINEAGE, false);
+                        RequestContext.get().cacheDifferentialEntity(diffEntity);
+                    }
 
                     String oppositeEdgeLabel = isOutputEdge ? PROCESS_INPUTS : PROCESS_OUTPUTS;
 

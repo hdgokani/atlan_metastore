@@ -381,13 +381,6 @@ public class EntityGraphMapper {
                     mapRelationshipAttributes(createdEntity, entityType, vertex, CREATE, context);
 
                     setCustomAttributes(vertex, createdEntity);
-                    setSystemAttributesToEntity(vertex, createdEntity);
-                    resp.addEntity(CREATE, constructHeader(createdEntity, vertex,  entityType.getAllAttributes()));
-                    addClassifications(context, guid, createdEntity.getClassifications());
-
-                    if (MapUtils.isNotEmpty(createdEntity.getBusinessAttributes())) {
-                        addOrUpdateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes());
-                    }
 
                     Set<AtlasEdge> inOutEdges = getNewCreatedInputOutputEdges(guid);
 
@@ -396,13 +389,21 @@ public class EntityGraphMapper {
                         if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore())) {
                             isRestoreEntity = context.getEntitiesToRestore().contains(vertex);
                         }
-                        addHasLineage(inOutEdges, isRestoreEntity, guid);
+                        addHasLineage(inOutEdges, isRestoreEntity);
                     }
 
                     Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
 
                     if (removedEdges != null && removedEdges.size() > 0) {
                         deleteDelegate.getHandler().resetHasLineageOnInputOutputDelete(removedEdges, null);
+                    }
+
+                    setSystemAttributesToEntity(vertex, createdEntity);
+                    resp.addEntity(CREATE, constructHeader(createdEntity, vertex,  entityType.getAllAttributes()));
+                    addClassifications(context, guid, createdEntity.getClassifications());
+
+                    if (MapUtils.isNotEmpty(createdEntity.getBusinessAttributes())) {
+                        addOrUpdateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes());
                     }
 
                     reqContext.cache(createdEntity);
@@ -461,13 +462,13 @@ public class EntityGraphMapper {
                     // Add hasLineage for newly created edges
                     Set<AtlasEdge> newlyCreatedEdges = getNewCreatedInputOutputEdges(guid);
                     if (newlyCreatedEdges.size() > 0) {
-                        addHasLineage(newlyCreatedEdges, false, guid);
+                        addHasLineage(newlyCreatedEdges, false);
                     }
 
                     // Add hasLineage for restored edges
                     if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore()) && context.getEntitiesToRestore().contains(vertex)) {
                         Set<AtlasEdge> restoredInputOutputEdges = getRestoredInputOutputEdges(vertex);
-                        addHasLineage(restoredInputOutputEdges, true, guid);
+                        addHasLineage(restoredInputOutputEdges, true);
                     }
 
                     Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
@@ -4055,7 +4056,7 @@ public class EntityGraphMapper {
     }
 
 
-    public void addHasLineage(Set<AtlasEdge> inputOutputEdges, boolean isRestoreEntity, String guid) {
+    public void addHasLineage(Set<AtlasEdge> inputOutputEdges, boolean isRestoreEntity) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addHasLineage");
 
         for (AtlasEdge atlasEdge : inputOutputEdges) {
@@ -4082,7 +4083,7 @@ public class EntityGraphMapper {
                     if (!isHasLineageSet) {
                         AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
                         AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
-                        AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(guid);
+                        AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(GraphHelper.getGuid(processVertex));
                         if(diffEntity != null) {
                             diffEntity.setAttribute(HAS_LINEAGE, true);
                             RequestContext.get().cacheDifferentialEntity(diffEntity);
