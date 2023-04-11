@@ -68,42 +68,41 @@ public class MigrationREST {
                         (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size()) + ")");
             }
 
-            if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
-                for (AtlasEntity entity : entities.getEntities()) {
-                    if (entity.getTypeName().equalsIgnoreCase(CONNECTION_ENTITY_TYPE)) {
-                        //create connection role
-                        String roleName = String.format(CONN_NAME_PATTERN, entity.getGuid());
+            for (AtlasEntity entity : entities.getEntities()) {
+                if (entity.getTypeName().equalsIgnoreCase(CONNECTION_ENTITY_TYPE)) {
+                    //create connection role
+                    String roleName = String.format(CONN_NAME_PATTERN, entity.getGuid());
 
-                        List<String> adminUsers = (List<String>) entity.getAttribute(ATTR_ADMIN_USERS);
-                        List<String> adminGroups = (List<String>) entity.getAttribute(ATTR_ADMIN_GROUPS);
-                        List<String> adminRoles = (List<String>) entity.getAttribute(ATTR_ADMIN_ROLES);
-                        if (CollectionUtils.isEmpty(adminUsers)) {
-                            adminUsers = new ArrayList<>();
-                        }
+                    List<String> adminUsers = (List<String>) entity.getAttribute(ATTR_ADMIN_USERS);
+                    List<String> adminGroups = (List<String>) entity.getAttribute(ATTR_ADMIN_GROUPS);
+                    List<String> adminRoles = (List<String>) entity.getAttribute(ATTR_ADMIN_ROLES);
+                    if (CollectionUtils.isEmpty(adminUsers)) {
+                        adminUsers = new ArrayList<>();
+                    }
 
-                        if (StringUtils.isNotEmpty(entity.getCreatedBy())) {
-                            adminUsers.add(entity.getCreatedBy());
-                        }
+                    if (StringUtils.isNotEmpty(entity.getCreatedBy())) {
+                        adminUsers.add(entity.getCreatedBy());
+                    }
 
-                        entity.setAttribute(ATTR_ADMIN_USERS, adminUsers);
+                    entity.setAttribute(ATTR_ADMIN_USERS, adminUsers);
 
-                        RoleRepresentation role = keycloakStore.getRole(roleName);
-                        if (role == null) {
-                            role = keycloakStore.createRoleForConnection(roleName, true, adminUsers, adminGroups, adminRoles);
-                        }
-                        AtlasEntity.AtlasEntitiesWithExtInfo policiesExtInfo = transformer.transform(entity);
-                        try {
-                            RequestContext.get().setPoliciesBootstrappingInProgress(true);
-                            EntityStream entityStream = new AtlasEntityStream(policiesExtInfo);
-                            EntityMutationResponse policyResponse = entityStore.createOrUpdate(entityStream, false);
-                            response.setMutatedEntities(policyResponse.getMutatedEntities());
-                            LOG.info("Created bootstrap policies for connection");
-                        } finally {
-                            RequestContext.get().setPoliciesBootstrappingInProgress(false);
-                        }
+                    RoleRepresentation role = keycloakStore.getRole(roleName);
+                    if (role == null) {
+                        role = keycloakStore.createRoleForConnection(roleName, true, adminUsers, adminGroups, adminRoles);
+                    }
+                    AtlasEntity.AtlasEntitiesWithExtInfo policiesExtInfo = transformer.transform(entity);
+                    try {
+                        RequestContext.get().setPoliciesBootstrappingInProgress(true);
+                        EntityStream entityStream = new AtlasEntityStream(policiesExtInfo);
+                        EntityMutationResponse policyResponse = entityStore.createOrUpdate(entityStream, false);
+                        response.setMutatedEntities(policyResponse.getMutatedEntities());
+                        LOG.info("Created bootstrap policies for connection");
+                    } finally {
+                        RequestContext.get().setPoliciesBootstrappingInProgress(false);
                     }
                 }
             }
+
             return response;
         } finally {
             AtlasPerfTracer.log(perf);
@@ -117,27 +116,27 @@ public class MigrationREST {
         AtlasPerfTracer perf = null;
         EntityMutationResponse response = new EntityMutationResponse();
         try {
-            if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
-                for (AtlasEntity entity : entities.getEntities()) {
-                    if (entity.getTypeName().equalsIgnoreCase(QUERY_COLLECTION_ENTITY_TYPE)) {
-                        createCollectionAdminRole(entity);
-                        createCollectionViewerRole(entity);
 
-                        //create bootstrap policies
-                        AtlasEntity.AtlasEntitiesWithExtInfo policies = transformer.transform(entity);
-                        try {
-                            RequestContext.get().setPoliciesBootstrappingInProgress(true);
+            for (AtlasEntity entity : entities.getEntities()) {
+                if (entity.getTypeName().equalsIgnoreCase(QUERY_COLLECTION_ENTITY_TYPE)) {
+                    createCollectionAdminRole(entity);
+                    createCollectionViewerRole(entity);
 
-                            EntityStream entityStream = new AtlasEntityStream(policies);
-                            EntityMutationResponse policyResponse = entityStore.createOrUpdate(entityStream, false);
-                            response.setMutatedEntities(policyResponse.getMutatedEntities());
-                            LOG.info("Created bootstrap policies for connection");
-                        } finally {
-                            RequestContext.get().setPoliciesBootstrappingInProgress(false);
-                        }
+                    //create bootstrap policies
+                    AtlasEntity.AtlasEntitiesWithExtInfo policies = transformer.transform(entity);
+                    try {
+                        RequestContext.get().setPoliciesBootstrappingInProgress(true);
+
+                        EntityStream entityStream = new AtlasEntityStream(policies);
+                        EntityMutationResponse policyResponse = entityStore.createOrUpdate(entityStream, false);
+                        response.setMutatedEntities(policyResponse.getMutatedEntities());
+                        LOG.info("Created bootstrap policies for connection");
+                    } finally {
+                        RequestContext.get().setPoliciesBootstrappingInProgress(false);
                     }
                 }
             }
+
             return response;
         }finally {
             AtlasPerfTracer.log(perf);
