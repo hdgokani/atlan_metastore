@@ -177,6 +177,7 @@ public class CachePolicyTransformerImpl {
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
             //transform policies
             servicePolicies = transformAtlasPoliciesToRangerPolicies(atlasPolicies, serviceType);
+            LOG.info("Transformed {} policies into {} policies", atlasPolicies.size(), servicePolicies.size());
         }
 
         RequestContext.get().endMetricRecord(recorder);
@@ -413,6 +414,8 @@ public class CachePolicyTransformerImpl {
             from += size;
 
         } while (found && ret.size() % size == 0);
+
+        LOG.info("Found {} policies via indexsearch", ret.size());
 
         return ret;
     }
