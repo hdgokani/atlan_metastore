@@ -24,7 +24,6 @@ import org.apache.atlas.ranger.plugin.util.KeycloakUserStore;
 import org.apache.atlas.ranger.plugin.util.RangerRoles;
 import org.apache.atlas.ranger.plugin.util.RangerUserStore;
 import org.apache.atlas.ranger.plugin.util.ServicePolicies;
-import org.apache.atlas.tasks.TaskService;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
@@ -130,7 +129,7 @@ public class AuthREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadPolicies");
             }
 
-            ServicePolicies ret = policyTransformer.getPolicies(serviceName, pluginId, lastUpdatedTime);
+            ServicePolicies ret = policyTransformer.getPoliciesIfUpdated(serviceName, pluginId, lastUpdatedTime);
 
             return ret;
         } finally {
