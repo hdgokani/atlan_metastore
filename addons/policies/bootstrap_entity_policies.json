@@ -2171,7 +2171,10 @@
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
-                [],
+                [
+                    "service-account-atlan-argo",
+                    "service-account-atlan-backend"
+                ],
                 "policyGroups":
                 [],
                 "policyRoles":
@@ -2268,7 +2271,10 @@
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
-                [],
+                [
+                    "service-account-atlan-argo",
+                    "service-account-atlan-backend"
+                ],
                 "policyGroups":
                 [],
                 "policyRoles":
@@ -2299,7 +2305,10 @@
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
-                [],
+                [
+                    "service-account-atlan-argo",
+                    "service-account-atlan-backend"
+                ],
                 "policyGroups":
                 [],
                 "policyRoles":
@@ -2330,7 +2339,10 @@
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
-                [],
+                [
+                    "service-account-atlan-argo",
+                    "service-account-atlan-backend"
+                ],
                 "policyGroups":
                 [],
                 "policyRoles":
@@ -2361,7 +2373,10 @@
                 "policyServiceName": "atlas",
                 "policyType": "allow",
                 "policyUsers":
-                [],
+                [
+                    "service-account-atlan-argo",
+                    "service-account-atlan-backend"
+                ],
                 "policyGroups":
                 [],
                 "policyRoles":
