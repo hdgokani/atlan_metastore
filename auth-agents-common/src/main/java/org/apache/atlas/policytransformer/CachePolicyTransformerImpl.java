@@ -18,14 +18,14 @@
 
 package org.apache.atlas.policytransformer;
 
-import org.apache.atlas.ApplicationProperties;
+//import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.discovery.AtlasDiscoveryService;
+//import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AuditSearchParams;
-import org.apache.atlas.model.audit.EntityAuditSearchResult;
+//import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -40,7 +40,7 @@ import org.apache.atlas.ranger.plugin.model.RangerServiceDef;
 import org.apache.atlas.ranger.plugin.model.RangerValiditySchedule;
 import org.apache.atlas.ranger.plugin.util.ServicePolicies;
 import org.apache.atlas.ranger.plugin.util.ServicePolicies.TagPolicies;
-import org.apache.atlas.repository.audit.ESBasedAuditRepository;
+//import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -68,7 +68,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.NAME;
-import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
+//import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
@@ -96,11 +96,11 @@ public class CachePolicyTransformerImpl {
     private static final String RESOURCE_SERVICE_DEF_PATH = "/service-defs/";
     private static final String RESOURCE_SERVICE_DEF_PATTERN = RESOURCE_SERVICE_DEF_PATH + "atlas-servicedef-%s.json";
 
-    private AtlasDiscoveryService  discoveryService;
+    private EntityDiscoveryService discoveryService;
     private AtlasGraph             graph;
     private EntityGraphRetriever   entityRetriever;
 
-    private ESBasedAuditRepository auditRepository;
+    //private ESBasedAuditRepository auditRepository;
 
     private PersonaCachePolicyTransformer personaTransformer;
 
@@ -187,7 +187,7 @@ public class CachePolicyTransformerImpl {
         return servicePolicies;
     }
 
-
+/*
     private boolean isPolicyUpdated(long lastUpdatedTime, String serviceName) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.isPolicyUpdated" + serviceName);
 
@@ -219,7 +219,7 @@ public class CachePolicyTransformerImpl {
         }
 
         return true;
-    }
+    }*/
     private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service) throws AtlasBaseException, IOException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getServicePolicies");
         List<RangerPolicy> servicePolicies = new ArrayList<>();
