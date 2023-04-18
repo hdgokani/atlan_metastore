@@ -111,13 +111,13 @@ public class CachePolicyTransformerImpl {
 
         personaTransformer = new PersonaCachePolicyTransformer(entityRetriever);
 
-        try {
+        /*try {
             this.auditRepository = new ESBasedAuditRepository(ApplicationProperties.get());
             auditRepository.start();
         } catch (AtlasException e) {
             LOG.error("Failed to initialize auditRepository");
             throw new AtlasBaseException(e.getCause());
-        }
+        }*/
 
         try {
             this.discoveryService = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
@@ -128,9 +128,9 @@ public class CachePolicyTransformerImpl {
     }
 
     public ServicePolicies getPoliciesIfUpdated(String serviceName, String pluginId, Long lastUpdatedTime) {
-        if (!isPolicyUpdated(lastUpdatedTime, serviceName)){
+        /*if (!isPolicyUpdated(lastUpdatedTime, serviceName)){
             return null;
-        }
+        }*/
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getPoliciesIfUpdated" + serviceName);
 
         ServicePolicies servicePolicies = new ServicePolicies();
