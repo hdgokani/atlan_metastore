@@ -340,7 +340,6 @@ public class KeycloakUserStore {
 
                     } while (found && ret.size() % size == 0);
 
-
                     rangerRole.setGroups(keycloakGroupsToRangerRoleMember(ret));
                 });
                 groupsFetcher.start();
