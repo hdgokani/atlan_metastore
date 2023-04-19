@@ -15,15 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.policytransformer;
+package org.apache.atlas.transformer.authz.policytransformer;
 
 import joptsimple.internal.Strings;
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -31,23 +29,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_NAME;
-import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_POLICY_RESOURCES;
-import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_QUALIFIED_NAME;
+import static org.apache.atlas.transformer.authz.policytransformer.CachePolicyTransformerImpl.ATTR_NAME;
+import static org.apache.atlas.transformer.authz.policytransformer.CachePolicyTransformerImpl.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ACTIONS;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES_CATEGORY;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_DATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
-import static org.apache.atlas.repository.util.AccessControlUtils.extractConnectionFromResource;
 import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionEntity;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyActions;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResources;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
 
@@ -73,12 +65,6 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                             .filter(x -> x.startsWith(RESOURCES_ENTITY))
                             .map(x -> x.split(RESOURCES_SPLITTER)[1])
                             .collect(Collectors.toList());
-
-        if (atlasPolicy.getGuid().equals("00c1dbb4-bfbe-49b4-91e2-881a4fa85ebc")) {
-            LOG.info("nikhil:");
-            LOG.info(Strings.join(atlasResources, ", "));
-            LOG.info(Strings.join(entityResources, ", "));
-        }
 
         int index = 0;
         for (String atlasAction : atlasActions) {
