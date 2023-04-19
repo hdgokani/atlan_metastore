@@ -22,7 +22,6 @@ package org.apache.atlas.ranger.plugin.util;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
-import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -148,9 +147,9 @@ public class PolicyRefresher extends Thread {
 	}
 
 	public void startRefresher() {
-		loadRoles();
-		loadPolicy();
-		loadUserStore();
+		//loadRoles();
+		//loadPolicy();
+		//loadUserStore();
 		super.start();
 
 		policyDownloadTimer = new Timer("policyDownloadTimer", true);
@@ -315,17 +314,7 @@ public class PolicyRefresher extends Thread {
 		}
 
 		try {
-
-			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null) {
-				RangerRESTUtils restUtils = new RangerRESTUtils();
-				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry());
-
-				svcPolicies = transformer.getPoliciesIfUpdated(serviceName,
-														restUtils.getPluginId(serviceName, plugIn.getAppId()),
-														lastUpdatedTimeInMillis);
-			} else {
-				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTimeInMillis);
-			}
+			svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTimeInMillis);
 
 			boolean isUpdated = svcPolicies != null;
 
