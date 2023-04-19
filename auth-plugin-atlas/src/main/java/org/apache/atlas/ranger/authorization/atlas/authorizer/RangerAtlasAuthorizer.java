@@ -109,35 +109,6 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
-    public void init(AtlasTypeRegistry typeRegistry) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> RangerAtlasPlugin.init(typeRegistry)");
-        }
-
-        RangerBasePlugin plugin = atlasPlugin;
-
-        if (plugin == null) {
-            synchronized (RangerAtlasPlugin.class) {
-                plugin = atlasPlugin;
-
-                if (plugin == null) {
-                    plugin = new RangerAtlasPlugin(typeRegistry);
-
-                    plugin.init();
-
-                    plugin.setResultProcessor(new RangerDefaultAuditHandler(plugin.getConfig()));
-
-                    atlasPlugin = plugin;
-                    groupUtil = new RangerGroupUtil(atlasPlugin.getUserStore());
-                }
-            }
-        }
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== RangerAtlasPlugin.init(typeRegistry)");
-        }
-    }
-
-    @Override
     public void cleanUp() {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> cleanUp ");
@@ -874,10 +845,6 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
 
         RangerAtlasPlugin() {
             super("atlas", "atlas");
-        }
-
-        RangerAtlasPlugin(AtlasTypeRegistry typeRegistry) {
-            super("atlas", "atlas", typeRegistry);
         }
     }
 
