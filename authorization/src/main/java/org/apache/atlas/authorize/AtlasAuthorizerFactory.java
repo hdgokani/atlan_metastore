@@ -41,7 +41,7 @@ public class AtlasAuthorizerFactory {
     public static String CURRENT_AUTHORIZER_IMPL;
     public static final String ATLAS_AUTHORIZER_IMPL = "atlas";
 
-    public static AtlasAuthorizer getAtlasAuthorizer() throws AtlasAuthorizationException {
+    public static AtlasAuthorizer getAtlasAuthorizer(AtlasTypeRegistry typeRegistry) throws AtlasAuthorizationException {
         AtlasAuthorizer ret = INSTANCE;
 
         if (ret == null) {
@@ -81,6 +81,8 @@ public class AtlasAuthorizerFactory {
                             INSTANCE = (AtlasAuthorizer) authorizerMetaObject.newInstance();
 
                             if (StringUtils.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL, ATLAS_AUTHORIZER_IMPL)) {
+                                INSTANCE.init(typeRegistry);
+                            } else {
                                 INSTANCE.init();
                             }
                         }
@@ -96,5 +98,9 @@ public class AtlasAuthorizerFactory {
         }
 
         return ret;
+    }
+
+    public static AtlasAuthorizer getAtlasAuthorizer() throws AtlasAuthorizationException {
+        return INSTANCE;
     }
 }

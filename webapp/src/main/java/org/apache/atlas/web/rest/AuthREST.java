@@ -19,11 +19,11 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.atlas.ranger.plugin.util.KeycloakUserStore;
 import org.apache.atlas.ranger.plugin.util.RangerRoles;
 import org.apache.atlas.ranger.plugin.util.RangerUserStore;
 import org.apache.atlas.ranger.plugin.util.ServicePolicies;
-import org.apache.atlas.transformer.authz.policytransformer.CachePolicyTransformerImpl;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -58,10 +58,11 @@ public class AuthREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.AuthREST");
 
     private CachePolicyTransformerImpl policyTransformer;
+    private AtlasTypeRegistry typeRegistry;
 
     @Inject
-    public AuthREST(CachePolicyTransformerImpl policyTransformer) {
-        this.policyTransformer = policyTransformer;
+    public AuthREST(AtlasTypeRegistry typeRegistry) {
+        this.typeRegistry = typeRegistry;
     }
 
     @GET
@@ -129,6 +130,12 @@ public class AuthREST {
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadPolicies");
+            }
+
+            try {
+                this.policyTransformer = new CachePolicyTransformerImpl(typeRegistry);
+            } catch (AtlasBaseException e) {
+                LOG.error("Failed to initialize AuthREST.policyTransformer");
             }
 
             ServicePolicies ret = policyTransformer.getPoliciesIfUpdated(serviceName, pluginId, lastUpdatedTime);

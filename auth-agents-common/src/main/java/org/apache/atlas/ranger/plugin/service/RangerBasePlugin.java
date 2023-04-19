@@ -79,6 +79,7 @@ public class RangerBasePlugin {
 	private       RangerRoles                 roles;
 	private       RangerUserStore             userStore;
 	private final List<RangerChainedPlugin>   chainedPlugins;
+	private 	  AtlasTypeRegistry 		  typeRegistry = null;
 
 	public RangerBasePlugin(String serviceType, String appId) {
 		this(new RangerPluginConfig(serviceType, null, appId, null, null, null));
@@ -86,6 +87,11 @@ public class RangerBasePlugin {
 
 	public RangerBasePlugin(String serviceType, String serviceName, String appId) {
 		this(new RangerPluginConfig(serviceType, serviceName, appId, null, null, null));
+	}
+
+	public RangerBasePlugin(String serviceType, String serviceName, AtlasTypeRegistry typeRegistry) {
+		this(new RangerPluginConfig(serviceType, serviceName, null, null, null, null));
+		setTypeRegistry(typeRegistry);
 	}
 
 	public RangerBasePlugin(RangerPluginConfig pluginConfig) {
@@ -227,6 +233,14 @@ public class RangerBasePlugin {
 	}
 
 	public AuditProviderFactory getAuditProviderFactory() { return RangerBasePlugin.getAuditProviderFactory(getServiceName()); }
+
+	public AtlasTypeRegistry getTypeRegistry() {
+		return typeRegistry;
+	}
+
+	public void setTypeRegistry(AtlasTypeRegistry typeRegistry) {
+		this.typeRegistry = typeRegistry;
+	}
 
 	public void init() {
 		cleanup();

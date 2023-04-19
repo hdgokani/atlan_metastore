@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.transformer.authz.policytransformer;
+package org.apache.atlas.policytransformer;
 
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 

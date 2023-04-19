@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.transformer.authz.policytransformer;
+package org.apache.atlas.policytransformer;
 
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.discovery.AtlasDiscoveryService;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AuditSearchParams;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
@@ -39,6 +40,7 @@ import org.apache.atlas.ranger.plugin.util.ServicePolicies;
 import org.apache.atlas.ranger.plugin.util.ServicePolicies.TagPolicies;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -49,10 +51,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 
-import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -72,8 +72,6 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGOR
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
 
 
-@Component
-@Order(9)
 public class CachePolicyTransformerImpl {
     private static final Logger LOG = LoggerFactory.getLogger(CachePolicyTransformerImpl.class);
 
@@ -96,7 +94,7 @@ public class CachePolicyTransformerImpl {
     private static final String RESOURCE_SERVICE_DEF_PATH = "/service-defs/";
     private static final String RESOURCE_SERVICE_DEF_PATTERN = RESOURCE_SERVICE_DEF_PATH + "atlas-servicedef-%s.json";
 
-    private AtlasDiscoveryService discoveryService;
+    private EntityDiscoveryService discoveryService;
     private AtlasGraph             graph;
     private EntityGraphRetriever   entityRetriever;
 
@@ -104,16 +102,27 @@ public class CachePolicyTransformerImpl {
 
     private PersonaCachePolicyTransformer personaTransformer;
 
-    @Inject
-    public CachePolicyTransformerImpl(AtlasGraph graph, AtlasTypeRegistry typeRegistry,
-                                      EntityGraphRetriever entityRetriever, ESBasedAuditRepository auditRepository,
-                                      AtlasDiscoveryService discoveryService) throws AtlasBaseException {
-        this.graph              = graph;
-        this.entityRetriever    = entityRetriever;
-        this.auditRepository    = auditRepository;
-        this.discoveryService   = discoveryService;
+    public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        this.graph                = new AtlasJanusGraph();
+        this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
 
         personaTransformer = new PersonaCachePolicyTransformer(entityRetriever);
+
+        try {
+            if (ESBasedAuditRepository.isStarted) {
+                this.auditRepository = BeanUtil.getBean(ESBasedAuditRepository.class);
+            }
+        } catch (NoSuchBeanDefinitionException | NullPointerException e) {
+            LOG.error("Failed to initialize auditRepository");
+            throw new AtlasBaseException(e.getCause());
+        }
+
+        try {
+            this.discoveryService = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
+        } catch (AtlasException e) {
+            LOG.error("Failed to initialize discoveryService");
+            throw new AtlasBaseException(e.getCause());
+        }
     }
 
     public ServicePolicies getPoliciesIfUpdated(String serviceName, String pluginId, Long lastUpdatedTime) {
@@ -142,6 +151,7 @@ public class CachePolicyTransformerImpl {
 
                 String serviceDefName = String.format(RESOURCE_SERVICE_DEF_PATTERN, serviceName);
                 servicePolicies.setServiceDef(getResourceAsObject(serviceDefName, RangerServiceDef.class));
+
 
                 //Process tag based policies
                 String tagServiceName = (String) service.getAttribute("tagService");

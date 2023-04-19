@@ -1,11 +1,9 @@
 package org.apache.atlas.authz.admin.client;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ranger.authorization.utils.StringUtil;
 import org.apache.atlas.ranger.plugin.util.RangerRoles;
 import org.apache.atlas.ranger.plugin.util.RangerUserStore;
@@ -17,8 +15,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.http.client.utils.URIBuilder;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -100,16 +96,9 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
         return sendRequestAndGetResponse(uri, RangerUserStore.class);
     }
 
-    private <T> T sendRequestAndGetResponse(URI uri, Class<T> responseClass) throws AtlasBaseException {
-        Response response = null;
-
-        try {
-            Request request = new Request.Builder().url(uri.toURL()).build();
-            response = httpClient.newCall(request).execute();
-        } catch (IOException e) {
-            LOG.error("Failed to connect to " + uri.getAuthority());
-            throw new AtlasBaseException(e.getMessage());
-        }
+    private <T> T sendRequestAndGetResponse(URI uri, Class<T> responseClass) throws Exception {
+        Request request = new Request.Builder().url(uri.toURL()).build();
+        Response response = httpClient.newCall(request).execute();
 
         if (response.code() == HttpServletResponse.SC_NO_CONTENT) {
             if (LOG.isDebugEnabled()) {
@@ -117,21 +106,10 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
             }
             return null;
         } else if (response.code() == HttpServletResponse.SC_OK) {
-            String responseBody = null;
-            try {
-                responseBody = response.body().string();
-            } catch (IOException e) {
-                LOG.error("Failed to extract response body");
-                throw new AtlasBaseException(e.getMessage());
-            }
+            String responseBody = response.body().string();
             if (StringUtils.isNotEmpty(responseBody)) {
                 ObjectMapper mapper = new ObjectMapper();
-                try {
-                    return mapper.readValue(responseBody, responseClass);
-                } catch (JsonProcessingException e) {
-                    LOG.error("Failed to parse response body");
-                    throw new AtlasBaseException(e.getMessage());
-                }
+                return mapper.readValue(responseBody, responseClass);
             } else {
                 LOG.warn("AtlasAuthRESTClient.sendRequestAndGetResponse(): Empty response from Atlas Auth");
             }
