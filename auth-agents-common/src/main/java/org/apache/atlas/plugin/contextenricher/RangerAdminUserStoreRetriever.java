@@ -19,10 +19,10 @@
 
 package org.apache.atlas.plugin.contextenricher;
 
+import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.atlas.admin.client.RangerAdminClient;
 import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
 import org.apache.atlas.plugin.policyengine.RangerPluginContext;
 import org.apache.atlas.plugin.util.RangerUserStore;
@@ -33,7 +33,7 @@ import java.util.Map;
 public class RangerAdminUserStoreRetriever extends RangerUserStoreRetriever {
     private static final Log LOG = LogFactory.getLog(RangerAdminUserStoreRetriever.class);
 
-    private RangerAdminClient adminClient;
+    private AtlasAuthAdminClient atlasAuthAdminClient;
 
     @Override
     public void init(Map<String, String> options) {
@@ -46,8 +46,7 @@ public class RangerAdminUserStoreRetriever extends RangerUserStoreRetriever {
             }
 
             RangerPluginContext pluginContext = getPluginContext();
-            RangerAdminClient	rangerAdmin  = pluginContext.getAdminClient();
-            this.adminClient                 = (rangerAdmin != null) ? rangerAdmin : pluginContext.createAdminClient(pluginConfig);
+            this.atlasAuthAdminClient         = pluginContext.getAtlasAuthAdminClient();
 
         } else {
             LOG.error("FATAL: Cannot find service/serviceDef to use for retrieving userstore. Will NOT be able to retrieve userstore.");
@@ -59,9 +58,9 @@ public class RangerAdminUserStoreRetriever extends RangerUserStoreRetriever {
 
         RangerUserStore rangerUserStore = null;
 
-        if (adminClient != null) {
+        if (atlasAuthAdminClient != null) {
             try {
-                rangerUserStore = adminClient.getUserStoreIfUpdated(lastKnownVersion, lastActivationTimeInMillis);
+                rangerUserStore = atlasAuthAdminClient.getUserStoreIfUpdated(lastActivationTimeInMillis);
             } catch (ClosedByInterruptException closedByInterruptException) {
                 LOG.error("UserStore-retriever thread was interrupted while blocked on I/O");
                 throw new InterruptedException();
