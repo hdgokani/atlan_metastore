@@ -22,7 +22,6 @@ package org.apache.atlas.ranger.plugin.util;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
-import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
