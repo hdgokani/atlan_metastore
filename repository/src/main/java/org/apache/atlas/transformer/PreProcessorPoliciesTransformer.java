@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.AtlasErrorCode.RESOURCE_NOT_FOUND;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.getStaticFileAsString;
@@ -112,7 +113,7 @@ public class PreProcessorPoliciesTransformer {
             return templates.get(entityTypeName);
         }
 
-        private static List<AtlasEntity> loadTemplate(String entityTypeName) {
+        private static List<AtlasEntity> loadTemplate(String entityTypeName) throws AtlasBaseException {
             String jsonTemplate = null;
             String templateName = String.format(TEMPLATE_FILE_NAME_PATTERN, entityTypeName.toLowerCase());
 
@@ -120,6 +121,7 @@ public class PreProcessorPoliciesTransformer {
                 jsonTemplate = getStaticFileAsString(templateName);
             } catch (IOException e) {
                 LOG.error("Failed to load template for policies: {}", templateName);
+                throw new AtlasBaseException(RESOURCE_NOT_FOUND, "Template file " + templateName);
             }
 
             AtlasEntity[] entities = AtlasType.fromJson(jsonTemplate, AtlasEntity[].class);

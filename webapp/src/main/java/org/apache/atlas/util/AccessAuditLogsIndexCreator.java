@@ -16,35 +16,19 @@
  */
 package org.apache.atlas.util;
 
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.ranger.authorization.credutils.CredentialsProviderUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.config.AuthSchemes;
-import org.apache.http.config.Lookup;
-import org.apache.http.config.RegistryBuilder;
 import org.apache.http.entity.ContentType;
-import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.http.nio.entity.NStringEntity;
-import org.elasticsearch.action.admin.indices.open.OpenIndexRequest;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.client.indices.CreateIndexResponse;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.core.TimeValue;
-import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +38,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -64,7 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.atlas.repository.audit.ESBasedAuditRepository.INDEX_BACKEND_CONF;
 
-public class AccessAuditLogsIndexCreator {
+public class AccessAuditLogsIndexCreator extends Thread {
     private static final Logger LOG = LoggerFactory.getLogger(AccessAuditLogsIndexCreator.class);
 
     private static final String ES_CONFIG_USERNAME = "atlas.audit.elasticsearch.user";
@@ -140,7 +123,8 @@ public class AccessAuditLogsIndexCreator {
         return String.format(Locale.ROOT,"User:%s, %s://%s:%s/%s", user, protocol, hosts, port, index);
     }
 
-    public void init() {
+    @Override
+    public void run() {
         LOG.info("Started run method");
         if (CollectionUtils.isNotEmpty(hosts)) {
             LOG.info("Elastic search hosts=" + hosts + ", index=" + index);
