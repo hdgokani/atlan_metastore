@@ -116,6 +116,13 @@ public class MigrationREST {
     public EntityMutationResponse bootstrapCollections(AtlasEntity.AtlasEntitiesWithExtInfo entities) throws Exception {
         AtlasPerfTracer perf = null;
         EntityMutationResponse response = new EntityMutationResponse();
+
+
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.bootstrapCollections(entityCount=" +
+                    (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size()) + ")");
+        }
+
         try {
             for (AtlasEntity entity : entities.getEntities()) {
                 if (entity.getTypeName().equalsIgnoreCase(QUERY_COLLECTION_ENTITY_TYPE)) {
