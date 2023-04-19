@@ -24,6 +24,8 @@ import org.apache.atlas.ranger.plugin.util.KeycloakUserStore;
 import org.apache.atlas.ranger.plugin.util.RangerRoles;
 import org.apache.atlas.ranger.plugin.util.RangerUserStore;
 import org.apache.atlas.ranger.plugin.util.ServicePolicies;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
@@ -56,11 +58,19 @@ public class AuthREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.AuthREST");
 
     private CachePolicyTransformerImpl policyTransformer;
+    private AtlasTypeRegistry typeRegistry;
 
     @Inject
-    public AuthREST(CachePolicyTransformerImpl policyTransformer) {
-        this.policyTransformer = policyTransformer;
+    public AuthREST(AtlasTypeRegistry typeRegistry) {
+        try {
+            this.policyTransformer = new CachePolicyTransformerImpl(typeRegistry);
+        } catch (AtlasBaseException e) {
+            LOG.error("Failed to initialize AuthREST.policyTransformer");
+        }
     }
+    /*public AuthREST(CachePolicyTransformerImpl policyTransformer) {
+        this.policyTransformer = policyTransformer;
+    }*/
 
     @GET
     @Path("download/roles/{serviceName}")
