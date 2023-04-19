@@ -35,6 +35,7 @@ public class AtlasAuthorizerFactory {
     private static final String RANGER_AUTHORIZER = "org.apache.ranger.authorization.atlas.authorizer.RangerAtlasAuthorizer";
 
     private static volatile AtlasAuthorizer INSTANCE = null;
+    public static final String ATLAS_AUTHORIZER_IMPL = "atlas";
 
     public static AtlasAuthorizer getAtlasAuthorizer() throws AtlasAuthorizationException {
         AtlasAuthorizer ret = INSTANCE;
