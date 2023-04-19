@@ -72,7 +72,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGOR
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
 
-@Component
+//@Component
 public class CachePolicyTransformerImpl {
     private static final Logger LOG = LoggerFactory.getLogger(CachePolicyTransformerImpl.class);
 
@@ -103,7 +103,7 @@ public class CachePolicyTransformerImpl {
 
     private PersonaCachePolicyTransformer personaTransformer;
 
-    @Inject
+    //@Inject
     public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         this.graph                = new AtlasJanusGraph();
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
