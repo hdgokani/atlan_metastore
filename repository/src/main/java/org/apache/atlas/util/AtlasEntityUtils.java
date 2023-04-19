@@ -31,7 +31,7 @@ import java.util.Map;
 
 import static org.apache.atlas.repository.Constants.*;
 
-public class AtlasEntityUtils {
+public final class AtlasEntityUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityUtils.class);
 
 
