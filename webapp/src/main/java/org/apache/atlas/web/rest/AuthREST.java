@@ -58,11 +58,10 @@ public class AuthREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.AuthREST");
 
     private CachePolicyTransformerImpl policyTransformer;
-    private AtlasTypeRegistry typeRegistry;
 
     @Inject
-    public AuthREST(AtlasTypeRegistry typeRegistry) {
-        this.typeRegistry = typeRegistry;
+    public AuthREST(CachePolicyTransformerImpl policyTransformer) {
+        this.policyTransformer = policyTransformer;
     }
 
     @GET
@@ -130,12 +129,6 @@ public class AuthREST {
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadPolicies");
-            }
-
-            try {
-                this.policyTransformer = new CachePolicyTransformerImpl(typeRegistry);
-            } catch (AtlasBaseException e) {
-                LOG.error("Failed to initialize AuthREST.policyTransformer");
             }
 
             ServicePolicies ret = policyTransformer.getPoliciesIfUpdated(serviceName, pluginId, lastUpdatedTime);
