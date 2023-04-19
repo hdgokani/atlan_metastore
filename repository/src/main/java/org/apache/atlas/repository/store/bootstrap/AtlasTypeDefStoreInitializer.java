@@ -408,7 +408,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             loadBootstrapTypeDefs();
             typeDefStore.notifyLoadCompletion();
             try {
-                AtlasAuthorizerFactory.getAtlasAuthorizer();
+                AtlasAuthorizerFactory.getAtlasAuthorizer(typeRegistry);
             } catch (Throwable t) {
                 LOG.error("AtlasTypeDefStoreInitializer.instanceIsActive(): Unable to obtain AtlasAuthorizer", t);
             }
