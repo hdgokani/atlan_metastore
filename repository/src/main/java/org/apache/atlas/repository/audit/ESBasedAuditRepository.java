@@ -85,6 +85,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String ENTITY = "entity";
     private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
 
+    public static boolean isStarted = false;
+
     /*
     *    created   → event creation time
          timestamp → entity modified timestamp
@@ -277,6 +279,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         LOG.info("ESBasedAuditRepo - start!");
         initApplicationProperties();
         startInternal();
+
+        isStarted = true;
     }
 
     @VisibleForTesting
@@ -414,6 +418,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 lowLevelClient.close();
                 lowLevelClient = null;
             }
+
+            isStarted = false;
         } catch (IOException e) {
             LOG.error("ESBasedAuditRepo - error while closing es lowlevel client", e);
             throw new AtlasException(e);

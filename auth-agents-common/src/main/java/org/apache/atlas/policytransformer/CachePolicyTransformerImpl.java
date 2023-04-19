@@ -18,7 +18,6 @@
 
 package org.apache.atlas.policytransformer;
 
-//import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
@@ -53,9 +52,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-//import org.springframework.stereotype.Component;
 
-//import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -74,7 +71,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGOR
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
 
-//@Component
+
 public class CachePolicyTransformerImpl {
     private static final Logger LOG = LoggerFactory.getLogger(CachePolicyTransformerImpl.class);
 
@@ -104,22 +101,21 @@ public class CachePolicyTransformerImpl {
     private ESBasedAuditRepository auditRepository;
 
     private PersonaCachePolicyTransformer personaTransformer;
-
-    //@Inject
+    
     public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         this.graph                = new AtlasJanusGraph();
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
 
         personaTransformer = new PersonaCachePolicyTransformer(entityRetriever);
 
-        setAuditRepository();
-        /*try {
-            //this.auditRepository = new ESBasedAuditRepository(ApplicationProperties.get());
-            //auditRepository.start();
-        } catch (NoSuchBeanDefinitionException e) {
-            LOG.error("Failed to initialize auditRepository: not initilized yet");
+        try {
+            if (ESBasedAuditRepository.isStarted) {
+                this.auditRepository = BeanUtil.getBean(ESBasedAuditRepository.class);
+            }
+        } catch (NoSuchBeanDefinitionException | NullPointerException e) {
+            LOG.error("Failed to initialize auditRepository");
             throw new AtlasBaseException(e.getCause());
-        }*/
+        }
 
         try {
             this.discoveryService = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
@@ -129,19 +125,11 @@ public class CachePolicyTransformerImpl {
         }
     }
 
-    private void setAuditRepository() {
-        try {
-            this.auditRepository = BeanUtil.getBean(ESBasedAuditRepository.class);
-            LOG.info("Found auditrepository");
-        } catch (NoSuchBeanDefinitionException | NullPointerException e) {
-            LOG.error("Failed to initialize auditRepository: not initialised yet, policies will be refreshed all the time");
-        }
-    }
-
     public ServicePolicies getPoliciesIfUpdated(String serviceName, String pluginId, Long lastUpdatedTime) {
         if (!isPolicyUpdated(lastUpdatedTime, serviceName)){
             return null;
         }
+
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getPoliciesIfUpdated" + serviceName);
 
         ServicePolicies servicePolicies = new ServicePolicies();
@@ -202,9 +190,9 @@ public class CachePolicyTransformerImpl {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.isPolicyUpdated" + serviceName);
 
         if (auditRepository == null) {
-            setAuditRepository();
-
-            if (auditRepository == null) {
+            if (ESBasedAuditRepository.isStarted) {
+                this.auditRepository = BeanUtil.getBean(ESBasedAuditRepository.class);
+            } else {
                 return true;
             }
         }
@@ -231,7 +219,7 @@ public class CachePolicyTransformerImpl {
             }
         } catch (AtlasBaseException e) {
             LOG.error("ERROR in getPoliciesIfUpdated while fetching entity audits {}: ", e.getMessage());
-            return false;
+            return true;
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }

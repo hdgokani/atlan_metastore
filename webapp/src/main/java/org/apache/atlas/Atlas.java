@@ -150,6 +150,9 @@ public final class Atlas {
         installLogBridge();
 
         server.start();
+
+
+        LOG.info("Server started!");
     }
 
     private static void setApplicationHome() {
