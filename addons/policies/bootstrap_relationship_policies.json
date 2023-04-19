@@ -578,7 +578,42 @@
                     "remove-relationship"
                 ]
             }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "CUD_RELATIONSHIP_DENY_GUEST",
+                "qualifiedName": "CUD_RELATIONSHIP_DENY_GUEST",
+                "policyCategory": "bootstrap",
+                "policyServiceName": "atlas",
+                "policyType": "deny",
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$guest"
+                ],
+                "policyResourceCategory": "RELATIONSHIP",
+                "policyResources":
+                [
+                    "end-one-entity-classification:*",
+                    "end-two-entity-classification:*",
+                    "end-one-entity:*",
+                    "end-two-entity:*",
+                    "end-one-entity-type:*",
+                    "end-two-entity-type:*",
+                    "relationship-type:*"
+                ],
+                "policyActions":
+                [
+                    "add-relationship",
+                    "update-relationship",
+                    "remove-relationship"
+                ]
+            }
         }
-
     ]
 }

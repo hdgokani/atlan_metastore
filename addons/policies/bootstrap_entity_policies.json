@@ -2396,6 +2396,110 @@
                     "entity-delete"
                 ]
             }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "CUD_ENTITY_DENY_GUEST",
+                "qualifiedName": "CUD_ENTITY_DENY_GUEST",
+                "description": "cud deny for guest users",
+                "policyCategory": "bootstrap",
+                "policyServiceName": "atlas",
+                "policyType": "deny",
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$guest"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources":
+                [
+                    "entity-type:AtlasGlossaryTerm",
+                    "entity-type:AtlasGlossaryCategory",
+                    "entity-type:AtlasGlossary",
+                    "entity-type:Catalog",
+                    "entity-type:Process",
+                    "entity-type:Connection",
+                    "entity-type:ProcessExecution",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "BM_DENY_GUEST",
+                "qualifiedName": "BM_DENY_GUEST",
+                "description": "deny guest update entity-business-metadata",
+                "policyCategory": "bootstrap",
+                "policyServiceName": "atlas",
+                "policyType": "deny",
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$guest"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources":
+                [
+                    "entity-type:*",
+                    "entity-classification:*",
+                    "entity:*",
+                    "entity-business-metadata:*"
+                ],
+                "policyActions":
+                [
+                    "entity-update-business-metadata"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "CUD_CLASSIFICATION_DENY_GUEST",
+                "qualifiedName": "CUD_CLASSIFICATION_DENY_GUEST",
+                "policyCategory": "bootstrap",
+                "policyServiceName": "atlas",
+                "policyType": "deny",
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$guest"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources":
+                [
+                    "entity-type:*",
+                    "entity-classification:*",
+                    "entity:*",
+                    "classification:*"
+                ],
+                "policyActions":
+                [
+                    "entity-add-classification",
+                    "entity-update-classification",
+                    "entity-remove-classification"
+                ]
+            }
         }
     ]
 }
