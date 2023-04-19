@@ -122,6 +122,7 @@ public class CachePolicyTransformerImpl {
             //TODO: get authServiceConfigs & add into cache
 
             AtlasEntityHeader service = getServiceEntity(serviceName);
+            servicePolicies.setPolicyVersion(-1L);
 
             if (service != null) {
                 List<RangerPolicy> policies = getServicePolicies(service);
@@ -146,6 +147,7 @@ public class CachePolicyTransformerImpl {
                         tagPolicies.setPolicies(policies);
                         tagPolicies.setPolicyUpdateTime(new Date());
                         tagPolicies.setServiceId(tagService.getGuid());
+                        tagPolicies.setPolicyVersion(-1L);
 
                         String tagServiceDefName =  String.format(RESOURCE_SERVICE_DEF_PATTERN, tagService.getAttribute(NAME));
                         tagPolicies.setServiceDef(getResourceAsObject(tagServiceDefName, RangerServiceDef.class));
@@ -332,6 +334,10 @@ public class CachePolicyTransformerImpl {
     private List<RangerPolicyItemCondition> getPolicyConditions(AtlasEntityHeader atlasPolicy) {
         List<RangerPolicyItemCondition> ret = new ArrayList<>();
 
+        if (!atlasPolicy.hasAttribute("policyConditions")) {
+            return null;
+        }
+
         List<HashMap<String, Object>> conditions = (List<HashMap<String, Object>>) atlasPolicy.getAttribute("policyConditions");
 
 
@@ -351,6 +357,9 @@ public class CachePolicyTransformerImpl {
 
         List<HashMap<String, String>> validitySchedules = (List<HashMap<String, String>>) atlasPolicy.getAttribute("policyValiditySchedule");
 
+        if (!atlasPolicy.hasAttribute("policyValiditySchedule")) {
+            return null;
+        }
 
         for (HashMap<String, String> validitySchedule : validitySchedules) {
             RangerValiditySchedule rangerValiditySchedule = new RangerValiditySchedule();
