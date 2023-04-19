@@ -117,7 +117,8 @@ public final class KeycloakClient {
                 GRANT_TYPE = DEDAULT_GRANT_TYPE;
                 CLIENT_SECRET = object.getJSONObject(KEY_CREDENTIALS).getString(KEY_SECRET);
 
-                LOG.info("Keycloak conf: REALM_ID:{}, AUTH_SERVER_URL:{}", CLIENT_ID, CLIENT_SECRET);
+                LOG.info("Keycloak conf: REALM_ID:{}, AUTH_SERVER_URL:{}",
+                        REALM_ID, AUTH_SERVER_URL);
             } else {
                 throw new AtlasBaseException(AtlasErrorCode.KEYCLOAK_INIT_FAILED, "Keycloak configuration file not found in location " + confLocation);
             }
