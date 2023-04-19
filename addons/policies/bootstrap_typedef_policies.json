@@ -519,6 +519,37 @@
                     "type-delete"
                 ]
             }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "CUD_TYPEDEF_DENY_GUEST",
+                "qualifiedName": "CUD_TYPEDEF_DENY_GUEST",
+                "policyCategory": "bootstrap",
+                "policyServiceName": "atlas",
+                "policyType": "deny",
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$guest"
+                ],
+                "policyResourceCategory": "TYPEDEFS",
+                "policyResources":
+                [
+                    "type-category:*",
+                    "type:*"
+                ],
+                "policyActions":
+                [
+                    "type-create",
+                    "type-update",
+                    "type-delete"
+                ]
+            }
         }
     ]
 }
