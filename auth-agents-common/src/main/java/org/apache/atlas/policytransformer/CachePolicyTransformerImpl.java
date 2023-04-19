@@ -99,7 +99,7 @@ public class CachePolicyTransformerImpl {
     private AtlasGraph             graph;
     private EntityGraphRetriever   entityRetriever;
 
-    //private ESBasedAuditRepository auditRepository;
+    private ESBasedAuditRepository auditRepository;
 
     private PersonaCachePolicyTransformer personaTransformer;
 
@@ -110,13 +110,13 @@ public class CachePolicyTransformerImpl {
 
         personaTransformer = new PersonaCachePolicyTransformer(entityRetriever);
 
-        /*try {
+        try {
             this.auditRepository = new ESBasedAuditRepository(ApplicationProperties.get());
             auditRepository.start();
         } catch (AtlasException e) {
             LOG.error("Failed to initialize auditRepository");
             throw new AtlasBaseException(e.getCause());
-        }*/
+        }
 
         try {
             this.discoveryService = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
