@@ -101,7 +101,7 @@ public class CachePolicyTransformerImpl {
     private ESBasedAuditRepository auditRepository;
 
     private PersonaCachePolicyTransformer personaTransformer;
-    
+
     public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         this.graph                = new AtlasJanusGraph();
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
