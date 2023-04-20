@@ -17,16 +17,22 @@
  */
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.audit.AuditSearchParams;
+import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.atlas.ranger.plugin.util.KeycloakUserStore;
 import org.apache.atlas.ranger.plugin.util.RangerRoles;
 import org.apache.atlas.ranger.plugin.util.RangerUserStore;
 import org.apache.atlas.ranger.plugin.util.ServicePolicies;
+import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.tasks.TaskService;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -43,6 +49,12 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 
 /**
  * REST interface for CRUD operations on tasks
@@ -57,9 +69,12 @@ public class AuthREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.AuthREST");
 
     private CachePolicyTransformerImpl policyTransformer;
+    private ESBasedAuditRepository auditRepository;
 
     @Inject
-    public AuthREST(CachePolicyTransformerImpl policyTransformer) {
+    public AuthREST(CachePolicyTransformerImpl policyTransformer,
+                    ESBasedAuditRepository auditRepository) {
+        this.auditRepository = auditRepository;
         this.policyTransformer = policyTransformer;
     }
 
@@ -74,7 +89,7 @@ public class AuthREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadUsers");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadRoles(serviceName="+serviceName+", pluginId="+pluginId+", lastUpdatedTime="+lastUpdatedTime+")");
             }
 
             KeycloakUserStore keycloakUserStore = new KeycloakUserStore(serviceName);
@@ -101,7 +116,7 @@ public class AuthREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadUserStore");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadUserStore(serviceName=\"+serviceName+\", pluginId=\"+pluginId+\", lastUpdatedTime=\"+lastUpdatedTime+\")");
             }
 
             KeycloakUserStore keycloakUserStore = new KeycloakUserStore(serviceName);
@@ -127,7 +142,11 @@ public class AuthREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadPolicies");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadPolicies(serviceName="+serviceName+", pluginId="+pluginId+", lastUpdatedTime="+lastUpdatedTime+")");
+            }
+
+            if (!isPolicyUpdated(serviceName, lastUpdatedTime)) {
+                return null;
             }
 
             ServicePolicies ret = policyTransformer.getPolicies(serviceName, pluginId, lastUpdatedTime);
@@ -136,5 +155,44 @@ public class AuthREST {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    private boolean isPolicyUpdated(String serviceName, long lastUpdatedTime) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.isPolicyUpdated" + serviceName);
+
+        AuditSearchParams parameters = new AuditSearchParams();
+        Map<String, Object> dsl = getMap("size", 1);
+
+        List<Map<String, Object>> mustClauseList = new ArrayList<>();
+        mustClauseList.add(getMap("term", getMap("typeName", POLICY_ENTITY_TYPE)));
+
+        lastUpdatedTime = lastUpdatedTime == -1 ? 0 : lastUpdatedTime;
+        mustClauseList.add(getMap("range", getMap("timestamp", getMap("gte", lastUpdatedTime))));
+
+        dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
+
+        parameters.setDsl(dsl);
+
+        try {
+            EntityAuditSearchResult result = auditRepository.searchEvents(parameters.getQueryString());
+
+            if (result == null || CollectionUtils.isEmpty(result.getEntityAudits())) {
+                LOG.info("getPoliciesIfUpdated: Skipping as no update found");
+                return false;
+            }
+        } catch (AtlasBaseException e) {
+            LOG.error("ERROR in getPoliciesIfUpdated while fetching entity audits {}: ", e.getMessage());
+            return true;
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+
+        return true;
+    }
+
+    private Map<String, Object> getMap(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+        return map;
     }
 }
