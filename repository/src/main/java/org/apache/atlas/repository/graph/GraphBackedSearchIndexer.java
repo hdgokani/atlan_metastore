@@ -340,7 +340,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             HashMap<String, Object> ES_SPACE_ANALYZER_TEXT_FIELD = new HashMap<>();
             ES_SPACE_ANALYZER_TEXT_FIELD.put("type", "text");
-            ES_SPACE_ANALYZER_TEXT_FIELD.put("analyzer", "atlan_space_analyzer");
+            ES_SPACE_ANALYZER_TEXT_FIELD.put("analyzer", "whitespace");
             HashMap<String, HashMap<String, Object>> ES_SPACE_ANALYZER_MULTIFIELD = new HashMap<>();
             ES_SPACE_ANALYZER_MULTIFIELD.put("text", ES_SPACE_ANALYZER_TEXT_FIELD);
 
