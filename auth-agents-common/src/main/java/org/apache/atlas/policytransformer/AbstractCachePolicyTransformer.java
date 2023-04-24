@@ -22,7 +22,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import static org.apache.atlas.policytransformer.CacheTransformerTemplateHelper.RESOURCE_POLICY_TRANSFORMER;
 
 public abstract class AbstractCachePolicyTransformer implements CachePolicyTransformer {
 
@@ -35,7 +35,6 @@ public abstract class AbstractCachePolicyTransformer implements CachePolicyTrans
     public static final String RESOURCES_ENTITY = "entity:";
     public static final String RESOURCE_ENTITY    = "%s:%s";
 
-    private static final String RESOURCE_POLICY_TRANSFORMER = "templates/PolicyCacheTransformer.json";
     public PolicyTransformerTemplate templates;
 
     public AbstractCachePolicyTransformer() throws AtlasBaseException {
