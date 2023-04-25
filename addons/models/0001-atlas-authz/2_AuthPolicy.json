@@ -164,7 +164,7 @@
         "Asset"
       ],
       "serviceType": "atlan",
-      "typeVersion": "2.1",
+      "typeVersion": "1.0",
       "attributeDefs":
       [
         {
