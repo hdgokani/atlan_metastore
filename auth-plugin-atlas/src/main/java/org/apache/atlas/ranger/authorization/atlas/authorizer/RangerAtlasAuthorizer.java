@@ -781,9 +781,11 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
             groupUtil.setUserStore(atlasPlugin.getUserStore());
             
             request.setUserGroups(groupUtil.getContainedGroups(userName));
-            
-            LOG.warn("Setting UserGroup for user: "+ userName + " Groups: " + groupUtil.getContainedGroups(userName) );
-            
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Setting UserGroup for user: "+ userName + " Groups: " + groupUtil.getContainedGroups(userName) );
+            }
+
             RangerAccessResult result = plugin.isAccessAllowed(request);
 
             ret = result != null && result.getIsAllowed();
@@ -801,15 +803,15 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         RangerBasePlugin plugin = atlasPlugin;
         String userName = request.getUser();
 
-        LOG.warn("Setting UserGroup for user"+ userName + " Groups: " + groupUtil.getContainedGroups(userName));
-
         if (plugin != null) {
             
             groupUtil.setUserStore(atlasPlugin.getUserStore());
             
             request.setUserGroups(groupUtil.getContainedGroups(userName));
-            
-            LOG.warn("Setting UserGroup for user :"+ userName + " Groups: " + groupUtil.getContainedGroups(userName) );
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Setting UserGroup for user :" + userName + " Groups: " + groupUtil.getContainedGroups(userName));
+            }
             
             RangerAccessResult result = plugin.isAccessAllowed(request, auditHandler);
 
@@ -833,7 +835,9 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
             groupUtil.setUserStore(atlasPlugin.getUserStore());
             request.setUserGroups(groupUtil.getContainedGroups(userName));
 
-            LOG.warn("Setting UserGroup for user :"+ userName + " Groups: " + groupUtil.getContainedGroups(userName) );
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Setting UserGroup for user :" + userName + " Groups: " + groupUtil.getContainedGroups(userName));
+            }
 
             result = plugin.getAssetAccessors(request);
 
