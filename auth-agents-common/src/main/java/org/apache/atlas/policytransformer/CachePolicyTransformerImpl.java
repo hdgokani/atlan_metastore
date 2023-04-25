@@ -63,6 +63,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_PRIORITY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SUB_CATEGORY;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
@@ -377,25 +382,26 @@ public class CachePolicyTransformerImpl {
     private List<AtlasEntityHeader> getAtlasPolicies(String serviceName) throws AtlasBaseException {
         IndexSearchParams indexSearchParams = new IndexSearchParams();
         Set<String> attributes = new HashSet<>();
-        attributes.add("name");
-        attributes.add("policyCategory");
-        attributes.add("policySubCategory");
-        attributes.add("policyType");
-        attributes.add("policyServiceName");
-        attributes.add("policyUsers");
-        attributes.add("policyGroups");
-        attributes.add("policyRoles");
-        attributes.add("policyActions");
-        attributes.add("policyResources");
-        attributes.add("policyValiditySchedule");
-        attributes.add("policyConditions");
-        attributes.add("policyResourceCategory");
-        attributes.add("policyMaskType");
+        attributes.add(NAME);
+        attributes.add(ATTR_POLICY_CATEGORY);
+        attributes.add(ATTR_POLICY_SUB_CATEGORY);
+        attributes.add(ATTR_POLICY_TYPE);
+        attributes.add(ATTR_POLICY_SERVICE_NAME);
+        attributes.add(ATTR_POLICY_USERS);
+        attributes.add(ATTR_POLICY_GROUPS);
+        attributes.add(ATTR_POLICY_ROLES);
+        attributes.add(ATTR_POLICY_ACTIONS);
+        attributes.add(ATTR_POLICY_RESOURCES);
+        attributes.add(ATTR_POLICY_RESOURCES_CATEGORY);
+        attributes.add(ATTR_POLICY_MASK_TYPE);
+        attributes.add(ATTR_POLICY_PRIORITY);
+        attributes.add(ATTR_POLICY_VALIDITY);
+        attributes.add(ATTR_POLICY_CONDITIONS);
 
         Map<String, Object> dsl = getMap("size", 0);
 
         List<Map<String, Object>> mustClauseList = new ArrayList<>();
-        mustClauseList.add(getMap("term", getMap("policyServiceName", serviceName)));
+        mustClauseList.add(getMap("term", getMap(ATTR_POLICY_SERVICE_NAME, serviceName)));
         mustClauseList.add(getMap("match", getMap("__state", Id.EntityState.ACTIVE)));
 
         dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
@@ -469,12 +475,17 @@ public class CachePolicyTransformerImpl {
         RangerPolicy policy = new RangerPolicy();
 
         //policy.setId(atlasPolicy.getGuid());
-        policy.setName((String) atlasPolicy.getAttribute("qualifiedName"));
-        policy.setService((String) atlasPolicy.getAttribute("policyServiceName"));
+        policy.setName((String) atlasPolicy.getAttribute(QUALIFIED_NAME));
+        policy.setService((String) atlasPolicy.getAttribute(ATTR_POLICY_SERVICE_NAME));
         policy.setServiceType(serviceType);
         policy.setGuid(atlasPolicy.getGuid());
         policy.setCreatedBy(atlasPolicy.getCreatedBy());
         policy.setCreateTime(atlasPolicy.getCreateTime());
+
+        if (atlasPolicy.hasAttribute(ATTR_POLICY_PRIORITY)) {
+            policy.setPolicyPriority((Integer) atlasPolicy.getAttribute(ATTR_POLICY_PRIORITY));
+        }
+
 
         //policy.setConditions(getPolicyConditions(atlasPolicy));
         //policy.setValiditySchedules(getPolicyValiditySchedule(atlasPolicy));

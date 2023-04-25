@@ -74,12 +74,6 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                             .map(x -> x.split(RESOURCES_SPLITTER)[1])
                             .collect(Collectors.toList());
 
-        if (atlasPolicy.getGuid().equals("00c1dbb4-bfbe-49b4-91e2-881a4fa85ebc")) {
-            LOG.info("nikhil:");
-            LOG.info(Strings.join(atlasResources, ", "));
-            LOG.info(Strings.join(entityResources, ", "));
-        }
-
         int index = 0;
         for (String atlasAction : atlasActions) {
             List<PolicyTransformerTemplate.TemplatePolicy> currentTemplates = templates.getTemplate(atlasAction);
