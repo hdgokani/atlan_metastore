@@ -393,6 +393,11 @@ public final class Constants {
     public static final String REQUEST_HEADER_USER_AGENT = "User-Agent";
     public static final String REQUEST_HEADER_HOST = "Host";
 
+    public static final String KEYCLOAK_ROLE_ADMIN   = "$admin";
+    public static final String KEYCLOAK_ROLE_MEMBER  = "$member";
+    public static final String KEYCLOAK_ROLE_GUEST   = "$guest";
+    public static final String KEYCLOAK_ROLE_DEFAULT = "default-roles-default";
+
 
     private Constants() {
     }
