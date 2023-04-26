@@ -406,6 +406,8 @@ public class CachePolicyTransformerImpl {
 
         dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
 
+        dsl.put("sort", Collections.singleton(getMap("__guid", getMap("order", "desc"))));
+
         indexSearchParams.setDsl(dsl);
         indexSearchParams.setAttributes(attributes);
 
