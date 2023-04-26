@@ -149,7 +149,7 @@ public class KeycloakUserStore {
                         .map(x -> new RoleSubjectsFetcher(x, roleSet, userNamesList))
                         .collect(Collectors.toList()));
 
-        //processDefaultRole(roleSet);
+        processDefaultRole(roleSet);
 
         rangerRoles.setRangerRoles(roleSet);
         rangerRoles.setServiceName(serviceName);
