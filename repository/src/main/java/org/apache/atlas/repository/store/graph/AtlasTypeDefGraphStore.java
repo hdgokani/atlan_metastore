@@ -434,8 +434,6 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             LOG.debug("==> AtlasTypeDefGraphStore.createUpdateTypesDef({}, {})", typesToCreate, typesToUpdate);
         }
 
-        LOG.info("==> AtlasTypeDefGraphStore.createUpdateTypesDef({}, {})", AtlasType.toJson(typesToCreate), AtlasType.toJson(typesToUpdate));
-
         AtlasTransientTypeRegistry ttr = lockTypeRegistryAndReleasePostCommit();
 
         if (!typesToUpdate.isEmpty()) {
