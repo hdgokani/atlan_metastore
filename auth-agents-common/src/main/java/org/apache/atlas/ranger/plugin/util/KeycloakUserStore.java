@@ -149,7 +149,7 @@ public class KeycloakUserStore {
                         .map(x -> new RoleSubjectsFetcher(x, roleSet, userNamesList))
                         .collect(Collectors.toList()));
 
-        //processDefaultRole(roleSet);
+        processDefaultRole(roleSet);
 
         rangerRoles.setRangerRoles(roleSet);
         rangerRoles.setServiceName(serviceName);
@@ -182,8 +182,20 @@ public class KeycloakUserStore {
             String finalTenantDefaultRealmUserRole = tenantDefaultRealmUserRole;
             Optional<RangerRole> targetRole = roleSet.stream().filter(x -> finalTenantDefaultRealmUserRole.equals(x.getName())).findFirst();
 
-            targetRole.ifPresent(rangerRole -> rangerRole.getUsers().addAll(defaultRole.get().getUsers()));
+            if (targetRole.isPresent()) {
+                List<RangerRole.RoleMember> defaultUsers = new ArrayList<>(defaultRole.get().getUsers());
+                List<RangerRole.RoleMember> nonGuestUsers = new ArrayList<>(0);
 
+                Optional<RangerRole> adminRole = roleSet.stream().filter(x -> KEYCLOAK_ROLE_ADMIN.equals(x.getName())).findFirst();
+                adminRole.ifPresent(rangerRole -> nonGuestUsers.addAll(rangerRole.getUsers()));
+
+                Optional<RangerRole> memberRole = roleSet.stream().filter(x -> KEYCLOAK_ROLE_MEMBER.equals(x.getName())).findFirst();
+                memberRole.ifPresent(rangerRole -> nonGuestUsers.addAll(rangerRole.getUsers()));
+
+                defaultUsers.removeAll(nonGuestUsers);
+
+                targetRole.get().getUsers().addAll(defaultUsers);
+            }
         }
     }
 
