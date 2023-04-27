@@ -2691,6 +2691,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "deny",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -2731,6 +2732,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "deny",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -2763,6 +2765,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "deny",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":

@@ -614,6 +614,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "deny",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
