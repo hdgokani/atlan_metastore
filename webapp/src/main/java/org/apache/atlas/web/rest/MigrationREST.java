@@ -2,6 +2,7 @@ package org.apache.atlas.web.rest;
 
 import javax.ws.rs.Path;
 
+import org.apache.atlas.Atlas;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
@@ -12,10 +13,8 @@ import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
+import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
@@ -161,14 +160,14 @@ public class MigrationREST {
     @POST
     @Path("search/{typeName}")
     @Timed
-    public List<AtlasEntity.AtlasEntityWithExtInfo> searchForType(@PathParam("typeName") String typeName, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo, @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships) throws Exception {
+    public List<AtlasEntity> searchForType(@PathParam("typeName") String typeName, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo, @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships) throws Exception {
         AtlasPerfTracer perf = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.searchUsingDslQuery(" + typeName + ")");
             }
 
-            List<AtlasEntity.AtlasEntityWithExtInfo> ret = new ArrayList<>();
+            List<AtlasEntity> ret = new ArrayList<>();
 
             List<String> allowedTypeNames = Arrays.asList("Persona", "Purpose");
             if (!allowedTypeNames.contains(typeName)) {
@@ -197,7 +196,7 @@ public class MigrationREST {
                 dsl.put("from", from);
                 dsl.put("size", size);
                 indexSearchParams.setDsl(dsl);
-                List<AtlasEntity.AtlasEntityWithExtInfo> entities = getEntitiesByIndexSearch(indexSearchParams, minExtInfo, ignoreRelationships);
+                List<AtlasEntity> entities = getEntitiesByIndexSearch(indexSearchParams, minExtInfo, ignoreRelationships);
 
                 if (entities != null) {
                     ret.addAll(entities);
@@ -215,8 +214,8 @@ public class MigrationREST {
         }
     }
 
-    private List<AtlasEntity.AtlasEntityWithExtInfo> getEntitiesByIndexSearch(IndexSearchParams indexSearchParams, Boolean minExtInfo, boolean ignoreRelationships) throws AtlasBaseException{
-        List<AtlasEntity.AtlasEntityWithExtInfo> ret = new ArrayList<>();
+    private List<AtlasEntity> getEntitiesByIndexSearch(IndexSearchParams indexSearchParams, Boolean minExtInfo, boolean ignoreRelationships) throws AtlasBaseException{
+        List<AtlasEntity> ret = new ArrayList<>();
         AtlasIndexQuery indexQuery = null;
         String indexName = "janusgraph_vertex_index";
         indexQuery = graph.elasticsearchQuery(indexName);
@@ -229,9 +228,38 @@ public class MigrationREST {
                 LOG.warn("vertex is null");
                 continue;
             }
-            AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityStore.getById(vertex.getProperty("__guid", String.class), minExtInfo, ignoreRelationships);
-            if (entityWithExtInfo != null) {
-                ret.add(entityWithExtInfo);
+            AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = new AtlasEntity.AtlasEntityWithExtInfo();
+            AtlasEntity entity = new AtlasEntity();
+            entity.setGuid(GraphHelper.getGuid(vertex));
+            entity.setTypeName(GraphHelper.getTypeName(vertex));
+            List<String> attributes  = Arrays.asList("name", "qualifiedName", "roleId");
+            for (String attribute : attributes) {
+                entity.setAttribute(attribute, vertex.getProperty(attribute, String.class));
+            }
+            entity.setCustomAttributes(GraphHelper.getCustomAttributes(vertex));
+            List<AtlasEntity> policyEntities = new ArrayList<>();
+            Iterator<AtlasVertex> vertices = vertex.query().direction(AtlasEdgeDirection.OUT).label("__AccessControl.policies").vertices().iterator();
+            if(vertices.hasNext()) {
+                AtlasVertex policyVertex = vertices.next();
+                if(policyVertex != null) {
+                    AtlasEntity policyEntity = new AtlasEntity();
+                    policyEntity.setGuid(GraphHelper.getGuid(policyVertex));
+                    policyEntity.setTypeName(GraphHelper.getTypeName(policyVertex));
+                    List<String> policyAttrs  = Arrays.asList("name", "qualifiedName");
+                    for (String attr : policyAttrs) {
+                        policyEntity.setAttribute(attr, vertex.getProperty(attr, String.class));
+                    }
+                    policyEntity.setCustomAttributes(GraphHelper.getCustomAttributes(vertex));
+                    policyEntities.add(policyEntity);
+                }
+            }
+
+            if (policyEntities.size() > 0) {
+                entity.setAttribute("policies", policyEntities);
+            }
+
+            if (entity != null ) {
+                ret.add(entity);
             }
 
         }
