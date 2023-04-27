@@ -24,6 +24,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.slf4j.Logger;
@@ -157,7 +158,7 @@ public class MigrationREST {
 
     }
 
-    @POST
+    @GET
     @Path("search/{typeName}")
     @Timed
     public List<AtlasEntity> searchForType(@PathParam("typeName") String typeName, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo, @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships) throws Exception {
@@ -198,7 +199,7 @@ public class MigrationREST {
                 indexSearchParams.setDsl(dsl);
                 List<AtlasEntity> entities = getEntitiesByIndexSearch(indexSearchParams, minExtInfo, ignoreRelationships);
 
-                if (entities != null) {
+                if (CollectionUtils.isNotEmpty(entities)) {
                     ret.addAll(entities);
                 } else {
                     found = false;
@@ -215,55 +216,70 @@ public class MigrationREST {
     }
 
     private List<AtlasEntity> getEntitiesByIndexSearch(IndexSearchParams indexSearchParams, Boolean minExtInfo, boolean ignoreRelationships) throws AtlasBaseException{
-        List<AtlasEntity> ret = new ArrayList<>();
-        AtlasIndexQuery indexQuery = null;
+        List<AtlasEntity> entities = new ArrayList<>();
         String indexName = "janusgraph_vertex_index";
-        indexQuery = graph.elasticsearchQuery(indexName);
+        AtlasIndexQuery indexQuery = graph.elasticsearchQuery(indexName);
         DirectIndexQueryResult indexQueryResult = indexQuery.vertices(indexSearchParams);
         Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
+
         while (iterator.hasNext()) {
             AtlasIndexQuery.Result result = iterator.next();
             AtlasVertex vertex = result.getVertex();
+
             if (vertex == null) {
                 LOG.warn("vertex is null");
                 continue;
             }
-            AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = new AtlasEntity.AtlasEntityWithExtInfo();
+
             AtlasEntity entity = new AtlasEntity();
             entity.setGuid(GraphHelper.getGuid(vertex));
             entity.setTypeName(GraphHelper.getTypeName(vertex));
-            List<String> attributes  = Arrays.asList("name", "qualifiedName", "roleId");
-            for (String attribute : attributes) {
-                entity.setAttribute(attribute, vertex.getProperty(attribute, String.class));
-            }
-            entity.setCustomAttributes(GraphHelper.getCustomAttributes(vertex));
-            List<AtlasEntity> policyEntities = new ArrayList<>();
-            Iterator<AtlasVertex> vertices = vertex.query().direction(AtlasEdgeDirection.OUT).label("__AccessControl.policies").vertices().iterator();
-            if(vertices.hasNext()) {
-                AtlasVertex policyVertex = vertices.next();
-                if(policyVertex != null) {
-                    AtlasEntity policyEntity = new AtlasEntity();
-                    policyEntity.setGuid(GraphHelper.getGuid(policyVertex));
-                    policyEntity.setTypeName(GraphHelper.getTypeName(policyVertex));
-                    List<String> policyAttrs  = Arrays.asList("name", "qualifiedName");
-                    for (String attr : policyAttrs) {
-                        policyEntity.setAttribute(attr, vertex.getProperty(attr, String.class));
-                    }
-                    policyEntity.setCustomAttributes(GraphHelper.getCustomAttributes(vertex));
-                    policyEntities.add(policyEntity);
-                }
-            }
 
-            if (policyEntities.size() > 0) {
+            // Use a method to extract attributes from vertex
+            setVertexAttributes(vertex, entity);
+
+            // Use a method to get policy entities
+            List<AtlasEntity> policyEntities = getPolicyEntities(vertex);
+            if (!policyEntities.isEmpty()) {
                 entity.setAttribute("policies", policyEntities);
             }
-
-            if (entity != null ) {
-                ret.add(entity);
+            // Check if entity is not null before adding it to the list
+            if (entity != null) {
+                entities.add(entity);
             }
-
         }
-        return ret;
+
+        return entities;
+    }
+
+    private void setVertexAttributes(AtlasVertex vertex, AtlasEntity entity) {
+        List<String> attributes = Arrays.asList("name", "qualifiedName", "roleId");
+        for (String attribute : attributes) {
+            entity.setAttribute(attribute, vertex.getProperty(attribute, String.class));
+        }
+        entity.setCustomAttributes(GraphHelper.getCustomAttributes(vertex));
+    }
+
+    private List<AtlasEntity> getPolicyEntities(AtlasVertex vertex) {
+        List<AtlasEntity> policyEntities = new ArrayList<>();
+        Iterator<AtlasVertex> vertices = vertex.query().direction(AtlasEdgeDirection.OUT)
+                .label("__AccessControl.policies").vertices().iterator();
+
+        while (vertices.hasNext()) {
+            AtlasVertex policyVertex = vertices.next();
+            if (policyVertex != null) {
+                AtlasEntity policyEntity = new AtlasEntity();
+                policyEntity.setGuid(GraphHelper.getGuid(policyVertex));
+                policyEntity.setTypeName(GraphHelper.getTypeName(policyVertex));
+
+                // Use a method to extract attributes from policy vertex
+                setVertexAttributes(policyVertex, policyEntity);
+
+                policyEntity.setCustomAttributes(GraphHelper.getCustomAttributes(policyVertex));
+                policyEntities.add(policyEntity);
+            }
+        }
+        return policyEntities;
     }
 
     private Map<String, Object> getMap(String key, Object value) {
