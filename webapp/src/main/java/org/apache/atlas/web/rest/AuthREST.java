@@ -22,13 +22,15 @@ import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AuditSearchParams;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.atlas.ranger.plugin.util.KeycloakUserStore;
 import org.apache.atlas.ranger.plugin.util.RangerRoles;
 import org.apache.atlas.ranger.plugin.util.RangerUserStore;
 import org.apache.atlas.ranger.plugin.util.ServicePolicies;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
-import org.apache.atlas.tasks.TaskService;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
@@ -50,10 +52,12 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_SERVICE_LAST_SYNC;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 
 /**
@@ -70,10 +74,12 @@ public class AuthREST {
 
     private CachePolicyTransformerImpl policyTransformer;
     private ESBasedAuditRepository auditRepository;
+    private AtlasEntityStore entityStore;
 
     @Inject
     public AuthREST(CachePolicyTransformerImpl policyTransformer,
-                    ESBasedAuditRepository auditRepository) {
+                    ESBasedAuditRepository auditRepository, AtlasEntityStore entityStore) {
+        this.entityStore = entityStore;
         this.auditRepository = auditRepository;
         this.policyTransformer = policyTransformer;
     }
@@ -137,7 +143,7 @@ public class AuthREST {
     @Timed
     public ServicePolicies downloadPolicies(@PathParam("serviceName") final String serviceName,
                                      @QueryParam("pluginId") String pluginId,
-                                     @DefaultValue("0") @QueryParam("lastUpdatedTime") Long lastUpdatedTime) {
+                                     @DefaultValue("0") @QueryParam("lastUpdatedTime") Long lastUpdatedTime) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -151,9 +157,23 @@ public class AuthREST {
 
             ServicePolicies ret = policyTransformer.getPolicies(serviceName, pluginId, lastUpdatedTime);
 
+            updateLastSync();
+
             return ret;
         } finally {
             AtlasPerfTracer.log(perf);
+        }
+    }
+
+    private void updateLastSync() {
+        if (policyTransformer.getService() != null ) {
+            AtlasEntity serviceEntity = new AtlasEntity(policyTransformer.getService());
+            serviceEntity.setAttribute(ATTR_SERVICE_LAST_SYNC, System.currentTimeMillis());
+            try {
+                entityStore.createOrUpdate(new AtlasEntityStream(serviceEntity), false);
+            } catch (AtlasBaseException e) {
+                LOG.error("Failed to update authServicePolicyLastSync time: {}", e.getMessage());
+            }
         }
     }
 

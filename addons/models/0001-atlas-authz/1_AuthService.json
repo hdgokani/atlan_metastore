@@ -7,7 +7,7 @@
             ],
             "description": "Model to store auth service in Atlas",
             "serviceType": "atlan",
-            "typeVersion": "1.0",
+            "typeVersion": "1.1",
             "attributeDefs": [
                 {
                     "name": "authServiceType",
@@ -46,6 +46,17 @@
                     "name": "authServiceConfig",
                     "typeName": "map<string,string>",
                     "isOptional": true,
+                    "cardinality": "SINGLE",
+                    "isUnique": false,
+                    "skipScrubbing": true,
+                    "isIndexable": true,
+                    "includeInNotification": true
+                },
+                {
+                    "name": "authServicePolicyLastSync",
+                    "typeName": "long",
+                    "isOptional": true,
+                    "defaultValue": 0,
                     "cardinality": "SINGLE",
                     "isUnique": false,
                     "skipScrubbing": true,

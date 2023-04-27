@@ -64,6 +64,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.SERVICE_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_PRIORITY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
@@ -84,6 +85,12 @@ public class CachePolicyTransformerImpl {
     public static final String ATTR_POLICY_ACTIONS            = "policyActions";
     public static final String ATTR_POLICY_TYPE               = "policyType";
     public static final String ATTR_POLICY_RESOURCES          = "policyResources";
+
+    public static final String ATTR_SERVICE_SERVICE_TYPE = "authServiceType";
+    public static final String ATTR_SERVICE_TAG_SERVICE  = "tagService";
+    public static final String ATTR_SERVICE_IS_ENABLED   = "authServiceIsEnabled";
+    public static final String ATTR_SERVICE_LAST_SYNC    = "authServicePolicyLastSync";
+
     private static final String ATTR_POLICY_RESOURCES_CATEGORY = "policyResourceCategory";
     private static final String ATTR_POLICY_GROUPS             = "policyGroups";
     private static final String ATTR_POLICY_USERS              = "policyUsers";
@@ -91,6 +98,8 @@ public class CachePolicyTransformerImpl {
     private static final String ATTR_POLICY_VALIDITY           = "policyValiditySchedule";
     private static final String ATTR_POLICY_CONDITIONS         = "policyConditions";
     private static final String ATTR_POLICY_MASK_TYPE          = "policyMaskType";
+
+
 
     private static final String RESOURCE_SERVICE_DEF_PATH = "/service-defs/";
     private static final String RESOURCE_SERVICE_DEF_PATTERN = RESOURCE_SERVICE_DEF_PATH + "atlas-servicedef-%s.json";
@@ -100,6 +109,8 @@ public class CachePolicyTransformerImpl {
     private EntityGraphRetriever      entityRetriever;
 
     private PersonaCachePolicyTransformer personaTransformer;
+
+    private AtlasEntityHeader service;
 
     @Inject
     public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
@@ -116,6 +127,10 @@ public class CachePolicyTransformerImpl {
         }
     }
 
+    public AtlasEntityHeader getService() {
+        return service;
+    }
+
     public ServicePolicies getPolicies(String serviceName, String pluginId, Long lastUpdatedTime) {
         //TODO: return only if updated
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getPolicies" + serviceName);
@@ -126,7 +141,7 @@ public class CachePolicyTransformerImpl {
             servicePolicies.setServiceName(serviceName);
             //TODO: get authServiceConfigs & add into cache
 
-            AtlasEntityHeader service = getServiceEntity(serviceName);
+            service = getServiceEntity(serviceName);
             servicePolicies.setPolicyVersion(-1L);
             servicePolicies.setPolicyUpdateTime(new Date());
 
@@ -444,15 +459,15 @@ public class CachePolicyTransformerImpl {
     private AtlasEntityHeader getServiceEntity(String serviceName) throws AtlasBaseException {
         IndexSearchParams indexSearchParams = new IndexSearchParams();
         Set<String> attributes = new HashSet<>();
-        attributes.add("name");
-        attributes.add("authServiceType");
-        attributes.add("tagService");
-        attributes.add("authServiceIsEnabled");
+        attributes.add(NAME);
+        attributes.add(ATTR_SERVICE_SERVICE_TYPE);
+        attributes.add(ATTR_SERVICE_TAG_SERVICE);
+        attributes.add(ATTR_SERVICE_IS_ENABLED);
 
         Map<String, Object> dsl = getMap("size", 1);
 
         List<Map<String, Object>> mustClauseList = new ArrayList<>();
-        mustClauseList.add(getMap("match", getMap("__typeName", "AuthService")));
+        mustClauseList.add(getMap("term", getMap("__typeName.keyword", SERVICE_ENTITY_TYPE)));
         mustClauseList.add(getMap("term", getMap("name.keyword", serviceName)));
         mustClauseList.add(getMap("match", getMap("__state", Id.EntityState.ACTIVE)));
 
