@@ -1,6 +1,8 @@
 package org.apache.atlas.web.rest;
 
 import javax.ws.rs.Path;
+
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.discovery.EntityDiscoveryService;
@@ -60,8 +62,9 @@ public class MigrationREST {
     private EntityDiscoveryService discoveryService;
 
     @Inject
-    public MigrationREST(AtlasEntityStore entityStore) {
+    public MigrationREST(AtlasEntityStore entityStore, AtlasGraph graph) {
         this.entityStore = entityStore;
+        this.graph = graph;
         this.transformer = new PreProcessorPoliciesTransformer();
         keycloakStore = new KeycloakStore();
     }
@@ -166,9 +169,13 @@ public class MigrationREST {
             }
 
             List<AtlasEntity.AtlasEntityWithExtInfo> ret = new ArrayList<>();
-            SearchParams params = new SearchParams();
-            params.setAttributes(new HashSet<>(Arrays.asList("roleId", "description")));
-            IndexSearchParams indexSearchParams = (IndexSearchParams) params;
+
+            List<String> allowedTypeNames = Arrays.asList("Persona", "Purpose");
+            if (!allowedTypeNames.contains(typeName)) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, typeName);
+            }
+
+            IndexSearchParams indexSearchParams = new IndexSearchParams();
 
             Map<String, Object> dsl = getMap("size", 0);
 
