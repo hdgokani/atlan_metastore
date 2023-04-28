@@ -24,7 +24,6 @@ import org.apache.atlas.model.lineage.*;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 
-import java.util.Map;
 
 public interface AtlasLineageService {
     /**
@@ -36,7 +35,7 @@ public interface AtlasLineageService {
     AtlasLineageInfo getAtlasLineageInfo(String entityGuid, LineageDirection direction, int depth) throws AtlasBaseException;
 
     /**
-     * @param entityGuid    unique ID of the entity
+     * @param entityGuid          unique ID of the entity
      * @param direction     direction of lineage - INPUT, OUTPUT or BOTH
      * @param depth         number of hops in lineage
      * @param page
@@ -80,4 +79,5 @@ public interface AtlasLineageService {
      * @return AtlasLineageListInfo
      */
     AtlasLineageListInfo getAtlasLineageListInfo(String entityGuid, LineageListRequest lineageListRequest) throws AtlasBaseException;
+
 }

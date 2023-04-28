@@ -10,28 +10,22 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown = true, value = {"visitedEdges", "skippedEdges"})
+@JsonIgnoreProperties(ignoreUnknown = true, value = {"visitedEdges", "skippedEdges", "traversalQueue"})
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasLineageListInfo implements Serializable {
-    private HashSet<AtlasEntityHeader>              entities;
+    private Set<AtlasEntityHeader>                 entities;
     private Map<String, LineageListEntityInfo>      entityInfoMap;
     private LineageListRequest                      searchParameters;
-    private Set<String>                             visitedEdges;
-    private Set<String>                             skippedEdges;
 
-    public AtlasLineageListInfo() {
-    }
+    public AtlasLineageListInfo() {}
 
     /**
      * Captures lineage list information for an entity instance like hive_table
@@ -39,30 +33,16 @@ public class AtlasLineageListInfo implements Serializable {
      * @param entities   list of entities
      * @param entityInfoMap    map of entity guid to AtlasEntityHeader (minimal entity info)
      */
-    public AtlasLineageListInfo(HashSet<AtlasEntityHeader> entities, Map<String, LineageListEntityInfo> entityInfoMap) {
+    public AtlasLineageListInfo(Set<AtlasEntityHeader> entities, Map<String, LineageListEntityInfo> entityInfoMap) {
         this.entities         = entities;
         this.entityInfoMap    = entityInfoMap;
     }
 
-    /**
-     * Captures lineage list information for an entity instance like hive_table
-     *
-     * @param entities   list of entities
-     * @param entityInfoMap    map of entity guid to AtlasEntityHeader (minimal entity info)
-     */
-    public AtlasLineageListInfo(HashSet<AtlasEntityHeader> entities, Map<String, LineageListEntityInfo> entityInfoMap,
-                                Set<String> visitedEdges, Set<String> skippedEdges) {
-        this.entities                     = entities;
-        this.entityInfoMap                = entityInfoMap;
-        this.visitedEdges                 = visitedEdges;
-        this.skippedEdges                 = skippedEdges;
-    }
-
-    public HashSet<AtlasEntityHeader> getEntities() {
+    public Set<AtlasEntityHeader> getEntities() {
         return entities;
     }
 
-    public void setEntities(HashSet<AtlasEntityHeader> entities) {
+    public void setEntities(Set<AtlasEntityHeader> entities) {
         this.entities = entities;
     }
 
@@ -80,22 +60,6 @@ public class AtlasLineageListInfo implements Serializable {
 
     public void setSearchParameters(LineageListRequest searchParameters) {
         this.searchParameters = searchParameters;
-    }
-
-    public Set<String> getVisitedEdges() {
-        return visitedEdges;
-    }
-
-    public void setVisitedEdges(Set<String> visitedEdges) {
-        this.visitedEdges = visitedEdges;
-    }
-
-    public Set<String> getSkippedEdges() {
-        return skippedEdges;
-    }
-
-    public void setSkippedEdges(Set<String> skippedEdges) {
-        this.skippedEdges = skippedEdges;
     }
 
     @Override
@@ -121,59 +85,44 @@ public class AtlasLineageListInfo implements Serializable {
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class LineageListEntityInfo {
         @JsonProperty
-        boolean                    hasMoreInputs;
-        @JsonProperty
-        boolean                    hasMoreOutputs;
-        int                        inputRelationsCount;
-        int                        outputRelationsCount;
-        boolean                    isInputRelationsReachedLimit;
-        boolean                    isOutputRelationsReachedLimit;
+        boolean                    hasMore;
+        int                        relationsCount;
+        boolean                    isRelationsReachedLimit;
         int                        fromCounter;  // Counter for relations to be skipped
         int                        size;
 
         public LineageListEntityInfo() {}
 
         public LineageListEntityInfo(int size) {
-            this.hasMoreInputs                 = false;
-            this.hasMoreOutputs                = false;
-            this.inputRelationsCount           = 0;
-            this.outputRelationsCount          = 0;
-            this.isInputRelationsReachedLimit  = false;
-            this.isOutputRelationsReachedLimit = false;
+            this.hasMore                       = false;
+            this.relationsCount                = 0;
+            this.isRelationsReachedLimit       = false;
             this.fromCounter                   = 0;
             this.size                          = size;
         }
 
-        public boolean isInputRelationsReachedLimit() {
-            return isInputRelationsReachedLimit;
+        public boolean isHasMore() {
+            return hasMore;
         }
 
-        public void setInputRelationsReachedLimit(boolean isInputRelationsReachedLimit) {
-            this.isInputRelationsReachedLimit = isInputRelationsReachedLimit;
+        public void setHasMore(boolean hasMore) {
+            this.hasMore = hasMore;
         }
 
-        public boolean isOutputRelationsReachedLimit() {
-            return isOutputRelationsReachedLimit;
+        public int getRelationsCount() {
+            return relationsCount;
         }
 
-        public void setOutputRelationsReachedLimit(boolean isOutputRelationsReachedLimit) {
-            this.isOutputRelationsReachedLimit = isOutputRelationsReachedLimit;
+        public void setRelationsCount(int relationsCount) {
+            this.relationsCount = relationsCount;
         }
 
-        public boolean hasMoreInputs() {
-            return hasMoreInputs;
+        public boolean isRelationsReachedLimit() {
+            return isRelationsReachedLimit;
         }
 
-        public void setHasMoreInputs(boolean hasMoreInputs) {
-            this.hasMoreInputs = hasMoreInputs;
-        }
-
-        public boolean hasMoreOutputs() {
-            return hasMoreOutputs;
-        }
-
-        public void setHasMoreOutputs(boolean hasMoreOutputs) {
-            this.hasMoreOutputs = hasMoreOutputs;
+        public void setRelationsReachedLimit(boolean relationsReachedLimit) {
+            isRelationsReachedLimit = relationsReachedLimit;
         }
 
         public int getFromCounter() {
@@ -184,65 +133,36 @@ public class AtlasLineageListInfo implements Serializable {
             fromCounter++;
         }
 
-        public int getInputRelationsCount() {
-            return inputRelationsCount;
+
+        public int getSize() {
+            return size;
         }
 
-        public void incrementInputRelationsCount() {
-            if (hasMoreInputs) {
-                return;
-            }
-
-            if (isInputRelationsReachedLimit) {
-                setHasMoreInputs(true);
-                return;
-            }
-
-            this.inputRelationsCount++;
-
-            if (inputRelationsCount == size) {
-                this.setInputRelationsReachedLimit(true);
-                return;
-            }
+        public void setSize(int size) {
+            this.size = size;
         }
 
-        public int getOutputRelationsCount() {
-            return outputRelationsCount;
-        }
-
-        public void incrementOutputRelationsCount() {
-            if (hasMoreOutputs) {
-                return;
-            }
-
-            if (isOutputRelationsReachedLimit) {
-                setHasMoreOutputs(true);
-                return;
-            }
-
-            this.outputRelationsCount++;
-
-            if (outputRelationsCount == size) {
-                this.setOutputRelationsReachedLimit(true);
-                return;
-            }
+        public void incrementRelationsCount() {
+            this.relationsCount++;
+            if (relationsCount == size)
+                this.setRelationsReachedLimit(true);
         }
 
         @Override
         public String toString() {
-            return "LineageInfoOnDemand{" +
-                    "hasMoreInputs='" + hasMoreInputs + '\'' +
-                    ", hasMoreOutputs='" + hasMoreOutputs + '\'' +
-                    ", inputRelationsCount='" + inputRelationsCount + '\'' +
-                    ", outputRelationsCount='" + outputRelationsCount + '\'' +
+            return "LineageListEntityInfo{" +
+                    "hasMore=" + hasMore +
+                    ", relationsCount=" + relationsCount +
+                    ", isRelationsReachedLimit=" + isRelationsReachedLimit +
+                    ", fromCounter=" + fromCounter +
+                    ", size=" + size +
                     '}';
         }
-
     }
 
     @Override
     public String toString() {
-        return "AtlasLineageInfo{" +
+        return "AtlasLineageListInfo{" +
                 "entities=" + entities +
                 ", entityInfoMap=" + entityInfoMap +
                 '}';
