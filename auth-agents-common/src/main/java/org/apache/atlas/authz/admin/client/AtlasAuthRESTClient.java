@@ -73,8 +73,10 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
 
     private void init(String serviceName, long readTimeout) {
         this.serviceName = serviceName;
-        this.httpClient = new OkHttpClient();
-        this.httpClient.newBuilder().readTimeout(readTimeout, TimeUnit.MILLISECONDS);
+
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        builder.readTimeout(readTimeout, TimeUnit.MILLISECONDS);
+        this.httpClient = builder.build();
     }
 
 
@@ -100,22 +102,27 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
         Request request = new Request.Builder().url(uri.toURL()).build();
         Response response = httpClient.newCall(request).execute();
 
-        if (response.code() == HttpServletResponse.SC_NO_CONTENT) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== AtlasAuthRESTClient.sendRequestAndGetResponse(): Not Modified");
-            }
-            return null;
-        } else if (response.code() == HttpServletResponse.SC_OK) {
-            String responseBody = response.body().string();
-            if (StringUtils.isNotEmpty(responseBody)) {
-                ObjectMapper mapper = new ObjectMapper();
-                return mapper.readValue(responseBody, responseClass);
+        try {
+            if (response.code() == HttpServletResponse.SC_NO_CONTENT) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("<== AtlasAuthRESTClient.sendRequestAndGetResponse(): Not Modified");
+                }
+                return null;
+            } else if (response.code() == HttpServletResponse.SC_OK) {
+                String responseBody = response.body().string();
+                if (StringUtils.isNotEmpty(responseBody)) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    return mapper.readValue(responseBody, responseClass);
+                } else {
+                    LOG.warn("AtlasAuthRESTClient.sendRequestAndGetResponse(): Empty response from Atlas Auth");
+                }
             } else {
-                LOG.warn("AtlasAuthRESTClient.sendRequestAndGetResponse(): Empty response from Atlas Auth");
+                LOG.error("AtlasAuthRESTClient.sendRequestAndGetResponse(): HTTP error: " + response.code());
             }
-        } else {
-            LOG.error("AtlasAuthRESTClient.sendRequestAndGetResponse(): HTTP error: " + response.code());
+        } finally {
+            response.close();
         }
+
         return null;
     }
 
