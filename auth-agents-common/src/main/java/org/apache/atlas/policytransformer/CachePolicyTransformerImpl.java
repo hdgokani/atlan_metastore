@@ -133,7 +133,7 @@ public class CachePolicyTransformerImpl {
 
     public ServicePolicies getPolicies(String serviceName, String pluginId, Long lastUpdatedTime) {
         //TODO: return only if updated
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getPolicies" + serviceName);
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getPolicies." + serviceName);
 
         ServicePolicies servicePolicies = new ServicePolicies();
 
@@ -190,7 +190,7 @@ public class CachePolicyTransformerImpl {
     }
 
     private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service) throws AtlasBaseException, IOException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getServicePolicies");
+
         List<RangerPolicy> servicePolicies = new ArrayList<>();
 
         String serviceName = (String) service.getAttribute("name");
@@ -202,31 +202,35 @@ public class CachePolicyTransformerImpl {
             servicePolicies = transformAtlasPoliciesToRangerPolicies(atlasPolicies, serviceType);
             LOG.info("Transformed {} policies into {} policies", atlasPolicies.size(), servicePolicies.size());
         }
-
-        RequestContext.get().endMetricRecord(recorder);
         return servicePolicies;
     }
 
     private List<RangerPolicy> transformAtlasPoliciesToRangerPolicies(List<AtlasEntityHeader> atlasPolicies,
                                                                       String serviceType) throws IOException, AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+service+".transformAtlasPoliciesToRangerPolicies");
+
         List<RangerPolicy> rangerPolicies = new ArrayList<>();
+        try {
+            for (AtlasEntityHeader atlasPolicy : atlasPolicies) {
 
-        for (AtlasEntityHeader atlasPolicy : atlasPolicies) {
+                String policyCategory = getPolicyCategory(atlasPolicy);
+                if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
 
-            String policyCategory = getPolicyCategory(atlasPolicy);
-            if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
+                    List<AtlasEntityHeader> transformedAtlasPolicies = personaTransformer.transform(atlasPolicy);
+                    for (AtlasEntityHeader transformedPolicy : transformedAtlasPolicies) {
+                        rangerPolicies.add(toRangerPolicy(transformedPolicy, serviceType));
+                    }
 
-                List<AtlasEntityHeader> transformedAtlasPolicies = personaTransformer.transform(atlasPolicy);
-                for (AtlasEntityHeader transformedPolicy : transformedAtlasPolicies) {
-                    rangerPolicies.add(toRangerPolicy(transformedPolicy, serviceType));
+                } else if (POLICY_CATEGORY_PURPOSE.equals(policyCategory)) {
+                    rangerPolicies.add(toRangerPolicy(atlasPolicy, serviceType));
+
+                } else {
+                    rangerPolicies.add(toRangerPolicy(atlasPolicy, serviceType));
                 }
-
-            } else if (POLICY_CATEGORY_PURPOSE.equals(policyCategory)) {
-                rangerPolicies.add(toRangerPolicy(atlasPolicy, serviceType));
-
-            } else {
-                rangerPolicies.add(toRangerPolicy(atlasPolicy, serviceType));
             }
+
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
         }
 
         return rangerPolicies;
@@ -395,63 +399,67 @@ public class CachePolicyTransformerImpl {
     }
 
     private List<AtlasEntityHeader> getAtlasPolicies(String serviceName) throws AtlasBaseException {
-        IndexSearchParams indexSearchParams = new IndexSearchParams();
-        Set<String> attributes = new HashSet<>();
-        attributes.add(NAME);
-        attributes.add(ATTR_POLICY_CATEGORY);
-        attributes.add(ATTR_POLICY_SUB_CATEGORY);
-        attributes.add(ATTR_POLICY_TYPE);
-        attributes.add(ATTR_POLICY_SERVICE_NAME);
-        attributes.add(ATTR_POLICY_USERS);
-        attributes.add(ATTR_POLICY_GROUPS);
-        attributes.add(ATTR_POLICY_ROLES);
-        attributes.add(ATTR_POLICY_ACTIONS);
-        attributes.add(ATTR_POLICY_RESOURCES);
-        attributes.add(ATTR_POLICY_RESOURCES_CATEGORY);
-        attributes.add(ATTR_POLICY_MASK_TYPE);
-        attributes.add(ATTR_POLICY_PRIORITY);
-        attributes.add(ATTR_POLICY_VALIDITY);
-        attributes.add(ATTR_POLICY_CONDITIONS);
-
-        Map<String, Object> dsl = getMap("size", 0);
-
-        List<Map<String, Object>> mustClauseList = new ArrayList<>();
-        mustClauseList.add(getMap("term", getMap(ATTR_POLICY_SERVICE_NAME, serviceName)));
-        mustClauseList.add(getMap("match", getMap("__state", Id.EntityState.ACTIVE)));
-
-        dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
-
-        List<Map> sortList = new ArrayList<>(0);
-        sortList.add(getMap("__timestamp", getMap("order", "asc")));
-        sortList.add(getMap("__guid", getMap("order", "asc")));
-        dsl.put("sort", sortList);
-
-        indexSearchParams.setDsl(dsl);
-        indexSearchParams.setAttributes(attributes);
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+service+".getAtlasPolicies");
 
         List<AtlasEntityHeader> ret = new ArrayList<>();
+        try {
+            IndexSearchParams indexSearchParams = new IndexSearchParams();
+            Set<String> attributes = new HashSet<>();
+            attributes.add(NAME);
+            attributes.add(ATTR_POLICY_CATEGORY);
+            attributes.add(ATTR_POLICY_SUB_CATEGORY);
+            attributes.add(ATTR_POLICY_TYPE);
+            attributes.add(ATTR_POLICY_SERVICE_NAME);
+            attributes.add(ATTR_POLICY_USERS);
+            attributes.add(ATTR_POLICY_GROUPS);
+            attributes.add(ATTR_POLICY_ROLES);
+            attributes.add(ATTR_POLICY_ACTIONS);
+            attributes.add(ATTR_POLICY_RESOURCES);
+            attributes.add(ATTR_POLICY_RESOURCES_CATEGORY);
+            attributes.add(ATTR_POLICY_MASK_TYPE);
+            attributes.add(ATTR_POLICY_PRIORITY);
+            attributes.add(ATTR_POLICY_VALIDITY);
+            attributes.add(ATTR_POLICY_CONDITIONS);
 
-        int from = 0;
-        int size = 100;
-        boolean found = true;
+            Map<String, Object> dsl = getMap("size", 0);
 
-        do {
-            dsl.put("from", from);
-            dsl.put("size", size);
+            List<Map<String, Object>> mustClauseList = new ArrayList<>();
+            mustClauseList.add(getMap("term", getMap(ATTR_POLICY_SERVICE_NAME, serviceName)));
+            mustClauseList.add(getMap("match", getMap("__state", Id.EntityState.ACTIVE)));
+
+            dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
+
+            List<Map> sortList = new ArrayList<>(0);
+            sortList.add(getMap("__timestamp", getMap("order", "asc")));
+            sortList.add(getMap("__guid", getMap("order", "asc")));
+            dsl.put("sort", sortList);
+
             indexSearchParams.setDsl(dsl);
+            indexSearchParams.setAttributes(attributes);
 
-            List<AtlasEntityHeader> headers = discoveryService.directIndexSearch(indexSearchParams).getEntities();
-            if (headers != null) {
-                ret.addAll(headers);
-            } else {
-                found = false;
-            }
+            int from = 0;
+            int size = 100;
+            boolean found = true;
 
-            from += size;
+            do {
+                dsl.put("from", from);
+                dsl.put("size", size);
+                indexSearchParams.setDsl(dsl);
 
-        } while (found && ret.size() % size == 0);
+                List<AtlasEntityHeader> headers = discoveryService.directIndexSearch(indexSearchParams).getEntities();
+                if (headers != null) {
+                    ret.addAll(headers);
+                } else {
+                    found = false;
+                }
 
-        LOG.info("Found {} policies via indexsearch", ret.size());
+                from += size;
+
+            } while (found && ret.size() % size == 0);
+
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
 
         return ret;
     }

@@ -122,7 +122,7 @@ public class AuthREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadUserStore(serviceName=\"+serviceName+\", pluginId=\"+pluginId+\", lastUpdatedTime=\"+lastUpdatedTime+\")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadUserStore(serviceName="+serviceName+", pluginId="+pluginId+", lastUpdatedTime="+lastUpdatedTime+")");
             }
 
             KeycloakUserStore keycloakUserStore = new KeycloakUserStore(serviceName);
@@ -157,7 +157,7 @@ public class AuthREST {
 
             ServicePolicies ret = policyTransformer.getPolicies(serviceName, pluginId, lastUpdatedTime);
 
-            updateLastSync();
+            updateLastSync(serviceName);
 
             return ret;
         } finally {
@@ -165,20 +165,26 @@ public class AuthREST {
         }
     }
 
-    private void updateLastSync() {
-        if (policyTransformer.getService() != null ) {
-            AtlasEntity serviceEntity = new AtlasEntity(policyTransformer.getService());
-            serviceEntity.setAttribute(ATTR_SERVICE_LAST_SYNC, System.currentTimeMillis());
-            try {
-                entityStore.createOrUpdate(new AtlasEntityStream(serviceEntity), false);
-            } catch (AtlasBaseException e) {
-                LOG.error("Failed to update authServicePolicyLastSync time: {}", e.getMessage());
+    private void updateLastSync(String serviceName) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AuthRest.isPolicyUpdated." + serviceName);
+
+        try {
+            if (policyTransformer.getService() != null) {
+                AtlasEntity serviceEntity = new AtlasEntity(policyTransformer.getService());
+                serviceEntity.setAttribute(ATTR_SERVICE_LAST_SYNC, System.currentTimeMillis());
+                try {
+                    entityStore.createOrUpdate(new AtlasEntityStream(serviceEntity), false);
+                } catch (AtlasBaseException e) {
+                    LOG.error("Failed to update authServicePolicyLastSync time: {}", e.getMessage());
+                }
             }
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
         }
     }
 
     private boolean isPolicyUpdated(String serviceName, long lastUpdatedTime) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.isPolicyUpdated" + serviceName);
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AuthRest.isPolicyUpdated." + serviceName);
 
         AuditSearchParams parameters = new AuditSearchParams();
         Map<String, Object> dsl = getMap("size", 1);
