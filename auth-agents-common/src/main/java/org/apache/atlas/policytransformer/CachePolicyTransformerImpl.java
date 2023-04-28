@@ -199,15 +199,16 @@ public class CachePolicyTransformerImpl {
 
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
             //transform policies
-            servicePolicies = transformAtlasPoliciesToRangerPolicies(atlasPolicies, serviceType);
+            servicePolicies = transformAtlasPoliciesToRangerPolicies(atlasPolicies, serviceType, serviceName);
             LOG.info("Transformed {} policies into {} policies", atlasPolicies.size(), servicePolicies.size());
         }
         return servicePolicies;
     }
 
     private List<RangerPolicy> transformAtlasPoliciesToRangerPolicies(List<AtlasEntityHeader> atlasPolicies,
-                                                                      String serviceType) throws IOException, AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+service+".transformAtlasPoliciesToRangerPolicies");
+                                                                      String serviceType,
+                                                                      String serviceName) throws IOException, AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+serviceName+".transformAtlasPoliciesToRangerPolicies");
 
         List<RangerPolicy> rangerPolicies = new ArrayList<>();
         try {

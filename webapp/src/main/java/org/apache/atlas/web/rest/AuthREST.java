@@ -166,7 +166,7 @@ public class AuthREST {
     }
 
     private void updateLastSync(String serviceName) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AuthRest.isPolicyUpdated." + serviceName);
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AuthRest.updateLastSync." + serviceName);
 
         try {
             if (policyTransformer.getService() != null) {
