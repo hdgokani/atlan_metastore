@@ -159,9 +159,9 @@ public class PurposePreProcessor implements PreProcessor {
                     AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
                     policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
-                    newTagsResources.forEach(x -> policyVertex.setProperty(ATTR_POLICY_RESOURCES, x));
 
                     AtlasEntity policyToBeUpdated = entityRetriever.toAtlasEntity(policyVertex);
+                    policyToBeUpdated.setAttribute(ATTR_POLICY_RESOURCES, newTagsResources);
 
                     context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
 
@@ -187,9 +187,8 @@ public class PurposePreProcessor implements PreProcessor {
             for (AtlasObjectId policy : policies) {
                 AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
-                policyVertex.setProperty(ATTR_POLICY_IS_ENABLED, enable);
-
                 AtlasEntity policyToBeUpdated = entityRetriever.toAtlasEntity(policyVertex);
+                policyToBeUpdated.setAttribute(ATTR_POLICY_IS_ENABLED, enable);
 
                 context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
             }
