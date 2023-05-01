@@ -144,33 +144,39 @@ public class PurposePreProcessor implements PreProcessor {
             validateUniquenessByName(graph, newName, PURPOSE_ENTITY_TYPE);
         }*/
 
-        List<String> newTags = getPurposeTags(purpose);
+        if (entity.hasAttribute(ATTR_PURPOSE_CLASSIFICATIONS)) {
+            List<String> newTags = getPurposeTags(purpose);
 
-        if (!CollectionUtils.isEmpty(newTags) && !CollectionUtils.isEqualCollection(newTags, getPurposeTags(existingPurposeEntity))) {
-            validateUniquenessByTags(graph, newTags, PURPOSE_ENTITY_TYPE);
-
-            List<AtlasObjectId> policies = (List<AtlasObjectId>) existingPurposeEntity.getRelationshipAttribute(REL_ATTR_POLICIES);
-
-            if (CollectionUtils.isNotEmpty(policies)) {
-                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
-                List<String> newTagsResources = newTags.stream().map(x -> "tag:" + x).collect(Collectors.toList());
-
-                for (AtlasObjectId policy : policies) {
-                    AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
-
-                    policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
-
-                    AtlasEntity policyToBeUpdated = entityRetriever.toAtlasEntity(policyVertex);
-                    policyToBeUpdated.setAttribute(ATTR_POLICY_RESOURCES, newTagsResources);
-
-                    context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
-
-                    existingPurposeExtInfo.addReferredEntity(policyToBeUpdated);
-                }
+            if (CollectionUtils.isEmpty(newTags)) {
+                throw new AtlasBaseException(BAD_REQUEST, "Please provide purposeClassifications for Purpose");
             }
 
-            existingPurposeExtInfo.getEntity().setAttribute(ATTR_PURPOSE_CLASSIFICATIONS, newTags);
-            aliasStore.updateAlias(existingPurposeExtInfo, null);
+            if (!CollectionUtils.isEmpty(newTags) && !CollectionUtils.isEqualCollection(newTags, getPurposeTags(existingPurposeEntity))) {
+                validateUniquenessByTags(graph, newTags, PURPOSE_ENTITY_TYPE);
+
+                List<AtlasObjectId> policies = (List<AtlasObjectId>) existingPurposeEntity.getRelationshipAttribute(REL_ATTR_POLICIES);
+
+                if (CollectionUtils.isNotEmpty(policies)) {
+                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
+                    List<String> newTagsResources = newTags.stream().map(x -> "tag:" + x).collect(Collectors.toList());
+
+                    for (AtlasObjectId policy : policies) {
+                        AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
+
+                        policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
+
+                        AtlasEntity policyToBeUpdated = entityRetriever.toAtlasEntity(policyVertex);
+                        policyToBeUpdated.setAttribute(ATTR_POLICY_RESOURCES, newTagsResources);
+
+                        context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
+
+                        existingPurposeExtInfo.addReferredEntity(policyToBeUpdated);
+                    }
+                }
+
+                existingPurposeExtInfo.getEntity().setAttribute(ATTR_PURPOSE_CLASSIFICATIONS, newTags);
+                aliasStore.updateAlias(existingPurposeExtInfo, null);
+            }
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
