@@ -32,28 +32,16 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
 import org.apache.atlas.model.audit.AtlasAuditEntry.AuditOperation;
 import org.apache.atlas.model.audit.AuditSearchParameters;
-import org.apache.atlas.model.impexp.AtlasExportRequest;
-import org.apache.atlas.model.impexp.AtlasExportResult;
-import org.apache.atlas.model.impexp.AtlasImportRequest;
-import org.apache.atlas.model.impexp.AtlasImportResult;
-import org.apache.atlas.model.impexp.AtlasServer;
-import org.apache.atlas.model.impexp.ExportImportAuditEntry;
-import org.apache.atlas.model.impexp.MigrationStatus;
-import org.apache.atlas.model.instance.AtlasCheckStateRequest;
-import org.apache.atlas.model.instance.AtlasCheckStateResult;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.general.HealthStatus;
+import org.apache.atlas.model.impexp.*;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.audit.AtlasAuditService;
-import org.apache.atlas.repository.impexp.AtlasServerService;
-import org.apache.atlas.repository.impexp.ExportImportAuditService;
-import org.apache.atlas.repository.impexp.ExportService;
-import org.apache.atlas.repository.impexp.ImportService;
-import org.apache.atlas.repository.impexp.MigrationProgressService;
-import org.apache.atlas.repository.impexp.ZipSink;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.impexp.*;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetricsService;
@@ -64,7 +52,6 @@ import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
-import org.apache.atlas.web.service.ActiveInstanceElectorService;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
 import org.apache.atlas.web.service.AtlasHealthStatus;
 import org.apache.atlas.web.service.ServiceState;
@@ -75,6 +62,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -86,38 +74,16 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import org.apache.atlas.model.general.HealthStatus;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
-import java.util.*;
 
 import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
 import static org.apache.atlas.AtlasErrorCode.DISABLED_API;
@@ -150,8 +116,6 @@ public class AdminResource {
     private static final String OPERATION_STATUS               = "operationStatus";
     private static final List TIMEZONE_LIST                    = Arrays.asList(TimeZone.getAvailableIDs());
 
-    @Inject
-    private ActiveInstanceElectorService electorService;
 
     @Context
     private HttpServletRequest httpServletRequest;
@@ -445,23 +409,6 @@ public class AdminResource {
         }
 
         return Response.status(200).entity(result).build();
-    }
-
-    @GET
-    @Path("killtheleader")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response killTheLeader() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AdminResource.killTheLeader()");
-        }
-
-        System.out.println(electorService);
-        try{
-            return Response.status(200).build();
-        } finally {
-            //do after actions
-            electorService.quitElection();
-        }
     }
 
     @GET

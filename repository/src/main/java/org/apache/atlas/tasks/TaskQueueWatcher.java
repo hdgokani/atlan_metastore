@@ -18,7 +18,6 @@
 package org.apache.atlas.tasks;
 
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.commons.collections.CollectionUtils;
@@ -38,14 +37,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class TaskQueueWatcher implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(TaskQueueWatcher.class);
     private static final TaskExecutor.TaskLogger TASK_LOG = TaskExecutor.TaskLogger.getLogger();
-    private final String zkRoot;
-    private final boolean isActiveActiveHAEnabled;
 
     private TaskRegistry registry;
     private final ExecutorService executorService;
     private final Map<String, TaskFactory> taskTypeFactoryMap;
     private final TaskManagement.Statistics statistics;
-    private final ICuratorFactory curatorFactory;
     private final RedisService redisService;
 
     private static long pollInterval = AtlasConfiguration.TASKS_REQUEUE_POLL_INTERVAL.getLong();
@@ -56,16 +52,13 @@ public class TaskQueueWatcher implements Runnable {
 
     public TaskQueueWatcher(ExecutorService executorService, TaskRegistry registry,
                             Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
-                            ICuratorFactory curatorFactory, RedisService redisService, final String zkRoot, boolean isActiveActiveHAEnabled) {
+                            RedisService redisService, final String zkRoot, boolean isActiveActiveHAEnabled) {
 
         this.registry = registry;
         this.executorService = executorService;
         this.taskTypeFactoryMap = taskTypeFactoryMap;
         this.statistics = statistics;
-        this.curatorFactory = curatorFactory;
         this.redisService = redisService;
-        this.zkRoot = zkRoot;
-        this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
     }
 
     public void shutdown() {

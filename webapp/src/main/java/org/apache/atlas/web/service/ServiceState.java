@@ -21,7 +21,6 @@ package org.apache.atlas.web.service;
 import com.google.common.base.Preconditions;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
@@ -34,9 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Singleton;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Date;
 
 import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
@@ -45,7 +41,6 @@ import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
  * A class that maintains the state of this instance.
  *
  * The states are maintained at a granular level, including in-transition states. The transitions are
- * directed by {@link ActiveInstanceElectorService}.
  */
 @Singleton
 @Component

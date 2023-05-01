@@ -18,7 +18,6 @@
 
 package org.apache.atlas.web.filters;
 
-import org.apache.atlas.web.service.ActiveInstanceState;
 import org.apache.atlas.web.service.ServiceState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,12 +25,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriUtils;
 
 import javax.inject.Inject;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.HttpMethod;
@@ -44,7 +38,7 @@ import java.io.IOException;
  * All requests to an active instance pass through. Requests received by a passive instance are redirected
  * by identifying the currently active server. Requests to servers which are in transition are returned with
  * an error SERVICE_UNAVAILABLE. Identification of this state is carried out using
- * {@link ServiceState} and {@link ActiveInstanceState}.
+ * {@link ServiceState} and {@link }.
  */
 @Component
 public class ActiveServerFilter implements Filter {
@@ -52,12 +46,10 @@ public class ActiveServerFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(ActiveServerFilter.class);
     private static final String MIGRATION_STATUS_STATIC_PAGE = "migration-status.html";
 
-    private final ActiveInstanceState activeInstanceState;
     private ServiceState serviceState;
 
     @Inject
-    public ActiveServerFilter(ActiveInstanceState activeInstanceState, ServiceState serviceState) {
-        this.activeInstanceState = activeInstanceState;
+    public ActiveServerFilter(ServiceState serviceState) {
         this.serviceState = serviceState;
     }
 
@@ -96,16 +88,6 @@ public class ActiveServerFilter implements Filter {
             HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
             LOG.error("Instance in migration. Service may not be ready to return a result");
             httpServletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-        } else {
-            HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
-            String activeServerAddress = activeInstanceState.getActiveServerAddress();
-            if (activeServerAddress == null) {
-                LOG.error("Could not retrieve active server address as it is null. Cannot redirect request {}",
-                        ((HttpServletRequest)servletRequest).getRequestURI());
-                httpServletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-            } else {
-                handleRedirect((HttpServletRequest) servletRequest, httpServletResponse, activeServerAddress);
-            }
         }
     }
 

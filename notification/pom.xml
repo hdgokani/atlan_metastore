@@ -181,11 +181,6 @@
                                     <artifactId>kafka-clients</artifactId>
                                     <version>${kafka.version}</version>
                                 </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.apache.zookeeper</groupId>
-                                    <artifactId>zookeeper</artifactId>
-                                    <version>3.4.6</version>
-                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>
