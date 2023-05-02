@@ -36,11 +36,14 @@ import javax.inject.Singleton;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER_IMPL;
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.CURRENT_AUTHORIZER_IMPL;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
+import static org.apache.atlas.web.rest.EntityREST.validateAttributeLength;
 
 @Path("migration")
 @Singleton
@@ -211,6 +214,34 @@ public class MigrationREST {
             return ret;
 
         } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("/bulk")
+    @Timed
+    public EntityMutationResponse createOrUpdate(AtlasEntity.AtlasEntitiesWithExtInfo entities,
+                                                 @QueryParam("replaceClassifications") @DefaultValue("false") boolean replaceClassifications,
+                                                 @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
+                                                 @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.createOrUpdate(entityCount=" +
+                        (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size()) + ")");
+            }
+
+            validateAttributeLength(entities.getEntities());
+
+            EntityStream entityStream = new AtlasEntityStream(entities);
+
+            RequestContext.get().setAccessControlMigrationInProgress(true);
+
+            return entityStore.createOrUpdate(entityStream, replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
+        } finally {
+            RequestContext.get().setAccessControlMigrationInProgress(false);
             AtlasPerfTracer.log(perf);
         }
     }

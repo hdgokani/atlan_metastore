@@ -6,10 +6,14 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.Predicate;
+import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 
-public class AtlasLineageListContext {
+public final class AtlasLineageListContext {
     private String                              guid;
     private Integer                             size;
     private Integer                             from;
@@ -18,7 +22,6 @@ public class AtlasLineageListContext {
     private Predicate                           vertexPredicate;
     private Predicate                           edgePredicate;
     private Set<String>                         attributes;
-    private Set<String>                         relationAttributes;
     private boolean                             fetchProcesses;
 
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {
@@ -30,7 +33,6 @@ public class AtlasLineageListContext {
         this.vertexPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getEntityTraversalFilters());
         this.edgePredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getRelationshipTraversalFilters());
         this.attributes = lineageListRequest.getAttributes();
-        this.relationAttributes = lineageListRequest.getRelationAttributes();
         this.fetchProcesses = lineageListRequest.isFetchProcesses();
     }
 
@@ -96,14 +98,6 @@ public class AtlasLineageListContext {
 
     public void setAttributes(Set<String> attributes) {
         this.attributes = attributes;
-    }
-
-    public Set<String> getRelationAttributes() {
-        return relationAttributes;
-    }
-
-    public void setRelationAttributes(Set<String> relationAttributes) {
-        this.relationAttributes = relationAttributes;
     }
 
     public boolean isFetchProcesses() {

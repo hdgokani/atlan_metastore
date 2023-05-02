@@ -126,8 +126,15 @@ public class AccessControlUtils {
         return roleId;
     }
 
-    public static boolean getIsEnabled(AtlasEntity entity) throws AtlasBaseException {
+    public static boolean getIsEnabled(AtlasEntity entity) {
         return (boolean) entity.getAttribute(ATTR_ACCESS_CONTROL_ENABLED);
+    }
+
+    public static boolean getIsPolicyEnabled(AtlasEntityHeader entity)  {
+        if (entity.hasAttribute(ATTR_POLICY_IS_ENABLED)) {
+            return (boolean) entity.getAttribute(ATTR_POLICY_IS_ENABLED);
+        }
+        return true;
     }
 
     public static List<String> getPersonaUsers(AtlasStruct entity) {
