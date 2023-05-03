@@ -303,6 +303,7 @@ public class CachePolicyTransformerImpl {
             item.setAccesses(accesses);
 
             rangerPolicy.setPolicyItems(Collections.singletonList(item));
+            rangerPolicy.setPolicyType(RangerPolicy.POLICY_TYPE_ACCESS);
 
         } else if ("deny".equals(policyType)) {
             RangerPolicyItem item = new RangerPolicyItem();
@@ -312,6 +313,7 @@ public class CachePolicyTransformerImpl {
             item.setAccesses(accesses);
 
             rangerPolicy.setDenyPolicyItems(Collections.singletonList(item));
+            rangerPolicy.setPolicyType(RangerPolicy.POLICY_TYPE_ACCESS);
 
         } else if ("allowExceptions".equals(policyType)) {
             RangerPolicyItem item = new RangerPolicyItem();
@@ -321,6 +323,7 @@ public class CachePolicyTransformerImpl {
             item.setAccesses(accesses);
 
             rangerPolicy.setAllowExceptions(Collections.singletonList(item));
+            rangerPolicy.setPolicyType(RangerPolicy.POLICY_TYPE_ACCESS);
 
         } else if ("denyExceptions".equals(policyType)) {
             RangerPolicyItem item = new RangerPolicyItem();
@@ -330,6 +333,7 @@ public class CachePolicyTransformerImpl {
             item.setAccesses(accesses);
 
             rangerPolicy.setDenyExceptions(Collections.singletonList(item));
+            rangerPolicy.setPolicyType(RangerPolicy.POLICY_TYPE_ACCESS);
 
         } else if ("dataMask".equals(policyType)) {
 
