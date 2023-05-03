@@ -261,7 +261,6 @@ public class AuthPolicyPreProcessor implements PreProcessor {
     }
 
     private void validateConnectionAdmin(AtlasEntity policy) throws AtlasBaseException {
-
         String subCategory = getPolicySubCategory(policy);
         if ("metadata".equals(subCategory) || "data".equals(subCategory)) {
             //connectionAdmins check
