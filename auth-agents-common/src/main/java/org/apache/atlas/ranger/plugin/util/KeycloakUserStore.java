@@ -56,6 +56,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_ADMIN;
+import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_API_TOKEN;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_DEFAULT;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_GUEST;
 import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_MEMBER;
@@ -191,6 +192,9 @@ public class KeycloakUserStore {
 
                 Optional<RangerRole> memberRole = roleSet.stream().filter(x -> KEYCLOAK_ROLE_MEMBER.equals(x.getName())).findFirst();
                 memberRole.ifPresent(rangerRole -> nonGuestUsers.addAll(rangerRole.getUsers()));
+
+                Optional<RangerRole> apiTokenDefaultAccessRole = roleSet.stream().filter(x -> KEYCLOAK_ROLE_API_TOKEN.equals(x.getName())).findFirst();
+                apiTokenDefaultAccessRole.ifPresent(rangerRole -> nonGuestUsers.addAll(rangerRole.getUsers()));
 
                 defaultUsers.removeAll(nonGuestUsers);
 
