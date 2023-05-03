@@ -42,7 +42,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
@@ -58,7 +61,34 @@ import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.ConnectionPreProcessor.CONN_NAME_PATTERN;
-import static org.apache.atlas.repository.util.AccessControlUtils.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ACTIONS;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_GROUPS;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES_CATEGORY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ROLES;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SUB_CATEGORY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_TYPE;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_USERS;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
+import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_ACCESS_CONTROL;
+import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
+import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionForPolicy;
+import static org.apache.atlas.repository.util.AccessControlUtils.getEntityQualifiedName;
+import static org.apache.atlas.repository.util.AccessControlUtils.getIsEnabled;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPersonaRoleName;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyActions;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResourceCategory;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResources;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyServiceName;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyType;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPurposeTags;
+import static org.apache.atlas.repository.util.AccessControlUtils.getUUID;
 
 public class AuthPolicyPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AuthPolicyPreProcessor.class);
