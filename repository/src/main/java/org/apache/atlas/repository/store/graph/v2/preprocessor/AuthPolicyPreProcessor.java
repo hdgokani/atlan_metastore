@@ -61,7 +61,7 @@ import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.ConnectionPreProcessor.CONN_NAME_PATTERN;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_ACCESS_CONTROL_ENABLED;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ACTIONS;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_GROUPS;
@@ -135,6 +135,8 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         String policyCategory = getPolicyCategory(policy);
 
+        entity.setAttribute(ATTR_POLICY_IS_ENABLED, entity.getAttributes().getOrDefault(ATTR_POLICY_IS_ENABLED, true));
+
         if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
             AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
             AtlasEntity parentEntity = parent.getEntity();
@@ -143,7 +145,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             validateConnectionAdmin(policy);
 
             policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
-            entity.setAttribute(ATTR_ACCESS_CONTROL_ENABLED, true);
+
 
             //extract role
             String roleName = getPersonaRoleName(parentEntity);
@@ -162,7 +164,6 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             AtlasEntity parentEntity = parent.getEntity();
 
             policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
-            entity.setAttribute(ATTR_ACCESS_CONTROL_ENABLED, true);
 
             validatePurposePolicyRequest(policy, null, parentEntity, CREATE);
             //extract tags
