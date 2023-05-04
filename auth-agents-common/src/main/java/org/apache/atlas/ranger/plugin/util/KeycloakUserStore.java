@@ -34,6 +34,7 @@ import org.apache.atlas.ranger.plugin.model.RangerRole;
 import org.apache.atlas.ranger.plugin.service.RangerBasePlugin;
 import org.keycloak.admin.client.resource.RoleResource;
 import org.keycloak.representations.idm.AdminEventRepresentation;
+import org.keycloak.representations.idm.EventRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -68,6 +69,7 @@ public class KeycloakUserStore {
 
     private static int NUM_THREADS = 5;
 
+    List<String> EVENT_TYPES = Arrays.asList("REGISTER");
     List<String> OPERATION_TYPES = Arrays.asList("CREATE", "UPDATE", "DELETE");
     List<String> RESOURCE_TYPES = Arrays.asList("USER", "GROUP", "REALM_ROLE", "CLIENT", "REALM_ROLE_MAPPING", "GROUP_MEMBERSHIP", "CLIENT_ROLE_MAPPING");
 
@@ -75,13 +77,13 @@ public class KeycloakUserStore {
 
     public KeycloakUserStore(String serviceName) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> RangerRolesProvider(serviceName=" + serviceName + ").RangerRolesProvider()");
+            LOG.debug("==> KeycloakUserStore(serviceName=" + serviceName + ")");
         }
 
         this.serviceName = serviceName;
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== RangerRolesProvider(serviceName=" + serviceName + ").RangerRolesProvider()");
+            LOG.debug("<== KeycloakUserStore(serviceName=" + serviceName + ")");
         }
     }
 
@@ -97,16 +99,12 @@ public class KeycloakUserStore {
         LOG.info("Fetching getKeycloakSubjectsStoreUpdatedTime");
         KeycloakClient keycloakClient = KeycloakClient.getKeycloakClient();
         long latestEventTime = -1L;
-        int count = 0;
-
         try {
 
             int from = 0;
             int size = 100;
 
-
             while (latestEventTime == -1L) {
-                count = count+1;
                 List<AdminEventRepresentation> adminEvents = keycloakClient.getRealm().getAdminEvents(OPERATION_TYPES,
                         null, null, null, null, null, null, null,
                         from, size);
@@ -116,11 +114,24 @@ public class KeycloakUserStore {
                 }
                 from += size;
             }
-            count = 0;
-            LOG.info("Number of retries - {}", count);
+
+            //check Events for user registration event via OKTA
+            List<EventRepresentation> allEvents = keycloakClient.getRealm().getEvents(EVENT_TYPES,
+                    null, null, null, null, null, 0, 1);
+
+            if (CollectionUtils.isNotEmpty(allEvents)) {
+                LOG.info("KeycloakUserStore: Found user registration event");
+                EventRepresentation event = allEvents.get(0);
+
+                long latestLoginEventTime = event.getTime();
+
+                if (latestLoginEventTime > latestEventTime) {
+                    latestEventTime = latestLoginEventTime;
+                }
+            }
+
             LOG.info("getKeycloakSubjectsStoreUpdatedTime - {}", latestEventTime);
         } catch (Exception e) {
-            LOG.info("Number of retries - {}", count);
             LOG.error("Error while fetching latest event time", e);
         } finally {
             keycloakClient.getRealm().getClientSessionStats();
