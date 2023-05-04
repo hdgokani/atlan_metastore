@@ -370,6 +370,7 @@ public class EntityGraphMapper {
                     reqContext.getDeletedEdgesIds().clear();
 
                     String guid = createdEntity.getGuid();
+                    AtlasVertex vertex = context.getVertex(guid);
                     AtlasEntityType entityType = context.getType(guid);
 
                     mapAttributes(createdEntity, entityType, vertex, CREATE, context);
