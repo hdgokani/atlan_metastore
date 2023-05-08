@@ -110,7 +110,7 @@ public class KeycloakUserStore {
         long latestKeycloakEventTime = -1L;
 
         try {
-            int size = 1;
+            int size = 100;
 
             for (int from = 0; ; from += size) {
 
@@ -122,7 +122,9 @@ public class KeycloakUserStore {
                 if (event.isPresent()) {
                     latestKeycloakEventTime = event.get().getTime();
                     break;
-                } else if (cacheLastUpdatedTime > adminEvents.get(adminEvents.size() - 1).getTime()) {
+                }
+
+                if (cacheLastUpdatedTime > adminEvents.get(adminEvents.size() - 1).getTime()) {
                     break;
                 }
             }
@@ -142,7 +144,9 @@ public class KeycloakUserStore {
                 if (event.isPresent()) {
                     latestKeycloakEventTime = event.get().getTime();
                     break;
-                } else if (cacheLastUpdatedTime > events.get(events.size() - 1).getTime()) {
+                }
+
+                if (cacheLastUpdatedTime > events.get(events.size() - 1).getTime()) {
                     break;
                 }
             }
