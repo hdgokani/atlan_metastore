@@ -58,9 +58,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
-import static org.apache.atlas.featureflag.AtlasFeatureFlagConfig.*;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE;
 import static org.apache.atlas.repository.Constants.ENTITY_TEXT_PROPERTY_KEY;
@@ -143,10 +141,6 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
                 notifyRelationshipListeners(relationships, EntityOperation.DELETE, false);
                 break;
         }
-    }
-
-    private boolean isLineageBasedEventsEnabled() {
-        return featureFlagStore.evaluate(LINEAGE_EVENTS_FEATURE_FLAG_KEY, INSTANCE_DOMAIN_NAME);
     }
 
     @Override

@@ -28,6 +28,8 @@ import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.discovery.searchlog.SearchLoggingManagement;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.featureflag.FeatureFlagStore;
+import org.apache.atlas.featureflag.FeatureFlagStoreLaunchDarklyImpl;
 import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.discovery.searchlog.SearchLogSearchResult;
