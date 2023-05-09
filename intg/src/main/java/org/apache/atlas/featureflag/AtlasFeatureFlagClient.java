@@ -8,7 +8,8 @@ import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.Objects;
 
-public class AtlasFeatureFlagClient {
+@Component
+final public class AtlasFeatureFlagClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasFeatureFlagClient.class);
     private final static String LAUNCH_DARKLY_SDK_KEY       = Objects.toString(System.getenv("USER_LAUNCH_DARKLY_SDK_KEY"), "");
@@ -18,18 +19,16 @@ public class AtlasFeatureFlagClient {
 
     private static LDClient launchDarklyClient;
 
-    public static LDClient getClient() {
-
-        if (launchDarklyClient == null) {
-            synchronized (AtlasFeatureFlagClient.class) {
-                try {
-                    launchDarklyClient = new LDClient(LAUNCH_DARKLY_SDK_KEY);
-                } catch (Exception e) {
-                    LOG.error("Error while initializing LaunchDarkly client", e);
-                    throw e;
-                }
-            }
+    public AtlasFeatureFlagClient() {
+        try {
+            this.launchDarklyClient = new LDClient(LAUNCH_DARKLY_SDK_KEY);
+        } catch (Exception e) {
+            LOG.error("Error while initializing LaunchDarkly client", e);
+            throw e;
         }
+    }
+
+    public LDClient getClient() {
         return launchDarklyClient;
     }
 
@@ -37,5 +36,4 @@ public class AtlasFeatureFlagClient {
     public void destroy() throws IOException {
         this.launchDarklyClient.close();
     }
-
 }

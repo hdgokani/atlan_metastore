@@ -47,6 +47,8 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.AtlasErrorCode.ACCESS_CONTROL_ALREADY_EXISTS;
 import static org.apache.atlas.AtlasErrorCode.DISABLED_OPERATION;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
+import static org.apache.atlas.featureflag.AtlasFeatureFlagClient.INSTANCE_DOMAIN_NAME;
+import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.DISABLE_ACCESS_CONTROL;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
@@ -105,7 +107,7 @@ public class AccessControlUtils {
     public static final String POLICY_SUB_CATEGORY_GLOSSARY  = "glossary";
     public static final String POLICY_SUB_CATEGORY_DATA  = "data";
 
-
+    private static final String INSTANCE_DOMAIN_KEY = "instance";
 
     private static final String CONNECTION_QN = "%s/%s/%s";
 
@@ -414,9 +416,7 @@ public class AccessControlUtils {
     }
 
     public static void checkAccessControlFeatureStatus(FeatureFlagStore featureFlagStore) throws AtlasBaseException {
-        boolean isDisabled = getAccessControlFeatureFlag(featureFlagStore);
-
-        if (isDisabled) {
+        if (getAccessControlFeatureFlag(featureFlagStore)) {
             throw new AtlasBaseException(DISABLED_OPERATION);
         }
     }
@@ -446,6 +446,6 @@ public class AccessControlUtils {
     }
 
     public static boolean getAccessControlFeatureFlag(FeatureFlagStore featureFlagStore) {
-        return featureFlagStore.evaluate(FeatureFlagStore.FeatureFlag.DISABLE_ACCESS_CONTROL, false);
+        return featureFlagStore.evaluate(DISABLE_ACCESS_CONTROL, INSTANCE_DOMAIN_KEY, INSTANCE_DOMAIN_NAME);
     }
 }
