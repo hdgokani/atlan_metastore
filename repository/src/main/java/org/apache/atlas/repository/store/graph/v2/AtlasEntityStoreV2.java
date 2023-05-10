@@ -1516,6 +1516,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 reqContext.endMetricRecord(checkForUnchangedEntities);
             }
 
+            executePreProcessor(context);
+
             EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate,
                     replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttribute);
 
@@ -1534,6 +1536,29 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             RequestContext.get().endMetricRecord(metric);
 
             AtlasPerfTracer.log(perf);
+        }
+    }
+
+    private void executePreProcessor(EntityMutationContext context) throws AtlasBaseException {
+        AtlasEntityType entityType;
+        PreProcessor preProcessor;
+
+        for (AtlasEntity entity : context.getCreatedEntities()) {
+            entityType = context.getType(entity.getGuid());
+            preProcessor = getPreProcessor(entityType.getTypeName());
+
+            if (preProcessor != null) {
+                preProcessor.processAttributes(entity, context, CREATE);
+            }
+        }
+
+        for (AtlasEntity entity : context.getUpdatedEntities()) {
+            entityType = context.getType(entity.getGuid());
+            preProcessor = getPreProcessor(entityType.getTypeName());
+
+            if (preProcessor != null) {
+                preProcessor.processAttributes(entity, context, UPDATE);
+            }
         }
     }
 
@@ -1560,7 +1585,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 compactAttributes(entity, entityType);
 
                 AtlasVertex vertex = getResolvedEntityVertex(discoveryContext, entity);
-                PreProcessor preProcessor = getPreProcessor(entityType.getTypeName());
+
 
                 try {
                     if (vertex != null) {
@@ -1586,11 +1611,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         }
 
                         context.addUpdated(guid, entity, entityType, vertex);
-
-                        if (preProcessor != null) {
-                            preProcessor.processAttributes(entity, context, UPDATE);
-                        }
-
                     } else {
                         graphDiscoverer.validateAndNormalize(entity);
 
@@ -1612,10 +1632,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         requestContext.recordEntityGuidUpdate(entity, guid);
 
                         context.addCreated(guid, entity, entityType, vertex);
-
-                        if (preProcessor != null) {
-                            preProcessor.processAttributes(entity, context, CREATE);
-                        }
                     }
 
                 } catch (AtlasBaseException exception) {
