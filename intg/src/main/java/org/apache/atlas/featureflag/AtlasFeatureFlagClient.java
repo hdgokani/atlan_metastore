@@ -44,7 +44,6 @@ final public class AtlasFeatureFlagClient {
             launchDarklyClient = new LDClient(LAUNCH_DARKLY_SDK_KEY);
         } catch (Exception e) {
             LOG.error("Error while initializing LaunchDarkly client", e);
-            throw e;
         }
     }
 
