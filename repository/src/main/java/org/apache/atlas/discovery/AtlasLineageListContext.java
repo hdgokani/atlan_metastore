@@ -59,6 +59,10 @@ public final class AtlasLineageListContext {
         this.from = from;
     }
 
+    /*
+    * Clients assume depth limit at node level
+    *  eg. Atlas depth 1 would return processes (BFS algo) and depth 2 would return processes + nodes, whereas client needs processes + nodes for depth 1
+    */
     public Integer getDepth() {
         return 2*depth;
     }
