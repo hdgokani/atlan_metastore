@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.discovery.searchlog;
+package org.apache.atlas.searchlog;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.searchlog.SearchRequestLogData;
@@ -177,5 +177,4 @@ public class ESSearchLogger implements SearchLogger, Service {
         return new String(Files.readAllBytes(elasticsearchSettingsFile.toPath()), StandardCharsets.UTF_8);
     }
 }
-
 

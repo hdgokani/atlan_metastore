@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.discovery.searchlog;
+package org.apache.atlas.searchlog;
 
 import org.apache.atlas.model.searchlog.SearchRequestLogData;
 

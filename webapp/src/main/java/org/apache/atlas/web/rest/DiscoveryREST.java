@@ -28,13 +28,13 @@ import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.discovery.searchlog.SearchLoggingManagement;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.featureflag.FeatureFlagStore;
-import org.apache.atlas.featureflag.FeatureFlagStoreLaunchDarklyImpl;
 import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
-import org.apache.atlas.model.discovery.searchlog.SearchLogSearchResult;
-import org.apache.atlas.model.discovery.searchlog.SearchLogSearchParams;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
+import org.apache.atlas.model.searchlog.SearchLogSearchParams;
+import org.apache.atlas.model.searchlog.SearchLogSearchResult;
+import org.apache.atlas.model.searchlog.SearchRequestLogData;
+import org.apache.atlas.model.searchlog.SearchRequestLogData.SearchRequestLogDataBuilder;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
@@ -47,8 +47,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import org.apache.atlas.model.discovery.searchlog.SearchRequestLogData.SearchRequestLogDataBuilder;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -70,6 +68,9 @@ import java.util.List;
 import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.REQUEST_HEADER_HOST;
+import static org.apache.atlas.repository.Constants.REQUEST_HEADER_USER_AGENT;
 
 /**
  * REST interface for data discovery using dsl or full text search
@@ -100,7 +101,7 @@ public class DiscoveryREST {
         this.loggerManagement       = loggerManagement;
         this.maxFullTextQueryLength = configuration.getInt(Constants.MAX_FULLTEXT_QUERY_STR_LENGTH, 4096);
         this.maxDslQueryLength      = configuration.getInt(Constants.MAX_DSL_QUERY_STR_LENGTH, 4096);
-        this.enableSearchLogging    = AtlasConfiguration.ENABLE_SEARCH_LOGGING.getBoolean();
+        this.enableSearchLogging    = AtlasConfiguration.ENABLE_SEARCH_LOGGER.getBoolean();
     }
 
     /**
@@ -433,15 +434,13 @@ public class DiscoveryREST {
                 logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
             }
             throw abe;
-
         } finally {
             AtlasPerfTracer.log(perf);
         }
     }
 
-
     /**
-     * Index based search for query direct on ES searchlogs index
+     * Index based search for query direct on ES search-logs index
      *
      * @param parameters Index Search parameters @SearchLogSearchParams.java
      * @return search log search result
@@ -469,102 +468,6 @@ public class DiscoveryREST {
         }
 
         return result;
-    }
-
-    private void logSearchLog(IndexSearchParams parameters, AtlasSearchResult result,
-                              HttpServletRequest servletRequest, long requestTime) {
-        SearchRequestLogDataBuilder builder = new SearchRequestLogDataBuilder();
-
-
-        if (CollectionUtils.isNotEmpty(result.getEntities())) {
-            builder.setHasResult(true);
-            builder.setResultsCount(result.getApproximateCount());
-
-            Set<String> entityGuidsAll = new HashSet<>();
-            Set<String> entityQFNamesAll = new HashSet<>();
-            Set<String> entityGuidsAllowed = new HashSet<>();
-            Set<String> entityQFNamesAllowed = new HashSet<>();
-            Set<String> entityGuidsDenied = new HashSet<>();
-            Set<String> entityQFNamesDenied = new HashSet<>();
-
-            result.getEntities().forEach(x -> {
-                boolean allowed = x.getScrubbed() == null;
-
-                String guid = x.getGuid();
-
-                if (guid != null) {
-                    entityGuidsAll.add(guid);
-                    if (allowed) {
-                        entityGuidsAllowed.add(guid);
-                    } else {
-                        entityGuidsDenied.add(guid);
-                    }
-                }
-
-                try {
-                    String qualifiedName = (String) x.getAttribute(QUALIFIED_NAME);
-
-                    if (qualifiedName != null) {
-
-                        entityQFNamesAll.add(qualifiedName);
-                        if (allowed) {
-                            entityQFNamesAllowed.add(qualifiedName);
-                        } else {
-                            entityQFNamesDenied.add(qualifiedName);
-                        }
-                    }
-                } catch (NullPointerException npe) {
-                    //no attributes for entity
-                }
-            });
-
-            builder.setEntityGuidsAll(entityGuidsAll)
-                    .setEntityQFNamesAll(entityQFNamesAll)
-                    .setEntityGuidsAllowed(entityGuidsAllowed)
-                    .setEntityQFNamesAllowed(entityQFNamesAllowed)
-                    .setEntityGuidsDenied(entityGuidsDenied)
-                    .setEntityQFNamesDenied(entityQFNamesDenied);
-
-        } else {
-            builder.setHasResult(false);
-        }
-
-        logSearchLog(parameters, servletRequest, builder, requestTime);
-    }
-
-    private void logSearchLog(IndexSearchParams parameters, HttpServletRequest servletRequest,
-                              AtlasBaseException e, long requestTime) {
-        SearchRequestLogDataBuilder builder = new SearchRequestLogDataBuilder();
-
-        builder.setErrorDetails(e.getMessage())
-                .setErrorCode(e.getAtlasErrorCode().getErrorCode())
-                .setFailed(true);
-
-
-        logSearchLog(parameters, servletRequest, builder, requestTime);
-    }
-
-    private void logSearchLog(IndexSearchParams parameters, HttpServletRequest servletRequest,
-                              SearchRequestLogDataBuilder builder, long requestTime) {
-
-        builder.setDsl(parameters.getDsl())
-                .setUtmTags(parameters.getUtmTags())
-                .setAttributes(parameters.getAttributes())
-                .setRelationAttributes(parameters.getRelationAttributes())
-
-                .setUserAgent(servletRequest.getHeader(REQUEST_HEADER_USER_AGENT))
-                .setHost(servletRequest.getHeader(REQUEST_HEADER_HOST))
-
-                .setIpAddress(AtlasAuthorizationUtils.getRequestIpAddress(servletRequest))
-                .setUserName(AtlasAuthorizationUtils.getCurrentUserName())
-
-                .setTimestamp(RequestContext.get().getRequestTime())
-                .setResponseTime(requestTime);
-
-
-        loggerManagement.log(builder.build());
-
-        LOG.info("Logged search log for indexsearch request");
     }
 
     /**
@@ -967,5 +870,100 @@ public class DiscoveryREST {
         if (parameters != null) {
             validateSearchParameters(EntityDiscoveryService.createSearchParameters(parameters));
         }
+    }
+
+    private void logSearchLog(IndexSearchParams parameters, AtlasSearchResult result,
+                              HttpServletRequest servletRequest, long requestTime) {
+        SearchRequestLogData.SearchRequestLogDataBuilder builder = new SearchRequestLogDataBuilder();
+
+
+        if (CollectionUtils.isNotEmpty(result.getEntities())) {
+            builder.setHasResult(true);
+            builder.setResultsCount(result.getApproximateCount());
+
+            Set<String> entityGuidsAll = new HashSet<>();
+            Set<String> entityQFNamesAll = new HashSet<>();
+            Set<String> entityGuidsAllowed = new HashSet<>();
+            Set<String> entityQFNamesAllowed = new HashSet<>();
+            Set<String> entityGuidsDenied = new HashSet<>();
+            Set<String> entityQFNamesDenied = new HashSet<>();
+
+            result.getEntities().forEach(x -> {
+                boolean allowed = x.getScrubbed() == null;
+
+                String guid = x.getGuid();
+
+                if (guid != null) {
+                    entityGuidsAll.add(guid);
+                    if (allowed) {
+                        entityGuidsAllowed.add(guid);
+                    } else {
+                        entityGuidsDenied.add(guid);
+                    }
+                }
+
+                try {
+                    String qualifiedName = (String) x.getAttribute(QUALIFIED_NAME);
+
+                    if (qualifiedName != null) {
+
+                        entityQFNamesAll.add(qualifiedName);
+                        if (allowed) {
+                            entityQFNamesAllowed.add(qualifiedName);
+                        } else {
+                            entityQFNamesDenied.add(qualifiedName);
+                        }
+                    }
+                } catch (NullPointerException npe) {
+                    //no attributes for entity
+                }
+            });
+
+            builder.setEntityGuidsAll(entityGuidsAll)
+                    .setEntityQFNamesAll(entityQFNamesAll)
+                    .setEntityGuidsAllowed(entityGuidsAllowed)
+                    .setEntityQFNamesAllowed(entityQFNamesAllowed)
+                    .setEntityGuidsDenied(entityGuidsDenied)
+                    .setEntityQFNamesDenied(entityQFNamesDenied);
+
+        } else {
+            builder.setHasResult(false);
+        }
+
+        logSearchLog(parameters, servletRequest, builder, requestTime);
+    }
+
+    private void logSearchLog(IndexSearchParams parameters, HttpServletRequest servletRequest,
+                              AtlasBaseException e, long requestTime) {
+        SearchRequestLogDataBuilder builder = new SearchRequestLogDataBuilder();
+
+        builder.setErrorDetails(e.getMessage())
+                .setErrorCode(e.getAtlasErrorCode().getErrorCode())
+                .setFailed(true);
+
+
+        logSearchLog(parameters, servletRequest, builder, requestTime);
+    }
+
+    private void logSearchLog(IndexSearchParams parameters, HttpServletRequest servletRequest,
+                              SearchRequestLogDataBuilder builder, long requestTime) {
+
+        builder.setUtmTags(parameters.getUtmTags())
+                .setAttributes(parameters.getAttributes())
+                .setRelationAttributes(parameters.getRelationAttributes())
+
+                .setUserAgent(servletRequest.getHeader(REQUEST_HEADER_USER_AGENT))
+                .setHost(servletRequest.getHeader(REQUEST_HEADER_HOST))
+
+                .setIpAddress(AtlasAuthorizationUtils.getRequestIpAddress(servletRequest))
+                .setUserName(AtlasAuthorizationUtils.getCurrentUserName())
+
+                .setTimestamp(RequestContext.get().getRequestTime())
+                .setResponseTime(requestTime);
+
+
+        loggerManagement.log(builder.build());
+
+        LOG.info("Logged search log for indexsearch request");
     }
 }
