@@ -28,14 +28,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.model.instance.AtlasRelationship;
-import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -513,6 +506,9 @@ public class EntityGraphMapper {
         }
 
         if (req.getRestoredEntities() != null && req.getRestoredEntities().size() > 0) {
+
+            updateTermEntityOnRestore(req.getRestoredEntities(), context);
+
             for (AtlasEntityHeader entity : req.getRestoredEntities()) {
                 resp.addEntity(UPDATE, entity);
             }
@@ -521,6 +517,17 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metric);
 
         return resp;
+    }
+
+
+    private void updateTermEntityOnRestore(Collection<AtlasEntityHeader> restoreEntities, EntityMutationContext context) throws AtlasBaseException {
+
+        for (AtlasEntityHeader entity : restoreEntities) {
+            if (ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(entity.getTypeName())) {
+                PreProcessor preProcessor = getPreProcessor(entity.getTypeName());
+                preProcessor.processAttributesExt(entity, context, EntityMutations.EntityOperation.RESTORE);
+            }
+        }
     }
 
     private void setSystemAttributesToEntity(AtlasVertex entityVertex, AtlasEntity createdEntity) {

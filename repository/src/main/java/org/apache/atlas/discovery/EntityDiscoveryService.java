@@ -684,6 +684,47 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return ret;
     }
 
+    @GraphTransaction
+    public AtlasSearchResult searchRelatedTermEntities(String guid, String relation, boolean getApproximateCount, SearchParameters searchParameters) throws AtlasBaseException {
+        AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.RELATIONSHIP);
+
+        AtlasVertex     entityVertex   = entityRetriever.getEntityVertex(guid);
+
+        //validate sortBy attribute
+        int       offset           = searchParameters.getOffset();
+        int       limit            = searchParameters.getLimit();
+        String sortByAttributeName = DEFAULT_SORT_ATTRIBUTE_NAME;
+
+        //get relationship(end vertices) vertices
+        GraphTraversal gt = graph.V(entityVertex.getId()).bothE().has("__typeName", "AtlasGlossarySemanticAssignment").otherV();
+        gt.has(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+        gt.order().by(sortByAttributeName, Order.asc);
+        gt.range(offset, offset + limit);
+
+        List<AtlasEntityHeader> resultList = new ArrayList<>();
+        while (gt.hasNext()) {
+
+            Vertex v = (Vertex) gt.next();
+
+            if (v != null && v.property(Constants.GUID_PROPERTY_KEY).isPresent()) {
+                String endVertexGuid     = v.property(Constants.GUID_PROPERTY_KEY).value().toString();
+                AtlasVertex vertex       = entityRetriever.getEntityVertex(endVertexGuid);
+                AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(vertex, searchParameters.getAttributes());
+
+                resultList.add(entity);
+            }
+        }
+
+        ret.setEntities(resultList);
+
+        if (ret.getEntities() == null) {
+            ret.setEntities(new ArrayList<>());
+        }
+
+        return ret;
+    }
+
+
     public int getMaxResultSetSize() {
         return maxResultSetSize;
     }

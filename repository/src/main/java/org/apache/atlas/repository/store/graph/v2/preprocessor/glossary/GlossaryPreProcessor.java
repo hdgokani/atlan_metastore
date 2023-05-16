@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -111,5 +112,10 @@ public class GlossaryPreProcessor implements PreProcessor {
 
     private boolean glossaryExists(String glossaryName) {
         return AtlasGraphUtilsV2.glossaryExists(glossaryName);
+    }
+
+    @Override
+    public void processAttributesExt(AtlasEntityHeader entity, EntityMutationContext context, EntityMutations.EntityOperation operation) throws AtlasBaseException {
+
     }
 }

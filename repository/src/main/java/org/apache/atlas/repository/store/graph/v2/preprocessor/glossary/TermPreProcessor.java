@@ -27,6 +27,8 @@ import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -56,10 +58,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE;
+import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_RESTORE;
 import static org.apache.atlas.type.Constants.*;
 
 @Component
@@ -110,6 +114,25 @@ public class TermPreProcessor implements PreProcessor {
         }
     }
 
+    @Override
+    public void processAttributesExt(AtlasEntityHeader entityHeader, EntityMutationContext context, EntityMutations.EntityOperation operation) throws AtlasBaseException {
+        LOG.info(" processAttributesExt " + entityHeader.getTypeName() );
+
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());
+        String vertexName = vertex.getProperty(NAME, String.class);
+        String termName = (String) entityHeader.getAttribute(NAME);
+        String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
+
+
+        if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
+            LOG.info("createAndQueueTask  UPDATE_ENTITY_MEANINGS_ON_TERM_RESTORE ");
+            createAndQueueTask(UPDATE_ENTITY_MEANINGS_ON_TERM_RESTORE, vertexName, termName, vertexQName, vertex);
+        } else {
+            updateMeaningNameInEntitiesOnRestore(vertexName, vertexQName, entityHeader.getGuid());
+        }
+
+    }
+
     private void processCreateTerm(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateTerm");
         String termName = (String) entity.getAttribute(NAME);
@@ -130,7 +153,7 @@ public class TermPreProcessor implements PreProcessor {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void processUpdateTerm(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+    public void processUpdateTerm(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateTerm");
         String termName = (String) entity.getAttribute(NAME);
         String vertexName = vertex.getProperty(NAME, String.class);
@@ -174,6 +197,54 @@ public class TermPreProcessor implements PreProcessor {
         return hasEntityAssociation;
     }
 
+
+    public void updateMeaningNameInEntitiesOnRestore(String termName, String termQName, String termGuid) throws AtlasBaseException{
+
+        LOG.info(" updateMeaningNameInEntitiesOnRestore ==>>" +termGuid );
+
+        Set<String> attributes = new HashSet<String>(){{
+            add(ATTR_MEANINGS);
+        }};
+
+        int from = 0;
+        while (true) {
+            SearchParameters params = new SearchParameters();
+            params.setOffset(from);
+            params.setLimit(ELASTICSEARCH_PAGINATION_SIZE);
+            AtlasSearchResult relResult = discovery.searchRelatedTermEntities(termGuid, "AtlasGlossarySemanticAssignment", false, params);
+            List<AtlasEntityHeader> list = relResult.getEntities();
+
+            for (AtlasEntityHeader entityHeader : list) {
+
+                List<AtlasObjectId> meanings = (List<AtlasObjectId>) entityHeader.getAttribute(ATTR_MEANINGS);
+                String updatedMeaningsText = "";
+                if (meanings != null) {
+                    updatedMeaningsText = meanings.stream()
+                            .filter(x -> !termGuid.equals(x.getGuid()))
+                            .filter(x -> ACTIVE.name().equals(x.getAttributes().get(STATE_PROPERTY_KEY)))
+                            .map(x -> x.getAttributes().get(NAME).toString())
+                            .collect(Collectors.joining(","));
+                }
+
+                if (updatedMeaningsText.length() == 0) {
+                    updatedMeaningsText = termName;
+                } else {
+                    updatedMeaningsText = updatedMeaningsText + "," + termName;
+                }
+
+
+                AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());
+
+                AtlasGraphUtilsV2.setEncodedProperty(entityVertex, MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
+                AtlasGraphUtilsV2.addListProperty(entityVertex, MEANING_NAMES_PROPERTY_KEY, termName, true);
+                AtlasGraphUtilsV2.addEncodedProperty(entityVertex, MEANINGS_PROPERTY_KEY, termQName);
+            }
+            from += ELASTICSEARCH_PAGINATION_SIZE;
+
+            if (list.size() < ELASTICSEARCH_PAGINATION_SIZE)
+                break;
+        }
+    }
 
     public void updateMeaningsNamesInEntitiesOnTermUpdate(String currentTermName, String updatedTermName, String termQName, String termGuid) throws AtlasBaseException {
         int from = 0;

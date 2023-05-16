@@ -270,4 +270,9 @@ public class QueryFolderPreProcessor implements PreProcessor {
     public static String createQualifiedName(String collectionQualifiedName) {
         return String.format(qualifiedNameFormat, collectionQualifiedName, AtlasAuthorizationUtils.getCurrentUserName(), getUUID());
     }
+
+    @Override
+    public void processAttributesExt(AtlasEntityHeader entity, EntityMutationContext context, EntityMutations.EntityOperation operation) throws AtlasBaseException {
+
+    }
 }

@@ -33,6 +33,8 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -867,6 +869,56 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
     }
+
+
+
+    public void updateMeaningNameInEntitiesOnRestore(String termName, String termQName, String termGuid) throws AtlasBaseException{
+
+        LOG.info("AtlasEntityStore updateMeaningNameInEntitiesOnRestore ==>>" +termGuid );
+
+        Set<String> attributes = new HashSet<String>(){{
+            add(ATTR_MEANINGS);
+        }};
+
+        int from = 0;
+        while (true) {
+            SearchParameters params = new SearchParameters();
+            params.setOffset(from);
+            params.setLimit(ELASTICSEARCH_PAGINATION_SIZE);
+            AtlasSearchResult relResult = discovery.searchRelatedTermEntities(termGuid, "AtlasGlossarySemanticAssignment", false, params);
+            List<AtlasEntityHeader> list = relResult.getEntities();
+
+            for (AtlasEntityHeader entityHeader : list) {
+
+                List<AtlasObjectId> meanings = (List<AtlasObjectId>) entityHeader.getAttribute(ATTR_MEANINGS);
+                String updatedMeaningsText = "";
+                if (meanings != null) {
+                    updatedMeaningsText = meanings.stream()
+                            .filter(x -> !termGuid.equals(x.getGuid()))
+                            .filter(x -> ACTIVE.name().equals(x.getAttributes().get(STATE_PROPERTY_KEY)))
+                            .map(x -> x.getAttributes().get(NAME).toString())
+                            .collect(Collectors.joining(","));
+                }
+
+                if (updatedMeaningsText.length() == 0) {
+                    updatedMeaningsText = termName;
+                } else {
+                    updatedMeaningsText = updatedMeaningsText + "," + termName;
+                }
+
+                AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(entityHeader.getGuid());
+
+                AtlasGraphUtilsV2.setEncodedProperty(entityVertex, MEANINGS_TEXT_PROPERTY_KEY, updatedMeaningsText);
+                AtlasGraphUtilsV2.addListProperty(entityVertex, MEANING_NAMES_PROPERTY_KEY, termName, true);
+                AtlasGraphUtilsV2.addEncodedProperty(entityVertex, MEANINGS_PROPERTY_KEY, termQName);
+            }
+            from += ELASTICSEARCH_PAGINATION_SIZE;
+
+            if (list.size() < ELASTICSEARCH_PAGINATION_SIZE)
+                break;
+        }
+    }
+
 
     public void createAndQueueTask(String termName, String termQName, String termGuid, Boolean isHardDelete){
         String taskType = isHardDelete ? UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE : UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE;

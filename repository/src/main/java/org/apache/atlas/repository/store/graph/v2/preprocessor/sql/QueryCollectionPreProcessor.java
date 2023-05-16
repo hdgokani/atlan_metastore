@@ -21,6 +21,7 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.sql;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -80,5 +81,10 @@ public class QueryCollectionPreProcessor implements PreProcessor {
 
     public static String createQualifiedName() {
         return String.format(qualifiedNameFormat, AtlasAuthorizationUtils.getCurrentUserName(), getUUID());
+    }
+
+    @Override
+    public void processAttributesExt(AtlasEntityHeader entity, EntityMutationContext context, EntityMutations.EntityOperation operation) throws AtlasBaseException {
+
     }
 }

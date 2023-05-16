@@ -21,11 +21,13 @@ public class MeaningsTaskFactory implements TaskFactory {
     public static final String UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE = "UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE";
     public static final String UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE = "UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE";
     public static final String UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE = "UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE";
+    public static final String UPDATE_ENTITY_MEANINGS_ON_TERM_RESTORE = "UPDATE_ENTITY_MEANINGS_ON_TERM_RESTORE";
 
     private static final List<String> supportedTypes = new ArrayList<String>() {{
         add(UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE);
         add(UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE);
         add(UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE);
+        add(UPDATE_ENTITY_MEANINGS_ON_TERM_RESTORE);
     }};
 
 
@@ -54,6 +56,8 @@ public class MeaningsTaskFactory implements TaskFactory {
                 return new MeaningsTasks.Delete(atlasTask, entityGraphMapper, graph, entityStoreV2);
             case UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE:
                 return new MeaningsTasks.Delete(atlasTask, entityGraphMapper, graph, entityStoreV2);
+            case UPDATE_ENTITY_MEANINGS_ON_TERM_RESTORE:
+                return new MeaningsTasks.Restore(atlasTask, entityGraphMapper, graph, entityStoreV2);
         }
         LOG.warn("Type: {} - {} not found!. The task will be ignored.", taskType, taskGuid);
         return null;

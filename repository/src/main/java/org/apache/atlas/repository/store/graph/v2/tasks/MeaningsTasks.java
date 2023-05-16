@@ -44,4 +44,23 @@ public class MeaningsTasks {
 
         }
     }
+
+    public static class Restore extends MeaningsTask {
+        public Restore(AtlasTask task, EntityGraphMapper entityGraphMapper,AtlasGraph graph,
+                      AtlasEntityStoreV2 entityStoreV2) {
+            super(task,entityGraphMapper, graph, null,entityStoreV2);
+        }
+
+        @Override
+        protected void run(Map<String, Object> parameters) throws AtlasBaseException {
+
+            String termGuid     = (String) parameters.get(PARAM_ENTITY_GUID);
+            String termQName    = (String) parameters.get(PARAM_ENTITY_QUALIFIED_NAME);
+            String termName     = (String) parameters.get(PARAM_CURRENT_TERM_NAME);
+
+
+            entityStoreV2.updateMeaningNameInEntitiesOnRestore(termName, termQName, termGuid);
+
+        }
+    }
 }

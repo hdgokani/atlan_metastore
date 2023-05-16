@@ -89,6 +89,11 @@ public class CategoryPreProcessor implements PreProcessor {
         }
     }
 
+    @Override
+    public void processAttributesExt(AtlasEntityHeader entity, EntityMutationContext context, EntityMutations.EntityOperation operation) throws AtlasBaseException {
+
+    }
+
     private void processCreateCategory(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateCategory");
         String catName = (String) entity.getAttribute(NAME);
