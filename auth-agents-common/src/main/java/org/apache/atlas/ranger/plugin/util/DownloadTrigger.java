@@ -21,6 +21,9 @@ package org.apache.atlas.ranger.plugin.util;
 
 public final class DownloadTrigger {
     private boolean isNotified = false;
+    public boolean policies = true;
+    public boolean roles = true;
+    public boolean groups = true;
 
     public synchronized void waitForCompletion() throws InterruptedException {
         while (!isNotified) {
