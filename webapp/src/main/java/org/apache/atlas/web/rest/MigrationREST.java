@@ -136,7 +136,7 @@ public class MigrationREST {
         try {
 
             for (AtlasEntity entity : entities.getEntities()) {
-                if (entity.getTypeName().equalsIgnoreCase(QUERY_COLLECTION_ENTITY_TYPE)) {
+                if (entity.getTypeName().equalsIgnoreCase(COLLECTION_ENTITY_TYPE)) {
                     createCollectionAdminRole(entity);
                     createCollectionViewerRole(entity);
 
