@@ -112,7 +112,6 @@ public class AuthzCacheOnDemandRefresher {
 
         } finally {
             RequestContext.get().endMetricRecord(recorder);
-            LOG.info("refreshCacheIfNeeded: done!");
         }
     }
 
