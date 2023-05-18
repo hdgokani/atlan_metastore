@@ -1,8 +1,10 @@
 package org.apache.atlas.web.rest;
 
 import org.apache.atlas.annotation.Timed;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.repository.graph.HostRefresher;
 import org.apache.atlas.repository.graph.IAtlasGraphProvider;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.web.service.AtlasHealthStatus;
@@ -15,10 +17,14 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.UriInfo;
 
 import static org.apache.atlas.AtlasErrorCode.FAILED_TO_REFRESH_TYPE_DEF_CACHE;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
+import static org.apache.atlas.repository.graph.HostRefresher.HOST_REFRESH_TYPE_KEY;
 
 
 @Path("admin/types")
@@ -52,13 +58,32 @@ public class TypeCacheRefreshREST {
     @POST
     @Path("/refresh")
     @Timed
-    public void refreshCache(@QueryParam("expectedFieldKeys") int expectedFieldKeys, @QueryParam("traceId") String traceId) throws AtlasBaseException {
+    public void refreshCache(@QueryParam("hostRefreshType") String hostRefreshType,
+                             @QueryParam("traceId") String traceId,
+                             @Context UriInfo uriInfo) throws AtlasBaseException {
+        MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
+
         try {
             if (serviceState.getState() != ServiceState.ServiceStateValue.ACTIVE) {
-                LOG.warn("Node is in {} state. skipping refreshing type-def-cache :: traceId {}", serviceState.getState(), traceId);
+                LOG.warn("Node is in {} state. skipping refreshing cache :: traceId {}", serviceState.getState(), traceId);
                 return;
             }
-            refreshTypeDef(expectedFieldKeys, traceId);
+
+            HostRefresher.HostRefreshType type = HostRefresher.HostRefreshType.valueOf(hostRefreshType);
+
+            switch (type) {
+                case TYPE_DEFS:
+                    refreshTypeDef(queryParams, traceId);
+                    break;
+
+                case AUTH_CACHE:
+                    refreshAuthzCache(queryParams, traceId);
+                    break;
+
+                default:
+                    LOG.warn("Unknown HostRefreshType: {}", type);
+            }
+
         } catch (Exception e) {
             LOG.error("Error during refreshing cache  :: traceId " + traceId + " " + e.getMessage(), e);
             serviceState.setState(ServiceState.ServiceStateValue.PASSIVE, true);
@@ -67,7 +92,9 @@ public class TypeCacheRefreshREST {
         }
     }
 
-    private void refreshTypeDef(int expectedFieldKeys,final String traceId) throws RepositoryException, InterruptedException, AtlasBaseException {
+    private void refreshTypeDef(MultivaluedMap<String, String> params, String traceId) throws RepositoryException, InterruptedException, AtlasBaseException {
+        int expectedFieldKeys = Integer.parseInt(params.getFirst("expectedFieldKeys"));
+
         LOG.info("Initiating type-def cache refresh with expectedFieldKeys = {} :: traceId {}", expectedFieldKeys,traceId);
         int currentSize = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
         LOG.info("Size of field keys before refresh = {} :: traceId {}", currentSize,traceId);
@@ -95,5 +122,16 @@ public class TypeCacheRefreshREST {
 
         LOG.info("Size of field keys after refresh = {}", provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size());
         LOG.info("Completed type-def cache refresh :: traceId {}", traceId);
+    }
+
+    private void refreshAuthzCache(MultivaluedMap<String, String> params, String traceId) {
+        boolean policies = Boolean.parseBoolean(params.getFirst("policies"));
+        boolean roles = Boolean.parseBoolean(params.getFirst("roles"));
+        boolean groups = Boolean.parseBoolean(params.getFirst("groups"));
+
+        LOG.info("Initiating authz cache refresh with policies={}, roles={}, groups={} :: traceId {}", policies, roles, groups, traceId);
+
+        AtlasAuthorizationUtils.refreshCache(policies, roles, groups);
+        LOG.info("Completed authz cache refresh :: traceId {}", traceId);
     }
 }

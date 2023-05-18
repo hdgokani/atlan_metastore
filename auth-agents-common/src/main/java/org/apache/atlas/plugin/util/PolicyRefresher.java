@@ -25,26 +25,34 @@ import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.atlas.admin.client.RangerAdminClient;
 import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
 import org.apache.atlas.plugin.policyengine.RangerPluginContext;
 import org.apache.atlas.plugin.service.RangerBasePlugin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 public class PolicyRefresher extends Thread {
-	private static final Log LOG = LogFactory.getLog(PolicyRefresher.class);
+	private static final Logger LOG = LoggerFactory.getLogger(PolicyRefresher.class);
 
 	private static final Log PERF_POLICYENGINE_INIT_LOG = RangerPerfTracer.getPerfLogger("policyengine.init");
+
+	private static boolean IS_RUNNING = false;
 
 	private final RangerBasePlugin               plugIn;
 	private final String                         serviceType;
@@ -58,6 +66,8 @@ public class PolicyRefresher extends Thread {
 	private final String                         cacheDir;
 	private final Gson                           gson;
 	private final BlockingQueue<DownloadTrigger> policyDownloadQueue = new LinkedBlockingQueue<>();
+	private final ScheduledExecutorService 		 executor = Executors.newSingleThreadScheduledExecutor();
+	private 	  List<DownloaderTask> 			 adHocTaskLimiter = new ArrayList<>(1); //allow max 1 queued task
 	private       Timer                          policyDownloadTimer;
 	private       long                           lastKnownVersion    = -1L;
 	private       long                           lastUpdatedTiemInMillis    = -1L;
@@ -94,7 +104,7 @@ public class PolicyRefresher extends Thread {
 		try {
 			gson = new GsonBuilder().setDateFormat("yyyyMMdd-HH:mm:ss.SSS-Z").create();
 		} catch(Throwable excp) {
-			LOG.fatal("PolicyRefresher(): failed to create GsonBuilder object", excp);
+			LOG.error("PolicyRefresher(): failed to create GsonBuilder object", excp);
 		}
 
 		RangerPluginContext pluginContext  = plugIn.getPluginContext();
@@ -147,16 +157,42 @@ public class PolicyRefresher extends Thread {
 		this.lastActivationTimeInMillis = lastActivationTimeInMillis;
 	}
 
+	public void submitRefresherTask(boolean policies, boolean roles, boolean groups) {
+		if (adHocTaskLimiter.size() == 1) {
+			LOG.info("Default refresh job is already submitted, skipping submitting another.");
+			return;
+		}
+
+		DownloaderTask task;
+
+		if (IS_RUNNING) {
+			LOG.info("submitRefresherTask: Another refresh task in already in progress, submitting another default task");
+			task = new DownloaderTask(policyDownloadQueue, true, true, true);
+			adHocTaskLimiter.add(task);
+		} else {
+			LOG.info("submitRefresherTask: Submitting custom task to refresh policies:{}, roles:{}, groups:{}",
+					policies, roles, groups);
+			task = new DownloaderTask(policyDownloadQueue, policies, roles, groups);
+		}
+
+		executor.submit(task);
+	}
+
 	public void startRefresher() {
-		loadRoles();
-		loadPolicy();
-		loadUserStore();
+		try {
+			IS_RUNNING = true;
+			loadRoles();
+			loadPolicy();
+			loadUserStore();
+		} finally {
+			IS_RUNNING = false;
+		}
+
 		super.start();
 
-		policyDownloadTimer = new Timer("policyDownloadTimer", true);
-
 		try {
-			policyDownloadTimer.schedule(new DownloaderTask(policyDownloadQueue), pollingIntervalMs, pollingIntervalMs);
+			executor.scheduleWithFixedDelay(new DownloaderTask(policyDownloadQueue),
+								pollingIntervalMs, pollingIntervalMs, TimeUnit.MILLISECONDS);
 
 			LOG.info("Scheduled policyDownloadRefresher to download policies every " + pollingIntervalMs + " milliseconds");
 
@@ -174,6 +210,8 @@ public class PolicyRefresher extends Thread {
 		Timer policyDownloadTimer = this.policyDownloadTimer;
 
 		this.policyDownloadTimer = null;
+		this.adHocTaskLimiter = null;
+		IS_RUNNING = false;
 
 		if (policyDownloadTimer != null) {
 			policyDownloadTimer.cancel();
@@ -211,10 +249,20 @@ public class PolicyRefresher extends Thread {
 			DownloadTrigger trigger = null;
 			try {
 				trigger = policyDownloadQueue.take();
+				LOG.info("Got trigger, running refresher...");
+				IS_RUNNING = true;
 
-				loadRoles();
-				loadPolicy();
-				loadUserStore();
+				if (trigger.roles) {
+					loadRoles();
+				}
+
+				if (trigger.policies) {
+					loadPolicy();
+				}
+
+				if (trigger.groups) {
+					loadUserStore();
+				}
 			} catch(InterruptedException excp) {
 				LOG.info("PolicyRefresher(serviceName=" + serviceName + ").run(): interrupted! Exiting thread", excp);
 				break;
@@ -222,6 +270,8 @@ public class PolicyRefresher extends Thread {
 				if (trigger != null) {
 					trigger.signalCompletion();
 				}
+				adHocTaskLimiter.clear();
+				IS_RUNNING = false;
 			}
 		}
 
