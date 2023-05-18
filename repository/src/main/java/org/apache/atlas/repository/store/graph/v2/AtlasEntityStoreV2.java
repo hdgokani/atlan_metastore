@@ -100,6 +100,8 @@ import java.util.stream.Collectors;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
+import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER_IMPL;
+import static org.apache.atlas.authorize.AtlasAuthorizerFactory.CURRENT_AUTHORIZER_IMPL;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
@@ -1704,7 +1706,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 preProcessor = new QueryFolderPreProcessor(typeRegistry, entityRetriever);
                 break;
 
-            case COLLECTION_ENTITY_TYPE:
+            case QUERY_COLLECTION_ENTITY_TYPE:
                 preProcessor = new QueryCollectionPreProcessor(typeRegistry, discovery, entityRetriever, featureFlagStore, this);
                 break;
 

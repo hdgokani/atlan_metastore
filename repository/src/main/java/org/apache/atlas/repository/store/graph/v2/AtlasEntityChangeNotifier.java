@@ -37,7 +37,6 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.notification.EntityNotification;
-import org.apache.atlas.refresher.AuthzCacheOnDemandRefresher;
 import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -76,7 +75,6 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     private final AtlasTypeRegistry           atlasTypeRegistry;
     private final boolean                     isV2EntityNotificationEnabled;
     private final FeatureFlagStore            featureFlagStore;
-    private final AuthzCacheOnDemandRefresher cacheRefresher;
     private static final List<String> ALLOWED_RELATIONSHIP_TYPES = Arrays.asList(AtlasConfiguration.SUPPORTED_RELATIONSHIP_EVENTS.getStringArray());
     private static final List<String> ALLOWED_LINEAGE_RELATIONSHIP_TYPES_VIA_FEATURE_FLAG = Arrays.asList(AtlasConfiguration.SUPPORTED_LINEAGE_RELATIONSHIP_EVENTS_VIA_FEATURE_FLAG.getStringArray());
     private final static String LINEAGE_EVENTS_FEATURE_FLAG_KEY =  "metastore-enable-lineage-events-for-pipeline";
@@ -84,7 +82,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     public AtlasEntityChangeNotifier(Set<EntityChangeListener> entityChangeListeners,
                                      Set<EntityChangeListenerV2> entityChangeListenersV2,
                                      AtlasInstanceConverter instanceConverter,
-                                     FullTextMapperV2 fullTextMapperV2, AuthzCacheOnDemandRefresher cacheRefresher,
+                                     FullTextMapperV2 fullTextMapperV2,
                                      AtlasTypeRegistry atlasTypeRegistry, FeatureFlagStore featureFlagStore) {
         this.entityChangeListeners         = entityChangeListeners;
         this.entityChangeListenersV2       = entityChangeListenersV2;
@@ -92,7 +90,6 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         this.fullTextMapperV2              = fullTextMapperV2;
         this.atlasTypeRegistry             = atlasTypeRegistry;
         this.featureFlagStore              = featureFlagStore;
-        this.cacheRefresher                = cacheRefresher;
         this.isV2EntityNotificationEnabled = AtlasRepositoryConfiguration.isV2EntityNotificationEnabled();
     }
 
@@ -123,7 +120,6 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         notifyListeners(purgedEntities, EntityOperation.PURGE, isImport);
 
         notifyPropagatedEntities();
-        cacheRefresher.refreshCacheIfNeeded(entityMutationResponse, isImport);
     }
 
     @Override
