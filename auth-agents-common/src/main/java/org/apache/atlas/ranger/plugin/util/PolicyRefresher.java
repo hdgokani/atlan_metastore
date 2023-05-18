@@ -249,12 +249,7 @@ public class PolicyRefresher extends Thread {
 			DownloadTrigger trigger = null;
 			try {
 				trigger = policyDownloadQueue.take();
-				LOG.info("Got trigger, running refresher...");
 				IS_RUNNING = true;
-
-				LOG.info("Refresher: Delaying for 10 seconds");
-				Thread.sleep(10000);
-				LOG.info("Refresher: Delay ended");
 
 				if (trigger.roles) {
 					loadRoles();
