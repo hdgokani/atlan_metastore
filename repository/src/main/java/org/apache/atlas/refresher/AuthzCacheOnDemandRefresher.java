@@ -1,6 +1,8 @@
 package org.apache.atlas.refresher;
 
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.EnableConditional;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
@@ -47,12 +50,23 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGOR
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
 
 @Component
-@EnableConditional(property = "atlas.authorizer.enable.action.based.cache.refresh")
 public class AuthzCacheOnDemandRefresher {
     private static final Logger LOG = LoggerFactory.getLogger(AuthzCacheOnDemandRefresher.class);
 
-    private final AtlasTypeRegistry typeRegistry;
     private final AuthzCacheRefresher hostRefresher;
+
+    private boolean isOnDemandAuthzCacheRefreshEnabled = true;
+
+    @Inject
+    public AuthzCacheOnDemandRefresher(AuthzCacheRefresher hostRefresher) {
+        this.hostRefresher = hostRefresher;
+
+        try {
+            isOnDemandAuthzCacheRefreshEnabled = ApplicationProperties.get().getBoolean("atlas.authorizer.enable.action.based.cache.refresh", true);
+        } catch (AtlasException e) {
+            LOG.warn("Property atlas.authorizer.enable.action.based.cache.refresh not found, default is true");
+        }
+    }
 
     private static final Set<String> CONNECTION_ATTRS = new HashSet<String>(){{
         add(ATTR_ADMIN_USERS);
@@ -79,12 +93,6 @@ public class AuthzCacheOnDemandRefresher {
         add(ATTR_PURPOSE_CLASSIFICATIONS);
     }};
 
-    @Inject
-    public AuthzCacheOnDemandRefresher(AtlasTypeRegistry typeRegistry, AuthzCacheRefresher hostRefresher) {
-        this.typeRegistry = typeRegistry;
-        this.hostRefresher = hostRefresher;
-    }
-
     public void refreshCacheIfNeeded(EntityMutationResponse entityMutationResponse, boolean isImport) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("refreshCacheIfNeeded");
 
@@ -94,6 +102,30 @@ public class AuthzCacheOnDemandRefresher {
                 return;
             }
 
+            if (!isOnDemandAuthzCacheRefreshEnabled) {
+                LOG.warn("Skipping as On-demand cache refresh is not enabled");
+                return;
+            }
+
+            AsyncCacheRefresher asyncCacheRefresher = new AsyncCacheRefresher(entityMutationResponse, RequestContext.get().getDifferentialEntitiesMap());
+            asyncCacheRefresher.start();
+
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    class AsyncCacheRefresher extends Thread {
+        private EntityMutationResponse entityMutationResponse;
+        private Map<String, AtlasEntity> differentialEntitiesMap;
+
+        public AsyncCacheRefresher (EntityMutationResponse entityMutationResponse, Map<String, AtlasEntity> differentialEntitiesMap) {
+            this.entityMutationResponse = entityMutationResponse;
+            this.differentialEntitiesMap = differentialEntitiesMap;
+        }
+
+        @Override
+        public void run() {
             boolean refreshPolicies = false;
             boolean refreshRoles = false;
 
@@ -125,7 +157,7 @@ public class AuthzCacheOnDemandRefresher {
 
             if (CollectionUtils.isNotEmpty(entityMutationResponse.getUpdatedEntities())) {
                 for (AtlasEntityHeader entityHeader : entityMutationResponse.getUpdatedEntities()) {
-                    AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(entityHeader.getGuid());
+                    AtlasEntity diffEntity = differentialEntitiesMap.get(entityHeader.getGuid());
 
                     if (diffEntity != null && MapUtils.isNotEmpty(diffEntity.getAttributes())) {
                         Set<String> updatedAttrs = diffEntity.getAttributes().keySet();
@@ -190,12 +222,7 @@ public class AuthzCacheOnDemandRefresher {
             if (refreshPolicies || refreshRoles) {
                 AtlasAuthorizationUtils.refreshCache(refreshPolicies, refreshRoles, false);
                 hostRefresher.refreshCache(refreshPolicies, refreshRoles, false);
-                LOG.info("refreshCacheIfNeeded: hosts refreshed!");
             }
-
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-            LOG.info("refreshCacheIfNeeded: done!");
         }
     }
 }
