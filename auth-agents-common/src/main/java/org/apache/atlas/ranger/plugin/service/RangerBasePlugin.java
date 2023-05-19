@@ -931,8 +931,8 @@ public class RangerBasePlugin {
 		}
 	}
 
-	public void submitRefresherTask(boolean policies, boolean roles, boolean groups) {
-		refresher.submitRefresherTask(policies, roles, groups);
+	public void submitRefresherTask(boolean refreshPolicies, boolean refreshRoles, boolean refreshGroups) {
+		refresher.submitRefresherTask(refreshPolicies, refreshRoles, refreshGroups);
 	}
 
 	private void auditGrantRevoke(GrantRevokeRequest request, String action, boolean isSuccess, RangerAccessResultProcessor resultProcessor) {
