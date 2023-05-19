@@ -4,14 +4,11 @@ package org.apache.atlas.refresher;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.annotation.EnableConditional;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graph.AuthzCacheRefresher;
-import org.apache.atlas.repository.graph.TypeCacheRefresher;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -36,14 +33,9 @@ import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_ACCESS_CONTROL_ENABLED;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ACTIONS;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_GROUPS;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_PRIORITY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ROLES;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SUB_CATEGORY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_TYPE;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_USERS;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PURPOSE_CLASSIFICATIONS;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
@@ -98,16 +90,18 @@ public class AuthzCacheOnDemandRefresher {
 
         try {
             if (isImport || RequestContext.get().isPoliciesBootstrappingInProgress()) {
-                LOG.warn("Cache refresh will be skipped");
+                LOG.warn("refreshCacheIfNeeded: Cache refresh will be skipped");
                 return;
             }
 
             if (!isOnDemandAuthzCacheRefreshEnabled) {
-                LOG.warn("Skipping as On-demand cache refresh is not enabled");
+                LOG.warn("refreshCacheIfNeeded: Skipping as On-demand cache refresh is not enabled");
                 return;
             }
 
-            AsyncCacheRefresher asyncCacheRefresher = new AsyncCacheRefresher(entityMutationResponse, RequestContext.get().getDifferentialEntitiesMap());
+            AsyncCacheRefresher asyncCacheRefresher = new AsyncCacheRefresher(entityMutationResponse,
+                                RequestContext.get().getDifferentialEntitiesMap(),
+                                RequestContext.get().getTraceId());
             asyncCacheRefresher.start();
 
         } finally {
@@ -116,10 +110,14 @@ public class AuthzCacheOnDemandRefresher {
     }
 
     class AsyncCacheRefresher extends Thread {
+        private String traceId;
         private EntityMutationResponse entityMutationResponse;
         private Map<String, AtlasEntity> differentialEntitiesMap;
 
-        public AsyncCacheRefresher (EntityMutationResponse entityMutationResponse, Map<String, AtlasEntity> differentialEntitiesMap) {
+        public AsyncCacheRefresher (EntityMutationResponse entityMutationResponse,
+                                    Map<String, AtlasEntity> differentialEntitiesMap,
+                                    String traceId) {
+            this.traceId = traceId;
             this.entityMutationResponse = entityMutationResponse;
             this.differentialEntitiesMap = differentialEntitiesMap;
         }
@@ -221,7 +219,7 @@ public class AuthzCacheOnDemandRefresher {
 
             if (refreshPolicies || refreshRoles) {
                 AtlasAuthorizationUtils.refreshCache(refreshPolicies, refreshRoles, false);
-                hostRefresher.refreshCache(refreshPolicies, refreshRoles, false);
+                hostRefresher.refreshCache(refreshPolicies, refreshRoles, false, traceId);
             }
         }
     }

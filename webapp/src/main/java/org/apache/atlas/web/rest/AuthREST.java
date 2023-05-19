@@ -30,6 +30,7 @@ import org.apache.atlas.ranger.plugin.util.RangerRoles;
 import org.apache.atlas.ranger.plugin.util.RangerUserStore;
 import org.apache.atlas.ranger.plugin.util.ServicePolicies;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
+import org.apache.atlas.repository.graph.AuthzCacheRefresher;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -77,13 +78,17 @@ public class AuthREST {
     private CachePolicyTransformerImpl policyTransformer;
     private ESBasedAuditRepository auditRepository;
     private AtlasEntityStore entityStore;
+    private AuthzCacheRefresher hostRefresher;
 
     @Inject
     public AuthREST(CachePolicyTransformerImpl policyTransformer,
-                    ESBasedAuditRepository auditRepository, AtlasEntityStore entityStore) {
+                    ESBasedAuditRepository auditRepository,
+                    AtlasEntityStore entityStore,
+                    AuthzCacheRefresher hostRefresher) {
         this.entityStore = entityStore;
         this.auditRepository = auditRepository;
         this.policyTransformer = policyTransformer;
+        this.hostRefresher = hostRefresher;
     }
 
     @GET
@@ -171,8 +176,8 @@ public class AuthREST {
     @Path("refreshcache")
     @Timed
     public void refreshCache(@QueryParam("policies") Boolean policies,
-                                        @QueryParam("roles") Boolean roles,
-                                        @QueryParam("groups") Boolean groups) {
+                             @QueryParam("roles") Boolean roles,
+                             @QueryParam("groups") Boolean groups) {
         AtlasPerfTracer perf = null;
 
         try {
@@ -201,6 +206,7 @@ public class AuthREST {
                 }
 
                 AtlasAuthorizationUtils.refreshCache(refreshPolicies, refreshRoles, refreshGroups);
+                hostRefresher.refreshCache(refreshPolicies, refreshRoles, refreshGroups, RequestContext.get().getTraceId());
             }
         } finally {
             AtlasPerfTracer.log(perf);
