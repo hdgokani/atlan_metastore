@@ -159,7 +159,7 @@ public class PolicyRefresher extends Thread {
 
 	public void submitRefresherTask(boolean policies, boolean roles, boolean groups) {
 		if (adHocTaskLimiter.size() == 1) {
-			LOG.info("Default refresh job is already submitted, skipping submitting another.");
+			LOG.info("submitRefresherTask: Default refresh job is already submitted, skipping submitting another.");
 			return;
 		}
 
@@ -249,7 +249,6 @@ public class PolicyRefresher extends Thread {
 			DownloadTrigger trigger = null;
 			try {
 				trigger = policyDownloadQueue.take();
-				LOG.info("Got trigger, running refresher...");
 				IS_RUNNING = true;
 
 				if (trigger.roles) {
