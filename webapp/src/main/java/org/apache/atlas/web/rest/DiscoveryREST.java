@@ -874,8 +874,8 @@ public class DiscoveryREST {
 
     private void logSearchLog(IndexSearchParams parameters, AtlasSearchResult result,
                               HttpServletRequest servletRequest, long requestTime) {
-        SearchRequestLogData.SearchRequestLogDataBuilder builder = new SearchRequestLogDataBuilder();
-
+        SearchRequestLogDataBuilder builder = new SearchRequestLogDataBuilder();
+        builder.setHasResult(false);
 
         if (CollectionUtils.isNotEmpty(result.getEntities())) {
             builder.setHasResult(true);
@@ -926,8 +926,6 @@ public class DiscoveryREST {
                     .setEntityGuidsDenied(entityGuidsDenied)
                     .setEntityQFNamesDenied(entityQFNamesDenied);
 
-        } else {
-            builder.setHasResult(false);
         }
 
         logSearchLog(parameters, servletRequest, builder, requestTime);
@@ -961,9 +959,6 @@ public class DiscoveryREST {
                 .setTimestamp(RequestContext.get().getRequestTime())
                 .setResponseTime(requestTime);
 
-
         loggerManagement.log(builder.build());
-
-        LOG.info("Logged search log for indexsearch request");
     }
 }
