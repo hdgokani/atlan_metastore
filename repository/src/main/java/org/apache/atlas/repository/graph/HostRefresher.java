@@ -88,8 +88,7 @@ public abstract class HostRefresher {
         }
     }
 
-    void refreshCache(Map<String, String> params) throws IOException, URISyntaxException {
-        String traceId = RequestContext.get().getTraceId();
+    void refreshCache(Map<String, String> params, String traceId) throws IOException, URISyntaxException {
         if(StringUtils.isBlank(cacheRefresherEndpoint) || !isActiveActiveHAEnabled) {
             LOG.info("Skipping cache refresh :: traceId {}", traceId);
             return;
