@@ -156,7 +156,7 @@ public interface AtlasAuthorizer {
     }
 
     default
-    public void refreshCache(boolean policies, boolean roles, boolean groups) {
+    public void refreshCache(boolean refreshPolicies, boolean refreshRoles, boolean refreshGroups) {
 
     }
 }
