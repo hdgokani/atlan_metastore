@@ -2,7 +2,6 @@ package org.apache.atlas.repository.graph;
 
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.RepositoryException;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
