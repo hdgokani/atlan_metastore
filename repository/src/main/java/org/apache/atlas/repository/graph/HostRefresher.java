@@ -21,7 +21,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.commons.collections.MapUtils;
@@ -36,7 +35,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
@@ -66,20 +64,23 @@ public abstract class HostRefresher {
         this.cacheRefresherEndpoint = configuration.getString("atlas.server.type.cache-refresher");
         this.cacheRefresherHealthEndpoint = configuration.getString("atlas.server.type.cache-refresher-health");
         this.isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
+
         LOG.info("Found {} as cache-refresher endpoint", cacheRefresherEndpoint);
         LOG.info("Found {} as cache-refresher-health endpoint", cacheRefresherHealthEndpoint);
     }
 
     public void verifyCacheRefresherHealth() throws AtlasBaseException, IOException {
         if (StringUtils.isBlank(cacheRefresherHealthEndpoint) || !isActiveActiveHAEnabled) {
-            LOG.info("Skipping type-def cache refresher health checking as URL is {} and isActiveActiveHAEnabled is {}", cacheRefresherHealthEndpoint, isActiveActiveHAEnabled);
+            LOG.info("Skipping cache refresher health checking as URL is {} and isActiveActiveHAEnabled is {}", cacheRefresherHealthEndpoint, isActiveActiveHAEnabled);
             return;
         }
+
         final String healthResponseBody;
         try (CloseableHttpClient client = HttpClients.createDefault()) {
             final HttpGet healthRequest = new HttpGet(cacheRefresherHealthEndpoint);
             healthResponseBody = executeGet(client, healthRequest);
         }
+
         LOG.debug("Response Body from cache-refresh-health = {}", healthResponseBody);
         final ObjectMapper mapper = new ObjectMapper();
         final CacheRefresherHealthResponse jsonResponse = mapper.readValue(healthResponseBody, CacheRefresherHealthResponse.class);

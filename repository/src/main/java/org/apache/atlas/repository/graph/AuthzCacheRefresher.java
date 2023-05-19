@@ -19,7 +19,7 @@ import java.util.Map;
 public class AuthzCacheRefresher extends HostRefresher {
     private static final Logger LOG = LoggerFactory.getLogger(AuthzCacheRefresher.class);
 
-    public void refreshCache(boolean policies, boolean roles, boolean groups) {
+    public void refreshCache(boolean policies, boolean roles, boolean groups, String traceId) {
         Map<String, String> params = new HashMap<>();
         params.put(HOST_REFRESH_TYPE_KEY, HostRefreshType.AUTH_CACHE.name());
         params.put("policies", String.valueOf(policies));
@@ -27,7 +27,7 @@ public class AuthzCacheRefresher extends HostRefresher {
         params.put("groups", String.valueOf(groups));
 
         try {
-            refreshCache(params, RequestContext.get().getTraceId());
+            refreshCache(params, traceId);
         } catch (IOException | URISyntaxException e) {
             LOG.warn("Failed to refresh authz cache on demand on other hosts: {}", e.getMessage());
         }
