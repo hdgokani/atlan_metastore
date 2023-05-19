@@ -29,7 +29,7 @@ public class TypeCacheRefresher extends HostRefresher {
         LOG.info("Found {} totalFieldKeys to be expected in other nodes :: traceId {}", totalFieldKeys, RequestContext.get().getTraceId());
 
         Map<String, String> params = new HashMap<>();
-        params.put(HOST_REFRESH_TYPE_KEY, HostRefreshType.AUTH_CACHE.name());
+        params.put(HOST_REFRESH_TYPE_KEY, HostRefreshType.TYPE_DEFS.name());
         params.put("expectedFieldKeys", String.valueOf(totalFieldKeys));
 
 
