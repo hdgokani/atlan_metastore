@@ -245,15 +245,15 @@ public class PolicyRefresher extends Thread {
 				trigger = policyDownloadQueue.take();
 				IS_RUNNING = true;
 
-				if (trigger.roles) {
+				if (trigger.refreshRoles) {
 					loadRoles();
 				}
 
-				if (trigger.policies) {
+				if (trigger.refreshPolicies) {
 					loadPolicy();
 				}
 
-				if (trigger.groups) {
+				if (trigger.refreshGroups) {
 					loadUserStore();
 				}
 			} catch(InterruptedException excp) {
