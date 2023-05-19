@@ -25,7 +25,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.Map;
 
 /**
  * A graph query that runs directly against a particular index.
@@ -42,14 +41,6 @@ public interface AtlasIndexQuery<V, E> {
      */
 
     DirectIndexQueryResult<V, E> vertices(SearchParams searchParams)  throws AtlasBaseException ;
-
-
-    /**
-     * Gets the query results form index
-     *
-     * @return Map of indexQuery result
-     */
-    Map<String, Object> directIndexQuery(String query) throws AtlasBaseException;
 
     /**
      * Gets the query results form index
