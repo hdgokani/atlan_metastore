@@ -95,6 +95,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         this(graph, restClient, index, null);
     }
 
+    public AtlasElasticsearchQuery(String index, RestClient restClient) {
+        this.lowLevelRestClient = restClient;
+        this.index = index;
+    }
+
     private SearchRequest getSearchRequest(String index, SearchSourceBuilder sourceBuilder) {
         SearchRequest searchRequest = new SearchRequest(index);
         searchRequest.source(sourceBuilder);
@@ -170,7 +175,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
     }
 
-    private String performDirectIndexQuery(String query, boolean source) throws IOException, AtlasBaseException {
+    private String performDirectIndexQuery(String query, boolean source) throws AtlasBaseException, IOException {
         HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
         String endPoint;
 

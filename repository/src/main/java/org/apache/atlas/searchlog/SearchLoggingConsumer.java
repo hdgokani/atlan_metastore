@@ -1,6 +1,6 @@
-package org.apache.atlas.discovery.searchlog;
+package org.apache.atlas.searchlog;
 
-import org.apache.atlas.model.discovery.searchlog.SearchRequestLogData;
+import org.apache.atlas.model.searchlog.SearchRequestLogData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +19,6 @@ public class SearchLoggingConsumer implements Runnable {
 
     @Override
     public void run() {
-        LOG.info("SearchLoggerConsumer: run() {}", Thread.currentThread().getId());
         for (SearchLogger esSearchLogger : esSearchLoggers) {
             esSearchLogger.log(searchRequestLogData);
         }

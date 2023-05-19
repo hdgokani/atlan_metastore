@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.model.discovery.searchlog;
+package org.apache.atlas.model.searchlog;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;

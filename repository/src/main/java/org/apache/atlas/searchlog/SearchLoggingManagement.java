@@ -15,10 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.discovery.searchlog;
+package org.apache.atlas.searchlog;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.apache.atlas.model.discovery.searchlog.SearchRequestLogData;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.model.searchlog.SearchRequestLogData;
 import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,17 +38,16 @@ public class SearchLoggingManagement {
     private final List<SearchLogger> esSearchLoggers;
     private final ExecutorService executorService;
 
-
     @Inject
     public SearchLoggingManagement(List<SearchLogger> esSearchLoggers) {
         this.esSearchLoggers        = esSearchLoggers;
 
-        this.executorService = Executors.newFixedThreadPool(20, new ThreadFactoryBuilder()
-                .setDaemon(true)
-                .setNameFormat("atlas-search-logger-" + Thread.currentThread().getName())
-                .build());
-
-        LOG.info("esSearchLoggers {}", AtlasType.toJson(esSearchLoggers));
+        this.executorService = Executors.newFixedThreadPool(AtlasConfiguration.SEARCH_LOGGER_MAX_THREADS.getInt(),
+                new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .setNameFormat("atlas-search-logger-" + Thread.currentThread().getName())
+                    .build()
+        );
     }
 
     public void log(SearchRequestLogData searchRequestLogData) {
