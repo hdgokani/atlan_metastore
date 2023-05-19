@@ -27,7 +27,6 @@ import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
-import org.apache.atlas.discovery.searchlog.ESSearchLogger;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasAggregationEntry;
 import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
@@ -62,6 +61,7 @@ import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.userprofile.UserProfileService;
+import org.apache.atlas.searchlog.ESSearchLogger;
 import org.apache.atlas.stats.StatsClient;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
@@ -1050,7 +1050,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             indexQuery = graph.elasticsearchQuery(ESSearchLogger.INDEX_NAME);
             Map<String, Object> result = indexQuery.directIndexQuery(searchParams.getQueryString());
 
-            ret.setApproximateCount( ((Integer) result.get("total")).longValue());
+            if (result.get("total") != null)
+                ret.setApproximateCount( ((Integer) result.get("total")).longValue());
 
             List<LinkedHashMap> hits = (List<LinkedHashMap>) result.get("data");
 

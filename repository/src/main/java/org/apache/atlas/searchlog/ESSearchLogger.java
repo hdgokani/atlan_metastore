@@ -61,7 +61,7 @@ public class ESSearchLogger implements SearchLogger, Service {
     @Override
     public void log(SearchRequestLogData searchRequestLogData) {
         try {
-            searchRequestLogData.setCreated(System.currentTimeMillis());
+            searchRequestLogData.setCreatedAt(System.currentTimeMillis());
 
             HttpEntity entity = new NStringEntity(AtlasType.toJson(searchRequestLogData), ContentType.APPLICATION_JSON);
 
