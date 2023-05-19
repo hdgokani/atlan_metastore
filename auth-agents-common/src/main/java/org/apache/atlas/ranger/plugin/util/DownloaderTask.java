@@ -36,11 +36,11 @@ public final class  DownloaderTask extends TimerTask {
     }
 
     public DownloaderTask(BlockingQueue<DownloadTrigger> queue,
-                          boolean policies, boolean roles, boolean groups) {
+                          boolean refreshPolicies, boolean refreshRoles, boolean refreshGroups) {
         this.queue = queue;
-        timerTrigger.policies = policies;
-        timerTrigger.roles = roles;
-        timerTrigger.groups = groups;
+        timerTrigger.refreshPolicies = refreshPolicies;
+        timerTrigger.refreshRoles = refreshRoles;
+        timerTrigger.refreshGroups = refreshGroups;
     }
 
     @Override
