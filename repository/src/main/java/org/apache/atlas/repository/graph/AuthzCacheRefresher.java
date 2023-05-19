@@ -1,20 +1,15 @@
 package org.apache.atlas.repository.graph;
 
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.repository.RepositoryException;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
 
 /*
 * This class is responsible for notifying other Atlas hosts to
@@ -32,7 +27,7 @@ public class AuthzCacheRefresher extends HostRefresher {
         params.put("groups", String.valueOf(groups));
 
         try {
-            refreshCache(params);
+            refreshCache(params, RequestContext.get().getTraceId());
         } catch (IOException | URISyntaxException e) {
             LOG.warn("Failed to refresh authz cache on demand on other hosts: {}", e.getMessage());
         }
