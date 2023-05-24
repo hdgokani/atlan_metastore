@@ -123,7 +123,7 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
 
                 header.setAttribute(ATTR_NAME, "transformed_policy_persona");
 
-                atlasPolicy.setAttribute("options", options);
+                header.setAttribute("options", options);
 
                 ret.add(header);
             }
