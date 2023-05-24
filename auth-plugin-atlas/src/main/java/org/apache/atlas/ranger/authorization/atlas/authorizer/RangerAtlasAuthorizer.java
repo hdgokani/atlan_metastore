@@ -19,22 +19,14 @@
 
 package org.apache.atlas.ranger.authorization.atlas.authorizer;
 
-import org.apache.atlas.authorize.AtlasAccessRequest;
-import org.apache.atlas.authorize.AtlasAccessorResponse;
-import org.apache.atlas.authorize.AtlasAdminAccessRequest;
-import org.apache.atlas.authorize.AtlasAuthorizationException;
-import org.apache.atlas.authorize.AtlasAuthorizer;
-import org.apache.atlas.authorize.AtlasEntityAccessRequest;
-import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
-import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
-import org.apache.atlas.authorize.AtlasTypeAccessRequest;
-import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
+import org.apache.atlas.authorize.*;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -53,16 +45,8 @@ import org.apache.atlas.ranger.plugin.policyresourcematcher.RangerPolicyResource
 import org.apache.atlas.ranger.plugin.service.RangerBasePlugin;
 import org.apache.atlas.ranger.plugin.util.RangerPerfTracer;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserGroups;
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserName;
@@ -543,6 +527,138 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         ret = plugin.getRolesFromUserAndGroups(userName, getCurrentUserGroups());
 
         return ret;
+    }
+
+    private List<String> getFilteredEntityResources(List<String> entityResources) {
+        List<String> ret = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(entityResources)) {
+            for (String entityResource : entityResources) {
+                if (StringUtils.isNotEmpty(entityResource)) {
+                    ret = entityResources.stream().filter(v -> !v.equals("*") && !v.contains("{USER}") && !v.endsWith("*")).collect(Collectors.toList());
+                }
+            }
+        }
+        return ret;
+    }
+
+    @Override
+    public Map<String, List<String>> getPoliciesResourcesForUserRoleGroup() throws AtlasBaseException {
+        RangerPerfTracer perf = null;
+        if (RangerPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            perf = RangerPerfTracer.getPerfTracer(PERF_LOG, "RangerAtlasAuthorizer.getPoliciesResourcesForUserRoleGroup()");
+        }
+        List<String> tagResources = new ArrayList<>();
+        List<String> connectionResources = new ArrayList<>();
+        List<String> typeResources = new ArrayList<>();
+        List<String> collectionResources = new ArrayList<>();
+        List<String> policyAllowResources = new ArrayList<>();
+        List<String> policyDenyResources = new ArrayList<>();
+        RangerBasePlugin plugin = atlasPlugin;
+        String userName = getCurrentUserName();
+        Set<String> roles = AtlasAuthorizationUtils.getRolesForCurrentUser();
+        List<RangerPolicy> policies = plugin.getPolicies();
+        for (RangerPolicy policy : policies) {
+            if (policy.getIsEnabled()) {
+                List<RangerPolicy.RangerPolicyItem> policyItems = policy.getPolicyItems();
+                List<RangerPolicy.RangerPolicyItem> denyPolicyItems = policy.getDenyPolicyItems();
+                for (RangerPolicy.RangerPolicyItem policyItem : policyItems) {
+                    List<RangerPolicy.RangerPolicyItemAccess> accesses = policyItem.getAccesses();
+                    for (RangerPolicy.RangerPolicyItemAccess access : accesses) {
+                        if (!(access.getType().equals("entity-read") && access.getIsAllowed())) {
+                            continue;
+                        }
+                    }
+                    if (policyItem.getUsers().contains(userName) || CollectionUtils.containsAny(policyItem.getGroups(), getCurrentUserGroups()) || CollectionUtils.containsAny(policyItem.getRoles(), roles)) {
+                        Map<String, RangerPolicy.RangerPolicyResource> resources = policy.getResources();
+                        // Loop over map resources to access the resources
+                        for (Map.Entry<String, RangerPolicy.RangerPolicyResource> entry : resources.entrySet()) {
+                            String key = entry.getKey();
+                            RangerPolicy.RangerPolicyResource value = entry.getValue();
+                            if (key.equals("tag")) {
+                                tagResources.addAll(value.getValues());
+                            } else if (key.equals("entity-type")) {
+                                // Check if values is not array ["*"]
+                                if (CollectionUtils.isEmpty(value.getValues())) {
+                                    continue;
+                                }
+                                typeResources.addAll(getFilteredEntityResources(value.getValues()));
+                            } else if (key.equals("entity")) {
+                                if (CollectionUtils.isEmpty(value.getValues())) {
+                                    continue;
+                                }
+                                if (policy.getName().contains("connection-CRUD")) {
+                                    connectionResources.addAll(getFilteredEntityResources(value.getValues()));
+                                } else if (policy.getName().contains("collection-CRUD-viewer")) {
+                                    collectionResources.addAll(getFilteredEntityResources(value.getValues()));
+                                } else if (policy.getName().contains("collection-CRUD-admin")) {
+                                    collectionResources.addAll(getFilteredEntityResources(value.getValues()));
+                                } else if (policy.getName().contains("collection-CRUD")) {
+                                    collectionResources.addAll(getFilteredEntityResources(value.getValues()));
+                                } else{
+                                    // Skip string values like *, {USER} or value has * in the end inside values and if then it is not empty then only add the filtered values
+                                    List<String> filteredValues = getFilteredEntityResources(value.getValues());
+                                    if (!CollectionUtils.isEmpty(filteredValues)) {
+                                        policyDenyResources.addAll(filteredValues);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // Get deny policy resources
+                if (CollectionUtils.isEmpty(denyPolicyItems)) {
+                    continue;
+                }
+                for (RangerPolicy.RangerPolicyItem denyPolicyItem: denyPolicyItems) {
+                    List<RangerPolicy.RangerPolicyItemAccess> accesses = denyPolicyItem.getAccesses();
+                    for (RangerPolicy.RangerPolicyItemAccess access : accesses) {
+                        if (!(access.getType().equals("entity-read") && access.getIsAllowed())) {
+                            continue;
+                        }
+                    }
+                    if (denyPolicyItem.getUsers().contains(userName) || CollectionUtils.containsAny(denyPolicyItem.getGroups(), getCurrentUserGroups()) || CollectionUtils.containsAny(denyPolicyItem.getRoles(), roles)) {
+                        Map<String, RangerPolicy.RangerPolicyResource> resources = policy.getResources();
+                        // Loop over map resources to access the resources
+                        for (Map.Entry<String, RangerPolicy.RangerPolicyResource> entry : resources.entrySet()) {
+                            String key = entry.getKey();
+                            RangerPolicy.RangerPolicyResource value = entry.getValue();
+                            if (key.equals("entity")) {
+                                if (CollectionUtils.isEmpty(value.getValues())) {
+                                    continue;
+                                }
+                                // Skip string values like *, {USER} or value has * in the end inside values and if then it is not empty then only add the filtered values
+                                List<String> filteredValues = getFilteredEntityResources(value.getValues());
+                                if (!CollectionUtils.isEmpty(filteredValues)) {
+                                    policyDenyResources.addAll(filteredValues);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Remove duplicate resources
+        tagResources = tagResources.stream().distinct().collect(Collectors.toList());
+        connectionResources = connectionResources.stream().distinct().collect(Collectors.toList());
+        typeResources = typeResources.stream().distinct().collect(Collectors.toList());
+        collectionResources = collectionResources.stream().distinct().collect(Collectors.toList());
+        policyAllowResources = policyAllowResources.stream().distinct().collect(Collectors.toList());
+        policyDenyResources = policyDenyResources.stream().distinct().collect(Collectors.toList());
+
+        // Store resources in a map
+        Map<String, List<String>> resourcesMap = new HashMap<>();
+        resourcesMap.put("tag", tagResources);
+        resourcesMap.put("connection", connectionResources);
+        resourcesMap.put("entityType", typeResources);
+        resourcesMap.put("collection", collectionResources);
+        resourcesMap.put("policyAllow", policyAllowResources);
+        resourcesMap.put("policyDeny", policyDenyResources);
+
+        RangerPerfTracer.log(perf);
+
+        //Return the map
+        return resourcesMap;
     }
 
 

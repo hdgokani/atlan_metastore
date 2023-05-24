@@ -18,9 +18,18 @@ public class SearchParams {
     boolean suppressLogs;
     boolean excludeMeanings;
     boolean excludeClassifications;
+    boolean showAssetsHasAccess;
 
     public String getQuery() {
         return getQuery();
+    }
+
+    public void setShowAssetsHasAccess(boolean showAssetsHasAccess) {
+        this.showAssetsHasAccess = showAssetsHasAccess;
+    }
+
+    public boolean getShowAssetsHasAccess() {
+        return showAssetsHasAccess;
     }
 
     public Set<String> getAttributes() {
