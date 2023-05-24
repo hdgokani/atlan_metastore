@@ -1200,29 +1200,31 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("enrichAccessControlMetadata");
 
         try {
-            for (AtlasEntityHeader header : result.getEntities()) {
-                try {
-                    //enrichWithParentHeader(header);
+            if (result != null && result.getEntities() != null) {
+                for (AtlasEntityHeader header : result.getEntities()) {
+                    try {
+                        //enrichWithParentHeader(header);
 
-                    //enrichWithOptions
-                    Map<String, String> authDetails = header.getAuthDetails();
+                        //enrichWithOptions
+                        Map<String, String> authDetails = header.getAuthDetails();
 
-                    if (authDetails != null) {
-                        String policyId = authDetails.get("policyId");
-                        if (!policyId.equals("-1")) {
-                            header.addAuthDetails("policyId", policyId.substring(0, 36));
+                        if (authDetails != null) {
+                            String policyId = authDetails.get("policyId");
+                            if (!policyId.equals("-1")) {
+                                header.addAuthDetails("policyId", policyId.substring(0, 36));
+                            }
+
+                            String typeName = authDetails.get("typeName");
+                            if (PERSONA_ENTITY_TYPE.equals(typeName) || PURPOSE_ENTITY_TYPE.equals(typeName)) {
+                                String policyQn = authDetails.get("entityReference");
+                                String accessControlQn = policyQn.substring(0, policyQn.lastIndexOf("/"));
+                                header.addAuthDetails("entityReference", accessControlQn);
+
+                            }
                         }
-
-                        String typeName = authDetails.get("typeName");
-                        if (PERSONA_ENTITY_TYPE.equals(typeName) || PURPOSE_ENTITY_TYPE.equals(typeName)) {
-                            String policyQn = authDetails.get("entityReference");
-                            String accessControlQn = policyQn.substring(0, policyQn.lastIndexOf("/"));
-                            header.addAuthDetails("entityReference", accessControlQn);
-
-                        }
+                    } catch (Exception e) {
+                        //continue;
                     }
-                } catch (Exception e) {
-                    //continue;
                 }
             }
 
