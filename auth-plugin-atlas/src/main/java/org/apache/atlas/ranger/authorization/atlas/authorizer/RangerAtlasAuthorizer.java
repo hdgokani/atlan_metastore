@@ -534,6 +534,9 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         if (CollectionUtils.isNotEmpty(entityResources)) {
             for (String entityResource : entityResources) {
                 if (StringUtils.isNotEmpty(entityResource)) {
+                    if (entityResource.contains("{USER}")) {
+                        return new ArrayList<>();
+                    }
                     ret = entityResources.stream().filter(v -> !v.equals("*") && !v.contains("{USER}") && !v.endsWith("*")).collect(Collectors.toList());
                 }
             }
@@ -594,11 +597,11 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                                     collectionResources.addAll(getFilteredEntityResources(value.getValues()));
                                 } else if (policy.getName().contains("collection-CRUD")) {
                                     collectionResources.addAll(getFilteredEntityResources(value.getValues()));
-                                } else{
+                                } else {
                                     // Skip string values like *, {USER} or value has * in the end inside values and if then it is not empty then only add the filtered values
                                     List<String> filteredValues = getFilteredEntityResources(value.getValues());
                                     if (!CollectionUtils.isEmpty(filteredValues)) {
-                                        policyDenyResources.addAll(filteredValues);
+                                        policyAllowResources.addAll(filteredValues);
                                     }
                                 }
                             }
