@@ -75,6 +75,8 @@ import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery;
 import org.apache.atlas.util.SearchPredicateUtil;
 import org.apache.atlas.util.SearchTracker;
+import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.collections4.IteratorUtils;
@@ -108,7 +110,19 @@ import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.ASSET_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.OWNER_ATTRIBUTE;
+import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SUB_CATEGORY;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
+import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_ACCESS_CONTROL;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.BASIC_SEARCH_STATE_FILTER;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TO_RANGE_LIST;
 
@@ -1006,6 +1020,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         IndexSearchParams params = (IndexSearchParams) searchParams;
         RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
         RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
+        RequestContext.get().setEnrichIndexSearchResponseAuthDetails(params.isEnrichAccessControlMetadata());
 
         AtlasSearchResult ret = new AtlasSearchResult();
         AtlasIndexQuery indexQuery = null;
@@ -1128,7 +1143,108 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 throw e;
         }
         scrubSearchResults(ret, searchParams.getSuppressLogs());
+        if (searchParams.isEnrichAccessControlMetadata()) {
+            enrichAccessControlMetadata(ret);
+        }
     }
+
+    private void enrichAccessControlMetadata(AtlasSearchResult result) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("enrichAccessControlMetadata");
+
+        try {
+            for (AtlasEntityHeader header : result.getEntities()) {
+                try {
+                    //enrichWithParentHeader(header);
+
+                    //enrichWithOptions
+                    Map<String, String> authDetails = header.getAuthDetails();
+
+                    if (authDetails != null) {
+                        String policyId = authDetails.get("policyId");
+                        if (!policyId.equals("-1")) {
+                            header.addAuthDetails("policyId", policyId.substring(0, 36));
+                        }
+
+                        String typeName = authDetails.get("typeName");
+                        if (PERSONA_ENTITY_TYPE.equals(typeName) || PURPOSE_ENTITY_TYPE.equals(typeName)) {
+                            String policyQn = authDetails.get("entityReference");
+                            String accessControlQn = policyQn.substring(0, policyQn.lastIndexOf("/"));
+                            header.addAuthDetails("entityReference", accessControlQn);
+
+                        }
+                    }
+                } catch (Exception e) {
+                    //continue;
+                }
+            }
+
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    /*private void enrichWithParentHeader(AtlasEntityHeader header) throws AtlasBaseException {
+        Map<String, AtlasEntityHeader> policyGuidToAccessControlMap = new HashMap<>();
+        String policyGuid = header.getPolicyId();
+
+        if (StringUtils.isNotEmpty(policyGuid)) {
+            AtlasEntityHeader parentHeader = null;
+
+            if (policyGuidToAccessControlMap.containsKey(policyGuid)) {
+                parentHeader = policyGuidToAccessControlMap.get(policyGuid);
+
+            } else {
+                IndexSearchParams params = new IndexSearchParams();
+                Map<String, Object> dsl = getMap("size", 1);
+
+                List<Map<String, Object>> mustClauseList = new ArrayList<>();
+                mustClauseList.add(getMap("term", getMap("__typeName.keyword", POLICY_ENTITY_TYPE)));
+                mustClauseList.add(getMap("term", getMap("__guid", policyGuid)));
+                dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
+                params.setDsl(dsl);
+
+                Set<String> attributes = new HashSet<>();
+                attributes.add(REL_ATTR_ACCESS_CONTROL);
+                attributes.add(ATTR_POLICY_CATEGORY);
+                params.setAttributes(attributes);
+
+                AtlasIndexQuery indexQuery = graph.elasticsearchQuery(VERTEX_INDEX_NAME);
+
+                DirectIndexQueryResult indexQueryResult = indexQuery.vertices(params);
+                Iterator<Result> resultIterator = indexQueryResult.getIterator();
+
+                if (resultIterator.hasNext()) {
+                    AtlasVertex vertex = resultIterator.next().getVertex();
+
+                    if (vertex == null) {
+                        LOG.warn("Could not add Access control entity as vertex is null, policyId {}", policyGuid);
+                        return;
+                    }
+
+                    AtlasEntityHeader policyHeader = entityRetriever.toAtlasEntityHeader(vertex, attributes);
+                    String category = getPolicyCategory(policyHeader);
+
+                    if (POLICY_CATEGORY_PERSONA.equals(category) || POLICY_CATEGORY_PURPOSE.equals(category)) {
+                        AtlasObjectId objectId = (AtlasObjectId) policyHeader.getAttribute(REL_ATTR_ACCESS_CONTROL);
+                        parentHeader = new AtlasEntityHeader();
+                        parentHeader.setGuid(objectId.getGuid());
+                        parentHeader.setTypeName(objectId.getTypeName());
+                        parentHeader.setAttributes(objectId.getAttributes());
+                        parentHeader.getAttributes().putAll(objectId.getUniqueAttributes());
+                    }
+
+                    policyGuidToAccessControlMap.put(policyGuid, parentHeader);
+                }
+            }
+
+            if (parentHeader == null) {
+                LOG.warn("Could not add Access control entity, policyId {}", policyGuid);
+            } else {
+                header.setAccessControlTypeName(parentHeader.getTypeName());
+                header.setAccessControlGuid(parentHeader.getGuid());
+            }
+        }
+    }*/
 
     private Map<String, Object> getMap(String key, Object value) {
         Map<String, Object> map = new HashMap<>();
