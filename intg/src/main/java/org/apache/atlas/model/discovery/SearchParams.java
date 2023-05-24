@@ -12,8 +12,17 @@ public abstract class SearchParams {
     boolean suppressLogs;
     boolean excludeMeanings;
     boolean excludeClassifications;
+    boolean showAssetsHasAccess;
 
     public abstract String getQuery();
+
+    public void setShowAssetsHasAccess(boolean showAssetsHasAccess) {
+        this.showAssetsHasAccess = showAssetsHasAccess;
+    }
+
+    public boolean getShowAssetsHasAccess() {
+        return showAssetsHasAccess;
+    }
 
     public Set<String> getAttributes() {
         return attributes;
