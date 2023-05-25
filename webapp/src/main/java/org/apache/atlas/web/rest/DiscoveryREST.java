@@ -66,7 +66,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_HOST;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_USER_AGENT;
@@ -397,8 +396,8 @@ public class DiscoveryREST {
             }
 
             if (StringUtils.isEmpty(parameters.getQuery())) {
-                AtlasBaseException abe = new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Please provide query");
-                if (enableSearchLogging) {
+                AtlasBaseException abe = new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
+                if (enableSearchLogging && parameters.isSaveSearchLog()) {
                     logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
                 }
                 throw abe;
@@ -411,7 +410,7 @@ public class DiscoveryREST {
             AtlasSearchResult result = discoveryService.directIndexSearch(parameters);
             long endTime = System.currentTimeMillis();
 
-            if (enableSearchLogging) {
+            if (enableSearchLogging && parameters.isSaveSearchLog()) {
                 logSearchLog(parameters, result, servletRequest, endTime - startTime);
             }
 
@@ -422,14 +421,14 @@ public class DiscoveryREST {
             return result;
 
         } catch (AtlasBaseException abe) {
-            if (enableSearchLogging) {
+            if (enableSearchLogging && parameters.isSaveSearchLog()) {
                 logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
             }
             throw abe;
 
         } catch (Exception e) {
             AtlasBaseException abe = new AtlasBaseException(e.getMessage(), e.getCause());
-            if (enableSearchLogging) {
+            if (enableSearchLogging && parameters.isSaveSearchLog()) {
                 logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
             }
             throw abe;
@@ -945,7 +944,14 @@ public class DiscoveryREST {
     private void logSearchLog(IndexSearchParams parameters, HttpServletRequest servletRequest,
                               SearchRequestLogDataBuilder builder, long requestTime) {
 
-        builder.setUtmTags(parameters.getUtmTags())
+        if (StringUtils.isNotEmpty(parameters.getPersona())) {
+            builder.setPersona(parameters.getPersona());
+        } else {
+            builder.setPurpose(parameters.getPurpose());
+        }
+
+        builder.setSearchInput(parameters.getSearchInput())
+                .setUtmTags(parameters.getUtmTags())
                 .setAttributes(parameters.getAttributes())
                 .setRelationAttributes(parameters.getRelationAttributes())
 

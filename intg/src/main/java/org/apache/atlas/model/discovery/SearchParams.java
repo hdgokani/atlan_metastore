@@ -13,13 +13,44 @@ public class SearchParams {
     Set<String> relationAttributes;
     Set<String> collapseAttributes;
     Set<String> collapseRelationAttributes;
-    Set<String> utmTags;
+    //Set<String> utmTags;
     boolean showSearchScore;
     boolean suppressLogs;
     boolean excludeMeanings;
     boolean excludeClassifications;
+    RequestMetadata requestMetadata = new RequestMetadata();
     boolean enrichAccessControlMetadata = false;
     boolean showAssetsHasAccess;
+
+    static class RequestMetadata {
+        private String searchInput;
+        private Set<String> utmTags;
+        private boolean saveSearchLog;
+
+        public String getSearchInput() {
+            return searchInput;
+        }
+
+        public Set<String> getUtmTags() {
+            return utmTags;
+        }
+
+        public boolean isSaveSearchLog() {
+            return saveSearchLog;
+        }
+
+        public void setSearchInput(String searchInput) {
+            this.searchInput = searchInput;
+        }
+
+        public void setUtmTags(Set<String> utmTags) {
+            this.utmTags = utmTags;
+        }
+
+        public void setSaveSearchLog(boolean saveSearchLog) {
+            this.saveSearchLog = saveSearchLog;
+        }
+    }
 
     public String getQuery() {
         return getQuery();
@@ -66,11 +97,11 @@ public class SearchParams {
     }
 
     public Set<String> getUtmTags() {
-        return utmTags;
+        return requestMetadata.utmTags;
     }
 
     public void setUtmTags(Set<String> utmTags) {
-        this.utmTags = utmTags;
+        this.requestMetadata.utmTags = utmTags;
     }
 
     public boolean getShowSearchScore() {
@@ -103,6 +134,26 @@ public class SearchParams {
 
     public void setExcludeMeanings(boolean excludeMeanings) {
         this.excludeMeanings = excludeMeanings;
+    }
+
+    public boolean isSaveSearchLog() {
+        return requestMetadata.saveSearchLog;
+    }
+
+    public void setSaveSearchLog(boolean saveSearchLog) {
+        this.requestMetadata.saveSearchLog = saveSearchLog;
+    }
+
+    public RequestMetadata getRequestMetadata() {
+        return requestMetadata;
+    }
+
+    public void setRequestMetadata(RequestMetadata requestMetadata) {
+        this.requestMetadata = requestMetadata;
+    }
+
+    public String getSearchInput() {
+        return this.requestMetadata.getSearchInput();
     }
 
     public boolean isEnrichAccessControlMetadata() {
