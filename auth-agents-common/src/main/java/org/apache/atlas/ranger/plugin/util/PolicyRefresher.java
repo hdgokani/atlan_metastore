@@ -52,6 +52,7 @@ public class PolicyRefresher extends Thread {
 	private static final Log PERF_POLICYENGINE_INIT_LOG = RangerPerfTracer.getPerfLogger("policyengine.init");
 
 	private static boolean IS_RUNNING = false;
+	private static boolean IS_TASK_QUEUED = false;
 
 	private final RangerBasePlugin               plugIn;
 	private final String                         serviceType;
@@ -65,9 +66,7 @@ public class PolicyRefresher extends Thread {
 	private final String                         cacheDir;
 	private final Gson                           gson;
 	private final BlockingQueue<DownloadTrigger> policyDownloadQueue = new LinkedBlockingQueue<>();
-	private final ScheduledExecutorService 		 executor = Executors.newSingleThreadScheduledExecutor();
-	private 	  List<DownloaderTask> 			 adHocTaskLimiter = new ArrayList<>(1);
-	private       Timer                          policyDownloadTimer;
+	private 	  ScheduledExecutorService 		 executor;
 	private       long                           lastKnownVersion    = -1L;
 	private       long                           lastUpdatedTiemInMillis    = -1L;
 	private       long                           lastActivationTimeInMillis;
@@ -157,8 +156,8 @@ public class PolicyRefresher extends Thread {
 		this.lastActivationTimeInMillis = lastActivationTimeInMillis;
 	}
 
-	public void submitRefresherTask(boolean policies, boolean roles, boolean groups) {
-		if (adHocTaskLimiter.size() == 1) {
+	public void submitRefresherTask(boolean refreshPolicies, boolean refreshRoles, boolean refreshGroups) {
+		if (IS_TASK_QUEUED) {
 			LOG.info("submitRefresherTask: Default refresh job is already submitted, skipping submitting another.");
 			return;
 		}
@@ -168,11 +167,11 @@ public class PolicyRefresher extends Thread {
 		if (IS_RUNNING) {
 			LOG.info("submitRefresherTask: Another refresh task in already in progress, submitting another default task");
 			task = new DownloaderTask(policyDownloadQueue, true, true, true);
-			adHocTaskLimiter.add(task);
+			IS_TASK_QUEUED = true;
 		} else {
 			LOG.info("submitRefresherTask: Submitting custom task to refresh policies:{}, roles:{}, groups:{}",
-					policies, roles, groups);
-			task = new DownloaderTask(policyDownloadQueue, policies, roles, groups);
+					refreshPolicies, refreshRoles, refreshGroups);
+			task = new DownloaderTask(policyDownloadQueue, refreshPolicies, refreshRoles, refreshGroups);
 		}
 
 		executor.submit(task);
@@ -191,6 +190,7 @@ public class PolicyRefresher extends Thread {
 		super.start();
 
 		try {
+			executor = Executors.newSingleThreadScheduledExecutor();
 			executor.scheduleWithFixedDelay(new DownloaderTask(policyDownloadQueue),
 								pollingIntervalMs, pollingIntervalMs, TimeUnit.MILLISECONDS);
 
@@ -199,22 +199,16 @@ public class PolicyRefresher extends Thread {
 		} catch (IllegalStateException exception) {
 			LOG.error("Error scheduling policyDownloadTimer:", exception);
 			LOG.error("*** Policies will NOT be downloaded every " + pollingIntervalMs + " milliseconds ***");
-
-			policyDownloadTimer = null;
 		}
-
 	}
 
 	public void stopRefresher() {
 
-		Timer policyDownloadTimer = this.policyDownloadTimer;
-
-		this.policyDownloadTimer = null;
-		this.adHocTaskLimiter = null;
 		IS_RUNNING = false;
+		IS_TASK_QUEUED = false;
 
-		if (policyDownloadTimer != null) {
-			policyDownloadTimer.cancel();
+		if (executor != null) {
+			executor.shutdown();;
 		}
 
 		if (super.isAlive()) {
@@ -251,15 +245,15 @@ public class PolicyRefresher extends Thread {
 				trigger = policyDownloadQueue.take();
 				IS_RUNNING = true;
 
-				if (trigger.roles) {
+				if (trigger.refreshRoles) {
 					loadRoles();
 				}
 
-				if (trigger.policies) {
+				if (trigger.refreshPolicies) {
 					loadPolicy();
 				}
 
-				if (trigger.groups) {
+				if (trigger.refreshGroups) {
 					loadUserStore();
 				}
 			} catch(InterruptedException excp) {
@@ -269,8 +263,8 @@ public class PolicyRefresher extends Thread {
 				if (trigger != null) {
 					trigger.signalCompletion();
 				}
-				adHocTaskLimiter.clear();
 				IS_RUNNING = false;
+				IS_TASK_QUEUED = false;
 			}
 		}
 

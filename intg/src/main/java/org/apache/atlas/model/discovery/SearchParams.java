@@ -18,8 +18,9 @@ public class SearchParams {
     boolean suppressLogs;
     boolean excludeMeanings;
     boolean excludeClassifications;
-    //boolean saveSearchLog;
     RequestMetadata requestMetadata = new RequestMetadata();
+    boolean enrichAccessControlMetadata = false;
+    boolean showAssetsHasAccess;
 
     static class RequestMetadata {
         private String searchInput;
@@ -51,9 +52,16 @@ public class SearchParams {
         }
     }
 
-
     public String getQuery() {
         return getQuery();
+    }
+
+    public void setShowAssetsHasAccess(boolean showAssetsHasAccess) {
+        this.showAssetsHasAccess = showAssetsHasAccess;
+    }
+
+    public boolean getShowAssetsHasAccess() {
+        return showAssetsHasAccess;
     }
 
     public Set<String> getAttributes() {
@@ -146,5 +154,13 @@ public class SearchParams {
 
     public String getSearchInput() {
         return this.requestMetadata.getSearchInput();
+    }
+
+    public boolean isEnrichAccessControlMetadata() {
+        return enrichAccessControlMetadata;
+    }
+
+    public void setEnrichAccessControlMetadata(boolean enrichAccessControlMetadata) {
+        this.enrichAccessControlMetadata = enrichAccessControlMetadata;
     }
 }

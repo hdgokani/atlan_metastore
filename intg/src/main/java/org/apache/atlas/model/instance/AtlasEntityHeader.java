@@ -35,6 +35,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -72,6 +73,11 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private Date                            updateTime          = null;
     private String                          deleteHandler       = null;
     private Map<String, AtlasSearchResult>  collapse    = null;
+
+    private Map<String, String> authDetails;
+
+    private String accessControlTypeName = null;
+    private String accessControlGuid = null;
 
     public AtlasEntityHeader() {
         this(null, null);
@@ -211,7 +217,6 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         isScrubbed = scrubbed;
     }
 
-
     public String getCreatedBy() {
         return createdBy;
     }
@@ -258,6 +263,37 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
 
     public void setCollapse(Map<String, AtlasSearchResult> collapse) {
         this.collapse = collapse;
+    }
+
+    public String getAccessControlTypeName() {
+        return accessControlTypeName;
+    }
+
+    public void setAccessControlTypeName(String accessControlTypeName) {
+        this.accessControlTypeName = accessControlTypeName;
+    }
+
+    public String getAccessControlGuid() {
+        return accessControlGuid;
+    }
+
+    public void setAccessControlGuid(String accessControlGuid) {
+        this.accessControlGuid = accessControlGuid;
+    }
+
+    public Map<String, String> getAuthDetails() {
+        return authDetails;
+    }
+
+    public void setAuthDetails(Map<String, String> authDetails) {
+        this.authDetails = authDetails;
+    }
+
+    public void addAuthDetails(String key, String value) {
+        if (this.authDetails == null){
+            this.authDetails = new HashMap<>();
+        }
+        this.authDetails.put(key, value);
     }
 
     @Override

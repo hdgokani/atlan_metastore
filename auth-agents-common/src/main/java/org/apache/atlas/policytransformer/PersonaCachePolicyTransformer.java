@@ -22,17 +22,21 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_NAME;
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_POLICY_RESOURCES;
+import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ACTIONS;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES_CATEGORY;
@@ -76,6 +80,9 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                 continue;
             }
 
+            Map<String, String> options = new HashMap<>();
+            options.put("parentType", PERSONA_ENTITY_TYPE);
+
             for (PolicyTransformerTemplate.TemplatePolicy templatePolicy : currentTemplates) {
                 AtlasEntityHeader header = new AtlasEntityHeader(atlasPolicy);
 
@@ -115,6 +122,8 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                 header.setAttribute(ATTR_POLICY_RESOURCES, finalResources);
 
                 header.setAttribute(ATTR_NAME, "transformed_policy_persona");
+
+                header.setAttribute("options", options);
 
                 ret.add(header);
             }

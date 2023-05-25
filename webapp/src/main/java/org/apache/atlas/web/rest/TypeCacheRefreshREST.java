@@ -125,13 +125,13 @@ public class TypeCacheRefreshREST {
     }
 
     private void refreshAuthzCache(MultivaluedMap<String, String> params, String traceId) {
-        boolean policies = Boolean.parseBoolean(params.getFirst("policies"));
-        boolean roles = Boolean.parseBoolean(params.getFirst("roles"));
-        boolean groups = Boolean.parseBoolean(params.getFirst("groups"));
+        boolean refreshPolicies = Boolean.parseBoolean(params.getFirst("policies"));
+        boolean refreshRoles = Boolean.parseBoolean(params.getFirst("roles"));
+        boolean refreshGroups = Boolean.parseBoolean(params.getFirst("groups"));
 
-        LOG.info("Initiating authz cache refresh with policies={}, roles={}, groups={} :: traceId {}", policies, roles, groups, traceId);
+        LOG.info("Initiating authz cache refresh with refreshPolicies={}, refreshRoles={}, refreshGroups={} :: traceId {}", refreshPolicies, refreshRoles, refreshGroups, traceId);
 
-        AtlasAuthorizationUtils.refreshCache(policies, roles, groups);
+        AtlasAuthorizationUtils.refreshCache(refreshPolicies, refreshRoles, refreshGroups);
         LOG.info("Completed authz cache refresh :: traceId {}", traceId);
     }
 }

@@ -19,12 +19,14 @@
 package org.apache.atlas.authorize;
 
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface AtlasAuthorizer {
@@ -72,6 +74,10 @@ public interface AtlasAuthorizer {
         return null;
     }
 
+    default Map<String, List<String>> getPoliciesResourcesForUserRoleGroup() throws AtlasBaseException {
+        return null;
+    }
+
     /**
      * authorize relationship type
      * @param request
@@ -90,17 +96,7 @@ public interface AtlasAuthorizer {
      * @throws AtlasAuthorizationException
      */
     default
-    void scrubSearchResults(AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {
-    }
-
-    /**
-     * scrub search-results to handle entities for which the user doesn't have access
-     * @param request
-     * @return
-     * @throws AtlasAuthorizationException
-     */
-    default
-    void scrubSearchResults(AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) throws AtlasAuthorizationException {
+    void scrubSearchResults(AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) {
     }
 
     default
@@ -145,7 +141,6 @@ public interface AtlasAuthorizer {
         }
 
         entity.setScrubbed(isScrubbed);
-
     }
 
 
@@ -159,7 +154,7 @@ public interface AtlasAuthorizer {
     }
 
     default
-    public void refreshCache(boolean policies, boolean roles, boolean groups) {
+    public void refreshCache(boolean refreshPolicies, boolean refreshRoles, boolean refreshGroups) {
 
     }
 }

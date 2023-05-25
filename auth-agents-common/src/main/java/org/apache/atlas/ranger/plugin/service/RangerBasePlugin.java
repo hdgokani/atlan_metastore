@@ -434,6 +434,33 @@ public class RangerBasePlugin {
 		}
 	}
 
+	public List<RangerPolicy> getPolicies() {
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("==> getPolicies()");
+		}
+
+		List<RangerPolicy> ret = null;
+
+		RangerPolicyEngine policyEngine = this.policyEngine;
+
+		if (policyEngine != null) {
+			ret = policyEngine.getResourcePolicies();
+		}
+		List<RangerPolicy> tagPolicies = policyEngine.getTagPolicies();
+		if (CollectionUtils.isNotEmpty(tagPolicies)) {
+			if (ret == null) {
+				ret = new ArrayList<>();
+			}
+			ret.addAll(tagPolicies);
+		}
+
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("<== getPolicies() : " + ret);
+		}
+
+		return ret;
+	}
+
 	public void cleanup() {
 		PolicyRefresher refresher = this.refresher;
 		this.refresher    = null;
@@ -931,8 +958,8 @@ public class RangerBasePlugin {
 		}
 	}
 
-	public void submitRefresherTask(boolean policies, boolean roles, boolean groups) {
-		refresher.submitRefresherTask(policies, roles, groups);
+	public void submitRefresherTask(boolean refreshPolicies, boolean refreshRoles, boolean refreshGroups) {
+		refresher.submitRefresherTask(refreshPolicies, refreshRoles, refreshGroups);
 	}
 
 	private void auditGrantRevoke(GrantRevokeRequest request, String action, boolean isSuccess, RangerAccessResultProcessor resultProcessor) {
@@ -1127,6 +1154,7 @@ public class RangerBasePlugin {
 		if (overrideResult) {
 			result.setIsAllowed(chainedResult.getIsAllowed());
 			result.setIsAccessDetermined(chainedResult.getIsAccessDetermined());
+			result.setPolicy(chainedResult.getPolicy());
 			result.setPolicyId(chainedResult.getPolicyId());
 			result.setPolicyVersion(chainedResult.getPolicyVersion());
 			result.setPolicyPriority(chainedResult.getPolicyPriority());

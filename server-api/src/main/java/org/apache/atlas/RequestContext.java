@@ -90,6 +90,7 @@ public class RequestContext {
     private String traceId;
     private final Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = new HashMap<>();
     private boolean     allowDuplicateDisplayName;
+    private boolean enrichIndexSearchResponseAuthDetails = false;
 
     private RequestContext() {
     }
@@ -314,6 +315,14 @@ public class RequestContext {
     }
     public boolean getAllowDuplicateDisplayName(){
         return allowDuplicateDisplayName;
+    }
+
+    public boolean isEnrichIndexSearchResponseAuthDetails() {
+        return enrichIndexSearchResponseAuthDetails;
+    }
+
+    public void setEnrichIndexSearchResponseAuthDetails(boolean enrichIndexSearchResponseAuthDetails) {
+        this.enrichIndexSearchResponseAuthDetails = enrichIndexSearchResponseAuthDetails;
     }
 
     public String getCurrentTypePatchAction() {

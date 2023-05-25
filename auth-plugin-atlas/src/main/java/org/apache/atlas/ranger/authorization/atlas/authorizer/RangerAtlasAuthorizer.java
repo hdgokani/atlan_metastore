@@ -19,23 +19,17 @@
 
 package org.apache.atlas.ranger.authorization.atlas.authorizer;
 
-import org.apache.atlas.authorize.AtlasAccessRequest;
-import org.apache.atlas.authorize.AtlasAccessorResponse;
-import org.apache.atlas.authorize.AtlasAdminAccessRequest;
-import org.apache.atlas.authorize.AtlasAuthorizationException;
-import org.apache.atlas.authorize.AtlasAuthorizer;
-import org.apache.atlas.authorize.AtlasEntityAccessRequest;
-import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
-import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
-import org.apache.atlas.authorize.AtlasTypeAccessRequest;
-import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
+import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.*;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.ranger.plugin.model.RangerPolicy;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -53,16 +47,9 @@ import org.apache.atlas.ranger.plugin.policyresourcematcher.RangerPolicyResource
 import org.apache.atlas.ranger.plugin.service.RangerBasePlugin;
 import org.apache.atlas.ranger.plugin.util.RangerPerfTracer;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
+
 
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserGroups;
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserName;
@@ -141,8 +128,8 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
-    public void refreshCache(boolean policies, boolean roles, boolean groups) {
-        atlasPlugin.submitRefresherTask(policies, roles, groups);
+    public void refreshCache(boolean refreshPolicies, boolean refreshRoles, boolean refreshGroups) {
+        atlasPlugin.submitRefresherTask(refreshPolicies, refreshRoles, refreshGroups);
     }
 
     @Override
@@ -545,52 +532,144 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         return ret;
     }
 
-
-    @Override
-    public void scrubSearchResults(AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> scrubSearchResults(" + request + ")");
-        }
-
-        RangerPerfTracer perf = null;
-
-        try {
-            if (RangerPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = RangerPerfTracer.getPerfTracer(PERF_LOG, "RangerAtlasAuthorizer.scrubSearchResults(" + request + ")");
-            }
-
-            final AtlasSearchResult result = request.getSearchResult();
-
-            if (CollectionUtils.isNotEmpty(result.getEntities())) {
-                for (AtlasEntityHeader entity : result.getEntities()) {
-                    checkAccessAndScrub(entity, request);
-                }
-            }
-
-            if (CollectionUtils.isNotEmpty(result.getFullTextResult())) {
-                for (AtlasSearchResult.AtlasFullTextResult fullTextResult : result.getFullTextResult()) {
-                    if (fullTextResult != null) {
-                        checkAccessAndScrub(fullTextResult.getEntity(), request);
+    private List<String> getFilteredEntityResources(List<String> entityResources) {
+        List<String> ret = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(entityResources)) {
+            for (String entityResource : entityResources) {
+                if (StringUtils.isNotEmpty(entityResource)) {
+                    if (entityResource.contains("{USER}")) {
+                        return new ArrayList<>();
                     }
+                    ret = entityResources.stream().filter(v -> !v.equals("*") && !v.contains("{USER}") && !v.endsWith("*")).collect(Collectors.toList());
                 }
             }
-
-            if (MapUtils.isNotEmpty(result.getReferredEntities())) {
-                for (AtlasEntityHeader entity : result.getReferredEntities().values()) {
-                    checkAccessAndScrub(entity, request);
-                }
-            }
-        } finally {
-            RangerPerfTracer.log(perf);
         }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== scrubSearchResults(): " + request);
-        }
+        return ret;
     }
 
     @Override
-    public void scrubSearchResults(AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) throws AtlasAuthorizationException {
+    public Map<String, List<String>> getPoliciesResourcesForUserRoleGroup() throws AtlasBaseException {
+        RangerPerfTracer perf = null;
+        if (RangerPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            perf = RangerPerfTracer.getPerfTracer(PERF_LOG, "RangerAtlasAuthorizer.getPoliciesResourcesForUserRoleGroup()");
+        }
+        List<String> tagResources = new ArrayList<>();
+        List<String> connectionResources = new ArrayList<>();
+        List<String> typeResources = new ArrayList<>();
+        List<String> collectionResources = new ArrayList<>();
+        List<String> policyAllowResources = new ArrayList<>();
+        List<String> policyDenyResources = new ArrayList<>();
+        RangerBasePlugin plugin = atlasPlugin;
+        String userName = getCurrentUserName();
+        Set<String> roles = AtlasAuthorizationUtils.getRolesForCurrentUser();
+        List<RangerPolicy> policies = plugin.getPolicies();
+        for (RangerPolicy policy : policies) {
+            if (policy.getIsEnabled()) {
+                List<RangerPolicy.RangerPolicyItem> policyItems = policy.getPolicyItems();
+                List<RangerPolicy.RangerPolicyItem> denyPolicyItems = policy.getDenyPolicyItems();
+                for (RangerPolicy.RangerPolicyItem policyItem : policyItems) {
+                    List<RangerPolicy.RangerPolicyItemAccess> accesses = policyItem.getAccesses();
+                    for (RangerPolicy.RangerPolicyItemAccess access : accesses) {
+                        if (!(access.getType().equals("entity-read") && access.getIsAllowed())) {
+                            continue;
+                        }
+                    }
+                    if (policyItem.getUsers().contains(userName) || CollectionUtils.containsAny(policyItem.getGroups(), getCurrentUserGroups()) || CollectionUtils.containsAny(policyItem.getRoles(), roles)) {
+                        Map<String, RangerPolicy.RangerPolicyResource> resources = policy.getResources();
+                        // Loop over map resources to access the resources
+                        for (Map.Entry<String, RangerPolicy.RangerPolicyResource> entry : resources.entrySet()) {
+                            String key = entry.getKey();
+                            RangerPolicy.RangerPolicyResource value = entry.getValue();
+                            if (key.equals("tag")) {
+                                tagResources.addAll(value.getValues());
+                            } else if (key.equals("entity-type")) {
+                                // Check if values is not array ["*"]
+                                if (CollectionUtils.isEmpty(value.getValues())) {
+                                    continue;
+                                }
+                                typeResources.addAll(getFilteredEntityResources(value.getValues()));
+                            } else if (key.equals("entity")) {
+                                if (CollectionUtils.isEmpty(value.getValues())) {
+                                    continue;
+                                }
+                                if (policy.getName().contains("connection-CRUD")) {
+                                    connectionResources.addAll(getFilteredEntityResources(value.getValues()));
+                                } else if (policy.getName().contains("collection-CRUD-viewer")) {
+                                    collectionResources.addAll(getFilteredEntityResources(value.getValues()));
+                                } else if (policy.getName().contains("collection-CRUD-admin")) {
+                                    collectionResources.addAll(getFilteredEntityResources(value.getValues()));
+                                } else if (policy.getName().contains("collection-CRUD")) {
+                                    collectionResources.addAll(getFilteredEntityResources(value.getValues()));
+                                } else {
+                                    // Skip string values like *, {USER} or value has * in the end inside values and if then it is not empty then only add the filtered values
+                                    List<String> filteredValues = getFilteredEntityResources(value.getValues());
+                                    if (!CollectionUtils.isEmpty(filteredValues)) {
+                                        policyAllowResources.addAll(filteredValues);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // Get deny policy resources
+                if (CollectionUtils.isEmpty(denyPolicyItems)) {
+                    continue;
+                }
+                for (RangerPolicy.RangerPolicyItem denyPolicyItem: denyPolicyItems) {
+                    List<RangerPolicy.RangerPolicyItemAccess> accesses = denyPolicyItem.getAccesses();
+                    for (RangerPolicy.RangerPolicyItemAccess access : accesses) {
+                        if (!(access.getType().equals("entity-read") && access.getIsAllowed())) {
+                            continue;
+                        }
+                    }
+                    if (denyPolicyItem.getUsers().contains(userName) || CollectionUtils.containsAny(denyPolicyItem.getGroups(), getCurrentUserGroups()) || CollectionUtils.containsAny(denyPolicyItem.getRoles(), roles)) {
+                        Map<String, RangerPolicy.RangerPolicyResource> resources = policy.getResources();
+                        // Loop over map resources to access the resources
+                        for (Map.Entry<String, RangerPolicy.RangerPolicyResource> entry : resources.entrySet()) {
+                            String key = entry.getKey();
+                            RangerPolicy.RangerPolicyResource value = entry.getValue();
+                            if (key.equals("entity")) {
+                                if (CollectionUtils.isEmpty(value.getValues())) {
+                                    continue;
+                                }
+                                // Skip string values like *, {USER} or value has * in the end inside values and if then it is not empty then only add the filtered values
+                                List<String> filteredValues = getFilteredEntityResources(value.getValues());
+                                if (!CollectionUtils.isEmpty(filteredValues)) {
+                                    policyDenyResources.addAll(filteredValues);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Remove duplicate resources
+        tagResources = tagResources.stream().distinct().collect(Collectors.toList());
+        connectionResources = connectionResources.stream().distinct().collect(Collectors.toList());
+        typeResources = typeResources.stream().distinct().collect(Collectors.toList());
+        collectionResources = collectionResources.stream().distinct().collect(Collectors.toList());
+        policyAllowResources = policyAllowResources.stream().distinct().collect(Collectors.toList());
+        policyDenyResources = policyDenyResources.stream().distinct().collect(Collectors.toList());
+
+        // Store resources in a map
+        Map<String, List<String>> resourcesMap = new HashMap<>();
+        resourcesMap.put("tag", tagResources);
+        resourcesMap.put("connection", connectionResources);
+        resourcesMap.put("entityType", typeResources);
+        resourcesMap.put("collection", collectionResources);
+        resourcesMap.put("policyAllow", policyAllowResources);
+        resourcesMap.put("policyDeny", policyDenyResources);
+
+        RangerPerfTracer.log(perf);
+
+        //Return the map
+        return resourcesMap;
+    }
+
+
+    @Override
+    public void scrubSearchResults(AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) {
         if (LOG.isDebugEnabled())
             LOG.debug("==> scrubSearchResults(" + request + " " + isScrubAuditEnabled);
         RangerPerfTracer perf = null;
@@ -666,34 +745,10 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         boolean ret = false;
 
         try {
-            final String                   action         = request.getAction() != null ? request.getAction().getType() : null;
-            final Set<String>              entityTypes    = request.getEntityTypeAndAllSuperTypes();
-            final String                   entityId       = request.getEntityId();
-            final String                   classification = request.getClassification() != null ? request.getClassification().getTypeName() : null;
             final RangerAccessRequestImpl  rangerRequest  = new RangerAccessRequestImpl();
             final RangerAccessResourceImpl rangerResource = new RangerAccessResourceImpl();
-            final String                   ownerUser      = request.getEntity() != null ? (String) request.getEntity().getAttribute(RESOURCE_ENTITY_OWNER) : null;
 
-            rangerResource.setValue(RESOURCE_ENTITY_TYPE, entityTypes);
-            rangerResource.setValue(RESOURCE_ENTITY_ID, entityId);
-            rangerResource.setOwnerUser(ownerUser);
-            rangerRequest.setAccessType(action);
-            rangerRequest.setAction(action);
-            rangerRequest.setUser(request.getUser());
-            rangerRequest.setUserGroups(request.getUserGroups());
-            rangerRequest.setClientIPAddress(request.getClientIPAddress());
-            rangerRequest.setAccessTime(request.getAccessTime());
-            rangerRequest.setResource(rangerResource);
-            rangerRequest.setForwardedAddresses(request.getForwardedAddresses());
-            rangerRequest.setRemoteIPAddress(request.getRemoteIPAddress());
-
-            if (AtlasPrivilege.ENTITY_ADD_LABEL.equals(request.getAction()) || AtlasPrivilege.ENTITY_REMOVE_LABEL.equals(request.getAction())) {
-                rangerResource.setValue(RESOURCE_ENTITY_LABEL, request.getLabel());
-            } else if (AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.equals(request.getAction())) {
-                rangerResource.setValue(RESOURCE_ENTITY_BUSINESS_METADATA, request.getBusinessMetadata());
-            } else if (StringUtils.isNotEmpty(classification) && CLASSIFICATION_PRIVILEGES.contains(request.getAction())) {
-                rangerResource.setValue(RESOURCE_CLASSIFICATION, request.getClassificationTypeAndAllSuperTypes(classification));
-            }
+            enrichRequest(request, rangerRequest, rangerResource);
 
             if (CollectionUtils.isNotEmpty(request.getEntityClassifications())) {
                 Set<AtlasClassification> entityClassifications = request.getEntityClassifications();
@@ -739,6 +794,36 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         return ret;
     }
 
+    private void enrichRequest(AtlasEntityAccessRequest request,
+                               RangerAccessRequestImpl  rangerRequest,
+                               RangerAccessResourceImpl rangerResource) {
+        final String                   action         = request.getAction() != null ? request.getAction().getType() : null;
+        final Set<String>              entityTypes    = request.getEntityTypeAndAllSuperTypes();
+        final String                   entityId       = request.getEntityId();
+        final String                   classification = request.getClassification() != null ? request.getClassification().getTypeName() : null;
+        final String                   ownerUser      = request.getEntity() != null ? (String) request.getEntity().getAttribute(RESOURCE_ENTITY_OWNER) : null;
+
+        rangerResource.setValue(RESOURCE_ENTITY_TYPE, entityTypes);
+        rangerResource.setValue(RESOURCE_ENTITY_ID, entityId);
+        rangerResource.setOwnerUser(ownerUser);
+        rangerRequest.setAccessType(action);
+        rangerRequest.setAction(action);
+        rangerRequest.setUser(request.getUser());
+        rangerRequest.setUserGroups(request.getUserGroups());
+        rangerRequest.setClientIPAddress(request.getClientIPAddress());
+        rangerRequest.setAccessTime(request.getAccessTime());
+        rangerRequest.setResource(rangerResource);
+        rangerRequest.setForwardedAddresses(request.getForwardedAddresses());
+        rangerRequest.setRemoteIPAddress(request.getRemoteIPAddress());
+
+        if (AtlasPrivilege.ENTITY_ADD_LABEL.equals(request.getAction()) || AtlasPrivilege.ENTITY_REMOVE_LABEL.equals(request.getAction())) {
+            rangerResource.setValue(RESOURCE_ENTITY_LABEL, request.getLabel());
+        } else if (AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.equals(request.getAction())) {
+            rangerResource.setValue(RESOURCE_ENTITY_BUSINESS_METADATA, request.getBusinessMetadata());
+        } else if (StringUtils.isNotEmpty(classification) && CLASSIFICATION_PRIVILEGES.contains(request.getAction())) {
+            rangerResource.setValue(RESOURCE_CLASSIFICATION, request.getClassificationTypeAndAllSuperTypes(classification));
+        }
+    }
 
     private void setClassificationsToRequestContext(Set<AtlasClassification> entityClassifications, RangerAccessRequestImpl rangerRequest) {
         Map<String, Object> contextOjb = rangerRequest.getContext();
@@ -829,6 +914,95 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         return ret;
     }
 
+    private AtlasAccessDetailsResponse getAccessDetails(AtlasEntityAccessRequest request, RangerAtlasAuditHandler auditHandler) {
+        RangerAccessResult result = null;
+        AtlasAccessDetailsResponse ret = new AtlasAccessDetailsResponse();
+
+        RangerBasePlugin plugin = atlasPlugin;
+
+        if (plugin != null) {
+
+            groupUtil.setUserStore(atlasPlugin.getUserStore());
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("==> isAccessAllowed(" + request + ")");
+            }
+            //boolean ret = false;
+
+            try {
+                final RangerAccessRequestImpl  rangerRequest  = new RangerAccessRequestImpl();
+                final RangerAccessResourceImpl rangerResource = new RangerAccessResourceImpl();
+
+                enrichRequest(request, rangerRequest, rangerResource);
+
+                rangerRequest.setUserGroups(groupUtil.getContainedGroups(request.getUser()));
+
+                if (CollectionUtils.isNotEmpty(request.getEntityClassifications())) {
+                    Set<AtlasClassification> entityClassifications = request.getEntityClassifications();
+                    Map<String, Object> contextOjb = rangerRequest.getContext();
+
+                    Set<RangerTagForEval> rangerTagForEval = getRangerServiceTag(entityClassifications);
+
+                    if (contextOjb == null) {
+                        Map<String, Object> contextOjb1 = new HashMap<String, Object>();
+                        contextOjb1.put("CLASSIFICATIONS", rangerTagForEval);
+                        rangerRequest.setContext(contextOjb1);
+                    } else {
+                        contextOjb.put("CLASSIFICATIONS", rangerTagForEval);
+                        rangerRequest.setContext(contextOjb);
+                    }
+
+                    // check authorization for each classification
+                    for (AtlasClassification classificationToAuthorize : request.getEntityClassifications()) {
+                        rangerResource.setValue(RESOURCE_ENTITY_CLASSIFICATION, request.getClassificationTypeAndAllSuperTypes(classificationToAuthorize.getTypeName()));
+
+                        result = plugin.isAccessAllowed(rangerRequest, auditHandler);
+                        //ret = checkAccess(rangerRequest, auditHandler);
+
+                        //TODO: Revisit following if
+                        /*if (!ret) {
+                            break;
+                        }*/
+                    }
+                } else {
+                    rangerResource.setValue(RESOURCE_ENTITY_CLASSIFICATION, ENTITY_NOT_CLASSIFIED );
+
+                    result = plugin.isAccessAllowed(rangerRequest, auditHandler);
+                }
+
+                ret.setAllowed(result.getIsAllowed());
+
+                if (RequestContext.get().isEnrichIndexSearchResponseAuthDetails()) {
+                    AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("Authorizer.enrich");
+
+                    if (result.getPolicy() != null) {
+                        Map<String, String> authDetails = new HashMap<>();
+                        authDetails.put("policyId", result.getPolicyId());
+                        authDetails.put("typeName", (String) result.getPolicy().getOption("parentType"));
+                        authDetails.put("entityReference", result.getPolicy().getName());
+
+                        ret.setAuthDetails(authDetails);
+                    }
+                    RequestContext.get().endMetricRecord(recorder);
+                }
+
+            } finally {
+                if(auditHandler != null) {
+                    auditHandler.flushAudit();
+                }
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== isAccessAllowed(" + request + "): " + ret);
+            }
+
+        } else {
+            LOG.warn("RangerAtlasPlugin not initialized. Access blocked!!!");
+        }
+
+        return ret;
+    }
+
     private RangerAccessResult getAccessors(RangerAccessRequestImpl request) {
         RangerAccessResult result = null;
 
@@ -853,7 +1027,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         return result;
     }
 
-    private void checkAccessAndScrub(AtlasEntityHeader entity, AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {
+    private void checkAccessAndScrub(AtlasEntityHeader entity, AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) {
         if (entity != null && request != null) {
             final AtlasEntityAccessRequest entityAccessRequest = new AtlasEntityAccessRequest(request.getTypeRegistry(), AtlasPrivilege.ENTITY_READ, entity, request.getUser(), request.getUserGroups());
 
@@ -861,25 +1035,33 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
             entityAccessRequest.setForwardedAddresses(request.getForwardedAddresses());
             entityAccessRequest.setRemoteIPAddress(request.getRemoteIPAddress());
 
-            if (!isAccessAllowed(entityAccessRequest, null)) {
+            RangerAtlasAuditHandler auditHandler = null;
+            if (isScrubAuditEnabled) {
+                if (!(StringUtils.isEmpty(entityAccessRequest.getEntityId()) &&
+                        entityAccessRequest.getClassification() == null &&
+                        entityAccessRequest.getEntity() == null)) {
+
+                    auditHandler = new RangerAtlasAuditHandler(entityAccessRequest, getServiceDef());
+                }
+            }
+            AtlasAccessDetailsResponse response = getAccessDetails(entityAccessRequest, auditHandler);
+
+            if (!response.isAllowed()) {
                 scrubEntityHeader(entity, request.getTypeRegistry());
+            }
+
+            if (RequestContext.get().isEnrichIndexSearchResponseAuthDetails()) {
+                addPolicyDetails(entity, response);
             }
         }
     }
 
-    private void checkAccessAndScrub(AtlasEntityHeader entity, AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) throws AtlasAuthorizationException {
-        if (entity != null && request != null) {
-            final AtlasEntityAccessRequest entityAccessRequest = new AtlasEntityAccessRequest(request.getTypeRegistry(), AtlasPrivilege.ENTITY_READ, entity, request.getUser(), request.getUserGroups());
-
-            entityAccessRequest.setClientIPAddress(request.getClientIPAddress());
-            entityAccessRequest.setForwardedAddresses(request.getForwardedAddresses());
-            entityAccessRequest.setRemoteIPAddress(request.getRemoteIPAddress());
-
-            boolean isEntityAccessAllowed  = isScrubAuditEnabled ?  isAccessAllowed(entityAccessRequest) : isAccessAllowed(entityAccessRequest, null);
-            if (!isEntityAccessAllowed) {
-                scrubEntityHeader(entity, request.getTypeRegistry());
-            }
+    private void addPolicyDetails(AtlasEntityHeader entity, AtlasAccessDetailsResponse response) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("addPolicyDetails");
+        if (response.getAuthDetails() != null) {
+            entity.setAuthDetails(response.getAuthDetails());
         }
+        RequestContext.get().endMetricRecord(recorder);
     }
 
     class RangerAtlasPlugin extends RangerBasePlugin {
