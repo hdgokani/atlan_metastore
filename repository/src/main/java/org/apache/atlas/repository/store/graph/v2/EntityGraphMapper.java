@@ -565,7 +565,7 @@ public class EntityGraphMapper {
                 break;
 
             case ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE:
-                preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever);
+                preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever, graphHelper, deleteDelegate, graph, relationshipStore);
                 break;
 
             case QUERY_ENTITY_TYPE:
