@@ -141,7 +141,7 @@ public class CategoryPreProcessor implements PreProcessor {
 
         if(StringUtils.isNotEmpty(newAnchorQualifiedName) && !currentAnchorQualifiedName.equals(newAnchorQualifiedName)) {
             processParentAnchorUpdation(entity, vertex, currentAnchorQualifiedName, newAnchorQualifiedName);
-            LOG.debug("Moved folder {} from collection {} to collection {}", entity.getAttribute(QUALIFIED_NAME), currentAnchorQualifiedName, newAnchorQualifiedName);
+            LOG.debug("Moved category {} from anchor {} to anchor {}", entity.getAttribute(QUALIFIED_NAME), currentAnchorQualifiedName, newAnchorQualifiedName);
         }
 
     }
@@ -173,20 +173,20 @@ public class CategoryPreProcessor implements PreProcessor {
             }
 
             if (nestedCategoryVertex != null){// && (parentCategory != null && parentCategory.getGuid().equals(nestedCategroyVertex.getProperty(GUID_PROPERTY_KEY, String.class)))) {
-                updateChildAttributesOnUpdatingAnchor(entity, nestedCategoryVertex, currentAnchorQualifiedName, newAnchorQualifiedName, updatedCategoryQualifiedName);
+                updateChildAttributesOnUpdatingAnchor(entity, nestedCategoryVertex, currentAnchorQualifiedName, newAnchorQualifiedName);
                 /**
                  * Recursively find the child folders and move child queries to new collection
-                 * folder1 -> folder2 -> query1
+                 * category1 -> category1 -> term1
                  * When we will move folder1 to new collection, recursively it will find folder2
-                 * Then it will move all the children of folder2 also to new collection
+                 * Then it will move all the children of category2 also to new collection
                  */
                 processParentAnchorUpdation(entity, nestedCategoryVertex, currentAnchorQualifiedName, newAnchorQualifiedName);
 
-                LOG.info("Moved nested folder into new collection {}", newAnchorQualifiedName);
+                LOG.info("Moved nested category into new anchor {}", newAnchorQualifiedName);
             }
         }
 
-        LOG.info("Moved current folder with qualified name {} into new collection {}", categoryQualifiedName, newAnchorQualifiedName);
+        LOG.info("Moved current category with qualified name {} into new anchor {}", categoryQualifiedName, newAnchorQualifiedName);
 
         RequestContext.get().endMetricRecord(categroyProcessMetric);
     }
@@ -194,7 +194,7 @@ public class CategoryPreProcessor implements PreProcessor {
     private void moveTermsToDifferentAnchor(AtlasEntity entity, AtlasVertex categoryVertex, String currentAnchorQualifiedName,
                                                   String newAnchorQualifiedName, String categoryQualifiedName) throws AtlasBaseException {
 
-        AtlasPerfMetrics.MetricRecorder termProcessMetric = RequestContext.get().startMetricRecord("moveTermsToDifferentCollection");
+        AtlasPerfMetrics.MetricRecorder termProcessMetric = RequestContext.get().startMetricRecord("moveTermsToDifferentAnchor");
         Iterator<AtlasVertex> childrenTermsIterator = getActiveChildren(categoryVertex, CATEGORY_TERMS_EDGE_LABEL);
 
         //Update all the children terms attribute
@@ -202,7 +202,7 @@ public class CategoryPreProcessor implements PreProcessor {
             AtlasVertex termVertex = childrenTermsIterator.next();
             if(termVertex != null) {
                 updateChildAttributesOnUpdatingAnchor(entity, termVertex, currentAnchorQualifiedName,
-                        newAnchorQualifiedName, categoryQualifiedName);
+                        newAnchorQualifiedName);
             }
         }
 
@@ -237,71 +237,71 @@ public class CategoryPreProcessor implements PreProcessor {
         return null;
     }
 
-    private void updateChildAttributesOnUpdatingAnchor(AtlasEntity entity, AtlasVertex childVertex,  String currentAnchorQualifiedName, String newAnchorQualifiedName,
-                                                           String categoryQualifiedName) throws AtlasBaseException {
+    private void updateChildAttributesOnUpdatingAnchor(AtlasEntity categoryEntity, AtlasVertex childVertex,  String currentAnchorQualifiedName, String newAnchorQualifiedName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateChildAttributesOnUpdatingAnchor");
         Map<String, Object> updatedAttributes = new HashMap<>();
         String qualifiedName            =   childVertex.getProperty(QUALIFIED_NAME, String.class);
         String updatedQualifiedName     =   qualifiedName.replaceAll(currentAnchorQualifiedName, newAnchorQualifiedName);
         String typeName = childVertex.getProperty(TYPE_NAME_PROPERTY_KEY,String.class);
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+        AtlasEntity entity = entityRetriever.toAtlasEntity(childVertex);
         for(String attrName : entityType.getRelationshipAttributes().keySet()) {
-            Object attrValue = entity.getRelationshipAttribute(attrName);
-            String relationType = "";
-            if (attrValue != null) relationType = AtlasEntityUtil.getRelationshipType(attrValue);
+            if(entity.hasRelationshipAttribute(attrName)) {
+                Object attrValue = entity.getRelationshipAttribute(attrName);
+                String relationType = "";
+                if(attrValue != null ) relationType = AtlasEntityUtil.getRelationshipType(attrValue);
+                if (attrName.equals("anchor") && typeName.equals("AtlasGlossaryTerm")) relationType = GLOSSARY_TERMS_EDGE_LABEL;
+                else if (attrName.equals("anchor")) relationType = GLOSSARY_CATEGORY_EDGE_LABEL;
 
-            if (attrName.equals("anchor") && typeName.equals("AtlasGlossaryTerm"))
-                relationType = GLOSSARY_TERMS_EDGE_LABEL;
-            else if (attrName.equals("anchor")) relationType = GLOSSARY_CATEGORY_EDGE_LABEL;
+                if (StringUtils.isNotEmpty(relationType) && (relationType.equals(GLOSSARY_TERMS_EDGE_LABEL) || relationType.equals(GLOSSARY_CATEGORY_EDGE_LABEL))) {
+                    AtlasStructType.AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, relationType);
+                    AttributeMutationContext ctx = new AttributeMutationContext(UPDATE, childVertex, attribute, attrValue);
+                    AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection edgeDirection = ctx.getAttribute().getRelationshipEdgeDirection();
+                    String edgeLabel = ctx.getAttribute().getRelationshipEdgeLabel();
 
-            if (StringUtils.isNotEmpty(relationType)) {
-                AtlasStructType.AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, relationType);
-                AttributeMutationContext ctx = new AttributeMutationContext(UPDATE, childVertex, attribute, attrValue);
-                AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection edgeDirection = ctx.getAttribute().getRelationshipEdgeDirection();
-                String edgeLabel = ctx.getAttribute().getRelationshipEdgeLabel();
-
-                // if relationshipDefs doesn't exist, use legacy way of finding edge label.
-                if (org.apache.commons.lang3.StringUtils.isEmpty(edgeLabel)) {
-                    edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(ctx.getVertexProperty());
-                }
-
-                String relationshipGuid = getRelationshipGuid(ctx.getValue());
-                AtlasEdge currentEdge;
-
-                // if relationshipGuid is assigned in AtlasRelatedObjectId use it to fetch existing AtlasEdge
-                if (org.apache.commons.lang3.StringUtils.isNotEmpty(relationshipGuid) && !RequestContext.get().isImportInProgress()) {
-                    currentEdge = graphHelper.getEdgeForGUID(relationshipGuid);
-                } else {
-                    currentEdge = graphHelper.getEdgeForLabel(ctx.getReferringVertex(), edgeLabel, edgeDirection);
-                }
-
-                deleteDelegate.getHandler().deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), false, true, ctx.getReferringVertex());
-
-                AtlasObjectId anchor = (AtlasObjectId) entity.getRelationshipAttribute("anchor");
-                AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, anchor.getGuid());
-
-                String relationshipName = attribute.getRelationshipName();
-                AtlasVertex toVertex;
-                AtlasVertex fromVertex;
-                if (attribute.getRelationshipEdgeDirection() == IN) {
-                    fromVertex = entityVertex;
-                    toVertex = childVertex;
-
-                } else {
-                    fromVertex = childVertex;
-                    toVertex = entityVertex;
-                }
-                Map<String, Object> relationshipAttributes = getRelationshipAttributes(ctx.getValue());
-
-                AtlasEdge newEdge = relationshipStore.getOrCreate(fromVertex, toVertex, new AtlasRelationship(relationshipName, relationshipAttributes));
-                if (RequestContext.get().isImportInProgress()) {
-                    String relationshipGuid1 = getRelationshipGuid(ctx.getValue());
-
-                    if (!org.apache.commons.lang3.StringUtils.isEmpty(relationshipGuid1)) {
-                        AtlasGraphUtilsV2.setEncodedProperty(newEdge, RELATIONSHIP_GUID_PROPERTY_KEY, relationshipGuid1);
+                    // if relationshipDefs doesn't exist, use legacy way of finding edge label.
+                    if (org.apache.commons.lang3.StringUtils.isEmpty(edgeLabel)) {
+                        edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(ctx.getVertexProperty());
                     }
-                }
 
+                    String relationshipGuid = getRelationshipGuid(ctx.getValue());
+                    AtlasEdge currentEdge;
+
+                    // if relationshipGuid is assigned in AtlasRelatedObjectId use it to fetch existing AtlasEdge
+                    if (org.apache.commons.lang3.StringUtils.isNotEmpty(relationshipGuid) && !RequestContext.get().isImportInProgress()) {
+                        currentEdge = graphHelper.getEdgeForGUID(relationshipGuid);
+                    } else {
+                        currentEdge = graphHelper.getEdgeForLabel(ctx.getReferringVertex(), edgeLabel, edgeDirection);
+                    }
+
+                    deleteDelegate.getHandler().deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), false, true, ctx.getReferringVertex());
+
+                    AtlasObjectId anchor = (AtlasObjectId) categoryEntity.getRelationshipAttribute("anchor");
+                    AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, anchor.getGuid());
+
+                    String relationshipName = attribute.getRelationshipName();
+                    AtlasVertex toVertex;
+                    AtlasVertex fromVertex;
+                    if (attribute.getRelationshipEdgeDirection() == IN) {
+                        fromVertex = entityVertex;
+                        toVertex = childVertex;
+
+                    } else {
+                        fromVertex = childVertex;
+                        toVertex = entityVertex;
+                    }
+                    Map<String, Object> relationshipAttributes = getRelationshipAttributes(ctx.getValue());
+
+                    AtlasEdge newEdge = relationshipStore.getOrCreate(fromVertex, toVertex, new AtlasRelationship(relationshipName, relationshipAttributes));
+                    if (RequestContext.get().isImportInProgress()) {
+                        String relationshipGuid1 = getRelationshipGuid(ctx.getValue());
+
+                        if (!org.apache.commons.lang3.StringUtils.isEmpty(relationshipGuid1)) {
+                            AtlasGraphUtilsV2.setEncodedProperty(newEdge, RELATIONSHIP_GUID_PROPERTY_KEY, relationshipGuid1);
+                        }
+                    }
+
+                }
             }
         }
 
