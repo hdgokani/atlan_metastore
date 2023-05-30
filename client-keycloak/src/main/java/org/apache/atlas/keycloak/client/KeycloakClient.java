@@ -116,7 +116,7 @@ public final class KeycloakClient {
                 CLIENT_ID = object.getString(KEY_CLIENT_ID);
                 GRANT_TYPE = DEDAULT_GRANT_TYPE;
                 CLIENT_SECRET = object.getJSONObject(KEY_CREDENTIALS).getString(KEY_SECRET);
-                
+
                 LOG.info("Keycloak conf: REALM_ID:{}, AUTH_SERVER_URL:{}",
                         REALM_ID, AUTH_SERVER_URL);
             } else {
