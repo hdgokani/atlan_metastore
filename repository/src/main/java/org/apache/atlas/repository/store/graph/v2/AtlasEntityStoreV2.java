@@ -1635,7 +1635,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         requestContext.recordEntityGuidUpdate(entity, guid);
 
                         context.addCreated(guid, entity, entityType, vertex);
-
                     }
 
                 } catch (AtlasBaseException exception) {
@@ -1686,7 +1685,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return context;
     }
 
-    public PreProcessor getPreProcessor(String typeName) throws AtlasBaseException {
+    public PreProcessor getPreProcessor(String typeName) {
         PreProcessor preProcessor = null;
 
         switch (typeName) {
