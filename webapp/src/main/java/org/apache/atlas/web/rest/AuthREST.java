@@ -57,10 +57,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_SERVICE_LAST_SYNC;
-import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.PURPOSE_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.ACCESS_CONTROL_ENTITY_TYPE;
 
 /**
  * REST interface for CRUD operations on tasks
@@ -191,7 +190,6 @@ public class AuthREST {
         entityUpdateToWatch.add(POLICY_ENTITY_TYPE);
         entityUpdateToWatch.add(PERSONA_ENTITY_TYPE);
         entityUpdateToWatch.add(PURPOSE_ENTITY_TYPE);
-        entityUpdateToWatch.add(ACCESS_CONTROL_ENTITY_TYPE);
 
         AuditSearchParams parameters = new AuditSearchParams();
         Map<String, Object> dsl = getMap("size", 1);
