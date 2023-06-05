@@ -967,8 +967,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     Map<String, Object> getModifiedQuery(Map dsl) {
     Map query = (Map) dsl.get("query");
     Map<String, List<String>> resources = AtlasAuthorizationUtils.getResourceMapByUser();
-
-    IndexSearchParams modifiedParams = new IndexSearchParams();
+    
     Map<String, Object> connectionQNameClause = getMap("terms", getMap("connectionQualifiedName", resources.get("connection")));
     Map<String, Object> collectionQNameClause = getMap("terms", getMap("collectionQualifiedName", resources.get("collection")));
     Map<String, Object> tagNameClause = getMap("terms", getMap("__traitNames", resources.get("tag")));
