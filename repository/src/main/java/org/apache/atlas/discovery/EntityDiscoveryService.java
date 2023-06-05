@@ -979,6 +979,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     Map<String, Object> entityTypeNameClause = getMap("terms", getMap("__typeName.keyword", resources.get("entityType")));
     List<Map<String, Object>> shouldClauses = new ArrayList<>();
     shouldClauses.add(connectionQNameClause);
+    shouldClauses.add(getMap("terms", getMap("qualifiedName", resources.get("connection"))));
     shouldClauses.add(collectionQNameClause);
     shouldClauses.add(tagNameClause);
     shouldClauses.add(propagatedTagNames);
