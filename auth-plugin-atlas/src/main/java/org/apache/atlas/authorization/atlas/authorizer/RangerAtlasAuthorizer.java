@@ -528,6 +528,12 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         if (CollectionUtils.isNotEmpty(entityResources)) {
             for (String entityResource : entityResources) {
                 if (StringUtils.isNotEmpty(entityResource)) {
+                    for (String resource : entityResource.split(",")) {
+                        if (resource.equals("*") || resource.endsWith("*") || resource.contains("{USER}")) {
+                            ret.add(resource);
+                        }
+                    }
+
                     ret = entityResources.stream().filter(v -> !v.equals("*") && !v.contains("{USER}") && !v.endsWith("*")).collect(Collectors.toList());
                 }
             }
@@ -535,6 +541,36 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         return ret;
     }
 
+    private boolean hasMacros(List<String> resources){
+        boolean ret = false;
+        if (CollectionUtils.isNotEmpty(resources)) {
+            for (String resource : resources) {
+                if (StringUtils.isNotEmpty(resource)) {
+                    if (resource.contains("{USER}")) {
+                        ret = true;
+                        break;
+                    }
+                }
+            }
+        }
+        return ret;
+    }
+
+    private List<String> getFilteredTypeResources(List<String> resources) {
+        List<String> ret = new ArrayList<>();
+        List<String> skipEntities = Arrays.asList("Connection", "Collection");
+        if (CollectionUtils.isNotEmpty(resources)) {
+            for (String resource : resources) {
+                if (StringUtils.isNotEmpty(resource)) {
+                    if (skipEntities.contains(resource) || resource.equals("*") || resource.endsWith("*") || resource.contains("{USER}")) {
+                        continue;
+                    }
+                    ret.add(resource);
+                }
+            }
+        }
+        return ret;
+    }
     @Override
     public Map<String, List<String>> getPoliciesResourcesForUserRoleGroup() throws AtlasBaseException {
         RangerPerfTracer perf = null;
@@ -570,12 +606,17 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                             RangerPolicy.RangerPolicyResource value = entry.getValue();
                             if (key.equals("tag")) {
                                 tagResources.addAll(value.getValues());
-                            } else if (key.equals("entity-type")) {
+                            } else if (key.equals("entity-type") ) {
                                 // Check if values is not array ["*"]
+                                RangerPolicy.RangerPolicyResource entityResources = resources.getOrDefault("entity", new RangerPolicy.RangerPolicyResource());
+                                if (hasMacros(entityResources.getValues())) {
+                                    continue;
+                                }
                                 if (CollectionUtils.isEmpty(value.getValues())) {
                                     continue;
                                 }
-                                typeResources.addAll(getFilteredEntityResources(value.getValues()));
+
+                                typeResources.addAll(getFilteredTypeResources(value.getValues()));
                             } else if (key.equals("entity")) {
                                 if (CollectionUtils.isEmpty(value.getValues())) {
                                     continue;
@@ -588,7 +629,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                                     collectionResources.addAll(getFilteredEntityResources(value.getValues()));
                                 } else if (policy.getName().contains("collection-CRUD")) {
                                     collectionResources.addAll(getFilteredEntityResources(value.getValues()));
-                                } else{
+                                } else if(!policy.getName().contains("collection") && !policy.getName().contains("connection")) {
                                     // Skip string values like *, {USER} or value has * in the end inside values and if then it is not empty then only add the filtered values
                                     List<String> filteredValues = getFilteredEntityResources(value.getValues());
                                     if (!CollectionUtils.isEmpty(filteredValues)) {
