@@ -34,6 +34,14 @@ public class SearchParams {
         return showAssetsHasAccess;
     }
 
+    public void setShowAssetsHasAccess(boolean showAssetsHasAccess) {
+        this.showAssetsHasAccess = showAssetsHasAccess;
+    }
+
+    public boolean getShowAssetsHasAccess() {
+        return showAssetsHasAccess;
+    }
+
     public Set<String> getAttributes() {
         return attributes;
     }
