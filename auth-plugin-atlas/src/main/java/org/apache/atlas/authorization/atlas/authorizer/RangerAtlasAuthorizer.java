@@ -592,7 +592,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                                     // Skip string values like *, {USER} or value has * in the end inside values and if then it is not empty then only add the filtered values
                                     List<String> filteredValues = getFilteredEntityResources(value.getValues());
                                     if (!CollectionUtils.isEmpty(filteredValues)) {
-                                        policyDenyResources.addAll(filteredValues);
+                                        policyAllowResources.addAll(filteredValues);
                                     }
                                 }
                             }
