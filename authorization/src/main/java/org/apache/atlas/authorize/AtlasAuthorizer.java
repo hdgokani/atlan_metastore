@@ -19,11 +19,14 @@
 package org.apache.atlas.authorize;
 
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface AtlasAuthorizer {
@@ -68,6 +71,10 @@ public interface AtlasAuthorizer {
     AtlasAccessorResponse getAccessors(AtlasTypeAccessRequest request);
 
     Set<String> getRolesForCurrentUser(String userName, Set<String> groups);
+
+    default Map<String, List<String>> getPoliciesResourcesForUserRoleGroup() throws AtlasBaseException {
+        return null;
+    }
 
     /**
      * authorize relationship type
