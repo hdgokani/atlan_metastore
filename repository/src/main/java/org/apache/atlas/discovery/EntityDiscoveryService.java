@@ -977,11 +977,16 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     Map<String, Object> tagNameClause = getMap("terms", getMap("__traitNames", resources.get("tag")));
     Map<String, Object> propagatedTagNames = getMap("terms", getMap("__propagatedTraitNames", resources.get("tag")));
     Map<String, Object> entityTypeNameClause = getMap("terms", getMap("__typeName.keyword", resources.get("entityType")));
-    List<Map<String, Object>> shouldClauses = Arrays.asList(connectionQNameClause, collectionQNameClause, tagNameClause, propagatedTagNames, entityTypeNameClause);
+    List<Map<String, Object>> shouldClauses = new ArrayList<>();
+    shouldClauses.add(connectionQNameClause);
+    shouldClauses.add(collectionQNameClause);
+    shouldClauses.add(tagNameClause);
+    shouldClauses.add(propagatedTagNames);
+    shouldClauses.add(entityTypeNameClause);
     List<String> allowedPolicy = resources.get("policyAllow");
     if (CollectionUtils.isNotEmpty(allowedPolicy)) {
         for (String policyResource : allowedPolicy) {
-            shouldClauses.add(getMap("prefix", getMap("qualifiedName", policyResource)));
+                shouldClauses.add(getMap("prefix", getMap("qualifiedName", policyResource)));
         }
     }
     Map<String, Object> filterClause = getMap("bool", getMap("should", shouldClauses));
