@@ -40,6 +40,8 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_US
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PURPOSE_CLASSIFICATIONS;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_DATA;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
 
 @Component
 public class AuthzCacheOnDemandRefresher {
@@ -141,7 +143,7 @@ public class AuthzCacheOnDemandRefresher {
                         String subCategory = (String) entityHeader.getAttribute(ATTR_POLICY_SUB_CATEGORY);
 
                         if (POLICY_CATEGORY_PERSONA.equals(policyCategory) &&
-                                ("metadata".equals(subCategory) || "data".equals(subCategory))) {
+                                (POLICY_SUB_CATEGORY_METADATA.equals(subCategory) || POLICY_SUB_CATEGORY_DATA.equals(subCategory))) {
                             refreshPolicies = true;
                         }
 
