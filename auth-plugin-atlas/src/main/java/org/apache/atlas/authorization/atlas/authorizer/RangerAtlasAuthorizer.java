@@ -125,6 +125,11 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
+    public void refreshCache(boolean refreshPolicies, boolean refreshRoles, boolean refreshGroups) {
+        atlasPlugin.submitRefresherTask(refreshPolicies, refreshRoles, refreshGroups);
+    }
+
+    @Override
     public void cleanUp() {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> cleanUp ");

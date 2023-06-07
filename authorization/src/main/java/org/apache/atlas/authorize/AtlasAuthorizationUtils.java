@@ -287,6 +287,19 @@ public class AtlasAuthorizationUtils {
         return ret;
     }
 
+    public static void refreshCache(boolean refreshPolicies, boolean refreshRoles, boolean refreshGroups) {
+        try {
+            AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
+            if (authorizer == null ) {
+                throw new AtlasAuthorizationException("Authorizer is null");
+            }
+
+            authorizer.refreshCache(refreshPolicies, refreshRoles, refreshGroups);
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Unable to obtain AtlasAuthorizer", e);
+        }
+    }
+
     public static void filterTypesDef(AtlasTypesDefFilterRequest request) {
         MetricRecorder metric  = RequestContext.get().startMetricRecord("filterTypesDef");
         String        userName = getCurrentUserName();
