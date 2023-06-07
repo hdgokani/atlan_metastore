@@ -125,9 +125,9 @@ public class TypeCacheRefreshREST {
     }
 
     private void refreshAuthzCache(MultivaluedMap<String, String> params, String traceId) {
-        boolean refreshPolicies = Boolean.parseBoolean(params.getFirst("policies"));
-        boolean refreshRoles = Boolean.parseBoolean(params.getFirst("roles"));
-        boolean refreshGroups = Boolean.parseBoolean(params.getFirst("groups"));
+        boolean refreshPolicies = Boolean.parseBoolean(params.getFirst("refreshPolicies"));
+        boolean refreshRoles = Boolean.parseBoolean(params.getFirst("refreshRoles"));
+        boolean refreshGroups = Boolean.parseBoolean(params.getFirst("refreshGroups"));
 
         LOG.info("Initiating authz cache refresh with refreshPolicies={}, refreshRoles={}, refreshGroups={} :: traceId {}", refreshPolicies, refreshRoles, refreshGroups, traceId);
 

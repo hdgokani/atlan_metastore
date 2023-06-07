@@ -177,9 +177,9 @@ public class AuthREST {
     @POST
     @Path("refreshcache")
     @Timed
-    public void refreshCache(@QueryParam("policies") Boolean policies,
-                             @QueryParam("roles") Boolean roles,
-                             @QueryParam("groups") Boolean groups) {
+    public void refreshCache(@QueryParam("refreshPolicies") Boolean policies,
+                             @QueryParam("refreshRoles") Boolean roles,
+                             @QueryParam("refreshGroups") Boolean groups) {
         AtlasPerfTracer perf = null;
 
         try {

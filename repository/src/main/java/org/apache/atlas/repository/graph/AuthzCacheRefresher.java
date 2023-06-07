@@ -19,12 +19,12 @@ import java.util.Map;
 public class AuthzCacheRefresher extends HostRefresher {
     private static final Logger LOG = LoggerFactory.getLogger(AuthzCacheRefresher.class);
 
-    public void refreshCache(boolean policies, boolean roles, boolean groups, String traceId) {
+    public void refreshCache(boolean refreshPolicies, boolean refreshRoles, boolean refreshGroups, String traceId) {
         Map<String, String> params = new HashMap<>();
         params.put(HOST_REFRESH_TYPE_KEY, HostRefreshType.AUTH_CACHE.name());
-        params.put("policies", String.valueOf(policies));
-        params.put("roles", String.valueOf(roles));
-        params.put("groups", String.valueOf(groups));
+        params.put("refreshPolicies", String.valueOf(refreshPolicies));
+        params.put("refreshRoles", String.valueOf(refreshRoles));
+        params.put("refreshGroups", String.valueOf(refreshGroups));
 
         try {
             refreshCache(params, traceId);
