@@ -1513,6 +1513,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 reqContext.endMetricRecord(checkForUnchangedEntities);
             }
 
+            executePreProcessor(context);
+
             EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate,
                     replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttribute);
 
@@ -1531,6 +1533,33 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             RequestContext.get().endMetricRecord(metric);
 
             AtlasPerfTracer.log(perf);
+        }
+    }
+
+    private void executePreProcessor(EntityMutationContext context) throws AtlasBaseException {
+        AtlasEntityType entityType;
+        PreProcessor preProcessor;
+
+        List<AtlasEntity> copyOfCreated = new ArrayList<>(context.getCreatedEntities());
+        for (int i = 0; i < copyOfCreated.size() ; i++) {
+            AtlasEntity entity = ((List<AtlasEntity>) context.getCreatedEntities()).get(i);
+            entityType = context.getType(entity.getGuid());
+            preProcessor = getPreProcessor(entityType.getTypeName());
+
+            if (preProcessor != null) {
+                preProcessor.processAttributes(entity, context, CREATE);
+            }
+        }
+
+        List<AtlasEntity> copyOfUpdated = new ArrayList<>(context.getUpdatedEntities());
+        for (int i = 0; i < copyOfUpdated.size() ; i++) {
+            AtlasEntity entity = ((List<AtlasEntity>) context.getUpdatedEntities()).get(i);
+            entityType = context.getType(entity.getGuid());
+            preProcessor = getPreProcessor(entityType.getTypeName());
+
+            if (preProcessor != null) {
+                preProcessor.processAttributes(entity, context, UPDATE);
+            }
         }
     }
 
@@ -1557,7 +1586,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 compactAttributes(entity, entityType);
 
                 AtlasVertex vertex = getResolvedEntityVertex(discoveryContext, entity);
-                PreProcessor preProcessor = getPreProcessor(entityType.getTypeName());
 
                 try {
                     if (vertex != null) {
@@ -1584,9 +1612,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                         context.addUpdated(guid, entity, entityType, vertex);
 
-                        if (preProcessor != null) {
-                            preProcessor.processAttributes(entity, context, UPDATE);
-                        }
                     } else {
                         graphDiscoverer.validateAndNormalize(entity);
 
@@ -1608,10 +1633,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         requestContext.recordEntityGuidUpdate(entity, guid);
 
                         context.addCreated(guid, entity, entityType, vertex);
-
-                        if (preProcessor != null) {
-                            preProcessor.processAttributes(entity, context, CREATE);
-                        }
                     }
 
                 } catch (AtlasBaseException exception) {
@@ -1662,7 +1683,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return context;
     }
 
-    public PreProcessor getPreProcessor(String typeName) throws AtlasBaseException {
+    public PreProcessor getPreProcessor(String typeName) {
         PreProcessor preProcessor = null;
 
         switch (typeName) {
@@ -1699,7 +1720,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case POLICY_ENTITY_TYPE:
-                preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever);
+                preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever, featureFlagStore);
                 break;
 
             case CONNECTION_ENTITY_TYPE:
