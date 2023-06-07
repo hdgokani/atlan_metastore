@@ -36,6 +36,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.notification.EntityNotification;
+import org.apache.atlas.refresher.AuthzCacheOnDemandRefresher;
 import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -74,19 +75,22 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     private final FullTextMapperV2            fullTextMapperV2;
     private final AtlasTypeRegistry           atlasTypeRegistry;
     private final boolean                     isV2EntityNotificationEnabled;
+    private final AuthzCacheOnDemandRefresher cacheRefresher;
+
     private static final List<String> ALLOWED_RELATIONSHIP_TYPES = Arrays.asList(AtlasConfiguration.SUPPORTED_RELATIONSHIP_EVENTS.getStringArray());
 
     @Inject
     public AtlasEntityChangeNotifier(Set<EntityChangeListener> entityChangeListeners,
                                      Set<EntityChangeListenerV2> entityChangeListenersV2,
                                      AtlasInstanceConverter instanceConverter,
-                                     FullTextMapperV2 fullTextMapperV2,
+                                     FullTextMapperV2 fullTextMapperV2, AuthzCacheOnDemandRefresher cacheRefresher,
                                      AtlasTypeRegistry atlasTypeRegistry) {
         this.entityChangeListeners         = entityChangeListeners;
         this.entityChangeListenersV2       = entityChangeListenersV2;
         this.instanceConverter             = instanceConverter;
         this.fullTextMapperV2              = fullTextMapperV2;
         this.atlasTypeRegistry             = atlasTypeRegistry;
+        this.cacheRefresher                = cacheRefresher;
         this.isV2EntityNotificationEnabled = AtlasRepositoryConfiguration.isV2EntityNotificationEnabled();
     }
 
@@ -117,6 +121,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         notifyListeners(purgedEntities, EntityOperation.PURGE, isImport);
 
         notifyPropagatedEntities();
+        cacheRefresher.refreshCacheIfNeeded(entityMutationResponse, isImport);
     }
 
     @Override

@@ -19,6 +19,7 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AuditSearchParams;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
@@ -28,7 +29,9 @@ import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
 import org.apache.atlas.plugin.util.ServicePolicies;
 import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
+import org.apache.atlas.refresher.AuthzCacheOnDemandRefresher;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
+import org.apache.atlas.repository.graph.AuthzCacheRefresher;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -45,6 +48,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -76,13 +80,17 @@ public class AuthREST {
     private CachePolicyTransformerImpl policyTransformer;
     private ESBasedAuditRepository auditRepository;
     private AtlasEntityStore entityStore;
+    private AuthzCacheRefresher hostRefresher;
 
     @Inject
     public AuthREST(CachePolicyTransformerImpl policyTransformer,
-                    ESBasedAuditRepository auditRepository, AtlasEntityStore entityStore) {
+                    ESBasedAuditRepository auditRepository,
+                    AtlasEntityStore entityStore,
+                    AuthzCacheRefresher hostRefresher) {
         this.entityStore = entityStore;
         this.auditRepository = auditRepository;
         this.policyTransformer = policyTransformer;
+        this.hostRefresher = hostRefresher;
     }
 
     @GET
@@ -161,6 +169,47 @@ public class AuthREST {
             updateLastSync(serviceName);
 
             return ret;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("refreshcache")
+    @Timed
+    public void refreshCache(@QueryParam("refreshPolicies") Boolean policies,
+                             @QueryParam("refreshRoles") Boolean roles,
+                             @QueryParam("refreshGroups") Boolean groups) {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.refreshCache(policies="+policies+", roles="+roles+", groups="+groups+")");
+            }
+
+            if (policies == null && roles == null && groups == null) {
+                AtlasAuthorizationUtils.refreshCache(true, true, true);
+
+            } else {
+                boolean refreshPolicies = false;
+                boolean refreshRoles = false;
+                boolean refreshGroups = false;
+
+                if (Boolean.TRUE == policies) {
+                    refreshPolicies = true;
+                }
+
+                if (Boolean.TRUE == roles) {
+                    refreshRoles = true;
+                }
+
+                if (Boolean.TRUE == groups) {
+                    refreshGroups = true;
+                }
+
+                AtlasAuthorizationUtils.refreshCache(refreshPolicies, refreshRoles, refreshGroups);
+                hostRefresher.refreshCache(refreshPolicies, refreshRoles, refreshGroups, RequestContext.get().getTraceId());
+            }
         } finally {
             AtlasPerfTracer.log(perf);
         }

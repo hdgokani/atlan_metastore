@@ -161,4 +161,9 @@ public interface AtlasAuthorizer {
     public void init(AtlasTypeRegistry typeRegistry) {
 
     }
+
+    default
+    public void refreshCache(boolean refreshPolicies, boolean refreshRoles, boolean refreshGroups) {
+
+    }
 }
