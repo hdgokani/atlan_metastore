@@ -336,7 +336,7 @@ public final class AccessControlUtils {
         AtlasEntity ret = null;
         if (CollectionUtils.isNotEmpty(resources)) {
 
-            String entityId = resources.get(0).split(RESOURCES_SPLITTER)[1];
+            String entityId = resources.get(0);
 
             ret = extractConnectionFromResource(entityRetriever, entityId);
         }
