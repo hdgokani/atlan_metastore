@@ -1773,6 +1773,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
         for (AtlasVertex vertex : deletionCandidates) {
             String typeName = getTypeName(vertex);
+
+            PreProcessor preProcessor = getPreProcessor(typeName);
+            if (preProcessor != null) {
+                preProcessor.processDelete(vertex);
+            }
+
             if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.equals(typeName)) {
                 categories.add(vertex);
             } else {
