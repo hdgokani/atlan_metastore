@@ -164,6 +164,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                     }
                     throw new AtlasException(errors.toString());
                 }
+                LOG.warn("Saved audit at {}", System.currentTimeMillis());
             }
         } catch (Exception e) {
             throw new AtlasBaseException("Unable to push entity audits to ES", e);
@@ -206,7 +207,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException {
-        LOG.info("Hitting ES query to fetch audits: {}", queryString);
+        LOG.info("Hitting ES query to fetch audits: {}, {}", System.currentTimeMillis(), queryString);
         try {
             String response = performSearchOnIndex(queryString);
             return getResultFromResponse(response);

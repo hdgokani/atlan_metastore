@@ -23,6 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.keycloak.client.KeycloakClient;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -121,11 +122,12 @@ public class PersonaPreProcessor implements PreProcessor {
         }
 
         //delete policies
-        List<AtlasObjectId> policies = (List<AtlasObjectId>) persona.getRelationshipAttribute(REL_ATTR_POLICIES);
+        List<AtlasRelatedObjectId> policies = (List<AtlasRelatedObjectId>) persona.getRelationshipAttribute(REL_ATTR_POLICIES);
         if (CollectionUtils.isNotEmpty(policies)) {
-            for (AtlasObjectId policyObjectId : policies) {
-                //AtlasVertex policyVertex = entityRetriever.getEntityVertex(policyObjectId.getGuid());
-                entityStore.deleteById(policyObjectId.getGuid());
+            for (AtlasRelatedObjectId policyObjectId : policies) {
+                if (AtlasEntity.Status.ACTIVE.equals(policyObjectId.getEntityStatus())) {
+                    entityStore.deleteById(policyObjectId.getGuid());
+                }
             }
         }
 
@@ -187,18 +189,20 @@ public class PersonaPreProcessor implements PreProcessor {
     private void updatePoliciesIsEnabledAttr(EntityMutationContext context, AtlasEntity existingPersonaEntity,
                                              boolean enable) throws AtlasBaseException {
 
-        List<AtlasObjectId> policies = (List<AtlasObjectId>) existingPersonaEntity.getRelationshipAttribute(REL_ATTR_POLICIES);
+        List<AtlasRelatedObjectId> policies = (List<AtlasRelatedObjectId>) existingPersonaEntity.getRelationshipAttribute(REL_ATTR_POLICIES);
 
         if (CollectionUtils.isNotEmpty(policies)) {
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
 
-            for (AtlasObjectId policy : policies) {
-                AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
+            for (AtlasRelatedObjectId policy : policies) {
+                if (AtlasEntity.Status.ACTIVE.equals(policy.getEntityStatus())) {
+                    AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
-                AtlasEntity policyToBeUpdated = entityRetriever.toAtlasEntity(policyVertex);
-                policyToBeUpdated.setAttribute(ATTR_POLICY_IS_ENABLED, enable);
+                    AtlasEntity policyToBeUpdated = entityRetriever.toAtlasEntity(policyVertex);
+                    policyToBeUpdated.setAttribute(ATTR_POLICY_IS_ENABLED, enable);
 
-                context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
+                    context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
+                }
             }
         }
     }

@@ -3,6 +3,7 @@ package org.apache.atlas.refresher;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -43,17 +45,20 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGOR
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_DATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
 
-@Component
-public class AuthzCacheOnDemandRefresher {
+//@Component
+public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.PostTransactionHook {
     private static final Logger LOG = LoggerFactory.getLogger(AuthzCacheOnDemandRefresher.class);
 
     private final AuthzCacheRefresher hostRefresher;
 
     private boolean isOnDemandAuthzCacheRefreshEnabled = true;
 
-    @Inject
-    public AuthzCacheOnDemandRefresher(AuthzCacheRefresher hostRefresher) {
-        this.hostRefresher = hostRefresher;
+    private AsyncCacheRefresher asyncCacheRefresher;
+
+    //@Inject
+    public AuthzCacheOnDemandRefresher() {
+        super();
+        this.hostRefresher = new AuthzCacheRefresher();
 
         try {
             isOnDemandAuthzCacheRefreshEnabled = ApplicationProperties.get().getBoolean("atlas.authorizer.enable.action.based.cache.refresh", true);
@@ -76,10 +81,13 @@ public class AuthzCacheOnDemandRefresher {
         add(ATTR_VIEWER_GROUPS);
     }};
 
-    private static final Set<String> PERSONA_ATTRS = new HashSet<String>(){{
-        add(ATTR_ACCESS_CONTROL_ENABLED);
+    private static final Set<String> PERSONA_ATTRS_ROLES = new HashSet<String>(){{
         add(ATTR_POLICY_USERS);
         add(ATTR_POLICY_GROUPS);
+    }};
+
+    private static final Set<String> PERSONA_ATTRS_POLICIES = new HashSet<String>(){{
+        add(ATTR_ACCESS_CONTROL_ENABLED);
     }};
 
     private static final Set<String> PURPOSE_ATTRS = new HashSet<String>(){{
@@ -111,6 +119,36 @@ public class AuthzCacheOnDemandRefresher {
         }
     }
 
+    public void recordRefresh(EntityMutationResponse entityMutationResponse, boolean isImport) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("recordRefresh");
+        try {
+            if (isImport || RequestContext.get().isPoliciesBootstrappingInProgress()) {
+                LOG.warn("recordRefresh: Cache refresh will be skipped");
+                return;
+            }
+
+            if (!isOnDemandAuthzCacheRefreshEnabled) {
+                LOG.warn("recordRefresh: Skipping as On-demand cache refresh is not enabled");
+                return;
+            }
+
+            asyncCacheRefresher = new AsyncCacheRefresher(entityMutationResponse,
+                    RequestContext.get().getDifferentialEntitiesMap(),
+                    RequestContext.get().getTraceId());
+
+
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    @Override
+    public void onComplete(boolean isSuccess) {
+        if (isSuccess && asyncCacheRefresher != null) {
+            asyncCacheRefresher.start();
+        }
+    }
+
     class AsyncCacheRefresher extends Thread {
         private String traceId;
         private EntityMutationResponse entityMutationResponse;
@@ -128,6 +166,11 @@ public class AuthzCacheOnDemandRefresher {
         public void run() {
             boolean refreshPolicies = false;
             boolean refreshRoles = false;
+
+            if (entityMutationResponse == null) {
+                LOG.warn("entityMutationResponse was emtpy");
+                return;
+            }
 
             if (CollectionUtils.isNotEmpty(entityMutationResponse.getCreatedEntities())) {
                 for (AtlasEntityHeader entityHeader : entityMutationResponse.getCreatedEntities()) {
@@ -161,28 +204,34 @@ public class AuthzCacheOnDemandRefresher {
 
                     if (diffEntity != null && MapUtils.isNotEmpty(diffEntity.getAttributes())) {
                         Set<String> updatedAttrs = diffEntity.getAttributes().keySet();
+                        Collection<String> attrsToRefreshCache;
 
                         if (CONNECTION_ENTITY_TYPE.equals(entityHeader.getTypeName())) {
-                            updatedAttrs.retainAll(CONNECTION_ATTRS);
-                            if (CollectionUtils.isNotEmpty(updatedAttrs)) {
+                            attrsToRefreshCache = CollectionUtils.intersection(updatedAttrs, CONNECTION_ATTRS);
+                            if (CollectionUtils.isNotEmpty(attrsToRefreshCache)) {
                                 refreshRoles = true;
                             }
 
                         } else if (COLLECTION_ENTITY_TYPE.equals(entityHeader.getTypeName())) {
-                            updatedAttrs.retainAll(COLLECTION_ATTRS);
-                            if (CollectionUtils.isNotEmpty(updatedAttrs)) {
+                            attrsToRefreshCache = CollectionUtils.intersection(updatedAttrs, COLLECTION_ATTRS);
+                            if (CollectionUtils.isNotEmpty(attrsToRefreshCache)) {
                                 refreshRoles = true;
                             }
 
                         } else if (PERSONA_ENTITY_TYPE.equals(entityHeader.getTypeName())) {
-                            updatedAttrs.retainAll(PERSONA_ATTRS);
-                            if (CollectionUtils.isNotEmpty(updatedAttrs)) {
+                            attrsToRefreshCache = CollectionUtils.intersection(updatedAttrs, PERSONA_ATTRS_ROLES);
+                            if (CollectionUtils.isNotEmpty(attrsToRefreshCache)) {
                                 refreshRoles = true;
                             }
 
+                            attrsToRefreshCache = CollectionUtils.intersection(updatedAttrs, PERSONA_ATTRS_POLICIES);
+                            if (CollectionUtils.isNotEmpty(attrsToRefreshCache)) {
+                                refreshPolicies = true;
+                            }
+
                         } else if (PURPOSE_ENTITY_TYPE.equals(entityHeader.getTypeName())) {
-                            updatedAttrs.retainAll(PURPOSE_ATTRS);
-                            if (CollectionUtils.isNotEmpty(updatedAttrs)) {
+                            attrsToRefreshCache = CollectionUtils.intersection(updatedAttrs, PURPOSE_ATTRS);
+                            if (CollectionUtils.isNotEmpty(attrsToRefreshCache)) {
                                 refreshPolicies = true;
                             }
 
@@ -208,11 +257,11 @@ public class AuthzCacheOnDemandRefresher {
                         String subCategory = (String) entityHeader.getAttribute(ATTR_POLICY_SUB_CATEGORY);
 
                         if (POLICY_CATEGORY_PERSONA.equals(policyCategory) &&
-                                ("metadata".equals(subCategory) || "data".equals(subCategory))) {
+                                (POLICY_SUB_CATEGORY_METADATA.equals(subCategory) || POLICY_SUB_CATEGORY_DATA.equals(subCategory))) {
                             refreshPolicies = true;
                         }
 
-                        if (POLICY_CATEGORY_PURPOSE.equals(policyCategory) && "metadata".equals(subCategory)) {
+                        if (POLICY_CATEGORY_PURPOSE.equals(policyCategory) && POLICY_SUB_CATEGORY_METADATA.equals(subCategory)) {
                             refreshPolicies = true;
                         }
                     }
