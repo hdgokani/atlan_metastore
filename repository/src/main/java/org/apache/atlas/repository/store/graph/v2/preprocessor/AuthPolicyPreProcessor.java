@@ -240,7 +240,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
     private void validateConnectionAdmin(AtlasEntity policy) throws AtlasBaseException {
         String subCategory = getPolicySubCategory(policy);
-        if ("metadata".equals(subCategory) || "data".equals(subCategory)) {
+        if (POLICY_SUB_CATEGORY_METADATA.equals(subCategory) || POLICY_SUB_CATEGORY_DATA.equals(subCategory)) {
             //connectionAdmins check
 
             List<String> atlasResources = getPolicyResources(policy);
@@ -250,7 +250,6 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             if (connection == null) {
                 throw new AtlasBaseException(RESOURCE_NOT_FOUND, "Connection entity for policy");
             }
-
             String connectionRoleName = String.format(CONN_NAME_PATTERN, connection.getGuid());
 
             Set<String> userRoles = AtlasAuthorizationUtils.getRolesForCurrentUser();
