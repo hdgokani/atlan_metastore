@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.util;
 
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.discovery.IndexSearchParams;
@@ -101,16 +100,22 @@ public final class AccessControlUtils {
     public static final String POLICY_CATEGORY_PURPOSE  = "purpose";
     public static final String POLICY_CATEGORY_BOOTSTRAP  = "bootstrap";
 
+    public static final String POLICY_RESOURCE_CATEGORY_PERSONA_CUSTOM  = "CUSTOM";
+    public static final String POLICY_RESOURCE_CATEGORY_PERSONA_ENTITY  = "ENTITY";
+    public static final String POLICY_RESOURCE_CATEGORY_PURPOSE  = "TAG";
+
     public static final String POLICY_SUB_CATEGORY_METADATA  = "metadata";
     public static final String POLICY_SUB_CATEGORY_GLOSSARY  = "glossary";
     public static final String POLICY_SUB_CATEGORY_DATA  = "data";
 
     public static final String RESOURCES_ENTITY = "entity:";
+    public static final String RESOURCES_ENTITY_TYPE = "entity-type:";
     public static final String RESOURCES_SPLITTER = ":";
 
     private static final String CONNECTION_QN = "%s/%s/%s";
     public static final String CONN_NAME_PATTERN = "connection_admins_%s";
     public static final String ARGO_SERVICE_USER_NAME = "service-account-atlan-argo";
+    public static final String BACKEND_SERVICE_USER_NAME = "service-account-atlan-backend";
 
     public static final String INSTANCE_DOMAIN_KEY = "instance";
 
@@ -127,12 +132,12 @@ public final class AccessControlUtils {
     public static List<String> getPolicyAssets(AtlasEntity policyEntity) throws AtlasBaseException {
         List<String> resources = getPolicyResources(policyEntity);
 
-        return getPolicyAssets(resources);
+        return getFilteredPolicyResources(resources, RESOURCES_ENTITY);
     }
 
-    public static List<String> getPolicyAssets(List<String> resources) {
+    public static List<String> getFilteredPolicyResources(List<String> resources, String resourcePrefix) {
         return resources.stream()
-                .filter(x -> x.startsWith(RESOURCES_ENTITY))
+                .filter(x -> x.startsWith(resourcePrefix))
                 .map(x -> x.split(RESOURCES_SPLITTER)[1])
                 .collect(Collectors.toList());
     }
@@ -327,11 +332,11 @@ public final class AccessControlUtils {
         }
     }
 
-    public static AtlasEntity getConnectionForPolicy(EntityGraphRetriever entityRetriever, List<String> resources) throws AtlasBaseException {
+    public static AtlasEntity getConnectionForPolicy(EntityGraphRetriever entityRetriever, List<String> entityResources) throws AtlasBaseException {
         AtlasEntity ret = null;
-        if (CollectionUtils.isNotEmpty(resources)) {
+        if (CollectionUtils.isNotEmpty(entityResources)) {
 
-            String entityId = resources.get(0).split(RESOURCES_SPLITTER)[1];
+            String entityId = entityResources.get(0);
 
             ret = extractConnectionFromResource(entityRetriever, entityId);
         }
