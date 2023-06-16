@@ -20,6 +20,7 @@ package org.apache.atlas.authorize;
 
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.authcache.AuthzCacheRefreshInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
@@ -163,7 +164,7 @@ public interface AtlasAuthorizer {
     }
 
     default
-    public void refreshCache(boolean refreshPolicies, boolean refreshRoles, boolean refreshGroups) {
+    public void refreshCache(AuthzCacheRefreshInfo refreshInfo) {
 
     }
 }

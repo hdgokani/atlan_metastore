@@ -21,6 +21,18 @@ package org.apache.atlas.authorization.atlas.authorizer;
 
 import org.apache.atlas.authorize.*;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.authorize.AtlasAccessRequest;
+import org.apache.atlas.authorize.AtlasAccessorResponse;
+import org.apache.atlas.authorize.AtlasAdminAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizationException;
+import org.apache.atlas.authorize.AtlasAuthorizer;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
+import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
+import org.apache.atlas.authorize.AtlasTypeAccessRequest;
+import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
+import org.apache.atlas.model.authcache.AuthzCacheRefreshInfo;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -125,8 +137,8 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
-    public void refreshCache(boolean refreshPolicies, boolean refreshRoles, boolean refreshGroups) {
-        atlasPlugin.submitRefresherTask(refreshPolicies, refreshRoles, refreshGroups);
+    public void refreshCache(AuthzCacheRefreshInfo refreshInfo) {
+        atlasPlugin.submitRefresherTask(refreshInfo);
     }
 
     @Override

@@ -115,7 +115,7 @@ public class RangerRolesProvider {
 		this.lastActivationTimeInMillis = lastActivationTimeInMillis;
 	}
 
-	public void loadUserGroupRoles(RangerBasePlugin plugIn) {
+	public void loadUserGroupRoles(RangerBasePlugin plugIn, boolean hardRefresh) {
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerRolesProvider(serviceName= " + serviceName  + " serviceType= " + serviceType +").loadUserGroupRoles()");
@@ -132,7 +132,7 @@ public class RangerRolesProvider {
 
 		try {
 			//load userGroupRoles from ranger admin
-			RangerRoles roles = loadUserGroupRolesFromAdmin();
+			RangerRoles roles = loadUserGroupRolesFromAdmin(hardRefresh);
 
 			if (roles == null) {
 				//if userGroupRoles fetch from ranger Admin Fails, load from cache
@@ -179,7 +179,7 @@ public class RangerRolesProvider {
 		}
 	}
 
-	private RangerRoles loadUserGroupRolesFromAdmin() throws RangerServiceNotFoundException {
+	private RangerRoles loadUserGroupRolesFromAdmin(boolean hardRefresh) throws RangerServiceNotFoundException {
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerRolesProvider(serviceName=" + serviceName + ").loadUserGroupRolesFromAdmin()");
@@ -194,10 +194,11 @@ public class RangerRolesProvider {
 		}
 
 		try {
+			long lastUpdatedTime = hardRefresh ? -1 : lastUpdatedTimeInMillis;
 			if ("atlas".equals(serviceName)) {
-				roles = keycloakUserStore.loadRolesIfUpdated(lastUpdatedTimeInMillis);
+				roles = keycloakUserStore.loadRolesIfUpdated(lastUpdatedTime);
 			} else {
-				roles = atlasAuthAdminClient.getRolesIfUpdated(lastUpdatedTimeInMillis);
+				roles = atlasAuthAdminClient.getRolesIfUpdated(lastUpdatedTime);
 			}
 
 			boolean isUpdated = roles != null;

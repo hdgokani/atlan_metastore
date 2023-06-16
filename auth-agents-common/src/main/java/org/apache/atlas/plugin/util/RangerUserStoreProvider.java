@@ -116,7 +116,7 @@ public class RangerUserStoreProvider {
 		this.rangerUserStoreSetInPlugin = rangerUserStoreSetInPlugin;
 	}
 
-	public void loadUserStore(RangerBasePlugin plugIn) {
+	public void loadUserStore(RangerBasePlugin plugIn, boolean hardRefresh) {
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerUserStoreProvider(serviceName= " + serviceName  + " serviceType= " + serviceType +").loadUserGroups()");
@@ -133,7 +133,7 @@ public class RangerUserStoreProvider {
 
 		try {
 			//load userGroupRoles from ranger admin
-			RangerUserStore userStore = loadUserStoreFromAdmin();
+			RangerUserStore userStore = loadUserStoreFromAdmin(hardRefresh);
 
 			if (userStore == null) {
 				//if userGroupRoles fetch from ranger Admin Fails, load from cache
@@ -180,7 +180,7 @@ public class RangerUserStoreProvider {
 		}
 	}
 
-	private RangerUserStore loadUserStoreFromAdmin() throws RangerServiceNotFoundException {
+	private RangerUserStore loadUserStoreFromAdmin(boolean hardRefresh) throws RangerServiceNotFoundException {
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerUserStoreProvider(serviceName=" + serviceName + ").loadUserStoreFromAdmin()");
@@ -195,10 +195,11 @@ public class RangerUserStoreProvider {
 		}
 
 		try {
+			long lastUpdatedTime = hardRefresh ? -1 : lastUpdateTimeInMillis;
 			if ("atlas".equals(serviceName)) {
-				userStore = keycloakUserStore.loadUserStoreIfUpdated(lastUpdateTimeInMillis);
+				userStore = keycloakUserStore.loadUserStoreIfUpdated(lastUpdatedTime);
 			} else {
-				userStore = atlasAuthAdminClient.getUserStoreIfUpdated(lastUpdateTimeInMillis);
+				userStore = atlasAuthAdminClient.getUserStoreIfUpdated(lastUpdatedTime);
 			}
 
 			boolean isUpdated = userStore != null;
