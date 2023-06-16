@@ -3,6 +3,7 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.authcache.AuthzCacheRefreshInfo;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.HostRefresher;
 import org.apache.atlas.repository.graph.IAtlasGraphProvider;
@@ -128,10 +129,12 @@ public class TypeCacheRefreshREST {
         boolean refreshPolicies = Boolean.parseBoolean(params.getFirst("refreshPolicies"));
         boolean refreshRoles = Boolean.parseBoolean(params.getFirst("refreshRoles"));
         boolean refreshGroups = Boolean.parseBoolean(params.getFirst("refreshGroups"));
+        boolean hardRefresh = Boolean.parseBoolean(params.getFirst("hardRefresh"));
 
         LOG.info("Initiating authz cache refresh with refreshPolicies={}, refreshRoles={}, refreshGroups={} :: traceId {}", refreshPolicies, refreshRoles, refreshGroups, traceId);
 
-        AtlasAuthorizationUtils.refreshCache(refreshPolicies, refreshRoles, refreshGroups);
+        AuthzCacheRefreshInfo refreshInfo = new AuthzCacheRefreshInfo(refreshPolicies, refreshRoles, refreshGroups, hardRefresh);
+        AtlasAuthorizationUtils.refreshCache(refreshInfo);
         LOG.info("Completed authz cache refresh :: traceId {}", traceId);
     }
 }

@@ -1,10 +1,28 @@
-package org.apache.atlas.refresher;
-
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.atlas.authcache;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.model.authcache.AuthzCacheRefreshInfo;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
@@ -14,10 +32,9 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -43,17 +60,19 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGOR
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_DATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
 
-@Component
-public class AuthzCacheOnDemandRefresher {
+
+public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.PostTransactionHook {
     private static final Logger LOG = LoggerFactory.getLogger(AuthzCacheOnDemandRefresher.class);
 
     private final AuthzCacheRefresher hostRefresher;
 
     private boolean isOnDemandAuthzCacheRefreshEnabled = true;
 
-    @Inject
-    public AuthzCacheOnDemandRefresher(AuthzCacheRefresher hostRefresher) {
-        this.hostRefresher = hostRefresher;
+    private AsyncCacheRefresher asyncCacheRefresher;
+
+    public AuthzCacheOnDemandRefresher() {
+        super();
+        this.hostRefresher = new AuthzCacheRefresher();
 
         try {
             isOnDemandAuthzCacheRefreshEnabled = ApplicationProperties.get().getBoolean("atlas.authorizer.enable.action.based.cache.refresh", true);
@@ -76,10 +95,13 @@ public class AuthzCacheOnDemandRefresher {
         add(ATTR_VIEWER_GROUPS);
     }};
 
-    private static final Set<String> PERSONA_ATTRS = new HashSet<String>(){{
-        add(ATTR_ACCESS_CONTROL_ENABLED);
+    private static final Set<String> PERSONA_ATTRS_ROLES = new HashSet<String>(){{
         add(ATTR_POLICY_USERS);
         add(ATTR_POLICY_GROUPS);
+    }};
+
+    private static final Set<String> PERSONA_ATTRS_POLICIES = new HashSet<String>(){{
+        add(ATTR_ACCESS_CONTROL_ENABLED);
     }};
 
     private static final Set<String> PURPOSE_ATTRS = new HashSet<String>(){{
@@ -111,6 +133,42 @@ public class AuthzCacheOnDemandRefresher {
         }
     }
 
+    public void recordRefresh(EntityMutationResponse entityMutationResponse, boolean isImport) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("recordRefresh");
+        try {
+            if (isImport || RequestContext.get().isPoliciesBootstrappingInProgress()) {
+                LOG.warn("recordRefresh: Cache refresh will be skipped");
+                return;
+            }
+
+            if (!isOnDemandAuthzCacheRefreshEnabled) {
+                LOG.warn("recordRefresh: Skipping as On-demand cache refresh is not enabled");
+                return;
+            }
+
+            asyncCacheRefresher = new AsyncCacheRefresher(entityMutationResponse,
+                    RequestContext.get().getDifferentialEntitiesMap(),
+                    RequestContext.get().getTraceId());
+
+
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    @Override
+    public void onComplete(boolean isSuccess) {
+        if (isSuccess && asyncCacheRefresher != null) {
+            /*try {
+                LOG.info("waiting...");
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }*/
+            asyncCacheRefresher.start();
+        }
+    }
+
     class AsyncCacheRefresher extends Thread {
         private String traceId;
         private EntityMutationResponse entityMutationResponse;
@@ -129,8 +187,14 @@ public class AuthzCacheOnDemandRefresher {
             boolean refreshPolicies = false;
             boolean refreshRoles = false;
 
+            if (entityMutationResponse == null) {
+                LOG.warn("entityMutationResponse was emtpy");
+                return;
+            }
+
             if (CollectionUtils.isNotEmpty(entityMutationResponse.getCreatedEntities())) {
                 for (AtlasEntityHeader entityHeader : entityMutationResponse.getCreatedEntities()) {
+                    LOG.info("Updated {}", entityHeader.getTypeName());
                     if (CONNECTION_ENTITY_TYPE.equals(entityHeader.getTypeName()) || COLLECTION_ENTITY_TYPE.equals(entityHeader.getTypeName())) {
                         refreshPolicies = true;
                         refreshRoles = true;
@@ -161,28 +225,34 @@ public class AuthzCacheOnDemandRefresher {
 
                     if (diffEntity != null && MapUtils.isNotEmpty(diffEntity.getAttributes())) {
                         Set<String> updatedAttrs = diffEntity.getAttributes().keySet();
+                        Collection<String> attrsToRefreshCache;
 
                         if (CONNECTION_ENTITY_TYPE.equals(entityHeader.getTypeName())) {
-                            updatedAttrs.retainAll(CONNECTION_ATTRS);
-                            if (CollectionUtils.isNotEmpty(updatedAttrs)) {
+                            attrsToRefreshCache = CollectionUtils.intersection(updatedAttrs, CONNECTION_ATTRS);
+                            if (CollectionUtils.isNotEmpty(attrsToRefreshCache)) {
                                 refreshRoles = true;
                             }
 
                         } else if (COLLECTION_ENTITY_TYPE.equals(entityHeader.getTypeName())) {
-                            updatedAttrs.retainAll(COLLECTION_ATTRS);
-                            if (CollectionUtils.isNotEmpty(updatedAttrs)) {
+                            attrsToRefreshCache = CollectionUtils.intersection(updatedAttrs, COLLECTION_ATTRS);
+                            if (CollectionUtils.isNotEmpty(attrsToRefreshCache)) {
                                 refreshRoles = true;
                             }
 
                         } else if (PERSONA_ENTITY_TYPE.equals(entityHeader.getTypeName())) {
-                            updatedAttrs.retainAll(PERSONA_ATTRS);
-                            if (CollectionUtils.isNotEmpty(updatedAttrs)) {
+                            attrsToRefreshCache = CollectionUtils.intersection(updatedAttrs, PERSONA_ATTRS_ROLES);
+                            if (CollectionUtils.isNotEmpty(attrsToRefreshCache)) {
                                 refreshRoles = true;
                             }
 
+                            attrsToRefreshCache = CollectionUtils.intersection(updatedAttrs, PERSONA_ATTRS_POLICIES);
+                            if (CollectionUtils.isNotEmpty(attrsToRefreshCache)) {
+                                refreshPolicies = true;
+                            }
+
                         } else if (PURPOSE_ENTITY_TYPE.equals(entityHeader.getTypeName())) {
-                            updatedAttrs.retainAll(PURPOSE_ATTRS);
-                            if (CollectionUtils.isNotEmpty(updatedAttrs)) {
+                            attrsToRefreshCache = CollectionUtils.intersection(updatedAttrs, PURPOSE_ATTRS);
+                            if (CollectionUtils.isNotEmpty(attrsToRefreshCache)) {
                                 refreshPolicies = true;
                             }
 
@@ -208,11 +278,11 @@ public class AuthzCacheOnDemandRefresher {
                         String subCategory = (String) entityHeader.getAttribute(ATTR_POLICY_SUB_CATEGORY);
 
                         if (POLICY_CATEGORY_PERSONA.equals(policyCategory) &&
-                                ("metadata".equals(subCategory) || "data".equals(subCategory))) {
+                                (POLICY_SUB_CATEGORY_METADATA.equals(subCategory) || POLICY_SUB_CATEGORY_DATA.equals(subCategory))) {
                             refreshPolicies = true;
                         }
 
-                        if (POLICY_CATEGORY_PURPOSE.equals(policyCategory) && "metadata".equals(subCategory)) {
+                        if (POLICY_CATEGORY_PURPOSE.equals(policyCategory) && POLICY_SUB_CATEGORY_METADATA.equals(subCategory)) {
                             refreshPolicies = true;
                         }
                     }
@@ -220,8 +290,14 @@ public class AuthzCacheOnDemandRefresher {
             }
 
             if (refreshPolicies || refreshRoles) {
-                AtlasAuthorizationUtils.refreshCache(refreshPolicies, refreshRoles, false);
-                hostRefresher.refreshCache(refreshPolicies, refreshRoles, false, traceId);
+                AuthzCacheRefreshInfo refreshInfo = new AuthzCacheRefreshInfo.Builder()
+                        .setHardRefresh(true)
+                        .setRefreshPolicies(refreshPolicies)
+                        .setRefreshRoles(refreshRoles)
+                        .build();
+
+                AtlasAuthorizationUtils.refreshCache(refreshInfo);
+                hostRefresher.refreshCache(refreshInfo, traceId);
             }
         }
     }
