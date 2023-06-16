@@ -196,8 +196,6 @@ public class AuthREST {
                         .setRefreshGroups(true)
                         .setRefreshRoles(true);
 
-                AtlasAuthorizationUtils.refreshCache(builder.build());
-
             } else {
                 if (Boolean.TRUE == policies) {
                     builder.setRefreshPolicies(true);
@@ -210,11 +208,11 @@ public class AuthREST {
                 if (Boolean.TRUE == groups) {
                     builder.setRefreshGroups(true);
                 }
-
-                AuthzCacheRefreshInfo info = builder.build();
-                AtlasAuthorizationUtils.refreshCache(info);
-                hostRefresher.refreshCache(info, RequestContext.get().getTraceId());
             }
+
+            AuthzCacheRefreshInfo info = builder.build();
+            AtlasAuthorizationUtils.refreshCache(info);
+            hostRefresher.refreshCache(info, RequestContext.get().getTraceId());
         } finally {
             AtlasPerfTracer.log(perf);
         }
