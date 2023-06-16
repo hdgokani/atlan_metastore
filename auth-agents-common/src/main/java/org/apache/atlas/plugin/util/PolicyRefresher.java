@@ -191,7 +191,8 @@ public class PolicyRefresher extends Thread {
 
 		try {
 			executor = Executors.newSingleThreadScheduledExecutor();
-			executor.scheduleWithFixedDelay(new DownloaderTask(policyDownloadQueue),
+			AuthzCacheRefreshInfo refreshInfo = new AuthzCacheRefreshInfo(true, true, true, false);
+						executor.scheduleWithFixedDelay(new DownloaderTask(policyDownloadQueue, refreshInfo),
 								pollingIntervalMs, pollingIntervalMs, TimeUnit.MILLISECONDS);
 
 			LOG.info("Scheduled policyDownloadRefresher to download policies every " + pollingIntervalMs + " milliseconds");
