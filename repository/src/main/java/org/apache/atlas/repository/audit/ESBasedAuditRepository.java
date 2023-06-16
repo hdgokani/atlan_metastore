@@ -210,7 +210,9 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         LOG.info("Hitting ES query to fetch audits: {}, {}", System.currentTimeMillis(), queryString);
         try {
             String response = performSearchOnIndex(queryString);
-            return getResultFromResponse(response);
+            EntityAuditSearchResult result = getResultFromResponse(response);
+            LOG.info("all entries: \n{}\n", result.getEntityAudits());
+            return result;
         } catch (IOException e) {
             throw new AtlasBaseException(e);
         }

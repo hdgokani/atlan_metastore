@@ -1,11 +1,28 @@
-package org.apache.atlas.refresher;
-
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.atlas.authcache;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.model.authcache.AuthzCacheRefreshInfo;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
@@ -15,9 +32,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -45,7 +60,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGOR
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_DATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
 
-//@Component
+
 public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.PostTransactionHook {
     private static final Logger LOG = LoggerFactory.getLogger(AuthzCacheOnDemandRefresher.class);
 
@@ -55,7 +70,6 @@ public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.Pos
 
     private AsyncCacheRefresher asyncCacheRefresher;
 
-    //@Inject
     public AuthzCacheOnDemandRefresher() {
         super();
         this.hostRefresher = new AuthzCacheRefresher();
@@ -145,6 +159,12 @@ public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.Pos
     @Override
     public void onComplete(boolean isSuccess) {
         if (isSuccess && asyncCacheRefresher != null) {
+            /*try {
+                LOG.info("waiting...");
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }*/
             asyncCacheRefresher.start();
         }
     }
@@ -174,6 +194,7 @@ public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.Pos
 
             if (CollectionUtils.isNotEmpty(entityMutationResponse.getCreatedEntities())) {
                 for (AtlasEntityHeader entityHeader : entityMutationResponse.getCreatedEntities()) {
+                    LOG.info("Updated {}", entityHeader.getTypeName());
                     if (CONNECTION_ENTITY_TYPE.equals(entityHeader.getTypeName()) || COLLECTION_ENTITY_TYPE.equals(entityHeader.getTypeName())) {
                         refreshPolicies = true;
                         refreshRoles = true;
@@ -269,8 +290,14 @@ public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.Pos
             }
 
             if (refreshPolicies || refreshRoles) {
-                AtlasAuthorizationUtils.refreshCache(refreshPolicies, refreshRoles, false);
-                hostRefresher.refreshCache(refreshPolicies, refreshRoles, false, traceId);
+                AuthzCacheRefreshInfo refreshInfo = new AuthzCacheRefreshInfo.Builder()
+                        .setHardRefresh(true)
+                        .setRefreshPolicies(refreshPolicies)
+                        .setRefreshRoles(refreshRoles)
+                        .build();
+
+                AtlasAuthorizationUtils.refreshCache(refreshInfo);
+                hostRefresher.refreshCache(refreshInfo, traceId);
             }
         }
     }

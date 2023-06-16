@@ -36,7 +36,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.notification.EntityNotification;
-import org.apache.atlas.refresher.AuthzCacheOnDemandRefresher;
+import org.apache.atlas.authcache.AuthzCacheOnDemandRefresher;
 import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
