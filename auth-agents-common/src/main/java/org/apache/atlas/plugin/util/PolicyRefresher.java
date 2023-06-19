@@ -237,10 +237,7 @@ public class PolicyRefresher extends Thread {
 	}
 
 	public void run() {
-
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> PolicyRefresher(serviceName=" + serviceName + ").run()");
-		}
+		LOG.info("==> Start PolicyRefresher(serviceName=" + serviceName + ").run()");
 
 		while(true) {
 			DownloadTrigger trigger = null;
@@ -270,11 +267,8 @@ public class PolicyRefresher extends Thread {
 				IS_RUNNING = false;
 				IS_TASK_QUEUED = false;
 				RequestContext.clear();
+				LOG.info("<== End PolicyRefresher(serviceName=" + serviceName + ").run()");
 			}
-		}
-
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== PolicyRefresher(serviceName=" + serviceName + ").run()");
 		}
 	}
 
