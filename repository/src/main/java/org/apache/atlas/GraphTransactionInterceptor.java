@@ -185,7 +185,6 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
     private void doCommit(final String invokingClass, final String invokedMethodName) {
         graph.commit();
 
-        LOG.info("Graph commit txn {}.{}", invokingClass, invokedMethodName);
         if (LOG.isDebugEnabled()) {
             LOG.debug("Graph commit txn {}.{}", invokingClass, invokedMethodName);
         }

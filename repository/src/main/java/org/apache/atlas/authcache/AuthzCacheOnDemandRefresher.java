@@ -277,7 +277,7 @@ public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.Pos
                         String subCategory = (String) entityHeader.getAttribute(ATTR_POLICY_SUB_CATEGORY);
 
                         if (POLICY_CATEGORY_PERSONA.equals(policyCategory) &&
-                                (POLICY_SUB_CATEGORY_METADATA.equals(subCategory) || POLICY_SUB_CATEGORY_DATA.equals(subCategory))) {
+                                (POLICY_SUB_CATEGORY_METADATA.equals(subCategory) || POLICY_SUB_CATEGORY_GLOSSARY.equals(subCategory))) {
                             refreshPolicies = true;
                         }
 
