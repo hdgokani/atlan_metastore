@@ -102,8 +102,8 @@ public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.Pos
     }};
 
     private static final Set<String> PERSONA_ATTRS_ROLES = new HashSet<String>(){{
-        add(ATTR_POLICY_USERS);
-        add(ATTR_POLICY_GROUPS);
+        add("personaUsers");
+        add("personaGroups");
     }};
 
     private static final Set<String> PERSONA_ATTRS_POLICIES = new HashSet<String>(){{
@@ -210,7 +210,7 @@ public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.Pos
                             refreshPolicies = true;
                         }
 
-                        if (POLICY_CATEGORY_PURPOSE.equals(policyCategory) || POLICY_SUB_CATEGORY_METADATA.equals(subCategory)) {
+                        if (POLICY_CATEGORY_PURPOSE.equals(policyCategory) && POLICY_SUB_CATEGORY_METADATA.equals(subCategory)) {
                             refreshPolicies = true;
                             refreshRoles = true;
                         }
