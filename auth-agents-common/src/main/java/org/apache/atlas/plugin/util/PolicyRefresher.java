@@ -237,13 +237,16 @@ public class PolicyRefresher extends Thread {
 	}
 
 	public void run() {
-		LOG.info("==> Start PolicyRefresher(serviceName=" + serviceName + ").run()");
+		if(LOG.isDebugEnabled()) {
+			LOG.debug("==> PolicyRefresher(serviceName=" + serviceName + ").run()");
+		}
 
 		while(true) {
 			DownloadTrigger trigger = null;
 			try {
 				trigger = policyDownloadQueue.take();
 				IS_RUNNING = true;
+				LOG.info("Start PolicyRefresher(serviceName=" + serviceName + ")");
 
 				AuthzCacheRefreshInfo refreshInfo = trigger.refreshInfo;
 				if (refreshInfo.isRefreshRoles()) {
@@ -267,8 +270,12 @@ public class PolicyRefresher extends Thread {
 				IS_RUNNING = false;
 				IS_TASK_QUEUED = false;
 				RequestContext.clear();
-				LOG.info("<== End PolicyRefresher(serviceName=" + serviceName + ").run()");
+				LOG.info("End PolicyRefresher(serviceName=" + serviceName + ")");
 			}
+		}
+
+		if(LOG.isDebugEnabled()) {
+			LOG.debug("<== PolicyRefresher(serviceName=" + serviceName + ").run()");
 		}
 	}
 
