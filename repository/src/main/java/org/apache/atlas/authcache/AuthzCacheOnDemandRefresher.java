@@ -73,6 +73,11 @@ public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.Pos
     public AuthzCacheOnDemandRefresher() {
         super();
         this.hostRefresher = new AuthzCacheRefresher();
+        try {
+            hostRefresher.init();
+        } catch (AtlasException e) {
+            LOG.error("Failed to intialize hostRefresher, on demand refresh will not be triggered on other active pods");
+        }
 
         try {
             isOnDemandAuthzCacheRefreshEnabled = ApplicationProperties.get().getBoolean("atlas.authorizer.enable.action.based.cache.refresh", true);
