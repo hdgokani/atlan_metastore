@@ -78,8 +78,6 @@ import java.util.*;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-import static org.apache.atlas.featureflag.AtlasFeatureFlagClient.INSTANCE_DOMAIN_NAME;
-import static org.apache.atlas.featureflag.FeatureFlagStore.FeatureFlag.IS_INSTANCE_MIGRATED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.FAILED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.SKIPPED;
@@ -104,7 +102,6 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     private final Configuration     conf;
     private final AtlasGraph        graph;
     private final AtlasPatchManager patchManager;
-    private final FeatureFlagStore featureFlagStore;
 
     @Inject
     public AtlasTypeDefStoreInitializer(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
@@ -115,7 +112,6 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         this.conf          = conf;
         this.graph         = graph;
         this.patchManager  = patchManager;
-        this.featureFlagStore  = featureFlagStore;
     }
 
     @PostConstruct
