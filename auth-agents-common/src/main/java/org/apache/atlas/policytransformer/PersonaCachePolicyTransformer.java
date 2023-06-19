@@ -19,6 +19,7 @@ package org.apache.atlas.policytransformer;
 
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -38,11 +39,11 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CAT
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_ENTITY;
 import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_ENTITY_TYPE;
-import static org.apache.atlas.repository.util.AccessControlUtils.getEntityByQualifiedName;
+import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionEntity;
 import static org.apache.atlas.repository.util.AccessControlUtils.getFilteredPolicyResources;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyActions;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyConnectionQN;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyAssets;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResources;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
 
@@ -101,7 +102,7 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                             boolean isConnection = false;
 
                             if (POLICY_SUB_CATEGORY_METADATA.equals(subCategory) || POLICY_SUB_CATEGORY_DATA.equals(subCategory)) {
-                                isConnection = isConnectionPolicy(entityResources, atlasPolicy);
+                                isConnection = isConnectionPolicy(entityResources);
                             }
 
                             if (isConnection) {
@@ -127,10 +128,16 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
         return ret;
     }
 
-    private boolean isConnectionPolicy(List<String> assets, AtlasEntityHeader atlasPolicy) {
+    private boolean isConnectionPolicy(List<String> assets) {
 
         if (assets.size() == 1) {
-            return getPolicyConnectionQN(atlasPolicy).equals(assets.get(0));
+            AtlasEntity connection;
+            try {
+                connection = getConnectionEntity(entityRetriever, assets.get(0));
+            } catch (AtlasBaseException abe) {
+                return false;
+            }
+            return connection != null;
         }
 
         return false;
