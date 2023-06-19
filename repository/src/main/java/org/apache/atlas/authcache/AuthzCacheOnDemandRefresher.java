@@ -58,6 +58,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PURPOSE_C
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_DATA;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_GLOSSARY;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
 
 
@@ -101,8 +102,8 @@ public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.Pos
     }};
 
     private static final Set<String> PERSONA_ATTRS_ROLES = new HashSet<String>(){{
-        add(ATTR_POLICY_USERS);
-        add(ATTR_POLICY_GROUPS);
+        add("personaUsers");
+        add("personaGroups");
     }};
 
     private static final Set<String> PERSONA_ATTRS_POLICIES = new HashSet<String>(){{
@@ -164,12 +165,6 @@ public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.Pos
     @Override
     public void onComplete(boolean isSuccess) {
         if (isSuccess && asyncCacheRefresher != null) {
-            /*try {
-                LOG.info("waiting...");
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }*/
             asyncCacheRefresher.start();
         }
     }
@@ -199,7 +194,6 @@ public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.Pos
 
             if (CollectionUtils.isNotEmpty(entityMutationResponse.getCreatedEntities())) {
                 for (AtlasEntityHeader entityHeader : entityMutationResponse.getCreatedEntities()) {
-                    LOG.info("Updated {}", entityHeader.getTypeName());
                     if (CONNECTION_ENTITY_TYPE.equals(entityHeader.getTypeName()) || COLLECTION_ENTITY_TYPE.equals(entityHeader.getTypeName())) {
                         refreshPolicies = true;
                         refreshRoles = true;
@@ -212,11 +206,11 @@ public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.Pos
                         String subCategory = (String) entityHeader.getAttribute(ATTR_POLICY_SUB_CATEGORY);
 
                         if (POLICY_CATEGORY_PERSONA.equals(policyCategory) &&
-                                (POLICY_SUB_CATEGORY_METADATA.equals(subCategory) || POLICY_SUB_CATEGORY_DATA.equals(subCategory))) {
+                                (POLICY_SUB_CATEGORY_METADATA.equals(subCategory) || POLICY_SUB_CATEGORY_GLOSSARY.equals(subCategory))) {
                             refreshPolicies = true;
                         }
 
-                        if (POLICY_CATEGORY_PURPOSE.equals(policyCategory) || "metadata".equals(subCategory)) {
+                        if (POLICY_CATEGORY_PURPOSE.equals(policyCategory) && POLICY_SUB_CATEGORY_METADATA.equals(subCategory)) {
                             refreshPolicies = true;
                             refreshRoles = true;
                         }
