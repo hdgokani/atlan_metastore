@@ -39,9 +39,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -192,8 +189,9 @@ public class PolicyRefresher extends Thread {
 
 		try {
 			executor = Executors.newSingleThreadScheduledExecutor();
+
 			AuthzCacheRefreshInfo refreshInfo = new AuthzCacheRefreshInfo(true, true, true, false);
-						executor.scheduleWithFixedDelay(new DownloaderTask(policyDownloadQueue, refreshInfo),
+			executor.scheduleWithFixedDelay(new DownloaderTask(policyDownloadQueue, refreshInfo),
 								pollingIntervalMs, pollingIntervalMs, TimeUnit.MILLISECONDS);
 
 			LOG.info("Scheduled policyDownloadRefresher to download policies every " + pollingIntervalMs + " milliseconds");
