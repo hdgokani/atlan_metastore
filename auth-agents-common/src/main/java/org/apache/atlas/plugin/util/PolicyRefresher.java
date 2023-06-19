@@ -21,6 +21,7 @@ package org.apache.atlas.plugin.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.atlas.model.authcache.AuthzCacheRefreshInfo;
 import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
@@ -265,7 +266,7 @@ public class PolicyRefresher extends Thread {
 				}
 				IS_RUNNING = false;
 				IS_TASK_QUEUED = false;
-
+				RequestContext.clear();
 				LOG.info("<== End PolicyRefresher(serviceName=" + serviceName + ").run()");
 			}
 		}

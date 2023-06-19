@@ -437,6 +437,33 @@ public class RangerBasePlugin {
 		}
 	}
 
+	public List<RangerPolicy> getPolicies() {
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("==> getPolicies()");
+		}
+
+		List<RangerPolicy> ret = null;
+
+		RangerPolicyEngine policyEngine = this.policyEngine;
+
+		if (policyEngine != null) {
+			ret = policyEngine.getResourcePolicies();
+		}
+		List<RangerPolicy> tagPolicies = policyEngine.getTagPolicies();
+		if (CollectionUtils.isNotEmpty(tagPolicies)) {
+			if (ret == null) {
+				ret = new ArrayList<>();
+			}
+			ret.addAll(tagPolicies);
+		}
+
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("<== getPolicies() : " + ret);
+		}
+
+		return ret;
+	}
+
 	public void cleanup() {
 		PolicyRefresher refresher = this.refresher;
 		this.refresher    = null;
