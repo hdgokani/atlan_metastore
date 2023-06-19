@@ -67,6 +67,7 @@ public abstract class HostRefresher {
 
         LOG.info("Found {} as cache-refresher endpoint", cacheRefresherEndpoint);
         LOG.info("Found {} as cache-refresher-health endpoint", cacheRefresherHealthEndpoint);
+        LOG.info("Found {} as isActiveActiveHAEnabled", isActiveActiveHAEnabled);
     }
 
     public void verifyCacheRefresherHealth() throws AtlasBaseException, IOException {
