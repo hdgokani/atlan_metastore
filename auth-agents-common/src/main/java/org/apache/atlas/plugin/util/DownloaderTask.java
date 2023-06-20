@@ -19,6 +19,7 @@
 
 package org.apache.atlas.plugin.util;
 
+import org.apache.atlas.model.authcache.AuthzCacheRefreshInfo;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -33,6 +34,12 @@ public final class  DownloaderTask extends TimerTask {
 
     public DownloaderTask(BlockingQueue<DownloadTrigger> queue) {
         this.queue = queue;
+    }
+
+    public DownloaderTask(BlockingQueue<DownloadTrigger> queue,
+                          AuthzCacheRefreshInfo refreshInfo) {
+        this.queue = queue;
+        timerTrigger.refreshInfo = refreshInfo;
     }
 
     @Override

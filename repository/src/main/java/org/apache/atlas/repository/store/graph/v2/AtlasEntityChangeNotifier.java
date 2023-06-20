@@ -36,6 +36,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.notification.EntityNotification;
+import org.apache.atlas.authcache.AuthzCacheOnDemandRefresher;
 import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -74,6 +75,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     private final FullTextMapperV2            fullTextMapperV2;
     private final AtlasTypeRegistry           atlasTypeRegistry;
     private final boolean                     isV2EntityNotificationEnabled;
+
     private static final List<String> ALLOWED_RELATIONSHIP_TYPES = Arrays.asList(AtlasConfiguration.SUPPORTED_RELATIONSHIP_EVENTS.getStringArray());
 
     @Inject
@@ -117,6 +119,9 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         notifyListeners(purgedEntities, EntityOperation.PURGE, isImport);
 
         notifyPropagatedEntities();
+        //cacheRefresher.refreshCacheIfNeeded(entityMutationResponse, isImport);
+        AuthzCacheOnDemandRefresher cacheRefresher = new AuthzCacheOnDemandRefresher();
+        cacheRefresher.recordRefresh(entityMutationResponse, isImport);
     }
 
     @Override
