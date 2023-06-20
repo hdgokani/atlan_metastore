@@ -237,7 +237,24 @@ public class AtlasAuthorizationUtils {
 
         return ret;
     }
+    public  static  Map<String, List<String>> getResourceMapByUser() {
+        Map<String, List<String>> ret = new HashMap<>();
 
+        try {
+            AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
+            if (authorizer == null ) {
+                throw new AtlasAuthorizationException("Authorizer is null");
+            }
+
+            ret = authorizer.getPoliciesResourcesForUserRoleGroup();
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Unable to obtain AtlasAuthorizer", e);
+        } catch (AtlasBaseException e) {
+            e.printStackTrace();
+        }
+
+        return ret;
+    }
     public static AtlasAccessorResponse getAccessors(AtlasTypeAccessRequest request) {
         AtlasAccessorResponse ret = null;
 
@@ -268,6 +285,19 @@ public class AtlasAuthorizationUtils {
         }
 
         return ret;
+    }
+
+    public static void refreshCache(boolean refreshPolicies, boolean refreshRoles, boolean refreshGroups) {
+        try {
+            AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
+            if (authorizer == null ) {
+                throw new AtlasAuthorizationException("Authorizer is null");
+            }
+
+            authorizer.refreshCache(refreshPolicies, refreshRoles, refreshGroups);
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Unable to obtain AtlasAuthorizer", e);
+        }
     }
 
     public static void filterTypesDef(AtlasTypesDefFilterRequest request) {

@@ -21,6 +21,9 @@ package org.apache.atlas.plugin.util;
 
 public final class DownloadTrigger {
     private boolean isNotified = false;
+    public boolean refreshPolicies = true;
+    public boolean refreshRoles = true;
+    public boolean refreshGroups = true;
 
     public synchronized void waitForCompletion() throws InterruptedException {
         while (!isNotified) {

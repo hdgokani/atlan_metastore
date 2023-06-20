@@ -256,9 +256,13 @@ public class KeycloakUserStore {
 
         List<UserRepresentation> kUsers = KeycloakClient.getKeycloakClient().getAllUsers();
         LOG.info("Found {} keycloak users", kUsers.size());
+        List<UserRepresentation> serviceUsersList = KeycloakClient.getKeycloakClient().getServiceUsers();
+        LOG.info("Found {} service users", serviceUsersList.size());
+        List<UserRepresentation> allUsersList = new ArrayList<>(kUsers);
+        allUsersList.addAll(serviceUsersList);
 
         List<Callable<Object>> callables = new ArrayList<>();
-        kUsers.forEach(x -> callables.add(new UserGroupsFetcher(x, userGroupMapping)));
+        allUsersList.forEach(x -> callables.add(new UserGroupsFetcher(x, userGroupMapping)));
 
         submitCallablesAndWaitToFinish("UserGroupsFetcher", callables);
 

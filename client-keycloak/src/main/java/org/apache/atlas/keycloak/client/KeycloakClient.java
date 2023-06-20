@@ -28,6 +28,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -225,5 +226,19 @@ public final class KeycloakClient {
         } while (found && ret.size() % size == 0);
 
         return ret;
+    }
+
+    public List <UserRepresentation> getServiceUsers() {
+        List<UserRepresentation> serviceUsers = new ArrayList<>();
+
+        List<ClientRepresentation> clients =  getRealm().clients().findAll();
+        for (ClientRepresentation client : clients) {
+            if (client.isServiceAccountsEnabled()) {
+                String username = "service-account-" + client.getClientId();
+                UserRepresentation user = getRealm().users().search(username).get(0);
+                serviceUsers.add(user);
+            }
+        }   
+        return serviceUsers;
     }
 }
