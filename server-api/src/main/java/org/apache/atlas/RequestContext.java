@@ -201,6 +201,10 @@ public class RequestContext {
         return ret;
     }
 
+    public AtlasPerfMetrics getMetrics(){
+        return Optional.ofNullable(metrics).orElse(new AtlasPerfMetrics());
+    }
+
     public String getUser() {
         if (isImportInProgress) {
             if (StringUtils.isEmpty(USERNAME)){
