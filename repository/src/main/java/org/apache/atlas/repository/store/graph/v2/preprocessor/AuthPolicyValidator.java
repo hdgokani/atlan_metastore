@@ -232,7 +232,7 @@ public class AuthPolicyValidator {
                     String existingConnectionQn = getPolicyConnectionQN(existingPolicy);
                     validateOperation (StringUtils.isNotEmpty(existingConnectionQn) && !newConnectionQn.equals(existingConnectionQn), ATTR_POLICY_CONNECTION_QN + " change not Allowed");
 
-                    validateEntityResources(getPolicyConnectionQN(existingPolicy), resources);
+                    validateEntityResources(newConnectionQn, resources);
 
                     //validate persona policy actions
                     Set<String> validActions = PERSONA_POLICY_VALID_ACTIONS.get(policySubCategory);
