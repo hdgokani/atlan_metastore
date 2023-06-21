@@ -51,8 +51,8 @@ public class PolicyRefresher extends Thread {
 
 	private static final Log PERF_POLICYENGINE_INIT_LOG = RangerPerfTracer.getPerfLogger("policyengine.init");
 
-	private static boolean IS_RUNNING = false;
-	private static boolean IS_TASK_QUEUED = false;
+	private static volatile boolean IS_RUNNING = false;
+	private static volatile boolean IS_TASK_QUEUED = false;
 
 	private final RangerBasePlugin               plugIn;
 	private final String                         serviceType;
