@@ -63,7 +63,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.stringtemplate.v4.ST;
 
 import javax.inject.Inject;
 import javax.script.ScriptEngine;
@@ -968,64 +967,12 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         return atttOwner;
     }
-    Map<String, Object> getModifiedQuery(Map dsl) {
-    Map query = (Map) dsl.get("query");
-    Map<String, List<String>> resources = AtlasAuthorizationUtils.getResourceMapByUser();
-    
-    Map<String, Object> connectionQNameClause = getMap("terms", getMap("connectionQualifiedName", resources.get("connection")));
-    Map<String, Object> collectionQNameClause = getMap("terms", getMap("collectionQualifiedName", resources.get("collection")));
-    Map<String, Object> tagNameClause = getMap("terms", getMap("__traitNames", resources.get("tag")));
-    Map<String, Object> propagatedTagNames = getMap("terms", getMap("__propagatedTraitNames", resources.get("tag")));
-    Map<String, Object> entityTypeNameClause = getMap("terms", getMap("__typeName.keyword", resources.get("entityType")));
-    List<Map<String, Object>> shouldClauses = new ArrayList<>();
-    shouldClauses.add(connectionQNameClause);
-    shouldClauses.add(getMap("terms", getMap("qualifiedName", resources.get("connection"))));
-    shouldClauses.add(collectionQNameClause);
-    shouldClauses.add(tagNameClause);
-    shouldClauses.add(propagatedTagNames);
-    shouldClauses.add(entityTypeNameClause);
-    List<String> allowedPolicy = resources.get("policyAllow");
-    if (CollectionUtils.isNotEmpty(allowedPolicy)) {
-        for (String policyResource : allowedPolicy) {
-                shouldClauses.add(getMap("prefix", getMap("qualifiedName", policyResource)));
-        }
-    }
-    Map<String, Object> filterClause = getMap("bool", getMap("should", shouldClauses));
-
-    List<Map<String, Object>> must_notClauses = new ArrayList<>();
-    List<String> denyPolicyResources = resources.get("policyDeny");
-    if (CollectionUtils.isNotEmpty(denyPolicyResources)) {
-        for (String denyPolicyResource : denyPolicyResources) {
-            must_notClauses.add(getMap("prefix", getMap("qualifiedName", denyPolicyResource)));
-        }
-    }
-
-    List<Map<String, Object>> must_clauses = Arrays.asList(query);
-    Map<String, Object> clauses = new HashMap<String , Object>() {
-        {
-            put("must", must_clauses);
-            put("must_not", must_notClauses);
-            put("filter", filterClause);
-        }
-    };
-    Map<String, Object> modifiedQuery = new HashMap<>();
-    modifiedQuery.put("bool", clauses);
-    return modifiedQuery;
-
-    }
-
 
     @Override
     public AtlasSearchResult directIndexSearch(SearchParams searchParams) throws AtlasBaseException {
         IndexSearchParams params = (IndexSearchParams) searchParams;
         RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
         RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
-        if (searchParams.getShowAssetsHasAccess()) {
-            Map<String,Object> modifiedQuery =  getModifiedQuery(params.getDsl());
-            Map dsl = params.getDsl();
-            dsl.put("query", modifiedQuery);
-            params.setDsl(dsl);
-        }
 
         AtlasSearchResult ret = new AtlasSearchResult();
         AtlasIndexQuery indexQuery = null;

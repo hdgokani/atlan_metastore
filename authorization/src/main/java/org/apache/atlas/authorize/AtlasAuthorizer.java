@@ -72,9 +72,6 @@ public interface AtlasAuthorizer {
 
     Set<String> getRolesForCurrentUser(String userName, Set<String> groups);
 
-    default Map<String, List<String>> getPoliciesResourcesForUserRoleGroup() throws AtlasBaseException {
-        return null;
-    }
 
     /**
      * authorize relationship type
