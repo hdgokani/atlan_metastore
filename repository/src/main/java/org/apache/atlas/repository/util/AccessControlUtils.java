@@ -82,6 +82,7 @@ public final class AccessControlUtils {
     public static final String ATTR_POLICY_SUB_CATEGORY  = "policySubCategory";
     public static final String ATTR_POLICY_RESOURCES  = "policyResources";
     public static final String ATTR_POLICY_IS_ENABLED  = "isPolicyEnabled";
+    public static final String ATTR_POLICY_CONNECTION_QN  = "connectionQualifiedName";
     public static final String ATTR_POLICY_RESOURCES_CATEGORY  = "policyResourceCategory";
     public static final String ATTR_POLICY_SERVICE_NAME  = "policyServiceName";
     public static final String ATTR_POLICY_PRIORITY  = "policyPriority";
@@ -140,6 +141,14 @@ public final class AccessControlUtils {
                 .filter(x -> x.startsWith(resourcePrefix))
                 .map(x -> x.split(RESOURCES_SPLITTER)[1])
                 .collect(Collectors.toList());
+    }
+
+    public static String getPolicyConnectionQN(AtlasEntity policyEntity) {
+        return getStringAttribute(policyEntity, ATTR_POLICY_CONNECTION_QN);
+    }
+
+    public static String getPolicyConnectionQN(AtlasEntityHeader policyEntity) {
+        return getStringAttribute(policyEntity, ATTR_POLICY_CONNECTION_QN);
     }
 
     public static List<String> getPolicyResources(AtlasEntity policyEntity) throws AtlasBaseException {
@@ -203,11 +212,11 @@ public final class AccessControlUtils {
         } else if (POLICY_TYPE_DENY.equals(policyType)) {
             return false;
         } else {
-            throw new AtlasBaseException("Unsuppported policy type while creating index alias filters");
+            throw new AtlasBaseException("Unsupported policy type while creating index alias filters");
         }
     }
 
-    public static AtlasEntity getConnectionEntity(EntityGraphRetriever entityRetriever, String connectionQualifiedName) throws AtlasBaseException {
+    public static AtlasEntity getEntityByQualifiedName(EntityGraphRetriever entityRetriever, String connectionQualifiedName) throws AtlasBaseException {
         AtlasObjectId objectId = new AtlasObjectId(CONNECTION_ENTITY_TYPE, mapOf(QUALIFIED_NAME, connectionQualifiedName));
 
         AtlasEntity entity = entityRetriever.toAtlasEntity(objectId);
@@ -237,7 +246,7 @@ public final class AccessControlUtils {
             return null;
         }
 
-        connection = getConnectionEntity(entityRetriever, connectionQName);
+        connection = getEntityByQualifiedName(entityRetriever, connectionQName);
 
         return connection;
     }
@@ -330,18 +339,6 @@ public final class AccessControlUtils {
         if (CollectionUtils.isNotEmpty(policies)) {
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not attach a policy while creating/updating Persona/Purpose");
         }
-    }
-
-    public static AtlasEntity getConnectionForPolicy(EntityGraphRetriever entityRetriever, List<String> entityResources) throws AtlasBaseException {
-        AtlasEntity ret = null;
-        if (CollectionUtils.isNotEmpty(entityResources)) {
-
-            String entityId = entityResources.get(0);
-
-            ret = extractConnectionFromResource(entityRetriever, entityId);
-        }
-
-        return ret;
     }
 
     public static String getUUID(){
