@@ -19,9 +19,11 @@ package org.apache.atlas.web.rest;
 
 import io.micrometer.core.annotation.Timed;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AuditSearchParams;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
+import org.apache.atlas.model.authcache.AuthzCacheRefreshInfo;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.plugin.util.KeycloakUserStore;
 import org.apache.atlas.plugin.util.RangerRoles;
@@ -29,6 +31,7 @@ import org.apache.atlas.plugin.util.RangerUserStore;
 import org.apache.atlas.plugin.util.ServicePolicies;
 import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
+import org.apache.atlas.repository.graph.AuthzCacheRefresher;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -45,6 +48,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -76,10 +80,13 @@ public class AuthREST {
     private CachePolicyTransformerImpl policyTransformer;
     private ESBasedAuditRepository auditRepository;
     private AtlasEntityStore entityStore;
+    private AuthzCacheRefresher hostRefresher;
 
     @Inject
     public AuthREST(CachePolicyTransformerImpl policyTransformer,
-                    ESBasedAuditRepository auditRepository, AtlasEntityStore entityStore) {
+                    ESBasedAuditRepository auditRepository,
+                    AtlasEntityStore entityStore,
+                    AuthzCacheRefresher hostRefresher) {
         this.entityStore = entityStore;
         this.auditRepository = auditRepository;
         this.policyTransformer = policyTransformer;
@@ -117,7 +124,7 @@ public class AuthREST {
     @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
     public RangerUserStore downloadUserStore(@PathParam("serviceName") final String serviceName,
                                              @QueryParam("pluginId") String pluginId,
-                                             @DefaultValue("0") @QueryParam("lastUpdatedTime") Long lastUpdatedTime,
+                                             @DefaultValue("-1") @QueryParam("lastUpdatedTime") Long lastUpdatedTime,
                                              @Context HttpServletResponse response) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -144,7 +151,7 @@ public class AuthREST {
     @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
     public ServicePolicies downloadPolicies(@PathParam("serviceName") final String serviceName,
                                      @QueryParam("pluginId") String pluginId,
-                                     @DefaultValue("0") @QueryParam("lastUpdatedTime") Long lastUpdatedTime) throws AtlasBaseException {
+                                     @DefaultValue("-1") @QueryParam("lastUpdatedTime") Long lastUpdatedTime) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -161,6 +168,50 @@ public class AuthREST {
             updateLastSync(serviceName);
 
             return ret;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("refreshcache")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    public void refreshCache(@QueryParam("refreshPolicies") Boolean policies,
+                             @QueryParam("refreshRoles") Boolean roles,
+                             @QueryParam("refreshGroups") Boolean groups,
+                             @QueryParam("hardRefresh") boolean hardRefresh) {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.refreshCache(policies="+policies+", roles="+roles+", groups="+groups+")");
+            }
+
+            AuthzCacheRefreshInfo.Builder builder = new AuthzCacheRefreshInfo.Builder();
+            builder.setHardRefresh(hardRefresh);
+
+            if (policies == null && roles == null && groups == null) {
+                builder.setRefreshPolicies(true)
+                        .setRefreshGroups(true)
+                        .setRefreshRoles(true);
+
+            } else {
+                if (Boolean.TRUE == policies) {
+                    builder.setRefreshPolicies(true);
+                }
+
+                if (Boolean.TRUE == roles) {
+                    builder.setRefreshRoles(true);
+                }
+
+                if (Boolean.TRUE == groups) {
+                    builder.setRefreshGroups(true);
+                }
+            }
+
+            AuthzCacheRefreshInfo info = builder.build();
+            AtlasAuthorizationUtils.refreshCache(info);
+            hostRefresher.refreshCache(info, RequestContext.get().getTraceId());
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -187,6 +238,10 @@ public class AuthREST {
     private boolean isPolicyUpdated(String serviceName, long lastUpdatedTime) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AuthRest.isPolicyUpdated." + serviceName);
 
+        if (lastUpdatedTime == -1) {
+            return true;
+        }
+
         List<String> entityUpdateToWatch = new ArrayList<>();
         entityUpdateToWatch.add(POLICY_ENTITY_TYPE);
         entityUpdateToWatch.add(PERSONA_ENTITY_TYPE);
@@ -198,7 +253,6 @@ public class AuthREST {
         List<Map<String, Object>> mustClauseList = new ArrayList<>();
         mustClauseList.add(getMap("terms", getMap("typeName", entityUpdateToWatch)));
 
-        lastUpdatedTime = lastUpdatedTime == -1 ? 0 : lastUpdatedTime;
         mustClauseList.add(getMap("range", getMap("timestamp", getMap("gte", lastUpdatedTime))));
 
         dsl.put("query", getMap("bool", getMap("must", mustClauseList)));

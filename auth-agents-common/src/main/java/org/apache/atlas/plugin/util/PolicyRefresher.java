@@ -21,30 +21,38 @@ package org.apache.atlas.plugin.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
+import org.apache.atlas.model.authcache.AuthzCacheRefreshInfo;
 import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.atlas.admin.client.RangerAdminClient;
 import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
 import org.apache.atlas.plugin.policyengine.RangerPluginContext;
 import org.apache.atlas.plugin.service.RangerBasePlugin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 public class PolicyRefresher extends Thread {
-	private static final Log LOG = LogFactory.getLog(PolicyRefresher.class);
+	private static final Logger LOG = LoggerFactory.getLogger(PolicyRefresher.class);
 
 	private static final Log PERF_POLICYENGINE_INIT_LOG = RangerPerfTracer.getPerfLogger("policyengine.init");
+
+	private static boolean IS_RUNNING = false;
+	private static boolean IS_TASK_QUEUED = false;
 
 	private final RangerBasePlugin               plugIn;
 	private final String                         serviceType;
@@ -58,7 +66,7 @@ public class PolicyRefresher extends Thread {
 	private final String                         cacheDir;
 	private final Gson                           gson;
 	private final BlockingQueue<DownloadTrigger> policyDownloadQueue = new LinkedBlockingQueue<>();
-	private       Timer                          policyDownloadTimer;
+	private 	  ScheduledExecutorService 		 executor;
 	private       long                           lastKnownVersion    = -1L;
 	private       long                           lastUpdatedTiemInMillis    = -1L;
 	private       long                           lastActivationTimeInMillis;
@@ -94,7 +102,7 @@ public class PolicyRefresher extends Thread {
 		try {
 			gson = new GsonBuilder().setDateFormat("yyyyMMdd-HH:mm:ss.SSS-Z").create();
 		} catch(Throwable excp) {
-			LOG.fatal("PolicyRefresher(): failed to create GsonBuilder object", excp);
+			LOG.error("PolicyRefresher(): failed to create GsonBuilder object", excp);
 		}
 
 		RangerPluginContext pluginContext  = plugIn.getPluginContext();
@@ -147,36 +155,61 @@ public class PolicyRefresher extends Thread {
 		this.lastActivationTimeInMillis = lastActivationTimeInMillis;
 	}
 
+	public void submitRefresherTask(AuthzCacheRefreshInfo refreshInfo) {
+		if (IS_TASK_QUEUED) {
+			LOG.info("submitRefresherTask: Default refresh job is already submitted, skipping submitting another.");
+			return;
+		}
+
+		DownloaderTask task;
+
+		if (IS_RUNNING) {
+			LOG.info("submitRefresherTask: Another refresh task in already in progress, submitting another default task");
+			task = new DownloaderTask(policyDownloadQueue, AuthzCacheRefreshInfo.getDefaultTask());
+			IS_TASK_QUEUED = true;
+		} else {
+			LOG.info("submitRefresherTask: Submitting custom job: {}", refreshInfo.toString());
+			task = new DownloaderTask(policyDownloadQueue, refreshInfo);
+		}
+
+		executor.submit(task);
+	}
+
 	public void startRefresher() {
-		loadRoles();
-		loadPolicy();
-		loadUserStore();
+		try {
+			IS_RUNNING = true;
+			loadRoles(true);
+			loadPolicy(true);
+			loadUserStore(true);
+		} finally {
+			IS_RUNNING = false;
+		}
+
 		super.start();
 
-		policyDownloadTimer = new Timer("policyDownloadTimer", true);
-
 		try {
-			policyDownloadTimer.schedule(new DownloaderTask(policyDownloadQueue), pollingIntervalMs, pollingIntervalMs);
+			executor = Executors.newSingleThreadScheduledExecutor();
+
+			AuthzCacheRefreshInfo refreshInfo = new AuthzCacheRefreshInfo(true, true, true, false);
+			executor.scheduleWithFixedDelay(new DownloaderTask(policyDownloadQueue, refreshInfo),
+								pollingIntervalMs, pollingIntervalMs, TimeUnit.MILLISECONDS);
 
 			LOG.info("Scheduled policyDownloadRefresher to download policies every " + pollingIntervalMs + " milliseconds");
 
 		} catch (IllegalStateException exception) {
 			LOG.error("Error scheduling policyDownloadTimer:", exception);
 			LOG.error("*** Policies will NOT be downloaded every " + pollingIntervalMs + " milliseconds ***");
-
-			policyDownloadTimer = null;
 		}
 
 	}
 
 	public void stopRefresher() {
 
-		Timer policyDownloadTimer = this.policyDownloadTimer;
+		IS_RUNNING = false;
+		IS_TASK_QUEUED = false;
 
-		this.policyDownloadTimer = null;
-
-		if (policyDownloadTimer != null) {
-			policyDownloadTimer.cancel();
+		if (executor != null) {
+			executor.shutdown();;
 		}
 
 		if (super.isAlive()) {
@@ -202,7 +235,6 @@ public class PolicyRefresher extends Thread {
 	}
 
 	public void run() {
-
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> PolicyRefresher(serviceName=" + serviceName + ").run()");
 		}
@@ -211,10 +243,21 @@ public class PolicyRefresher extends Thread {
 			DownloadTrigger trigger = null;
 			try {
 				trigger = policyDownloadQueue.take();
+				IS_RUNNING = true;
+				LOG.info("Start PolicyRefresher(serviceName=" + serviceName + ")");
 
-				loadRoles();
-				loadPolicy();
-				loadUserStore();
+				AuthzCacheRefreshInfo refreshInfo = trigger.refreshInfo;
+				if (refreshInfo.isRefreshRoles()) {
+					loadRoles(refreshInfo.isHardRefresh());
+				}
+
+				if (refreshInfo.isRefreshPolicies()) {
+					loadPolicy(refreshInfo.isHardRefresh());
+				}
+
+				if (refreshInfo.isRefreshGroups()) {
+					loadUserStore(refreshInfo.isHardRefresh());
+				}
 			} catch(InterruptedException excp) {
 				LOG.info("PolicyRefresher(serviceName=" + serviceName + ").run(): interrupted! Exiting thread", excp);
 				break;
@@ -222,6 +265,10 @@ public class PolicyRefresher extends Thread {
 				if (trigger != null) {
 					trigger.signalCompletion();
 				}
+				IS_RUNNING = false;
+				IS_TASK_QUEUED = false;
+				RequestContext.clear();
+				LOG.info("End PolicyRefresher(serviceName=" + serviceName + ")");
 			}
 		}
 
@@ -235,7 +282,7 @@ public class PolicyRefresher extends Thread {
 		token.waitForCompletion();
 	}
 
-	private void loadPolicy() {
+	private void loadPolicy(boolean hardRefresh) {
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> PolicyRefresher(serviceName=" + serviceName + ").loadPolicy()");
@@ -252,7 +299,7 @@ public class PolicyRefresher extends Thread {
 
 		try {
 			//load policy from PolicyAdmin
-			ServicePolicies svcPolicies = loadPolicyfromPolicyAdmin();
+			ServicePolicies svcPolicies = loadPolicyfromPolicyAdmin(hardRefresh);
 
 			if (svcPolicies == null) {
 				//if Policy fetch from Policy Admin Fails, load from cache
@@ -300,7 +347,7 @@ public class PolicyRefresher extends Thread {
 		}
 	}
 
-	private ServicePolicies loadPolicyfromPolicyAdmin() throws RangerServiceNotFoundException {
+	private ServicePolicies loadPolicyfromPolicyAdmin(boolean hardRefresh) throws RangerServiceNotFoundException {
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> PolicyRefresher(serviceName=" + serviceName + ").loadPolicyfromPolicyAdmin()");
@@ -324,7 +371,8 @@ public class PolicyRefresher extends Thread {
 						restUtils.getPluginId(serviceName, plugIn.getAppId()),
 						lastUpdatedTiemInMillis);
 			} else {
-				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis);
+				long lastUpdatedTime = hardRefresh ? -1 : lastUpdatedTiemInMillis;
+				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTime);
 			}
 
 			boolean isUpdated = svcPolicies != null;
@@ -502,26 +550,26 @@ public class PolicyRefresher extends Thread {
 		}
 	}
 
-	private void loadRoles() {
+	private void loadRoles(boolean hardRefresh) {
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> PolicyRefresher(serviceName=" + serviceName + ").loadRoles()");
 		}
 
 		//Load the Ranger UserGroup Roles
-		rolesProvider.loadUserGroupRoles(plugIn);
+		rolesProvider.loadUserGroupRoles(plugIn, hardRefresh);
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("<== PolicyRefresher(serviceName=" + serviceName + ").loadRoles()");
 		}
 	}
 
-	private void loadUserStore() {
+	private void loadUserStore(boolean hardRefresh) {
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> PolicyRefresher(serviceName=" + serviceName + ").loadGroups()");
 		}
 
 		//Load the Ranger UserGroup Roles
-		userStoreProvider.loadUserStore(plugIn);
+		userStoreProvider.loadUserStore(plugIn, hardRefresh);
 
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("<== PolicyRefresher(serviceName=" + serviceName + ").loadRoles()");

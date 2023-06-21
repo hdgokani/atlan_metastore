@@ -15,7 +15,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.atlas.repository.Constants.QUERY_COLLECTION_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.COLLECTION_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 
@@ -55,7 +55,7 @@ public class PreProcessorUtils {
     }
 
     public static String getCollectionPropertyName(AtlasVertex parentVertex) {
-        return QUERY_COLLECTION_ENTITY_TYPE.equals(parentVertex.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class)) ? QUALIFIED_NAME : COLLECTION_QUALIFIED_NAME;
+        return COLLECTION_ENTITY_TYPE.equals(parentVertex.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class)) ? QUALIFIED_NAME : COLLECTION_QUALIFIED_NAME;
     }
 
     public static String updateQueryResourceAttributes(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
@@ -103,5 +103,37 @@ public class PreProcessorUtils {
         entity.setAttribute(COLLECTION_QUALIFIED_NAME, newCollectionQualifiedName);
 
         return newCollectionQualifiedName;
+    }
+
+    public static String updateTermResourceAttributes(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
+                                                       AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
+        AtlasEntityType entityType      = typeRegistry.getEntityTypeByName(entity.getTypeName());
+        AtlasObjectId newParentObjectId = (AtlasObjectId) entity.getRelationshipAttribute(ANCHOR);
+        String relationshipType         = AtlasEntityUtil.getRelationshipType(newParentObjectId);
+        AtlasStructType.AtlasAttribute parentAttribute  = entityType.getRelationshipAttribute(ANCHOR, relationshipType);
+        AtlasObjectId currentParentObjectId = (AtlasObjectId) entityRetriever.getEntityAttribute(vertex, parentAttribute);
+        //Qualified name of the category/term will not be updated if anchor is not changed
+        String qualifiedName      = vertex.getProperty(QUALIFIED_NAME, String.class);
+        entity.setAttribute(QUALIFIED_NAME, qualifiedName);
+
+        if (parentAttribute.getAttributeType().areEqualValues(currentParentObjectId, newParentObjectId, context.getGuidAssignments())) {
+            return null;
+        }
+
+        AtlasVertex currentParentVertex         = entityRetriever.getEntityVertex(currentParentObjectId);
+        AtlasVertex newParentVertex             = entityRetriever.getEntityVertex(newParentObjectId);
+
+        if (currentParentVertex == null || newParentVertex == null) {
+            LOG.error("Current or New parent vertex is null");
+            throw new AtlasBaseException("Current or New parent vertex is null");
+        }
+
+        String newAnchorQualifiedName = newParentVertex.getProperty(QUALIFIED_NAME, String.class);
+        String currentAnchorQualifiedName = currentParentVertex.getProperty(QUALIFIED_NAME, String.class);
+        if(newAnchorQualifiedName.equals(currentAnchorQualifiedName))
+            return null;
+        String termNewQualifiedName = qualifiedName.replaceAll(currentAnchorQualifiedName, newAnchorQualifiedName);
+        entity.setAttribute(QUALIFIED_NAME, termNewQualifiedName);
+        return newAnchorQualifiedName;
     }
 }

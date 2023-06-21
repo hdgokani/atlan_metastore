@@ -19,6 +19,7 @@
 
 package org.apache.atlas.plugin.service;
 
+import org.apache.atlas.model.authcache.AuthzCacheRefreshInfo;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -434,6 +435,33 @@ public class RangerBasePlugin {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("<== setPolicies(" + policies + ")");
 		}
+	}
+
+	public List<RangerPolicy> getPolicies() {
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("==> getPolicies()");
+		}
+
+		List<RangerPolicy> ret = null;
+
+		RangerPolicyEngine policyEngine = this.policyEngine;
+
+		if (policyEngine != null) {
+			ret = policyEngine.getResourcePolicies();
+		}
+		List<RangerPolicy> tagPolicies = policyEngine.getTagPolicies();
+		if (CollectionUtils.isNotEmpty(tagPolicies)) {
+			if (ret == null) {
+				ret = new ArrayList<>();
+			}
+			ret.addAll(tagPolicies);
+		}
+
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("<== getPolicies() : " + ret);
+		}
+
+		return ret;
 	}
 
 	public void cleanup() {
@@ -933,6 +961,9 @@ public class RangerBasePlugin {
 		}
 	}
 
+	public void submitRefresherTask(AuthzCacheRefreshInfo refreshInfo) {
+		refresher.submitRefresherTask(refreshInfo);
+	}
 
 	private void auditGrantRevoke(GrantRevokeRequest request, String action, boolean isSuccess, RangerAccessResultProcessor resultProcessor) {
 		if(request != null && resultProcessor != null) {

@@ -19,8 +19,11 @@
 
 package org.apache.atlas.plugin.util;
 
+import org.apache.atlas.model.authcache.AuthzCacheRefreshInfo;
+
 public final class DownloadTrigger {
     private boolean isNotified = false;
+    AuthzCacheRefreshInfo refreshInfo;
 
     public synchronized void waitForCompletion() throws InterruptedException {
         while (!isNotified) {

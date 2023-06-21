@@ -136,7 +136,7 @@ public class MigrationREST {
         try {
 
             for (AtlasEntity entity : entities.getEntities()) {
-                if (entity.getTypeName().equalsIgnoreCase(QUERY_COLLECTION_ENTITY_TYPE)) {
+                if (entity.getTypeName().equalsIgnoreCase(COLLECTION_ENTITY_TYPE)) {
                     createCollectionAdminRole(entity);
                     createCollectionViewerRole(entity);
 
@@ -410,7 +410,15 @@ public class MigrationREST {
 
         //Add roles to role
         for (String roleId : rolesToAdd) {
-            RoleRepresentation roleToAdd = rolesIdResource.getRole(roleId);
+            RoleRepresentation roleToAdd = null;
+            try {
+                roleToAdd =  rolesIdResource.getRole(roleId);
+            } catch (NotFoundException e) {
+                LOG.warn("Role with ID {} not found", roleId);
+            }
+            if (roleToAdd == null)
+                continue;
+
             connectionRoleResource.addComposites(Collections.singletonList(roleToAdd));
         }
 
