@@ -58,7 +58,7 @@ public class TypeCacheRefreshREST {
      */
     @POST
     @Path("/refresh")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void refreshCache(@QueryParam("hostRefreshType") String hostRefreshType,
                              @QueryParam("traceId") String traceId,
                              @Context UriInfo uriInfo) throws AtlasBaseException {

@@ -65,7 +65,7 @@ public class MigrationREST {
 
     @POST
     @Path("bootstrap/connections")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public EntityMutationResponse bootstrapConnections(AtlasEntity.AtlasEntitiesWithExtInfo entities) throws Exception {
         AtlasPerfTracer perf = null;
         EntityMutationResponse response = new EntityMutationResponse();
@@ -129,7 +129,7 @@ public class MigrationREST {
 
     @POST
     @Path("bootstrap/collections")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public EntityMutationResponse bootstrapCollections(AtlasEntity.AtlasEntitiesWithExtInfo entities) throws Exception {
         AtlasPerfTracer perf = null;
         EntityMutationResponse response = new EntityMutationResponse();
@@ -164,7 +164,7 @@ public class MigrationREST {
 
     @GET
     @Path("search/{typeName}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public List<AtlasEntity> searchForType(@PathParam("typeName") String typeName, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo, @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships) throws Exception {
         AtlasPerfTracer perf = null;
         try {

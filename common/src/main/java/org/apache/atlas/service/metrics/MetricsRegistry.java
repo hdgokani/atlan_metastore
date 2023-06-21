@@ -7,7 +7,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Optional;
+
+import static java.util.Optional.ofNullable;
 
 @Component
 public class MetricsRegistry {
@@ -18,7 +19,7 @@ public class MetricsRegistry {
     public static final String COUNT = "count";
     public static final String TIME_TAKEN = "timeTaken";
     public static final String NAME = "name";
-    public static final String METHOD = "method";
+    public static final String METHOD_REQUEST = "method_request";
 
     private final PrometheusMeterRegistry prometheusMeterRegistry;
 
@@ -31,7 +32,7 @@ public class MetricsRegistry {
     public void collect(String requestId, AtlasPerfMetrics metrics) {
         for (String name : metrics.getMetricsNames()) {
             AtlasPerfMetrics.Metric metric = metrics.getMetric(name);
-            this.prometheusMeterRegistry.counter(METHOD,NAME, metric.getName(), TRACE_ID, requestId, COUNT, String.valueOf(metric.getInvocations()), TIME_TAKEN, String.valueOf(metric.getTotalTimeMSecs())).increment();
+            this.prometheusMeterRegistry.counter(METHOD_REQUEST, NAME, metric.getName(), TRACE_ID, ofNullable(requestId).orElse("-1"), COUNT, String.valueOf(metric.getInvocations()), TIME_TAKEN, String.valueOf(metric.getTotalTimeMSecs())).increment();
         }
     }
 

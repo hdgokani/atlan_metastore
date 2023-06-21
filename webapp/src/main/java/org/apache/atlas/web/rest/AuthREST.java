@@ -90,14 +90,15 @@ public class AuthREST {
         this.entityStore = entityStore;
         this.auditRepository = auditRepository;
         this.policyTransformer = policyTransformer;
+        this.hostRefresher = hostRefresher;
     }
 
     @GET
     @Path("download/roles/{serviceName}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public RangerRoles downloadRoles(@PathParam("serviceName") final String serviceName,
                                      @QueryParam("pluginId") String pluginId,
-                                     @DefaultValue("0") @QueryParam("lastUpdatedTime") Long lastUpdatedTime,
+                                     @DefaultValue("-1") @QueryParam("lastUpdatedTime") Long lastUpdatedTime,
                                      @Context HttpServletResponse response) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -121,7 +122,7 @@ public class AuthREST {
 
     @GET
     @Path("download/users/{serviceName}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public RangerUserStore downloadUserStore(@PathParam("serviceName") final String serviceName,
                                              @QueryParam("pluginId") String pluginId,
                                              @DefaultValue("-1") @QueryParam("lastUpdatedTime") Long lastUpdatedTime,
@@ -148,7 +149,7 @@ public class AuthREST {
 
     @GET
     @Path("download/policies/{serviceName}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public ServicePolicies downloadPolicies(@PathParam("serviceName") final String serviceName,
                                      @QueryParam("pluginId") String pluginId,
                                      @DefaultValue("-1") @QueryParam("lastUpdatedTime") Long lastUpdatedTime) throws AtlasBaseException {
@@ -175,7 +176,7 @@ public class AuthREST {
 
     @POST
     @Path("refreshcache")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void refreshCache(@QueryParam("refreshPolicies") Boolean policies,
                              @QueryParam("refreshRoles") Boolean roles,
                              @QueryParam("refreshGroups") Boolean groups,

@@ -84,7 +84,7 @@ public class TypesREST {
      */
     @GET
     @Path("/typedef/name/{name}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasBaseTypeDef getTypeDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
@@ -102,7 +102,7 @@ public class TypesREST {
      */
     @GET
     @Path("/typedef/guid/{guid}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasBaseTypeDef getTypeDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -120,7 +120,7 @@ public class TypesREST {
      */
     @GET
     @Path("/typedefs/headers")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public List<AtlasTypeDefHeader> getTypeDefHeaders(@Context HttpServletRequest httpServletRequest) throws AtlasBaseException {
         SearchFilter searchFilter = getSearchFilter(httpServletRequest);
 
@@ -137,7 +137,7 @@ public class TypesREST {
      */
     @GET
     @Path("/typedefs")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasTypesDef getAllTypeDefs(@Context HttpServletRequest httpServletRequest) throws AtlasBaseException {
         SearchFilter searchFilter = getSearchFilter(httpServletRequest);
 
@@ -156,7 +156,7 @@ public class TypesREST {
      */
     @GET
     @Path("/enumdef/name/{name}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasEnumDef getEnumDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
@@ -175,7 +175,7 @@ public class TypesREST {
      */
     @GET
     @Path("/enumdef/guid/{guid}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasEnumDef getEnumDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -195,7 +195,7 @@ public class TypesREST {
      */
     @GET
     @Path("/structdef/name/{name}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasStructDef getStructDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
@@ -214,7 +214,7 @@ public class TypesREST {
      */
     @GET
     @Path("/structdef/guid/{guid}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasStructDef getStructDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -233,7 +233,7 @@ public class TypesREST {
      */
     @GET
     @Path("/classificationdef/name/{name}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasClassificationDef getClassificationDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
@@ -252,7 +252,7 @@ public class TypesREST {
      */
     @GET
     @Path("/classificationdef/guid/{guid}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasClassificationDef getClassificationDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -271,7 +271,7 @@ public class TypesREST {
      */
     @GET
     @Path("/entitydef/name/{name}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasEntityDef getEntityDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
@@ -290,7 +290,7 @@ public class TypesREST {
      */
     @GET
     @Path("/entitydef/guid/{guid}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasEntityDef getEntityDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -308,7 +308,7 @@ public class TypesREST {
      */
     @GET
     @Path("/relationshipdef/name/{name}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasRelationshipDef getRelationshipDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
@@ -327,7 +327,7 @@ public class TypesREST {
      */
     @GET
     @Path("/relationshipdef/guid/{guid}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasRelationshipDef getRelationshipDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -346,7 +346,7 @@ public class TypesREST {
      */
     @GET
     @Path("/businessmetadatadef/guid/{guid}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasBusinessMetadataDef getBusinessMetadataDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -365,7 +365,7 @@ public class TypesREST {
      */
     @GET
     @Path("/businessmetadatadef/name/{name}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasBusinessMetadataDef getBusinessMetadataDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
@@ -405,7 +405,7 @@ public class TypesREST {
      */
     @POST
     @Path("/typedefs")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasTypesDef createAtlasTypeDefs(final AtlasTypesDef typesDef, @QueryParam("allowDuplicateDisplayName") @DefaultValue("false") boolean allowDuplicateDisplayName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         validateTypeCreateOrUpdate(typesDef);
@@ -465,7 +465,7 @@ public class TypesREST {
     @PUT
     @Path("/typedefs")
     @Experimental
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public AtlasTypesDef updateAtlasTypeDefs(final AtlasTypesDef typesDef, @QueryParam("patch") final boolean patch,
                                              @QueryParam("allowDuplicateDisplayName") @DefaultValue("false") boolean allowDuplicateDisplayName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
@@ -528,7 +528,7 @@ public class TypesREST {
     @DELETE
     @Path("/typedefs")
     @Experimental
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
@@ -562,7 +562,7 @@ public class TypesREST {
      */
     @DELETE
     @Path("/typedef/name/{typeName}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http")
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void deleteAtlasTypeByName(@PathParam("typeName") final String typeName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
