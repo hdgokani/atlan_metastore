@@ -44,7 +44,6 @@ import static org.apache.atlas.repository.util.AccessControlUtils.getEntityByQua
 import static org.apache.atlas.repository.util.AccessControlUtils.getFilteredPolicyResources;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyActions;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyAssets;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyConnectionQN;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResources;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;

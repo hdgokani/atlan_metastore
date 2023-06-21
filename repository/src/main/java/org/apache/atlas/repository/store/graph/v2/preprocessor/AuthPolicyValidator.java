@@ -229,7 +229,8 @@ public class AuthPolicyValidator {
                     String newConnectionQn = getPolicyConnectionQN(policy);
                     validateParam(StringUtils.isEmpty(newConnectionQn), "Please provide attribute " + ATTR_POLICY_CONNECTION_QN);
 
-                    validateOperation (!newConnectionQn.equals(getPolicyConnectionQN(existingPolicy)), ATTR_POLICY_CONNECTION_QN + " change not Allowed");
+                    String existingConnectionQn = getPolicyConnectionQN(existingPolicy);
+                    validateOperation (StringUtils.isNotEmpty(existingConnectionQn) && !newConnectionQn.equals(existingConnectionQn), ATTR_POLICY_CONNECTION_QN + " change not Allowed");
 
                     validateEntityResources(getPolicyConnectionQN(existingPolicy), resources);
 
