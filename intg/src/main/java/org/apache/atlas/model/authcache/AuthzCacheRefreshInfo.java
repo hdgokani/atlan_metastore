@@ -42,10 +42,6 @@ public class AuthzCacheRefreshInfo {
         this.hardRefresh = hardRefresh;
     }
 
-    public static AuthzCacheRefreshInfo getDefaultTask() {
-        return new AuthzCacheRefreshInfo(true, true, true, false);
-    }
-
     public boolean isRefreshPolicies() {
         return refreshPolicies;
     }

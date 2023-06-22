@@ -165,7 +165,7 @@ public class PolicyRefresher extends Thread {
 
 		if (IS_RUNNING) {
 			LOG.info("submitRefresherTask: Another refresh task in already in progress, submitting another default task");
-			task = new DownloaderTask(policyDownloadQueue, AuthzCacheRefreshInfo.getDefaultTask());
+			task = new DownloaderTask(policyDownloadQueue, new AuthzCacheRefreshInfo(true, true, true, true));
 			IS_TASK_QUEUED = true;
 		} else {
 			LOG.info("submitRefresherTask: Submitting custom job: {}", refreshInfo.toString());
