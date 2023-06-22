@@ -1,7 +1,7 @@
 package org.apache.atlas.web.rest;
 
-import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import io.micrometer.core.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.authcache.AuthzCacheRefreshInfo;
 import org.apache.atlas.repository.RepositoryException;
@@ -58,7 +58,7 @@ public class TypeCacheRefreshREST {
      */
     @POST
     @Path("/refresh")
-    @Timed
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public void refreshCache(@QueryParam("hostRefreshType") String hostRefreshType,
                              @QueryParam("traceId") String traceId,
                              @Context UriInfo uriInfo) throws AtlasBaseException {
