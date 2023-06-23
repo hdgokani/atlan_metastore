@@ -158,8 +158,9 @@ public class KeycloakStore {
 
             for (RoleRepresentation kRole : roleRoles) {
                 RoleResource roleResource = rolesResource.get(kRole.getName());
-                roleResource.addComposites(Collections.singletonList(connectionRoleResource.toRepresentation()));
-                roleResource.update(roleResource.toRepresentation());
+
+                connectionRoleResource.addComposites(Collections.singletonList(roleResource.toRepresentation()));
+                connectionRoleResource.update(connectionRoleResource.toRepresentation());
             }
         }
 
@@ -433,22 +434,21 @@ public class KeycloakStore {
         List<String> rolesToRemove = (List<String>) CollectionUtils.removeAll(existingRoles, newRoles);
 
         for (String subRoleId : rolesToAdd) {
-            LOG.info("Adding role {} to role {}", roleName, subRoleId);
+            LOG.info("Adding role {} to role {}", subRoleId, roleName);
             RoleRepresentation keyRole = getRoleById(rolesIdResource, subRoleId);
-            RoleResource parentRoleResource = rolesResource.get(keyRole.getName());
+            RoleResource subrRoleResource = rolesResource.get(keyRole.getName());
 
-            parentRoleResource.addComposites(Collections.singletonList(roleRepresentation));
-            parentRoleResource.update(parentRoleResource.toRepresentation());
+            connRoleResource.addComposites(Collections.singletonList(subrRoleResource.toRepresentation()));
+            connRoleResource.update(connRoleResource.toRepresentation());
         }
 
         for (String subRoleId : rolesToRemove) {
-            LOG.info("removing role {} from role {}", roleName, subRoleId);
+            LOG.info("removing role {} from role {}", subRoleId, roleName);
             RoleRepresentation keyRole = getRoleById(rolesIdResource, subRoleId);
-            RoleResource parentRoleResource = rolesResource.get(keyRole.getName());
+            RoleResource subrRoleResource = rolesResource.get(keyRole.getName());
 
-            parentRoleResource.deleteComposites(Collections.singletonList(roleRepresentation));
-            parentRoleResource.update(parentRoleResource.toRepresentation());
-
+            connRoleResource.deleteComposites(Collections.singletonList(subrRoleResource.toRepresentation()));
+            connRoleResource.update(connRoleResource.toRepresentation());
         }
     }
 
