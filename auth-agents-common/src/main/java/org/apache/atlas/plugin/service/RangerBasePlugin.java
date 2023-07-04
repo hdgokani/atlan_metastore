@@ -19,6 +19,7 @@
 
 package org.apache.atlas.plugin.service;
 
+import org.apache.atlas.model.authcache.AuthzCacheRefreshInfo;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -933,6 +934,9 @@ public class RangerBasePlugin {
 		}
 	}
 
+	public void submitRefresherTask(AuthzCacheRefreshInfo refreshInfo) {
+		refresher.submitRefresherTask(refreshInfo);
+	}
 
 	private void auditGrantRevoke(GrantRevokeRequest request, String action, boolean isSuccess, RangerAccessResultProcessor resultProcessor) {
 		if(request != null && resultProcessor != null) {

@@ -22,6 +22,7 @@ package org.apache.atlas.authorize;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.authcache.AuthzCacheRefreshInfo;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -268,6 +269,19 @@ public class AtlasAuthorizationUtils {
         }
 
         return ret;
+    }
+
+    public static void refreshCache(AuthzCacheRefreshInfo refreshInfo) {
+        try {
+            AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
+            if (authorizer == null ) {
+                throw new AtlasAuthorizationException("Authorizer is null");
+            }
+
+            authorizer.refreshCache(refreshInfo);
+        } catch (AtlasAuthorizationException e) {
+            LOG.error("Unable to obtain AtlasAuthorizer", e);
+        }
     }
 
     public static void filterTypesDef(AtlasTypesDefFilterRequest request) {
