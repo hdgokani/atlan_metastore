@@ -2,7 +2,7 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.annotation.Timed;
+import io.micrometer.core.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -64,7 +64,7 @@ public class MigrationREST {
 
     @POST
     @Path("bootstrap/connections")
-    @Timed
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public EntityMutationResponse bootstrapConnections(AtlasEntity.AtlasEntitiesWithExtInfo entities) throws Exception {
         AtlasPerfTracer perf = null;
         EntityMutationResponse response = new EntityMutationResponse();
@@ -128,7 +128,7 @@ public class MigrationREST {
 
     @POST
     @Path("bootstrap/collections")
-    @Timed
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public EntityMutationResponse bootstrapCollections(AtlasEntity.AtlasEntitiesWithExtInfo entities) throws Exception {
         AtlasPerfTracer perf = null;
         EntityMutationResponse response = new EntityMutationResponse();
@@ -163,7 +163,7 @@ public class MigrationREST {
 
     @GET
     @Path("search/{typeName}")
-    @Timed
+    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
     public List<AtlasEntity> searchForType(@PathParam("typeName") String typeName, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo, @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships) throws Exception {
         AtlasPerfTracer perf = null;
         try {
