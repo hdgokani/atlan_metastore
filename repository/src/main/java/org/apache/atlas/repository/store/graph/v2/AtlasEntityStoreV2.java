@@ -1586,6 +1586,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
 
                 compactAttributes(entity, entityType);
+                flushAutoUpdateAttributes(entity, entityType);
 
                 AtlasVertex vertex = getResolvedEntityVertex(discoveryContext, entity);
 
@@ -1949,6 +1950,25 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     }
                 }
             }
+        }
+    }
+
+    private void flushAutoUpdateAttributes(AtlasEntity entity, AtlasEntityType entityType) {
+        if (entityType.getAllAttributes() != null) {
+            Set<String> flushAttributes = new HashSet<>();
+
+            for (String attrName : entityType.getAllAttributes().keySet()) {
+                AtlasAttribute atlasAttribute = entityType.getAttribute(attrName);
+                HashMap<String, ArrayList> autoUpdateAttributes = atlasAttribute.getAttributeDef().getAutoUpdateAttributes();
+                if (MapUtils.isNotEmpty(autoUpdateAttributes)) {
+                    autoUpdateAttributes.values()
+                            .stream()
+                            .flatMap(List<String>::stream)
+                            .forEach(flushAttributes::add);
+                }
+            }
+
+            flushAttributes.forEach(entity::removeAttribute);
         }
     }
 
