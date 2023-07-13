@@ -18,8 +18,10 @@
 
 package org.apache.atlas.repository.store.users;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -253,6 +255,7 @@ public class KeycloakStore {
     public void updateRoleUsers(String roleName,
                                 List<String> existingUsers, List<String> newUsers,
                                 RoleRepresentation roleRepresentation) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("updateRoleUsers");
 
         if (roleRepresentation == null) {
             throw new AtlasBaseException("Failed to updateRoleUsers as roleRepresentation is null");
@@ -292,6 +295,7 @@ public class KeycloakStore {
                 LOG.warn("Keycloak user not found with userName " + userName);
             }
         }
+        RequestContext.get().endMetricRecord(metric);
     }
 
     public void updateRoleGroups(String roleName,
