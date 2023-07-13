@@ -150,6 +150,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
     }
 
     private void processUpdate(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateCollection");
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
         if (ATLAS_AUTHORIZER_IMPL.equalsIgnoreCase(CURRENT_AUTHORIZER_IMPL)) {
@@ -162,6 +163,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
         }
 
         entity.setAttribute(QUALIFIED_NAME, vertexQnName);
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     @Override
@@ -227,6 +229,7 @@ public class QueryCollectionPreProcessor implements PreProcessor {
     }
 
     private void updateCollectionAdminRole(AtlasEntity collection, AtlasEntity existingCollEntity, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateCollectionAdminRole");
         String adminRoleName = String.format(COLL_ADMIN_ROLE_PATTERN, collection.getGuid());
 
         RoleRepresentation representation = getKeycloakClient().getRoleByName(adminRoleName);
@@ -262,6 +265,8 @@ public class QueryCollectionPreProcessor implements PreProcessor {
                 keycloakStore.updateRoleRoles(adminRoleName, currentAdminRoles, newAdminRoles, rolesResource, representation);
             }
         }*/
+
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void updateCollectionViewerRole(AtlasEntity collection, AtlasEntity existingCollEntity) throws AtlasBaseException {
