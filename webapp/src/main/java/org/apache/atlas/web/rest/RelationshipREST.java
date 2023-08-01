@@ -19,7 +19,7 @@
 package org.apache.atlas.web.rest;
 
 import org.apache.atlas.AtlasErrorCode;
-import io.micrometer.core.annotation.Timed;
+import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
@@ -58,7 +58,7 @@ public class RelationshipREST {
      * Create a new relationship between entities.
      */
     @POST
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
+    @Timed
     public AtlasRelationship create(AtlasRelationship relationship) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -96,7 +96,7 @@ public class RelationshipREST {
      * Update an existing relationship between entities.
      */
     @PUT
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
+    @Timed
     public AtlasRelationship update(AtlasRelationship relationship) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -116,7 +116,7 @@ public class RelationshipREST {
      */
     @GET
     @Path("/guid/{guid}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
+    @Timed
     public AtlasRelationshipWithExtInfo getById(@PathParam("guid") String guid,
                                                 @QueryParam("extendedInfo") @DefaultValue("false") boolean extendedInfo)
                                                 throws AtlasBaseException {
@@ -148,7 +148,7 @@ public class RelationshipREST {
      */
     @DELETE
     @Path("/guid/{guid}")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
+    @Timed
     public void deleteById(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
@@ -170,7 +170,7 @@ public class RelationshipREST {
      */
     @DELETE
     @Path("/guid/bulk")
-    @Timed(percentiles = {0.90,0.95,0.99}, value = "http_request")
+    @Timed
     public void deleteByIds(List<String> guids) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(guids)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Need list of GUIDs");

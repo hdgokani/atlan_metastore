@@ -17,14 +17,11 @@
  */
 package org.apache.atlas;
 
-import io.micrometer.core.aop.TimedAspect;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
-import org.apache.atlas.service.metrics.MetricRegistryCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
@@ -32,6 +29,8 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 @EnableAspectJAutoProxy
 public class CommonConfiguration {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommonConfiguration.class);
+    private static final String SERVICE = "service";
+    private static final String ATLAS_METASTORE = "atlas-metastore";
 
     @Bean
     public org.apache.commons.configuration.Configuration getAtlasConfig() throws AtlasException {
@@ -45,12 +44,9 @@ public class CommonConfiguration {
 
     @Bean
     public PrometheusMeterRegistry getPrometheusMetricRegistry() {
-        return new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+        PrometheusMeterRegistry prometheusMeterRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+        prometheusMeterRegistry.config().withHighCardinalityTagsDetector().commonTags(SERVICE, ATLAS_METASTORE);
+        return prometheusMeterRegistry;
     }
 
-    @Bean
-    @Conditional(MetricRegistryCondition.class)
-    public TimedAspect timedAspect(PrometheusMeterRegistry registry) throws AtlasException {
-        return new TimedAspect(registry);
-    }
 }
