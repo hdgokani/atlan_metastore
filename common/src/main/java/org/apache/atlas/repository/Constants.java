@@ -140,7 +140,6 @@ public final class Constants {
      */
     public static final String CONNECTION_ENTITY_TYPE       = "Connection";
     public static final String QUERY_ENTITY_TYPE            = "Query";
-    public static final String README_ENTITY_TYPE           = "Readme";
     public static final String QUERY_FOLDER_ENTITY_TYPE     = "Folder";
     public static final String COLLECTION_ENTITY_TYPE       = "Collection";
 
