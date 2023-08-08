@@ -58,13 +58,14 @@ import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEnt
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.ConnectionPreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.LinkPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PersonaPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PurposePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.ReadmePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryFolderPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryPreProcessor;
@@ -509,7 +510,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         entity.setGuid(guid);
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(entity)), "update entity ByUniqueAttributes");
+        AtlasAuthorizationUtils.verifyUpdateEntityAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(entity)), "update entity ByUniqueAttributes");
 
         return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), true, false, false, false);
     }
@@ -526,7 +527,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasEntityType   entityType = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
         AtlasAttribute    attr       = entityType.getAttribute(attrName);
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entity), "update entity ByUniqueAttributes : guid=", guid );
+        AtlasAuthorizationUtils.verifyUpdateEntityAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entity), "update entity ByUniqueAttributes : guid=", guid);
 
         if (attr == null) {
             attr = entityType.getRelationshipAttribute(attrName, AtlasEntityUtil.getRelationshipType(attrValue));
@@ -581,7 +582,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (vertex != null) {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
+            AtlasAuthorizationUtils.verifyDeleteEntityAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
 
             deletionCandidates.add(vertex);
         } else {
@@ -627,7 +628,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
+            AtlasAuthorizationUtils.verifyDeleteEntityAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
 
             deletionCandidates.add(vertex);
         }
@@ -670,7 +671,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
+            AtlasAuthorizationUtils.verifyDeleteEntityAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: guid=", guid);
 
             restoreCandidates.add(vertex);
         }
@@ -736,7 +737,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (vertex != null) {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: typeName=", entityType.getTypeName(), ", uniqueAttributes=", uniqAttributes);
+            AtlasAuthorizationUtils.verifyDeleteEntityAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: typeName=", entityType.getTypeName(), ", uniqueAttributes=", uniqAttributes);
 
             deletionCandidates.add(vertex);
         } else {
@@ -788,7 +789,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 if (vertex != null) {
                     AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: typeName=", entityType.getTypeName(), ", uniqueAttributes=", objectId.getUniqueAttributes());
+                    AtlasAuthorizationUtils.verifyDeleteEntityAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader), "delete entity: typeName=", entityType.getTypeName(), ", uniqueAttributes=", objectId.getUniqueAttributes());
 
                     deletionCandidates.add(vertex);
                 } else {
@@ -1498,20 +1499,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         }
 
                         AtlasEntity diffEntity = reqContext.getDifferentialEntity(entity.getGuid());
-
-                        if (diffEntity != null &&
-                                MapUtils.isNotEmpty(diffEntity.getRelationshipAttributes()) &&
-                                diffEntity.getRelationshipAttributes().containsKey("meanings") &&
-                                diffEntity.getRelationshipAttributes().size() == 1 &&
-                                MapUtils.isEmpty(diffEntity.getAttributes()) &&
-                                MapUtils.isEmpty(diffEntity.getCustomAttributes()) &&
-                                MapUtils.isEmpty(diffEntity.getBusinessAttributes()) &&
-                                CollectionUtils.isEmpty(diffEntity.getClassifications()) &&
-                                CollectionUtils.isEmpty(diffEntity.getLabels())) {
+                        boolean skipAuthBaseConditions = diffEntity != null && MapUtils.isEmpty(diffEntity.getCustomAttributes()) && MapUtils.isEmpty(diffEntity.getBusinessAttributes()) && CollectionUtils.isEmpty(diffEntity.getClassifications()) && CollectionUtils.isEmpty(diffEntity.getLabels());
+                        boolean skipAuthMeaningsUpdate = diffEntity != null && MapUtils.isNotEmpty(diffEntity.getRelationshipAttributes()) && diffEntity.getRelationshipAttributes().containsKey("meanings") && diffEntity.getRelationshipAttributes().size() == 1 && MapUtils.isEmpty(diffEntity.getAttributes());
+                        boolean skipAuthStarredDetailsUpdate = diffEntity != null && MapUtils.isEmpty(diffEntity.getRelationshipAttributes()) && MapUtils.isNotEmpty(diffEntity.getAttributes()) && diffEntity.getAttributes().size() == 3 && diffEntity.getAttributes().containsKey(ATTR_STARRED_BY) && diffEntity.getAttributes().containsKey(ATTR_STARRED_COUNT) && diffEntity.getAttributes().containsKey(ATTR_STARRED_DETAILS_LIST);
+                        if (skipAuthBaseConditions && (skipAuthMeaningsUpdate || skipAuthStarredDetailsUpdate)) {
                             //do nothing, only diff is relationshipAttributes.meanings, allow update
+
                         } else {
                             AtlasEntityAccessRequest accessRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeader);
-                            AtlasAuthorizationUtils.verifyAccess(accessRequest, "update entity: type=", entity.getTypeName());
+                            AtlasAuthorizationUtils.verifyUpdateEntityAccess(accessRequest, "update entity: type=", entity.getTypeName());
                         }
                     }
                 }
@@ -1593,6 +1589,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 flushAutoUpdateAttributes(entity, entityType);
 
                 AtlasVertex vertex = getResolvedEntityVertex(discoveryContext, entity);
+
+                autoUpdateStarredDetailsAttributes(entity, vertex);
 
                 try {
                     if (vertex != null) {
@@ -1690,6 +1688,92 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return context;
     }
 
+    private void autoUpdateStarredDetailsAttributes(AtlasEntity entity, AtlasVertex vertex) {
+        Boolean starEntityForUser = entity.getStarred();
+
+        if (starEntityForUser != null) {
+
+            long requestTime = RequestContext.get().getRequestTime();
+            String requestUser = RequestContext.get().getUser();
+
+            Set<String> starredBy = new HashSet<>();
+            Set<AtlasStruct> starredDetailsList = new HashSet<>();
+            int starredCount = 0;
+
+            if (vertex != null) {
+                Set<String> vertexStarredBy = vertex.getMultiValuedSetProperty(ATTR_STARRED_BY, String.class);
+                if (vertexStarredBy != null) {
+                    starredBy = vertexStarredBy;
+                }
+
+                Iterable<AtlasEdge> starredDetailsEdges = vertex.getEdges(AtlasEdgeDirection.OUT, "__" + ATTR_STARRED_DETAILS_LIST);
+                for (AtlasEdge starredDetailsEdge : starredDetailsEdges) {
+                    AtlasVertex starredDetailsVertex = starredDetailsEdge.getInVertex();
+                    String assetStarredBy = starredDetailsVertex.getProperty(ATTR_ASSET_STARRED_BY, String.class);
+                    Long assetStarredAt = starredDetailsVertex.getProperty(ATTR_ASSET_STARRED_AT, Long.class);
+                    AtlasStruct starredDetails = getStarredDetailsStruct(assetStarredBy, assetStarredAt);
+                    starredDetailsList.add(starredDetails);
+                }
+
+                starredCount = starredBy.size();
+            }
+
+            if (starEntityForUser) {
+
+                //Check and update starredBy Attribute
+                if (!starredBy.contains(requestUser)){
+                    starredBy.add(requestUser);
+                }
+
+                //Check and update starredDetailsList Attribute
+                boolean isStarredDetailsListUpdated = false;
+                for (AtlasStruct starredDetails : starredDetailsList) {
+                    String assetStarredBy = (String) starredDetails.getAttribute(ATTR_ASSET_STARRED_BY);
+                    if (assetStarredBy.equals(requestUser)) {
+                        starredDetails.setAttribute(ATTR_ASSET_STARRED_AT, requestTime);
+                        isStarredDetailsListUpdated = true;
+                        break;
+                    }
+                }
+                if (!isStarredDetailsListUpdated) {
+                    AtlasStruct starredDetails = getStarredDetailsStruct(requestUser, requestTime);
+                    starredDetailsList.add(starredDetails);
+                }
+
+            } else {
+
+                //Check and update starredBy Attribute
+                if (starredBy.contains(requestUser)){
+                    starredBy.remove(requestUser);
+                }
+
+                for (AtlasStruct starredDetails : starredDetailsList) {
+                    String assetStarredBy = (String) starredDetails.getAttribute(ATTR_ASSET_STARRED_BY);
+                    if (assetStarredBy.equals(requestUser)) {
+                        starredDetailsList.remove(starredDetails);
+                        break;
+                    }
+                }
+            }
+
+            // Update entity attributes
+            if (starredBy.size() != starredCount) {
+                entity.setAttribute(ATTR_STARRED_BY, starredBy);
+                entity.setAttribute(ATTR_STARRED_DETAILS_LIST, starredDetailsList);
+                entity.setAttribute(ATTR_STARRED_COUNT, starredBy.size());
+            }
+
+        }
+    }
+
+    private AtlasStruct getStarredDetailsStruct(String assetStarredBy, long assetStarredAt) {
+        AtlasStruct starredDetails = new AtlasStruct();
+        starredDetails.setTypeName(STRUCT_STARRED_DETAILS);
+        starredDetails.setAttribute(ATTR_ASSET_STARRED_BY, assetStarredBy);
+        starredDetails.setAttribute(ATTR_ASSET_STARRED_AT, assetStarredAt);
+        return starredDetails;
+    }
+
     public PreProcessor getPreProcessor(String typeName) {
         PreProcessor preProcessor = null;
 
@@ -1703,7 +1787,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE:
-                preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever);
+                preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever, graph, taskManagement, entityGraphMapper);
                 break;
 
             case QUERY_ENTITY_TYPE:
@@ -1735,7 +1819,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case LINK_ENTITY_TYPE:
-                preProcessor = new LinkPreProcessor();
+                preProcessor = new LinkPreProcessor(typeRegistry, entityRetriever);
+                break;
+
+            case README_ENTITY_TYPE:
+                preProcessor = new ReadmePreProcessor(typeRegistry, entityRetriever);
                 break;
         }
 
@@ -1974,6 +2062,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                             .stream()
                             .flatMap(List<String>::stream)
                             .forEach(flushAttributes::add);
+                }
+            }
+
+            for (String attrName : entityType.getAllAttributes().keySet()) {
+                if (ATTR_STARRED_BY.equals(attrName) || ATTR_STARRED_COUNT.equals(attrName) || ATTR_STARRED_DETAILS_LIST.equals(attrName)) {
+                    flushAttributes.add(attrName);
                 }
             }
 
