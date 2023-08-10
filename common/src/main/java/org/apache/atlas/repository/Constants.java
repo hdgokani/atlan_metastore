@@ -34,6 +34,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 
@@ -139,7 +141,7 @@ public final class Constants {
     public static final String CONNECTION_ENTITY_TYPE       = "Connection";
     public static final String QUERY_ENTITY_TYPE            = "Query";
     public static final String QUERY_FOLDER_ENTITY_TYPE     = "Folder";
-    public static final String QUERY_COLLECTION_ENTITY_TYPE = "Collection";
+    public static final String COLLECTION_ENTITY_TYPE       = "Collection";
 
     /*
      * Purpose / Persona
@@ -154,6 +156,12 @@ public final class Constants {
      * Resource
      */
     public static final String LINK_ENTITY_TYPE = "Link";
+    public static final String README_ENTITY_TYPE = "Readme";
+
+    public static final String ASSET_RELATION_ATTR = "asset";
+
+    public static final String ASSET_README_EDGE_LABEL = "__Asset.readme";
+    public static final String ASSET_LINK_EDGE_LABEL = "__Asset.links";
 
     /**
      * Lineage relations.
@@ -224,6 +232,7 @@ public final class Constants {
 
     public static final String NAME                                    = "name";
     public static final String QUALIFIED_NAME                          = "qualifiedName";
+    public static final String ASSET                                   = "asset";
     public static final String TYPE_NAME_PROPERTY_KEY                  = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
     public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE        = "atlas.graph.index.search.max-result-set-size";
     public static final String INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH = "atlas.graph.index.search.types.max-query-str-length";
@@ -397,6 +406,16 @@ public final class Constants {
 
     public static final String REQUEST_HEADER_USER_AGENT = "User-Agent";
     public static final String REQUEST_HEADER_HOST       = "Host";
+
+    public static final Set<String> SKIP_UPDATE_AUTH_CHECK_TYPES = new HashSet<String>() {{
+        add(README_ENTITY_TYPE);
+        add(LINK_ENTITY_TYPE);
+    }};
+
+    public static final Set<String> SKIP_DELETE_AUTH_CHECK_TYPES = new HashSet<String>() {{
+        add(README_ENTITY_TYPE);
+        add(LINK_ENTITY_TYPE);
+    }};
 
     private Constants() {
     }
