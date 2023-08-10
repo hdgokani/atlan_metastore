@@ -1505,8 +1505,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         boolean skipAuthMeaningsUpdate = diffEntity != null && MapUtils.isNotEmpty(diffEntity.getRelationshipAttributes()) && diffEntity.getRelationshipAttributes().containsKey("meanings") && diffEntity.getRelationshipAttributes().size() == 1 && MapUtils.isEmpty(diffEntity.getAttributes());
                         boolean skipAuthStarredDetailsUpdate = diffEntity != null && MapUtils.isEmpty(diffEntity.getRelationshipAttributes()) && MapUtils.isNotEmpty(diffEntity.getAttributes()) && diffEntity.getAttributes().size() == 3 && diffEntity.getAttributes().containsKey(ATTR_STARRED_BY) && diffEntity.getAttributes().containsKey(ATTR_STARRED_COUNT) && diffEntity.getAttributes().containsKey(ATTR_STARRED_DETAILS_LIST);
                         if (skipAuthBaseConditions && (skipAuthMeaningsUpdate || skipAuthStarredDetailsUpdate)) {
-                            //do nothing, only diff is relationshipAttributes.meanings, allow update
-
+                            //do nothing, only diff is relationshipAttributes.meanings or starred, allow update
                         } else {
                             AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, entityHeader,"update entity: type=" + entity.getTypeName());
                         }
