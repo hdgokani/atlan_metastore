@@ -119,7 +119,8 @@ public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.Pos
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("refreshCacheIfNeeded");
 
         try {
-            if (isImport || RequestContext.get().isPoliciesBootstrappingInProgress()) {
+            //if (isImport || RequestContext.get().isPoliciesBootstrappingInProgress()) {
+            if (isImport || RequestContext.get().isSkipAuthorizationCheck()) {
                 LOG.warn("refreshCacheIfNeeded: Cache refresh will be skipped");
                 return;
             }
@@ -142,7 +143,8 @@ public class AuthzCacheOnDemandRefresher extends GraphTransactionInterceptor.Pos
     public void recordRefresh(EntityMutationResponse entityMutationResponse, boolean isImport) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("recordRefresh");
         try {
-            if (isImport || RequestContext.get().isPoliciesBootstrappingInProgress()) {
+            //if (isImport || RequestContext.get().isPoliciesBootstrappingInProgress()) {
+            if (isImport || RequestContext.get().isSkipAuthorizationCheck()) {
                 LOG.warn("recordRefresh: Cache refresh will be skipped");
                 return;
             }
