@@ -13,7 +13,6 @@ public class RegexLoggingFilter extends Filter {
         pattern = Pattern.compile(patternString);
     }
 
-    //Pattern.compile("^slave: redis:.* is down").matcher("slave: redis://10.192.41.100:6379 is down").matches()
     @Override
     public int decide(LoggingEvent event) {
         String message = (String) event.getMessage();
