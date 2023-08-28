@@ -118,7 +118,7 @@ public class KeycloakUserStore {
                 if (CollectionUtils.isEmpty(events) || cacheLastUpdatedTime > events.get(0).getTime()) {
                     break;
                 }
-
+              
                 Optional<EventRepresentation> event = events.stream().filter(this::isUpdateProfileEvent).findFirst();
 
                 if (event.isPresent()) {
