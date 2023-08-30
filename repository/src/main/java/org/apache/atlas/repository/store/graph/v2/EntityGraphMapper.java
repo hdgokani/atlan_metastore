@@ -137,8 +137,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.getRemovePropagation
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
-import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -3185,6 +3184,14 @@ public class EntityGraphMapper {
             if (updatedRemovePropagations != null && (updatedRemovePropagations != currentRemovePropagations)) {
                 AtlasGraphUtilsV2.setEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY, updatedRemovePropagations);
 
+                // If value set true from false and source entity is deleted, remove propagated classification from propagated entities
+                if (updatedRemovePropagations && !currentRemovePropagations) {
+                    boolean isEntityDeleted = entityVertex.getProperty(STATE_PROPERTY_KEY, String.class).equals(DELETED.toString());
+                    if(isEntityDeleted && taskManagement != null && DEFERRED_ACTION_ENABLED) {
+                        createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertex.getIdForDisplay());
+                    }
+                }
+
                 isClassificationUpdated = true;
             }
 
@@ -3223,12 +3230,11 @@ public class EntityGraphMapper {
 
             if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
                 String propagationType = updatedTagPropagation ? CLASSIFICATION_PROPAGATION_ADD : CLASSIFICATION_PROPAGATION_DELETE;
-
-                createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), currentRestrictPropagationThroughLineage);
-
+                if (!Objects.equals(currentTagPropagation, updatedTagPropagation) || !Objects.equals(currentRestrictPropagationThroughLineage, updatedRestrictPropagationThroughLineage)) {
+                    createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), currentRestrictPropagationThroughLineage);
+                }
                 updatedTagPropagation = null;
             }
-
 
             // compute propagatedEntityVertices once and use it for subsequent iterations and notifications
             if (updatedTagPropagation != null && (currentTagPropagation != updatedTagPropagation || currentRestrictPropagationThroughLineage != updatedRestrictPropagationThroughLineage)) {
@@ -3972,11 +3978,11 @@ public class EntityGraphMapper {
 
     private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, Boolean currentPropagateThroughLineage) throws AtlasBaseException{
 
-        deleteDelegate.getHandler().createAndQueueTask(taskType, entityVertex, classificationVertexId, null, currentPropagateThroughLineage);
+        deleteDelegate.getHandler().createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, null, currentPropagateThroughLineage);
     }
 
     private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId) throws AtlasBaseException {
-        deleteDelegate.getHandler().createAndQueueTask(taskType, entityVertex, classificationVertexId, null);
+        deleteDelegate.getHandler().createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, null);
     }
 
     public void removePendingTaskFromEntity(String entityGuid, String taskGuid) throws EntityNotFoundException {
