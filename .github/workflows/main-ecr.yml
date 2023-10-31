@@ -174,7 +174,7 @@ jobs:
     - name: Login to Amazon ECR
       id: login-ecr
       if: steps.semver_tag.outputs.build == 'true'
-      uses: aws-actions/amazon-ecr-login@v1
+      uses: aws-actions/amazon-ecr-login@v2
 
     - name: Set up Buildx 
       id: buildx
