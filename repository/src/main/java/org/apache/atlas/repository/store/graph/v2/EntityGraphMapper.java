@@ -1980,7 +1980,7 @@ public class EntityGraphMapper {
         AtlasVertex toVertex = ctx.getReferringVertex();
         String toVertexType = getTypeName(toVertex);
 
-        if (TYPE_TERM.equals(toVertexType) || TYPE_CATEGORY.equals(toVertexType)) {
+        if (TYPE_TERM.equals(toVertexType) || DOCUMENT_ENTITY_TYPE.equals(toVertexType) || TYPE_CATEGORY.equals(toVertexType)) {
             // handle __glossary attribute of term or category entity
             String gloQname = edge.getOutVertex().getProperty(QUALIFIED_NAME, String.class);
             AtlasGraphUtilsV2.setEncodedProperty(toVertex, GLOSSARY_PROPERTY_KEY, gloQname);
@@ -2064,7 +2064,7 @@ public class EntityGraphMapper {
             }
         }
 
-        if (TYPE_TERM.equals(getTypeName(termVertex))) {
+        if (TYPE_TERM.equals(getTypeName(termVertex)) || DOCUMENT_ENTITY_TYPE.equals(getTypeName(termVertex))) {
             List<AtlasVertex> categoryVertices = newElementsCreated.stream().map(x -> ((AtlasEdge)x).getOutVertex()).collect(Collectors.toList());
             Set<String> catQnames = categoryVertices.stream().map(x -> x.getProperty(QUALIFIED_NAME, String.class)).collect(Collectors.toSet());
 
