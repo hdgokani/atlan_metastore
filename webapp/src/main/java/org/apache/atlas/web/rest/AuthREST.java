@@ -264,7 +264,6 @@ public class AuthREST {
             EntityAuditSearchResult result = auditRepository.searchEvents(parameters.getQueryString());
 
             if (result == null || CollectionUtils.isEmpty(result.getEntityAudits())) {
-                LOG.info("getPoliciesIfUpdated: Skipping as no update found");
                 return false;
             }
         } catch (AtlasBaseException e) {
