@@ -90,14 +90,14 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
         }
     }
 
-    public void termExists(String termName, String glossaryQName) throws AtlasBaseException {
+    public void termExists(String termName, String glossaryQName, String entityType) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("termExists");
         boolean ret = false;
 
         try {
             List mustClauseList = new ArrayList();
             mustClauseList.add(mapOf("term", mapOf("__glossary", glossaryQName)));
-            mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", ATLAS_GLOSSARY_TERM_ENTITY_TYPE)));
+            mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", entityType)));
             mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
             mustClauseList.add(mapOf("term", mapOf("name.keyword", termName)));
 
@@ -110,7 +110,8 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
             }
 
             if (ret) {
-                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, termName);
+                String type = entityType.equals(ATLAS_GLOSSARY_TERM_ENTITY_TYPE) ? "term" : "document";
+                throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, type, termName);
             }
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);

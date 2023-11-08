@@ -59,6 +59,7 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.CATEGORY_PARENT_EDGE_LABEL;
 import static org.apache.atlas.repository.Constants.CATEGORY_TERMS_EDGE_LABEL;
 import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
@@ -272,7 +273,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             LOG.info("Moving child term {} to Glossary {}", termName, targetGlossaryQualifiedName);
 
             //check duplicate term name
-            termExists(termName, targetGlossaryQualifiedName);
+            termExists(termName, targetGlossaryQualifiedName, ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
 
             String currentTermQualifiedName = termVertex.getProperty(QUALIFIED_NAME, String.class);
             String updatedTermQualifiedName = currentTermQualifiedName.replace(sourceGlossaryQualifiedName, targetGlossaryQualifiedName);
