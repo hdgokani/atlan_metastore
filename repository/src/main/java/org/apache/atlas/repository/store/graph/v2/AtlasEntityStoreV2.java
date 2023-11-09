@@ -1797,7 +1797,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 preProcessor = new TermPreProcessor(typeRegistry, entityRetriever, graph, taskManagement);
                 break;
 
-            case DOCUMENT_ENTITY_TYPE:
+            case ATLAS_GLOSSARY_DOCUMENT_ENTITY_TYPE:
                 preProcessor = new DocumentPreProcessor(typeRegistry, entityRetriever, graph, taskManagement);
                 break;
 
