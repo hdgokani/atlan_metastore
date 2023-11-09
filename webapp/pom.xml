@@ -531,6 +531,12 @@
             </exclusions>
         </dependency>
 
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-admin-client</artifactId>
+            <version>${keycloak-admin.version}</version>
+        </dependency>
+
         <!-- sentry.io dependency in webapp/pom.xml -->
         <dependency>
             <groupId>io.sentry</groupId>
