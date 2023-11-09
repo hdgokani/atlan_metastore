@@ -129,7 +129,7 @@ public final class Constants {
     public static final String ATLAS_GLOSSARY_ENTITY_TYPE          = "AtlasGlossary";
     public static final String ATLAS_GLOSSARY_TERM_ENTITY_TYPE     = "AtlasGlossaryTerm";
     public static final String ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE = "AtlasGlossaryCategory";
-    public static final String DOCUMENT_ENTITY_TYPE                = "Document";
+    public static final String ATLAS_GLOSSARY_DOCUMENT_ENTITY_TYPE = "AtlasGlossaryDocument";
     public static final String CATEGORY_PARENT_EDGE_LABEL          = "r:AtlasGlossaryCategoryHierarchyLink";
     public static final String CATEGORY_TERMS_EDGE_LABEL           = "r:AtlasGlossaryTermCategorization";
     public static final String GLOSSARY_TERMS_EDGE_LABEL           = "r:AtlasGlossaryTermAnchor";
