@@ -75,8 +75,8 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
         authentication = new KeycloakAuthenticationToken(token.getAccount(), token.isInteractive(), grantedAuthorities);
       }
     }
-    if(authentication.getName().startsWith("service-account-apikey")) {
-      LOG.info("validating request for service-account-apikey: {}", authentication.getName().substring("service-account-".length()));
+    if(authentication.getName().startsWith("service-account")) {
+      LOG.info("Validating request for clientId: {}", authentication.getName().substring("service-account-".length()));
       try{
         KeycloakAuthenticationToken keycloakToken = (KeycloakAuthenticationToken)authentication;
         String bearerToken = keycloakToken.getAccount().getKeycloakSecurityContext().getTokenString();
@@ -96,8 +96,8 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
 
   private void handleInvalidApiKey(Authentication authentication) {
     authentication.setAuthenticated(false);
-    LOG.info("Invalid API Key: {}", authentication.getName().substring("service-account-".length()));
-    throw new KeycloakAuthenticationException("Invalid Api Key");
+    LOG.error("Invalid clientId: {}", authentication.getName().substring("service-account-".length()));
+    throw new KeycloakAuthenticationException("Invalid ClientId");
   }
 
   @Override
