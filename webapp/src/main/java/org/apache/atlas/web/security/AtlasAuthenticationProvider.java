@@ -19,6 +19,7 @@ package org.apache.atlas.web.security;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.commons.configuration.Configuration;
+import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
@@ -130,6 +131,8 @@ public class AtlasAuthenticationProvider extends AtlasAbstractAuthenticationProv
             } else if (keycloakAuthenticationEnabled) {
                 try {
                     authentication = atlasKeycloakAuthenticationProvider.authenticate(authentication);
+                } catch (KeycloakAuthenticationException ex) {
+                    throw new AtlasAuthenticationException("Authentication failed.");
                 } catch (Exception ex) {
                     LOG.error("Error while Keycloak authentication", ex);
                 }
