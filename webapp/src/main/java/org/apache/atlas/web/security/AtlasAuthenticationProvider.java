@@ -132,6 +132,8 @@ public class AtlasAuthenticationProvider extends AtlasAbstractAuthenticationProv
                 try {
                     authentication = atlasKeycloakAuthenticationProvider.authenticate(authentication);
                 } catch (KeycloakAuthenticationException ex) {
+                    // this exception signals that the authentication process for Keycloak has failed
+                    // possibly due to token introspection issues or an inactive client.
                     throw new AtlasAuthenticationException("Authentication failed.");
                 } catch (Exception ex) {
                     LOG.error("Error while Keycloak authentication", ex);
