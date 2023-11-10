@@ -75,7 +75,7 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
         authentication = new KeycloakAuthenticationToken(token.getAccount(), token.isInteractive(), grantedAuthorities);
       }
     }
-    if(authentication.getName().startsWith("service-account")) {
+    if(authentication.getName().startsWith("service-account-apikey")) {
       LOG.info("Validating request for clientId: {}", authentication.getName().substring("service-account-".length()));
       try{
         KeycloakAuthenticationToken keycloakToken = (KeycloakAuthenticationToken)authentication;
