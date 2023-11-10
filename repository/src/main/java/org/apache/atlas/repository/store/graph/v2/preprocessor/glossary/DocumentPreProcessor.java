@@ -48,7 +48,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.apache.atlas.repository.Constants.CATEGORY_TERMS_EDGE_LABEL;
-import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_DOCUMENT_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.DOCUMENT_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.graph.GraphHelper.getActiveParentVertices;
@@ -98,7 +98,7 @@ public class DocumentPreProcessor extends AbstractGlossaryPreProcessor {
 
         String glossaryQName = (String) anchor.getAttribute(QUALIFIED_NAME);
 
-        termExists(docName, glossaryQName, ATLAS_GLOSSARY_DOCUMENT_ENTITY_TYPE);
+        termExists(docName, glossaryQName, DOCUMENT_ENTITY_TYPE);
 
         validateCategory(entity);
 
@@ -147,7 +147,7 @@ public class DocumentPreProcessor extends AbstractGlossaryPreProcessor {
         } else {
 
             if (!vertexName.equals(docName)) {
-                termExists(docName, newGlossaryQualifiedName, ATLAS_GLOSSARY_DOCUMENT_ENTITY_TYPE);
+                termExists(docName, newGlossaryQualifiedName, DOCUMENT_ENTITY_TYPE);
             }
 
             entity.setAttribute(QUALIFIED_NAME, docQualifiedName);
@@ -194,7 +194,7 @@ public class DocumentPreProcessor extends AbstractGlossaryPreProcessor {
                                            String currentDocQualifiedName) throws AtlasBaseException {
 
         //check duplicate doc name
-        termExists((String) entity.getAttribute(NAME), targetGlossaryQualifiedName, ATLAS_GLOSSARY_DOCUMENT_ENTITY_TYPE);
+        termExists((String) entity.getAttribute(NAME), targetGlossaryQualifiedName, DOCUMENT_ENTITY_TYPE);
 
 
         String updatedQualifiedName = currentDocQualifiedName.replace(sourceGlossaryQualifiedName, targetGlossaryQualifiedName);
