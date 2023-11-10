@@ -75,18 +75,22 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
         authentication = new KeycloakAuthenticationToken(token.getAccount(), token.isInteractive(), grantedAuthorities);
       }
     }
-    if(authentication.getName().startsWith("service-account-apikey")) {
+
+    // Introspect token online with keycloak server if request is made by service account
+    if (authentication.getName().startsWith("service-account-apikey")) {
       LOG.info("Validating request for clientId: {}", authentication.getName().substring("service-account-".length()));
-      try{
-        KeycloakAuthenticationToken keycloakToken = (KeycloakAuthenticationToken)authentication;
+      try {
+        KeycloakAuthenticationToken keycloakToken = (KeycloakAuthenticationToken) authentication;
         String bearerToken = keycloakToken.getAccount().getKeycloakSecurityContext().getTokenString();
         TokenMetadataRepresentation introspectToken = atlasKeycloakClient.introspectToken(bearerToken);
-        if(Objects.nonNull(introspectToken) && introspectToken.isActive()) {
+        if (Objects.nonNull(introspectToken) && introspectToken.isActive()) {
           authentication.setAuthenticated(true);
         } else {
+          // if the client is inactive throw KeycloakAuthenticationException
           handleInvalidApiKey(authentication);
         }
       } catch (Exception e) {
+        LOG.error("Keycloak Authentication failed : {}", e.getMessage());
         throw new KeycloakAuthenticationException("Keycloak Authentication failed", e.getCause());
       }
     }
