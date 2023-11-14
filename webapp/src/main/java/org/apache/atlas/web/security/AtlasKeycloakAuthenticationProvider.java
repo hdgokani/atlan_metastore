@@ -17,13 +17,9 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.keycloak.client.AtlasKeycloakClient;
 import org.apache.commons.configuration.Configuration;
 import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
 import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
-import org.keycloak.representations.oidc.TokenMetadataRepresentation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -32,7 +28,6 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Component
 public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
@@ -41,13 +36,8 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
 
   private final KeycloakAuthenticationProvider keycloakAuthenticationProvider;
 
-  private final AtlasKeycloakClient atlasKeycloakClient;
-
-  private static final Logger LOG = LoggerFactory.getLogger(AtlasKeycloakAuthenticationProvider.class);
-
   public AtlasKeycloakAuthenticationProvider() throws Exception {
     this.keycloakAuthenticationProvider = new KeycloakAuthenticationProvider();
-    this.atlasKeycloakClient = AtlasKeycloakClient.getKeycloakClient();
 
     Configuration configuration = ApplicationProperties.get();
     this.groupsFromUGI = configuration.getBoolean("atlas.authentication.method.keycloak.ugi-groups", true);
@@ -75,29 +65,8 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
         authentication = new KeycloakAuthenticationToken(token.getAccount(), token.isInteractive(), grantedAuthorities);
       }
     }
-    if(authentication.getName().startsWith("service-account")) {
-      LOG.info("Validating request for clientId: {}", authentication.getName().substring("service-account-".length()));
-      try{
-        KeycloakAuthenticationToken keycloakToken = (KeycloakAuthenticationToken)authentication;
-        String bearerToken = keycloakToken.getAccount().getKeycloakSecurityContext().getTokenString();
-        TokenMetadataRepresentation introspectToken = atlasKeycloakClient.introspectToken(bearerToken);
-        if(Objects.nonNull(introspectToken) && introspectToken.isActive()) {
-          authentication.setAuthenticated(true);
-        } else {
-          handleInvalidApiKey(authentication);
-        }
-      } catch (Exception e) {
-        throw new KeycloakAuthenticationException("Keycloak Authentication failed", e.getCause());
-      }
-    }
 
     return authentication;
-  }
-
-  private void handleInvalidApiKey(Authentication authentication) {
-    authentication.setAuthenticated(false);
-    LOG.error("Invalid clientId: {}", authentication.getName().substring("service-account-".length()));
-    throw new KeycloakAuthenticationException("Invalid ClientId");
   }
 
   @Override
