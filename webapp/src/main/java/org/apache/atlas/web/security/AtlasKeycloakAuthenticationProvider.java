@@ -80,7 +80,7 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
     if(authentication.getName().startsWith("service-account-apikey")) {
       LOG.info("Validating request for clientId: {}", authentication.getName().substring("service-account-".length()));
 
-      Counter.builder("service_account_api_request_counter").register(MetricUtils.getMeterRegistry()).increment();
+      Counter.builder("service_account_apikey_request_counter").register(MetricUtils.getMeterRegistry()).increment();
       try{
         KeycloakAuthenticationToken keycloakToken = (KeycloakAuthenticationToken)authentication;
         String bearerToken = keycloakToken.getAccount().getKeycloakSecurityContext().getTokenString();
