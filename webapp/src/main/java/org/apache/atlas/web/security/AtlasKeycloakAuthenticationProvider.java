@@ -17,7 +17,6 @@
 package org.apache.atlas.web.security;
 
 import io.micrometer.core.instrument.Counter;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.keycloak.client.AtlasKeycloakClient;
 import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.atlas.ApplicationProperties;
@@ -53,7 +52,7 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
 
     Configuration configuration = ApplicationProperties.get();
 
-    this.isTokenIntrospectionEnabled = AtlasConfiguration.ENABLE_KEYCLOAK_TOKEN_INTROSPECTION.getBoolean();
+    this.isTokenIntrospectionEnabled = configuration.getBoolean("atlas.canary.keycloak.token-introspection", false);
     this.groupsFromUGI = configuration.getBoolean("atlas.authentication.method.keycloak.ugi-groups", true);
     this.groupsClaim = configuration.getString("atlas.authentication.method.keycloak.groups_claim");
   }
