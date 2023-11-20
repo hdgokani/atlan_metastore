@@ -171,42 +171,47 @@ public class ESAliasStore implements IndexAliasStore {
     private void personaPolicyToESDslClauses(List<AtlasEntity> policies,
                                              List<Map<String, Object>> allowClauseList) throws AtlasBaseException {
         List<String> terms = new ArrayList<>();
+        
         for (AtlasEntity policy: policies) {
 
             if (policy.getStatus() == null || AtlasEntity.Status.ACTIVE.equals(policy.getStatus())) {
                 List<String> assets = getPolicyAssets(policy);
 
-                if (getIsAllowPolicy(policy)) {
-                    if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_METADATA)) {
-                        String connectionQName = getPolicyConnectionQN(policy);
-                        if (StringUtils.isEmpty(connectionQName)) {
-                            connectionQName = getConnectionQualifiedNameFromPolicyAssets(entityRetriever, assets);
-                        }
+                if (!getIsAllowPolicy(policy)) {
+                    continue;
+                }
+                
+                if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_METADATA)) {
 
-                        for (String asset : assets) {
-                            terms.add(asset);
-                            allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
-                        }
+                    String connectionQName = getPolicyConnectionQN(policy);
+                    if (StringUtils.isEmpty(connectionQName)) {
+                        connectionQName = getConnectionQualifiedNameFromPolicyAssets(entityRetriever, assets);
+                    }
 
-                        terms.add(connectionQName);
+                    for (String asset : assets) {
+                        terms.add(asset);
+                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
+                    }
 
-                    } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
-                        for (String glossaryQName : assets) {
-                            terms.add(glossaryQName);
-                            allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + glossaryQName)));
-                        }
+                    terms.add(connectionQName);
+
+                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
+
+                    for (String glossaryQName : assets) {
+                        terms.add(glossaryQName);
+                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + glossaryQName)));
                     }
                 }
             }
-        }
 
-        if (terms.size() > assetsMaxLimit) {
-            throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(terms.size()));
+            if (terms.size() > assetsMaxLimit) {
+                throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(terms.size()));
+            }
         }
 
         allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, terms)));
     }
-
+  
     private Map<String, Object> esClausesToFilter(List<Map<String, Object>> allowClauseList) {
         if (CollectionUtils.isNotEmpty(allowClauseList)) {
             return mapOf("bool", mapOf("should", allowClauseList));
