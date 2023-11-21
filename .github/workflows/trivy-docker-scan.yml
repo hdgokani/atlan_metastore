@@ -24,15 +24,15 @@ jobs:
           scan-ref: './Dockerfile'
           hide-progress: false
           template: '@/contrib/gitlab.tpl'
-          format: 'sarif'
+          format: 'table'
           #output: ''
-          output: 'trivy-results-docker.sarif'
+          # output: 'trivy-results-docker.sarif'
           exit-code: '1'
           #ignore-unfixed: true
           severity: 'CRITICAL,HIGH,MEDIUM'
 
-      - name: Upload Trivy Docker Scan Results To GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: 'trivy-results-docker.sarif'
+      # - name: Upload Trivy Docker Scan Results To GitHub Security tab
+      #   uses: github/codeql-action/upload-sarif@v2
+      #   with:
+      #     sarif_file: 'trivy-results-docker.sarif'
   
