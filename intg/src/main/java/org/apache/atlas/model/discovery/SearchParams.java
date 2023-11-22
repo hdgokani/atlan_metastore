@@ -18,11 +18,20 @@ public class SearchParams {
     boolean suppressLogs;
     boolean excludeMeanings;
     boolean excludeClassifications;
+    boolean testAccessControl;
 
     RequestMetadata requestMetadata = new RequestMetadata();
 
+    public boolean isTestAccessControl() {
+        return testAccessControl;
+    }
+
     public String getQuery() {
         return getQuery();
+    }
+
+    public void setQuery(String query) {
+        setQuery(query);
     }
 
     public Set<String> getAttributes() {

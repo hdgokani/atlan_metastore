@@ -160,13 +160,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.taskManagement = taskManagement;
         this.atlasRelationshipStore = atlasRelationshipStore;
         this.featureFlagStore = featureFlagStore;
-        this.atlasAuthorization = new AtlasAuthorization();
 
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
         } catch (AtlasException e) {
             e.printStackTrace();
         }
+
+        this.atlasAuthorization = new AtlasAuthorization(this.discovery);
 
     }
 
@@ -1425,26 +1426,26 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return map;
     }
 
-    private Boolean isAccessAllowed(AtlasEntity entity, String action) {
-        Map<String, Object> entityAttr = entity.getAttributes();
-        Map<String, Object> entityForAuth = getMap("objects", getMap("assetCriteria", getMap("attributes", entityAttr)));;
-
-        String[] assetQualifiedNames = new String[1];
-        assetQualifiedNames[0] = (String) entity.getAttribute("qualifiedName");
-        ((Map<String, Object>) entityForAuth.get("objects")).put("assetQualifiedNames", assetQualifiedNames);
-
-
-        String[] userArray = new String[1];
-        userArray[0] = RequestContext.getCurrentUser();
-        entityForAuth.put("subjects", getMap("users", userArray));
-
-        String[] actionArray = new String[1];
-        actionArray[0] = action;
-        entityForAuth.put("actions", actionArray);
-
-        Boolean accessAllowed = this.atlasAuthorization.isAccessAllowed(entityForAuth, RequestContext.getCurrentUser());
-        return accessAllowed;
-    }
+//    private Boolean isAccessAllowed(AtlasEntity entity, String action) {
+//        Map<String, Object> entityAttr = entity.getAttributes();
+//        Map<String, Object> entityForAuth = getMap("objects", getMap("assetCriteria", getMap("attributes", entityAttr)));;
+//
+//        String[] assetQualifiedNames = new String[1];
+//        assetQualifiedNames[0] = (String) entity.getAttribute("qualifiedName");
+//        ((Map<String, Object>) entityForAuth.get("objects")).put("assetQualifiedNames", assetQualifiedNames);
+//
+//
+//        String[] userArray = new String[1];
+//        userArray[0] = RequestContext.getCurrentUser();
+//        entityForAuth.put("subjects", getMap("users", userArray));
+//
+//        String[] actionArray = new String[1];
+//        actionArray[0] = action;
+//        entityForAuth.put("actions", actionArray);
+//
+//        Boolean accessAllowed = this.atlasAuthorization.isAccessAllowed(entityForAuth, RequestContext.getCurrentUser());
+//        return accessAllowed;
+//    }
 
     private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications, boolean replaceBusinessAttributes, boolean isOverwriteBusinessAttribute) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
@@ -1540,9 +1541,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         if (skipAuthBaseConditions && (skipAuthMeaningsUpdate || skipAuthStarredDetailsUpdate)) {
                             //do nothing, only diff is relationshipAttributes.meanings or starred, allow update
                         } else {
-                            if (!isAccessAllowed(entity, "UPDATE")) {
+                            if (!this.atlasAuthorization.isAccessAllowed(RequestContext.getCurrentUser(), AtlasPrivilege.ENTITY_UPDATE.toString(), entity.getAttribute(QUALIFIED_NAME).toString(), entity.getTypeName())) {
                                 throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser());
                             }
+//                            if (!isAccessAllowed(entity, "UPDATE")) {
+//                                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser());
+//                            }
 //                            AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, entityHeader,"update entity: type=" + entity.getTypeName());
                         }
                     }

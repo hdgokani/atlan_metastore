@@ -17,6 +17,11 @@
  */
 package org.apache.atlas.discovery;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
@@ -75,9 +80,8 @@ import static org.apache.atlas.AtlasErrorCode.*;
 import static org.apache.atlas.SortOrder.ASCENDING;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.repository.Constants.ASSET_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.OWNER_ATTRIBUTE;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
+import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.BASIC_SEARCH_STATE_FILTER;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TO_RANGE_LIST;
 
@@ -997,6 +1001,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             indexQuery = graph.elasticsearchQuery(indexName);
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
+            if (searchParams.isTestAccessControl()) {
+                addPreFiltersToSearchQuery(searchParams);
+            }
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
             RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
             prepareSearchResult(ret, indexQueryResult, resultAttributes, true);
@@ -1008,6 +1015,153 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             throw e;
         }
         return ret;
+    }
+
+    private String jsonSchemaToElasticsearchDSL(String jsonSchema) {
+        // Create ObjectMapper
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // Parse JSON 2 string
+        JsonNode jsonSchemaNode = null;
+        try {
+            jsonSchemaNode = objectMapper.readTree(jsonSchema);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        // Create JSON 1 structure
+        ObjectNode elasticsearchDSL = objectMapper.createObjectNode();
+        ObjectNode elasticsearchDSLBool = objectMapper.createObjectNode();
+        elasticsearchDSL.set("bool", elasticsearchDSLBool);
+        ArrayNode mustNotNode = elasticsearchDSLBool.putArray("must_not");
+        ArrayNode filterNode = elasticsearchDSLBool.putArray("filter");
+
+        // Iterate over attributes in JSON 2 and convert to JSON 1
+        jsonSchemaNode.fields().forEachRemaining(entry -> {
+            String attributeName = entry.getKey();
+            JsonNode attributeNode = entry.getValue();
+
+            // Create condition based on attribute type and pattern
+            if (attributeNode.has("pattern")) {
+                String pattern = attributeNode.get("pattern").asText();
+                if (pattern.startsWith("^(?!") && pattern.endsWith("$).*$")) {
+                    // Convert to must_not condition
+                    ObjectNode termNode = mustNotNode.addObject();
+                    termNode.putObject("term").put(attributeName, pattern.substring(4, pattern.length() - 5));
+                } else if (pattern.startsWith("^") && pattern.endsWith("$")) {
+                    // Convert to filter condition
+                    ObjectNode termNode = filterNode.addObject();
+                    termNode.putObject("term").put(attributeName, pattern.substring(1, pattern.length() - 1));
+                } else if (pattern.startsWith(".*")) {
+                    // Convert to filter wildcard condition
+                    ObjectNode wildcardNode = filterNode.addObject().putObject("wildcard");
+                    wildcardNode.putObject(attributeName).put("value","*" + pattern.substring(2));
+                } else if (pattern.endsWith(".*")) {
+                    // Convert to filter wildcard condition
+                    ObjectNode wildcardNode = filterNode.addObject().putObject("wildcard");
+                    wildcardNode.putObject(attributeName).put("value", pattern.substring(0, pattern.length() - 2) + "*");
+                }
+            }
+        });
+
+        // Convert JSON 1 to string
+        return elasticsearchDSL.toString();
+    }
+
+    private List<AtlasEntityHeader> getRelevantPolicies(String user, String action) throws AtlasBaseException {
+        List<AtlasEntityHeader> ret = new ArrayList<>();
+
+        IndexSearchParams indexSearchParams = new IndexSearchParams();
+        Map<String, Object> dsl = new HashMap<>();
+
+        List mustClauseList = new ArrayList();
+        mustClauseList.add(mapOf("term", getMap("__typeName.keyword", POLICY_ENTITY_TYPE)));
+        mustClauseList.add(mapOf("term", getMap("policyUsers", user)));
+        mustClauseList.add(mapOf("term", getMap("policyActions", action)));
+
+        dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
+
+        indexSearchParams.setDsl(dsl);
+        Set<String> attributes = new HashSet<>();
+        attributes.add("policyFilterCriteria");
+        indexSearchParams.setAttributes(attributes);
+        indexSearchParams.setSuppressLogs(true);
+
+        AtlasSearchResult result = directIndexSearch(indexSearchParams);
+        if (result != null) {
+            ret = result.getEntities();
+        }
+
+        return ret;
+    }
+
+    private List<String> getPolicyFilterCriteriaArray(List<AtlasEntityHeader> entityHeaders) {
+        List<String> policyFilterCriteriaArray = new ArrayList<>();
+        if (entityHeaders != null) {
+            for (AtlasEntityHeader entity: entityHeaders) {
+                String policyFilterCriteria = (String) entity.getAttribute("policyFilterCriteria");
+                if (StringUtils.isNotEmpty(policyFilterCriteria)) {
+                    policyFilterCriteriaArray.add(policyFilterCriteria);
+                }
+            }
+        }
+        return policyFilterCriteriaArray;
+    }
+
+    private List<String> getPolicyDSLArray(List<String> policyFilterCriteriaArray) {
+        List<String> policyDSLArray = new ArrayList<>();
+        for (String policyFilterCriteria: policyFilterCriteriaArray) {
+            String policyDSL = jsonSchemaToElasticsearchDSL(policyFilterCriteria);
+            policyDSLArray.add(policyDSL);
+        }
+        return policyDSLArray;
+    }
+
+    public List<Map<String, Object>> getDSLNodeForIndexsearch(String user, String action){
+        List<AtlasEntityHeader> policies = new ArrayList<>();
+        try {
+            policies = getRelevantPolicies(user, action);
+        } catch (AtlasBaseException e) {
+            e.printStackTrace();
+        }
+        List<String> policyFilterCriteriaArray = getPolicyFilterCriteriaArray(policies);
+        List<String> policyDSLArray = getPolicyDSLArray(policyFilterCriteriaArray);
+        List<Map<String, Object>> shouldClauseList = new ArrayList<>();
+        for (String policyDSL: policyDSLArray) {
+            String policyDSLBase64 = Base64.getEncoder().encodeToString(policyDSL.getBytes());;
+            shouldClauseList.add(getMap("wrapper", getMap("query", policyDSLBase64)));
+        }
+        return shouldClauseList;
+    }
+
+    private void addPreFiltersToSearchQuery(SearchParams searchParams) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            List<Map<String, Object>> shouldClauseList = getDSLNodeForIndexsearch(RequestContext.getCurrentUser(), "ENTITY_READ");
+
+            String dslString = searchParams.getQuery();
+            JsonNode node = mapper.readTree(dslString);
+            String userQueryString = node.get("query").toString();
+            String userQueryBase64 = Base64.getEncoder().encodeToString(userQueryString.getBytes());;
+
+            List<Map<String, Object>> mustClauseList = new ArrayList<>();
+
+            Map<String, Object> boolClause = new HashMap<>();
+            boolClause.put("should", shouldClauseList);
+            boolClause.put("minimum_should_match", 1);
+
+            mustClauseList.add(getMap("bool", boolClause));
+            mustClauseList.add(getMap("wrapper", getMap("query", userQueryBase64)));
+            JsonNode updateQueryNode = mapper.valueToTree(getMap("bool", getMap("must", mustClauseList)));
+
+            ((ObjectNode) node).set("query", updateQueryNode);
+            searchParams.setQuery(node.toString());
+
+            LOG.info("node.toPrettyString()");
+            LOG.info(node.toPrettyString());
+        } catch (Exception e) {
+            LOG.error("Error -> addPreFiltersToSearchQuery!", e);
+        }
     }
 
     @Override

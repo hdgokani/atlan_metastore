@@ -116,7 +116,9 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         entity.setAttribute(ATTR_POLICY_IS_ENABLED, entity.getAttributes().getOrDefault(ATTR_POLICY_IS_ENABLED, true));
 
         AuthPolicyValidator validator = new AuthPolicyValidator(entityRetriever);
-        if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
+        if ("elasticsearch".equals(policyCategory)) {
+
+        } else if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
             AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
             AtlasEntity parentEntity = parent.getEntity();
 
