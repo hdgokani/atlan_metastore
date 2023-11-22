@@ -13,11 +13,15 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
+import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
+import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.commons.lang.StringUtils;
 
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.POLICY_SERVICE_NAME_APE;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
@@ -28,7 +32,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
-import org.apache.kafka.common.protocol.types.Field;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,10 +44,12 @@ public class AtlasAuthorization {
     private String policiesString;
     private Map<String, Set> userPoliciesMap= new HashMap<>();
     private EntityDiscoveryService discoveryService;
+    private IndexAliasStore aliasStore;
 
-    public AtlasAuthorization (EntityDiscoveryService discoveryService) {
+    public AtlasAuthorization (EntityDiscoveryService discoveryService, AtlasGraph graph, EntityGraphRetriever entityRetriever) {
         try {
             this.discoveryService = discoveryService;
+            this.aliasStore = new ESAliasStore(graph, entityRetriever);
             policiesString = getPolicies();
             createUserPolicyMap();
         } catch (Exception e) {
@@ -208,6 +213,7 @@ public class AtlasAuthorization {
         mustClauseList.add(mapOf("term", getMap("__typeName.keyword", POLICY_ENTITY_TYPE)));
         mustClauseList.add(mapOf("term", getMap("policyUsers", user)));
         mustClauseList.add(mapOf("term", getMap("policyActions", action)));
+        mustClauseList.add(mapOf("term", getMap("policyServiceName", POLICY_SERVICE_NAME_APE)));
 
         dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
 
@@ -225,6 +231,23 @@ public class AtlasAuthorization {
         return ret;
     }
 
+    public List<Map<String, Object>> getAuthPreFilterDSL(String user, String action){
+        List<AtlasEntityHeader> policies = new ArrayList<>();
+        try {
+            policies = getRelevantPolicies(user, action);
+        } catch (AtlasBaseException e) {
+            e.printStackTrace();
+        }
+        List<String> policyFilterCriteriaArray = getPolicyFilterCriteriaArray(policies);
+        List<String> policyDSLArray = getPolicyDSLArray(policyFilterCriteriaArray);
+        List<Map<String, Object>> shouldClauseList = new ArrayList<>();
+        for (String policyDSL: policyDSLArray) {
+            String policyDSLBase64 = Base64.getEncoder().encodeToString(policyDSL.getBytes());;
+            shouldClauseList.add(getMap("wrapper", getMap("query", policyDSLBase64)));
+        }
+        return shouldClauseList;
+    }
+
     private List<String> getPolicyFilterCriteriaArray(List<AtlasEntityHeader> entityHeaders) {
         List<String> policyFilterCriteriaArray = new ArrayList<>();
         if (entityHeaders != null) {
@@ -240,28 +263,18 @@ public class AtlasAuthorization {
 
     private List<String> getPolicyDSLArray(List<String> policyFilterCriteriaArray) {
         List<String> policyDSLArray = new ArrayList<>();
+        ObjectMapper mapper = new ObjectMapper();
         for (String policyFilterCriteria: policyFilterCriteriaArray) {
-            String policyDSL = jsonSchemaToElasticsearchDSL(policyFilterCriteria);
-            policyDSLArray.add(policyDSL);
+            JsonNode policyFilterCriteriaNode = null;
+            try {
+                policyFilterCriteriaNode = mapper.readTree(policyFilterCriteria);
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+            JsonNode policyDSL = JsonToElasticsearchQuery.convertJsonToQuery(policyFilterCriteriaNode, mapper);
+            policyDSLArray.add(policyDSL.toString());
         }
         return policyDSLArray;
-    }
-
-    public List<Map<String, Object>> getDSLNodeForIndexsearch(String user, String action){
-        List<AtlasEntityHeader> policies = new ArrayList<>();
-        try {
-            policies = getRelevantPolicies(user, action);
-        } catch (AtlasBaseException e) {
-            e.printStackTrace();
-        }
-        List<String> policyFilterCriteriaArray = getPolicyFilterCriteriaArray(policies);
-        List<String> policyDSLArray = getPolicyDSLArray(policyFilterCriteriaArray);
-        List<Map<String, Object>> shouldClauseList = new ArrayList<>();
-        for (String policyDSL: policyDSLArray) {
-            String policyDSLBase64 = Base64.getEncoder().encodeToString(policyDSL.getBytes());;
-            shouldClauseList.add(getMap("wrapper", getMap("query", policyDSLBase64)));
-        }
-        return shouldClauseList;
     }
 
     public boolean isAccessAllowed(String user, String action, String entityQualifiedName, String entityTypeName){

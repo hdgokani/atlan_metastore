@@ -58,9 +58,7 @@ import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserN
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.verifyAccess;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
-import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_ADMIN;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
 
@@ -108,6 +106,11 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreatePolicy");
         AtlasEntity policy = (AtlasEntity) entity;
 
+        String policyServiceName = getPolicyServiceName(policy);
+        if (POLICY_SERVICE_NAME_APE.equals(policyServiceName)) {
+            return;
+        }
+
         String policyCategory = getPolicyCategory(policy);
         if (StringUtils.isEmpty(policyCategory)) {
             throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_CATEGORY);
@@ -116,9 +119,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         entity.setAttribute(ATTR_POLICY_IS_ENABLED, entity.getAttributes().getOrDefault(ATTR_POLICY_IS_ENABLED, true));
 
         AuthPolicyValidator validator = new AuthPolicyValidator(entityRetriever);
-        if ("elasticsearch".equals(policyCategory)) {
-
-        } else if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
+        if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
             AtlasEntityWithExtInfo parent = getAccessControlEntity(policy);
             AtlasEntity parentEntity = parent.getEntity();
 

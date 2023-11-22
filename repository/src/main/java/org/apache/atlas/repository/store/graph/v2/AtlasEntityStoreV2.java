@@ -167,7 +167,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             e.printStackTrace();
         }
 
-        this.atlasAuthorization = new AtlasAuthorization(this.discovery);
+        this.atlasAuthorization = new AtlasAuthorization(this.discovery, this.graph, this.entityRetriever);
 
     }
 
@@ -1541,13 +1541,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         if (skipAuthBaseConditions && (skipAuthMeaningsUpdate || skipAuthStarredDetailsUpdate)) {
                             //do nothing, only diff is relationshipAttributes.meanings or starred, allow update
                         } else {
-                            if (!this.atlasAuthorization.isAccessAllowed(RequestContext.getCurrentUser(), AtlasPrivilege.ENTITY_UPDATE.toString(), entity.getAttribute(QUALIFIED_NAME).toString(), entity.getTypeName())) {
-                                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser());
-                            }
+//                            if (!this.atlasAuthorization.isAccessAllowed(RequestContext.getCurrentUser(), AtlasPrivilege.ENTITY_UPDATE.toString(), entity.getAttribute(QUALIFIED_NAME).toString(), entity.getTypeName())) {
+//                                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser());
+//                            }
 //                            if (!isAccessAllowed(entity, "UPDATE")) {
 //                                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser());
 //                            }
-//                            AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, entityHeader,"update entity: type=" + entity.getTypeName());
+                            AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, entityHeader,"update entity: type=" + entity.getTypeName());
                         }
                     }
                 }
