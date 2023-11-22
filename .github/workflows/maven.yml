@@ -26,7 +26,7 @@ on:
       - development
       - master
       - lineageondemand
-      - poc/access-control-json
+      - accesscontrolv2
 
 jobs:
   build:
