@@ -1003,10 +1003,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             String indexName = getIndexName(params);
 
             indexQuery = graph.elasticsearchQuery(indexName);
-            AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             if (searchParams.getUseAccessControlv2()) {
                 addPreFiltersToSearchQuery(searchParams);
             }
+            AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
             RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
             prepareSearchResult(ret, indexQueryResult, resultAttributes, true);
@@ -1022,6 +1022,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     private void addPreFiltersToSearchQuery(SearchParams searchParams) {
         try {
+            AtlasPerfMetrics.MetricRecorder addPreFiltersToSearchQueryMetric = RequestContext.get().startMetricRecord("addPreFiltersToSearchQuery");
             ObjectMapper mapper = new ObjectMapper();
             List<Map<String, Object>> mustClauseList = new ArrayList<>();
 
@@ -1042,6 +1043,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             ((ObjectNode) node).set("query", updateQueryNode);
             searchParams.setQuery(node.toString());
+            RequestContext.get().endMetricRecord(addPreFiltersToSearchQueryMetric);
 
         } catch (Exception e) {
             LOG.error("Error -> addPreFiltersToSearchQuery!", e);

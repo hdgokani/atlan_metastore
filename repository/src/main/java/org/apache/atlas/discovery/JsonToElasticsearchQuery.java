@@ -2,6 +2,8 @@ package org.apache.atlas.discovery;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.atlas.RequestContext;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 
 public class JsonToElasticsearchQuery {
 
@@ -17,6 +19,7 @@ public class JsonToElasticsearchQuery {
     }
 
     public static JsonNode convertJsonToQuery(JsonNode data, ObjectMapper mapper) {
+        AtlasPerfMetrics.MetricRecorder convertJsonToQueryMetrics = RequestContext.get().startMetricRecord("convertJsonToQuery");
         String condition = data.get("condition").asText();
         JsonNode criterion = data.get("criterion");
 
@@ -57,7 +60,7 @@ public class JsonToElasticsearchQuery {
 
             }
         }
-
+        RequestContext.get().endMetricRecord(convertJsonToQueryMetrics);
         return query;
     }
 }

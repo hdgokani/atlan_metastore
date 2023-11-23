@@ -9,6 +9,7 @@ import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
@@ -18,6 +19,7 @@ import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
 import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.lang.StringUtils;
 
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
@@ -204,6 +206,7 @@ public class AtlasAuthorization {
         return count;
     }
     private List<AtlasEntityHeader> getRelevantPolicies(String user, String action) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder getRelevantPoliciesMetrics = RequestContext.get().startMetricRecord("getRelevantPolicies");
         List<AtlasEntityHeader> ret = new ArrayList<>();
 
         IndexSearchParams indexSearchParams = new IndexSearchParams();
@@ -227,6 +230,7 @@ public class AtlasAuthorization {
         if (result != null) {
             ret = result.getEntities();
         }
+        RequestContext.get().endMetricRecord(getRelevantPoliciesMetrics);
 
         return ret;
     }
@@ -241,14 +245,17 @@ public class AtlasAuthorization {
         List<String> policyFilterCriteriaArray = getPolicyFilterCriteriaArray(policies);
         List<String> policyDSLArray = getPolicyDSLArray(policyFilterCriteriaArray);
         List<Map<String, Object>> shouldClauseList = new ArrayList<>();
+        AtlasPerfMetrics.MetricRecorder base64EncodingMetrics = RequestContext.get().startMetricRecord("base64Encoding");
         for (String policyDSL: policyDSLArray) {
             String policyDSLBase64 = Base64.getEncoder().encodeToString(policyDSL.getBytes());;
             shouldClauseList.add(getMap("wrapper", getMap("query", policyDSLBase64)));
         }
+        RequestContext.get().endMetricRecord(base64EncodingMetrics);
         return shouldClauseList;
     }
 
     private List<String> getPolicyFilterCriteriaArray(List<AtlasEntityHeader> entityHeaders) {
+        AtlasPerfMetrics.MetricRecorder getPolicyFilterCriteriaArrayMetrics = RequestContext.get().startMetricRecord("getPolicyFilterCriteriaArray");
         List<String> policyFilterCriteriaArray = new ArrayList<>();
         if (entityHeaders != null) {
             for (AtlasEntityHeader entity: entityHeaders) {
@@ -258,10 +265,12 @@ public class AtlasAuthorization {
                 }
             }
         }
+        RequestContext.get().endMetricRecord(getPolicyFilterCriteriaArrayMetrics);
         return policyFilterCriteriaArray;
     }
 
     private List<String> getPolicyDSLArray(List<String> policyFilterCriteriaArray) {
+        AtlasPerfMetrics.MetricRecorder getPolicyDSLArrayMetrics = RequestContext.get().startMetricRecord("getPolicyDSLArray");
         List<String> policyDSLArray = new ArrayList<>();
         ObjectMapper mapper = new ObjectMapper();
         for (String policyFilterCriteria: policyFilterCriteriaArray) {
@@ -274,6 +283,7 @@ public class AtlasAuthorization {
             JsonNode policyDSL = JsonToElasticsearchQuery.convertJsonToQuery(policyFilterCriteriaNode, mapper);
             policyDSLArray.add(policyDSL.toString());
         }
+        RequestContext.get().endMetricRecord(getPolicyDSLArrayMetrics);
         return policyDSLArray;
     }
 
