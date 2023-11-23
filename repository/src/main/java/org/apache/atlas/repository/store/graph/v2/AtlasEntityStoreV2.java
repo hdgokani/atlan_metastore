@@ -142,7 +142,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private EntityDiscoveryService discovery;
     private final AtlasRelationshipStore atlasRelationshipStore;
     private final FeatureFlagStore featureFlagStore;
-    private final AtlasAuthorization atlasAuthorization;
 
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
@@ -166,8 +165,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         } catch (AtlasException e) {
             e.printStackTrace();
         }
-
-        this.atlasAuthorization = new AtlasAuthorization(this.discovery, this.graph, this.entityRetriever);
 
     }
 
