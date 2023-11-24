@@ -3,8 +3,6 @@ package org.apache.atlas.discovery;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AuditSearchParams;
@@ -13,18 +11,15 @@ import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.plugin.model.RangerRole;
-import org.apache.atlas.plugin.util.KeycloakUserStore;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 import java.util.*;
@@ -100,7 +95,7 @@ public class AtlasAuthorization {
         RangerUserStore userStore = usersGroupsRolesStore.getUserStore();
         RangerRoles allRoles = usersGroupsRolesStore.getAllRoles();
 
-        String user =  RequestContext.getCurrentUser();
+        String user = RequestContext.getCurrentUser();
         Map<String, Set<String>> userGroupMapping = userStore.getUserGroupMapping();
         List<String> groups = new ArrayList<>();
         Set<String> groupsSet = userGroupMapping.get(user);

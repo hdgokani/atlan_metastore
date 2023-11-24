@@ -323,7 +323,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>auth-agents-common</artifactId>
+            <artifactId>auth-agents-common-temp</artifactId>
             <version>3.0.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
