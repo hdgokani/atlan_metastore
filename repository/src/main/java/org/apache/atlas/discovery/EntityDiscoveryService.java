@@ -42,6 +42,7 @@ import org.apache.atlas.query.executors.DSLQueryExecutor;
 import org.apache.atlas.query.executors.ScriptEngineBasedExecutor;
 import org.apache.atlas.query.executors.TraversalBasedExecutor;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
@@ -109,11 +110,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Inject
     public EntityDiscoveryService(AtlasTypeRegistry typeRegistry,
-                           AtlasGraph graph,
-                           GraphBackedSearchIndexer indexer,
-                           SearchTracker searchTracker,
-                           UserProfileService userProfileService,
-                           StatsClient statsClient) throws AtlasException {
+                                  AtlasGraph graph,
+                                  GraphBackedSearchIndexer indexer,
+                                  SearchTracker searchTracker,
+                                  UserProfileService userProfileService,
+                                  StatsClient statsClient) throws AtlasException {
         this.graph                    = graph;
         this.entityRetriever          = new EntityGraphRetriever(this.graph, typeRegistry);
         this.indexer                  = indexer;
@@ -130,7 +131,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.dslQueryExecutor         = AtlasConfiguration.DSL_EXECUTOR_TRAVERSAL.getBoolean()
                                             ? new TraversalBasedExecutor(typeRegistry, graph, entityRetriever)
                                             : new ScriptEngineBasedExecutor(typeRegistry, graph, entityRetriever);
-        this.atlasAuthorization = new AtlasAuthorization(this, this.graph, this.entityRetriever);
+        this.atlasAuthorization = AtlasAuthorization.getInstance(this);
     }
 
     @Override
@@ -1006,6 +1007,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             if (searchParams.getUseAccessControlv2()) {
                 addPreFiltersToSearchQuery(searchParams);
             }
+            LOG.info(searchParams.getQuery());
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
             RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
@@ -1022,11 +1024,14 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     private void addPreFiltersToSearchQuery(SearchParams searchParams) {
         try {
+            String persona = ((IndexSearchParams) searchParams).getPersona();
+            String purpose = ((IndexSearchParams) searchParams).getPurpose();
+
             AtlasPerfMetrics.MetricRecorder addPreFiltersToSearchQueryMetric = RequestContext.get().startMetricRecord("addPreFiltersToSearchQuery");
             ObjectMapper mapper = new ObjectMapper();
             List<Map<String, Object>> mustClauseList = new ArrayList<>();
 
-            Map<String, Object> allPreFiltersBoolClause = atlasAuthorization.getIndexsearchPreFilterDSL();
+            Map<String, Object> allPreFiltersBoolClause = atlasAuthorization.getIndexsearchPreFilterDSL(persona, purpose);
             mustClauseList.add(getMap("bool", allPreFiltersBoolClause));
 
             String dslString = searchParams.getQuery();

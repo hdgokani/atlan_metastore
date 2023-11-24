@@ -3,14 +3,12 @@ package org.apache.atlas.discovery;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.ValidationMessage;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.audit.AuditSearchParams;
+import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -18,27 +16,19 @@ import org.apache.atlas.plugin.model.RangerRole;
 import org.apache.atlas.plugin.util.KeycloakUserStore;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
-import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
-import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
+import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
+import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
-import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,29 +43,50 @@ public class AtlasAuthorization {
     private Map<String, Set> userPoliciesMap= new HashMap<>();
 
     private EntityDiscoveryService discoveryService;
-    private RangerUserStore userStore;
-    private RangerRoles allRoles;
-//    List<AtlasEntityHeader> atlasPolicies;
+    private ESBasedAuditRepository auditRepository;
+
+    private static AtlasAuthorization  atlasAuthorization;
+    private static UsersGroupsRolesStore  usersGroupsRolesStore;
+    private List<AtlasEntityHeader> allPolicies;
+    private long lastUpdatedTime = -1;
+    private List<String> serviceNames = new ArrayList<>();
 
 
 
-    public AtlasAuthorization (EntityDiscoveryService discoveryService, AtlasGraph graph, EntityGraphRetriever entityRetriever) {
+
+    public static AtlasAuthorization getInstance(EntityDiscoveryService discoveryService) {
+        synchronized (AtlasAuthorization.class) {
+            if (atlasAuthorization == null) {
+                atlasAuthorization = new AtlasAuthorization(discoveryService);
+            }
+            return atlasAuthorization;
+        }
+    }
+
+    public static AtlasAuthorization getInstance() {
+        if (atlasAuthorization != null) {
+            return atlasAuthorization;
+        }
+        return null;
+    }
+
+    public AtlasAuthorization (EntityDiscoveryService discoveryService) {
         try {
             this.discoveryService = discoveryService;
+            auditRepository = null;
 
-            List<String> serviceNames = new ArrayList<>();
+            this.usersGroupsRolesStore = UsersGroupsRolesStore.getInstance();
+
             serviceNames.add("atlas");
             serviceNames.add("atlas_tag");
             serviceNames.add("ape");
-//            atlasPolicies = getPolicies(serviceNames);
 
-            KeycloakUserStore keycloakUserStore = new KeycloakUserStore("atlas");
-            userStore = keycloakUserStore.loadUserStoreIfUpdated(0);
-            allRoles = keycloakUserStore.loadRolesIfUpdated(0);
+            PolicyRefresher policyRefresher = new PolicyRefresher();
+            policyRefresher.start();
 
             LOG.info("==> AtlasAuthorization");
         } catch (Exception e) {
-            LOG.info("==> AtlasAuthorization -> Error");
+            LOG.error("==> AtlasAuthorization -> Error!");
         }
     }
 
@@ -85,14 +96,11 @@ public class AtlasAuthorization {
         return map;
     }
 
-    public Map<String, Object> getIndexsearchPreFilterDSL() throws AtlasBaseException {
+    public Map<String, Object> getIndexsearchPreFilterDSL(String persona, String purpose) {
+        RangerUserStore userStore = usersGroupsRolesStore.getUserStore();
+        RangerRoles allRoles = usersGroupsRolesStore.getAllRoles();
 
-        List<String> serviceNames = new ArrayList<>();
-        serviceNames.add("atlas");
-        serviceNames.add("atlas_tag");
-        serviceNames.add("ape");
-
-        String user =  "anshul.mehta"; // RequestContext.getCurrentUser();
+        String user =  RequestContext.getCurrentUser();
         Map<String, Set<String>> userGroupMapping = userStore.getUserGroupMapping();
         List<String> groups = new ArrayList<>();
         Set<String> groupsSet = userGroupMapping.get(user);
@@ -123,9 +131,11 @@ public class AtlasAuthorization {
         List<String> combinedEntityTypes = new ArrayList<>();
         Set<String> combinedTags = new HashSet<>();
 
-        List<AtlasEntityHeader> atlasPolicies = getPolicies(serviceNames);
+        if (allPolicies == null) {
+            allPolicies = getPolicies();
+        }
 
-        for (AtlasEntityHeader policy : atlasPolicies) {
+        for (AtlasEntityHeader policy : allPolicies) {
             List<String> policyUsers = (List<String>) policy.getAttribute("policyUsers");
             List<String> policyGroups = (List<String>) policy.getAttribute("policyGroups");
             List<String> policyRoles = (List<String>) policy.getAttribute("policyRoles");
@@ -136,7 +146,13 @@ public class AtlasAuthorization {
             String policyServiceName = (String) policy.getAttribute("policyServiceName");
             String policyResourceCategory = (String) policy.getAttribute("policyResourceCategory");
             String policyType = (String) policy.getAttribute("policyType");
+            String policyQualifiedName = (String) policy.getAttribute("qualifiedName");
 
+            if (persona != null && !policyQualifiedName.startsWith(persona)) {
+                continue;
+            } else if (purpose != null && !policyQualifiedName.startsWith(purpose)) {
+                continue;
+            }
             if (policyType != null && policyType.equals("allow")) {
                 if (policyUsers.contains(user) || arrayListContains(policyGroups, groups) || arrayListContains(policyRoles, roles)) {
                     if (arrayListContains(policyActions, actions)) {
@@ -148,7 +164,7 @@ public class AtlasAuthorization {
                         } else if (policyServiceName.equals("ape")) {
                             apePolicies.add(policy);
                         }
-                        else if (policyServiceName.equals("atlas") && policyResourceCategory.equals("ENTITY")) {
+                        else if (policyServiceName.equals("atlas") && (policyResourceCategory.equals("ENTITY") || policyResourceCategory.equals("CUSTOM"))) {
                             List<String> policyEntities = getEntitiesFromResources(policyResources, policyCategory, policySubCategory);
                             List<String> policyEntityTypes = getEntityTypesFromResources(policyResources);
                             if (!policyEntities.isEmpty() && policyEntityTypes.isEmpty()) {
@@ -164,21 +180,28 @@ public class AtlasAuthorization {
                 }
             }
         }
+
         if (!combinedTags.isEmpty()) {
             Map<String, Object> dslForPolicyResources = getDSLForTagResources(combinedTags);
             shouldList.add(dslForPolicyResources);
         }
-        Map<String, Object> DSLForEntityResources = getDSLForEntityResources(combinedEntities);
-        if (DSLForEntityResources != null) {
-            shouldList.add(DSLForEntityResources);
+        if (!combinedEntities.isEmpty()) {
+            Map<String, Object> DSLForEntityResources = getDSLForEntityResources(combinedEntities);
+            if (DSLForEntityResources != null) {
+                shouldList.add(DSLForEntityResources);
+            }
         }
-        Map<String, Object> DSLForEntityTypeResources = getDSLForEntityTypeResources(combinedEntityTypes);
-        if (DSLForEntityTypeResources != null) {
-            shouldList.add(DSLForEntityTypeResources);
+        if (!combinedEntityTypes.isEmpty()) {
+            Map<String, Object> DSLForEntityTypeResources = getDSLForEntityTypeResources(combinedEntityTypes);
+            if (DSLForEntityTypeResources != null) {
+                shouldList.add(DSLForEntityTypeResources);
+            }
         }
-        Map<String, Object> DSLForApePolicies = getDSLForApePolicies(apePolicies);
-        if (DSLForApePolicies != null) {
-            shouldList.add(DSLForApePolicies);
+        if (!apePolicies.isEmpty()) {
+            Map<String, Object> DSLForApePolicies = getDSLForApePolicies(apePolicies);
+            if (DSLForApePolicies != null) {
+                shouldList.add(DSLForApePolicies);
+            }
         }
 
         Map<String, Object> allPreFiltersBoolClause = new HashMap<>();
@@ -317,7 +340,12 @@ public class AtlasAuthorization {
         return false;
     }
 
-    private List<AtlasEntityHeader> getPolicies(List<String> serviceNames) throws AtlasBaseException {
+    public void refreshPolicies() {
+//        if (isPolicyUpdated()) {}
+        allPolicies = getPolicies();
+    }
+
+    private List<AtlasEntityHeader> getPolicies() {
         List<AtlasEntityHeader> ret = new ArrayList<>();
         int from = 0;
         int size = 1000;
@@ -350,11 +378,16 @@ public class AtlasAuthorization {
         indexSearchParams.setAttributes(attributes);
         indexSearchParams.setSuppressLogs(true);
 
-        AtlasSearchResult result = discoveryService.directIndexSearch(indexSearchParams);
+        AtlasSearchResult result = null;
+        try {
+            result = discoveryService.directIndexSearch(indexSearchParams);
+            lastUpdatedTime = System.currentTimeMillis();
+        } catch (AtlasBaseException e) {
+            LOG.error("Error getting policies!", e);
+        }
         if (result != null) {
             ret = result.getEntities();
         }
-
         return ret;
     }
 
@@ -389,6 +422,38 @@ public class AtlasAuthorization {
         }
         RequestContext.get().endMetricRecord(getPolicyDSLArrayMetrics);
         return policyDSLArray;
+    }
+
+    private boolean isPolicyUpdated() {
+        List<String> entityUpdateToWatch = new ArrayList<>();
+        entityUpdateToWatch.add(POLICY_ENTITY_TYPE);
+        entityUpdateToWatch.add(PERSONA_ENTITY_TYPE);
+        entityUpdateToWatch.add(PURPOSE_ENTITY_TYPE);
+
+        AuditSearchParams parameters = new AuditSearchParams();
+        Map<String, Object> dsl = getMap("size", 1);
+
+        List<Map<String, Object>> mustClauseList = new ArrayList<>();
+        mustClauseList.add(getMap("terms", getMap("typeName", entityUpdateToWatch)));
+
+        lastUpdatedTime = lastUpdatedTime == -1 ? 0 : lastUpdatedTime;
+        mustClauseList.add(getMap("range", getMap("timestamp", getMap("gte", lastUpdatedTime))));
+
+        dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
+
+        parameters.setDsl(dsl);
+
+        try {
+            EntityAuditSearchResult result = auditRepository.searchEvents(parameters.getQueryString());
+
+            if (result == null || CollectionUtils.isEmpty(result.getEntityAudits())) {
+                return false;
+            }
+        } catch (AtlasBaseException e) {
+            LOG.error("ERROR in getPoliciesIfUpdated while fetching entity audits {}: ", e.getMessage());
+            return true;
+        }
+        return true;
     }
 
 //    private List<AtlasEntityHeader> getRelevantPolicies(String user, String action) throws AtlasBaseException {
