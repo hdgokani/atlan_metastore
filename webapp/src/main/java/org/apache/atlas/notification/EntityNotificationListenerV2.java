@@ -175,7 +175,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
         }
 
-//        sendNotifications(operationType, messages);
+        sendNotifications(operationType, messages);
         RequestContext.get().endMetricRecord(metric);
     }
 
@@ -197,7 +197,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                     RequestContext.get().getRequestTime(), requestContextHeaders));
         }
 
-//        sendNotifications(operationType, messages, forceInline);
+        sendNotifications(operationType, messages, forceInline);
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -215,7 +215,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                     RequestContext.get().getRequestTime(), requestContextHeaders));
         }
 
-//        sendNotifications(operationType, messages);
+        sendNotifications(operationType, messages);
         RequestContext.get().endMetricRecord(metric);
     }
 
@@ -236,18 +236,18 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     }
 
     private void sendNotifications(OperationType operationType, List<EntityNotificationV2> messages, boolean forceInline) throws AtlasBaseException {
-//        if (!messages.isEmpty()) {
-//            try {
-//                if (forceInline) {
-//                    inlineNotificationSender.send(operationType, messages);
-//                }
-//                else {
-//                    notificationSender.send(operationType, messages);
-//                }
-//            } catch (NotificationException e) {
-//                throw new AtlasBaseException(AtlasErrorCode.ENTITY_NOTIFICATION_FAILED, e, operationType.name());
-//            }
-//        }
+        if (!messages.isEmpty()) {
+            try {
+                if (forceInline) {
+                    inlineNotificationSender.send(operationType, messages);
+                }
+                else {
+                    notificationSender.send(operationType, messages);
+                }
+            } catch (NotificationException e) {
+                throw new AtlasBaseException(AtlasErrorCode.ENTITY_NOTIFICATION_FAILED, e, operationType.name());
+            }
+        }
     }
 
     private AtlasEntityHeaderWithRelations toNotificationHeader(AtlasEntity entity) {
