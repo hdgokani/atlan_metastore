@@ -37,7 +37,7 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
     public void init(RangerPluginConfig config) {
         this.serviceName = config.getServiceName();
         this.pluginId = getPluginId(serviceName, config.getAppId());
-        adminUrl = getAdminUrl(config);
+        adminUrl = "localhost:21000/api/atlas/v2/auth";  //getAdminUrl(config);
 
         initClient(config);
     }

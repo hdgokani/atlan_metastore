@@ -1031,8 +1031,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             ObjectMapper mapper = new ObjectMapper();
             List<Map<String, Object>> mustClauseList = new ArrayList<>();
 
-            Map<String, Object> allPreFiltersBoolClause = atlasAuthorization.getIndexsearchPreFilterDSL(persona, purpose);
-            mustClauseList.add(getMap("bool", allPreFiltersBoolClause));
+            List<String> actions = new ArrayList<>();
+            actions.add("entity-read");
+
+            Map<String, Object> allPreFiltersBoolClause = atlasAuthorization.getElasticsearchDSL(persona, purpose, actions);
+            mustClauseList.add(allPreFiltersBoolClause);
 
             String dslString = searchParams.getQuery();
             JsonNode node = mapper.readTree(dslString);
@@ -1041,7 +1044,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             mustClauseList.add(getMap("wrapper", getMap("query", userQueryBase64)));
 
 
-            JsonNode updateQueryNode = mapper.valueToTree(getMap("bool", getMap("must", mustClauseList)));
+            JsonNode updateQueryNode = mapper.valueToTree(getMap("bool", getMap("filter", mustClauseList)));
 
             ((ObjectNode) node).set("query", updateQueryNode);
             searchParams.setQuery(node.toString());

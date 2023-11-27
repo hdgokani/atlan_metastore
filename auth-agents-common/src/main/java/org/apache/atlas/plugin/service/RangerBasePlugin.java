@@ -300,6 +300,16 @@ public class RangerBasePlugin {
 			LOG.debug("==> setPolicies(" + policies + ")");
 		}
 
+		if (policies != null) {
+			List<RangerPolicy> resourcePolicies = policies.getPolicies();
+			List<RangerPolicy> tagPolicies = policies.getTagPolicies().getPolicies();
+			List<RangerPolicy> abacPolicies = policies.getAbacPolicies().getPolicies();
+
+			UsersGroupsRolesStore.getInstance().setResourcePolicies(resourcePolicies);
+			UsersGroupsRolesStore.getInstance().setTagPolicies(tagPolicies);
+			UsersGroupsRolesStore.getInstance().setAbacPolicies(abacPolicies);
+		}
+
 		// guard against catastrophic failure during policy engine Initialization or
 		try {
 			RangerPolicyEngine oldPolicyEngine = this.policyEngine;

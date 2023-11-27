@@ -91,6 +91,7 @@ public class CachePolicyTransformerImpl {
 
     public static final String ATTR_SERVICE_SERVICE_TYPE = "authServiceType";
     public static final String ATTR_SERVICE_TAG_SERVICE  = "tagService";
+    public static final String ATTR_SERVICE_ABAC_SERVICE = "abacService";
     public static final String ATTR_SERVICE_IS_ENABLED   = "authServiceIsEnabled";
     public static final String ATTR_SERVICE_LAST_SYNC    = "authServicePolicyLastSync";
 
@@ -178,13 +179,37 @@ public class CachePolicyTransformerImpl {
                     }
                 }
 
+                //Process abac based policies
+                String abacServiceName = (String) service.getAttribute(ATTR_SERVICE_ABAC_SERVICE);
+                if (StringUtils.isNotEmpty(abacServiceName)) {
+                    AtlasEntityHeader abacService = getServiceEntity(abacServiceName);
+
+                    if (abacService != null) {
+                        allPolicies.addAll(getServicePolicies(abacService));
+
+                        ServicePolicies.AbacPolicies abacPolicies = new ServicePolicies.AbacPolicies();
+
+                        abacPolicies.setServiceName(abacServiceName);
+                        abacPolicies.setPolicyUpdateTime(new Date());
+                        abacPolicies.setServiceId(abacService.getGuid());
+                        abacPolicies.setPolicyVersion(-1L);
+
+                        String abacServiceDefName =  String.format(RESOURCE_SERVICE_DEF_PATTERN, abacService.getAttribute(NAME));
+                        abacPolicies.setServiceDef(getResourceAsObject(abacServiceDefName, RangerServiceDef.class));
+
+                        servicePolicies.setAbacPolicies(abacPolicies);
+                    }
+                }
+
                 AtlasPerfMetrics.MetricRecorder recorderFilterPolicies = RequestContext.get().startMetricRecord("filterPolicies");
                 //filter out policies based on serviceName
                 List<RangerPolicy> policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
                 List<RangerPolicy> policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
+                List<RangerPolicy> policiesC = allPolicies.stream().filter(x -> abacServiceName.equals(x.getService())).collect(Collectors.toList());
 
                 servicePolicies.setPolicies(policiesA);
                 servicePolicies.getTagPolicies().setPolicies(policiesB);
+                servicePolicies.getAbacPolicies().setPolicies(policiesC);
 
                 RequestContext.get().endMetricRecord(recorderFilterPolicies);
 
@@ -491,6 +516,7 @@ public class CachePolicyTransformerImpl {
         attributes.add(NAME);
         attributes.add(ATTR_SERVICE_SERVICE_TYPE);
         attributes.add(ATTR_SERVICE_TAG_SERVICE);
+        attributes.add(ATTR_SERVICE_ABAC_SERVICE);
         attributes.add(ATTR_SERVICE_IS_ENABLED);
 
         Map<String, Object> dsl = getMap("size", 1);
