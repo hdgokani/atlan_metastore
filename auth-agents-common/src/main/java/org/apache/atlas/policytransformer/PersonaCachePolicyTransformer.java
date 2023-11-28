@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_NAME;
+import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_POLICY_FILTER_CRITERIA;
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ACTIONS;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
@@ -40,6 +41,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CAT
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_ENTITY;
 import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_ENTITY_TYPE;
+import static org.apache.atlas.repository.util.AccessControlUtils.getAttrPolicyFilterCriteria;
 import static org.apache.atlas.repository.util.AccessControlUtils.getEntityByQualifiedName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getFilteredPolicyResources;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
@@ -92,35 +94,41 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
 
                 List<String> finalResources = new ArrayList<>();
 
-                for (String templateResource : templatePolicy.getResources()) {
-                    if (templateResource.contains(PLACEHOLDER_ENTITY)) {
-                        for (String entityResource : entityResources) {
-                            finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY, entityResource));
-                        }
-
-                    } else if (templateResource.contains(PLACEHOLDER_ENTITY_TYPE)) {
-
-                        if (CollectionUtils.isNotEmpty(typeResources)) {
-                            typeResources.forEach(x -> finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY_TYPE, x)));
-                        } else {
-                            boolean isConnection = false;
-
-                            if (POLICY_SUB_CATEGORY_METADATA.equals(subCategory) || POLICY_SUB_CATEGORY_DATA.equals(subCategory)) {
-                                isConnection = isConnectionPolicy(entityResources, atlasPolicy);
-                            }
-
-                            if (isConnection) {
-                                finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY_TYPE, "*"));
-                            } else {
-                                finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY_TYPE, "Process"));
-                                finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY_TYPE, "Catalog"));
-                            }
-                        }
-                    } else {
-                        finalResources.add(templateResource);
+                if (getPolicySubCategory(atlasPolicy).equals("domain")) {
+                    if (templatePolicy.getPolicyFilterCriteria().contains(PLACEHOLDER_FILTER)) {
+                        header.setAttribute(ATTR_POLICY_FILTER_CRITERIA, templatePolicy.getPolicyFilterCriteria().replace(PLACEHOLDER_FILTER, getAttrPolicyFilterCriteria(atlasPolicy)));
                     }
+                } else {
+                    for (String templateResource : templatePolicy.getResources()) {
+                        if (templateResource.contains(PLACEHOLDER_ENTITY)) {
+                            for (String entityResource : entityResources) {
+                                finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY, entityResource));
+                            }
+
+                        } else if (templateResource.contains(PLACEHOLDER_ENTITY_TYPE)) {
+
+                            if (CollectionUtils.isNotEmpty(typeResources)) {
+                                typeResources.forEach(x -> finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY_TYPE, x)));
+                            } else {
+                                boolean isConnection = false;
+
+                                if (POLICY_SUB_CATEGORY_METADATA.equals(subCategory) || POLICY_SUB_CATEGORY_DATA.equals(subCategory)) {
+                                    isConnection = isConnectionPolicy(entityResources, atlasPolicy);
+                                }
+
+                                if (isConnection) {
+                                    finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY_TYPE, "*"));
+                                } else {
+                                    finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY_TYPE, "Process"));
+                                    finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY_TYPE, "Catalog"));
+                                }
+                            }
+                        } else {
+                            finalResources.add(templateResource);
+                        }
+                    }
+                    header.setAttribute(ATTR_POLICY_RESOURCES, finalResources);
                 }
-                header.setAttribute(ATTR_POLICY_RESOURCES, finalResources);
 
                 header.setAttribute(ATTR_NAME, "transformed_policy_persona");
 

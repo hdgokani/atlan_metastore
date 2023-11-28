@@ -80,6 +80,7 @@ public final class AccessControlUtils {
     public static final String ATTR_POLICY_CATEGORY  = "policyCategory";
     public static final String ATTR_POLICY_SUB_CATEGORY  = "policySubCategory";
     public static final String ATTR_POLICY_RESOURCES  = "policyResources";
+    public static final String ATTR_POLICY_FILTER_CRITERIA  = "policyFilterCriteria";
     public static final String ATTR_POLICY_IS_ENABLED  = "isPolicyEnabled";
     public static final String ATTR_POLICY_CONNECTION_QN  = "connectionQualifiedName";
     public static final String ATTR_POLICY_RESOURCES_CATEGORY  = "policyResourceCategory";
@@ -155,6 +156,10 @@ public final class AccessControlUtils {
         return getStringAttribute(policyEntity, ATTR_POLICY_CONNECTION_QN);
     }
 
+    public static String getAttrPolicyFilterCriteria(AtlasEntityHeader policyEntity) {
+        return getStringAttribute(policyEntity, ATTR_POLICY_FILTER_CRITERIA);
+    }
+
     public static List<String> getPolicyResources(AtlasEntity policyEntity) throws AtlasBaseException {
         return getListAttribute(policyEntity, ATTR_POLICY_RESOURCES);
     }
@@ -196,6 +201,10 @@ public final class AccessControlUtils {
     }
 
     public static String getPolicyServiceName(AtlasEntity policyEntity) {
+        return getStringAttribute(policyEntity, ATTR_POLICY_SERVICE_NAME);
+    }
+
+    public static String getPolicyServiceName(AtlasEntityHeader policyEntity) {
         return getStringAttribute(policyEntity, ATTR_POLICY_SERVICE_NAME);
     }
 

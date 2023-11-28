@@ -302,12 +302,17 @@ public class RangerBasePlugin {
 
 		if (policies != null) {
 			List<RangerPolicy> resourcePolicies = policies.getPolicies();
-			List<RangerPolicy> tagPolicies = policies.getTagPolicies().getPolicies();
-			List<RangerPolicy> abacPolicies = policies.getAbacPolicies().getPolicies();
-
 			UsersGroupsRolesStore.getInstance().setResourcePolicies(resourcePolicies);
-			UsersGroupsRolesStore.getInstance().setTagPolicies(tagPolicies);
-			UsersGroupsRolesStore.getInstance().setAbacPolicies(abacPolicies);
+
+			if (policies.getTagPolicies() != null) {
+				List<RangerPolicy> tagPolicies = policies.getTagPolicies().getPolicies();
+				UsersGroupsRolesStore.getInstance().setTagPolicies(tagPolicies);
+			}
+
+			if (policies.getAbacPolicies() != null) {
+				List<RangerPolicy> abacPolicies = policies.getAbacPolicies().getPolicies();
+				UsersGroupsRolesStore.getInstance().setAbacPolicies(abacPolicies);
+			}
 		}
 
 		// guard against catastrophic failure during policy engine Initialization or

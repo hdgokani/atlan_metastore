@@ -73,8 +73,10 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SE
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SUB_CATEGORY;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
+import static org.apache.atlas.repository.util.AccessControlUtils.getAttrPolicyFilterCriteria;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyServiceName;
 
 @Component
 public class CachePolicyTransformerImpl {
@@ -88,6 +90,7 @@ public class CachePolicyTransformerImpl {
     public static final String ATTR_POLICY_ACTIONS            = "policyActions";
     public static final String ATTR_POLICY_TYPE               = "policyType";
     public static final String ATTR_POLICY_RESOURCES          = "policyResources";
+    public static final String ATTR_POLICY_FILTER_CRITERIA    = "policyFilterCriteria";
 
     public static final String ATTR_SERVICE_SERVICE_TYPE = "authServiceType";
     public static final String ATTR_SERVICE_TAG_SERVICE  = "tagService";
@@ -205,11 +208,16 @@ public class CachePolicyTransformerImpl {
                 //filter out policies based on serviceName
                 List<RangerPolicy> policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
                 List<RangerPolicy> policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
-                List<RangerPolicy> policiesC = allPolicies.stream().filter(x -> abacServiceName.equals(x.getService())).collect(Collectors.toList());
 
                 servicePolicies.setPolicies(policiesA);
                 servicePolicies.getTagPolicies().setPolicies(policiesB);
-                servicePolicies.getAbacPolicies().setPolicies(policiesC);
+
+                if (abacServiceName != null) {
+                    List<RangerPolicy> policiesC = allPolicies.stream().filter(x -> abacServiceName.equals(x.getService())).collect(Collectors.toList());
+                    if (!policiesC.isEmpty()) {
+                        servicePolicies.getAbacPolicies().setPolicies(policiesC);
+                    }
+                }
 
                 RequestContext.get().endMetricRecord(recorderFilterPolicies);
 
@@ -289,28 +297,34 @@ public class CachePolicyTransformerImpl {
     }
 
     private void setPolicyResources(RangerPolicy rangerPolicy, AtlasEntityHeader atlasPolicy) throws IOException {
-        List<String> atlasResources = (List<String>) atlasPolicy.getAttribute("policyResources");
+        String policyServiceName = getPolicyServiceName(atlasPolicy);
 
-        Map<String, List<String>> resourceValuesMap = new HashMap<>();
+        if ("ape".equals(policyServiceName)) {
+            rangerPolicy.setPolicyFilterCriteria(getAttrPolicyFilterCriteria(atlasPolicy));
+        } else {
+            List<String> atlasResources = (List<String>) atlasPolicy.getAttribute("policyResources");
 
-        for (String atlasResource : atlasResources) {
-            String resourceName = atlasResource.split(RESOURCES_SPLITTER)[0];
+            Map<String, List<String>> resourceValuesMap = new HashMap<>();
 
-            if (!resourceValuesMap.containsKey(resourceName)) {
-                String resourceNameFinal = resourceName + ":";
-                List<String> applicables = atlasResources.stream().filter(x -> x.startsWith(resourceNameFinal)).collect(Collectors.toList());
-                List<String> values = applicables.stream().map(x -> x.substring(resourceNameFinal.length())).collect(Collectors.toList());
-                resourceValuesMap.put(resourceName, values);
+            for (String atlasResource : atlasResources) {
+                String resourceName = atlasResource.split(RESOURCES_SPLITTER)[0];
+
+                if (!resourceValuesMap.containsKey(resourceName)) {
+                    String resourceNameFinal = resourceName + ":";
+                    List<String> applicables = atlasResources.stream().filter(x -> x.startsWith(resourceNameFinal)).collect(Collectors.toList());
+                    List<String> values = applicables.stream().map(x -> x.substring(resourceNameFinal.length())).collect(Collectors.toList());
+                    resourceValuesMap.put(resourceName, values);
+                }
             }
-        }
 
-        Map<String, RangerPolicyResource> resources = new HashMap<>();
-        for (String key : resourceValuesMap.keySet()) {
-            RangerPolicyResource resource = new RangerPolicyResource(resourceValuesMap.get(key), false, false);
-            resources.put(key, resource);
-        }
+            Map<String, RangerPolicyResource> resources = new HashMap<>();
+            for (String key : resourceValuesMap.keySet()) {
+                RangerPolicyResource resource = new RangerPolicyResource(resourceValuesMap.get(key), false, false);
+                resources.put(key, resource);
+            }
 
-        rangerPolicy.setResources(resources);
+            rangerPolicy.setResources(resources);
+        }
     }
 
     private <T> T getResourceAsObject(String resourceName, Class<T> clazz) throws IOException {
@@ -459,6 +473,7 @@ public class CachePolicyTransformerImpl {
             attributes.add(ATTR_POLICY_ROLES);
             attributes.add(ATTR_POLICY_ACTIONS);
             attributes.add(ATTR_POLICY_RESOURCES);
+            attributes.add(ATTR_POLICY_FILTER_CRITERIA);
             attributes.add(ATTR_POLICY_RESOURCES_CATEGORY);
             attributes.add(ATTR_POLICY_MASK_TYPE);
             attributes.add(ATTR_POLICY_PRIORITY);
