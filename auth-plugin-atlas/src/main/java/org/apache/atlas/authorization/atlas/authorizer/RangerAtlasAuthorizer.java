@@ -61,6 +61,10 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.apache.atlas.authorization.atlas.authorizer.RangerAtlasAuthorizerUtil.*;
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserGroups;
@@ -80,6 +84,8 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         add(AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION);
         add(AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION);
     }};
+
+    private static final ExecutorService classificationAccessThreadpool = Executors.newFixedThreadPool(NUM_THREADS);
 
     @Override
     public void init() {
@@ -657,61 +663,43 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         boolean ret = false;
 
         try {
-            final String                   action         = request.getAction() != null ? request.getAction().getType() : null;
-            final Set<String>              entityTypes    = request.getEntityTypeAndAllSuperTypes();
-            final String                   entityId       = request.getEntityId();
-            final String                   classification = request.getClassification() != null ? request.getClassification().getTypeName() : null;
-            final RangerAccessRequestImpl  rangerRequest  = new RangerAccessRequestImpl();
-            final RangerAccessResourceImpl rangerResource = new RangerAccessResourceImpl();
-            final String                   ownerUser      = request.getEntity() != null ? (String) request.getEntity().getAttribute(RESOURCE_ENTITY_OWNER) : null;
-
-            rangerResource.setValue(RESOURCE_ENTITY_TYPE, entityTypes);
-            rangerResource.setValue(RESOURCE_ENTITY_ID, entityId);
-            rangerResource.setOwnerUser(ownerUser);
-            rangerRequest.setAccessType(action);
-            rangerRequest.setAction(action);
-            rangerRequest.setUser(request.getUser());
-            rangerRequest.setUserGroups(request.getUserGroups());
-            rangerRequest.setClientIPAddress(request.getClientIPAddress());
-            rangerRequest.setAccessTime(request.getAccessTime());
-            rangerRequest.setResource(rangerResource);
-            rangerRequest.setForwardedAddresses(request.getForwardedAddresses());
-            rangerRequest.setRemoteIPAddress(request.getRemoteIPAddress());
-
-            if (AtlasPrivilege.ENTITY_ADD_LABEL.equals(request.getAction()) || AtlasPrivilege.ENTITY_REMOVE_LABEL.equals(request.getAction())) {
-                rangerResource.setValue(RESOURCE_ENTITY_LABEL, request.getLabel());
-            } else if (AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.equals(request.getAction())) {
-                rangerResource.setValue(RESOURCE_ENTITY_BUSINESS_METADATA, request.getBusinessMetadata());
-            } else if (StringUtils.isNotEmpty(classification) && CLASSIFICATION_PRIVILEGES.contains(request.getAction())) {
-                rangerResource.setValue(RESOURCE_CLASSIFICATION, request.getClassificationTypeAndAllSuperTypes(classification));
-            }
 
             if (CollectionUtils.isNotEmpty(request.getEntityClassifications())) {
                 Set<AtlasClassification> entityClassifications = request.getEntityClassifications();
-                Map<String, Object> contextOjb = rangerRequest.getContext();
 
                 Set<RangerTagForEval> rangerTagForEval = getRangerServiceTag(entityClassifications);
 
-                if (contextOjb == null) {
-                    Map<String, Object> contextOjb1 = new HashMap<String, Object>();
-                    contextOjb1.put("CLASSIFICATIONS", rangerTagForEval);
-                    rangerRequest.setContext(contextOjb1);
-                } else {
-                    contextOjb.put("CLASSIFICATIONS", rangerTagForEval);
-                    rangerRequest.setContext(contextOjb);
-                }
+                List<CompletableFuture<Boolean>> completableFutures = new ArrayList<>();
 
                 // check authorization for each classification
                 for (AtlasClassification classificationToAuthorize : request.getEntityClassifications()) {
-                    rangerResource.setValue(RESOURCE_ENTITY_CLASSIFICATION, request.getClassificationTypeAndAllSuperTypes(classificationToAuthorize.getTypeName()));
 
-                    ret = checkAccess(rangerRequest, auditHandler);
+                    RangerAccessResourceImpl rangerResource = createRangerResourceRequest(request);
+                    RangerAccessRequestImpl rangerRequest = createRangerAccessRequest(request, rangerResource);
 
-                    if (!ret) {
-                        break;
-                    }
+                    rangerResource.setValue(RESOURCE_ENTITY_CLASSIFICATION,
+                            request.getClassificationTypeAndAllSuperTypes(classificationToAuthorize.getTypeName()));
+                    setClassificationContextForRanger(rangerTagForEval, rangerRequest);
+
+                    completableFutures.add(CompletableFuture.supplyAsync(
+                            () -> checkAccess(rangerRequest, auditHandler), classificationAccessThreadpool));
                 }
+
+                // wait for all threads to complete their execution
+                CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0])).join();
+
+                // if all checkAccess calls return true, then ret is true, else it is false
+                ret = completableFutures
+                        .stream()
+                        .map(CompletableFuture::join)
+                        .allMatch(result -> result == true);
+
             } else {
+
+                RangerAccessResourceImpl rangerResource = createRangerResourceRequest(request);
+
+                RangerAccessRequestImpl rangerRequest = createRangerAccessRequest(request, rangerResource);
+
                 rangerResource.setValue(RESOURCE_ENTITY_CLASSIFICATION, ENTITY_NOT_CLASSIFIED );
 
                 ret = checkAccess(rangerRequest, auditHandler);
@@ -730,6 +718,66 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         return ret;
     }
 
+    private RangerAccessResourceImpl createRangerResourceRequest(AtlasEntityAccessRequest request) {
+        RangerAccessResourceImpl rangerResource = new RangerAccessResourceImpl();
+
+        final Set<String> entityTypes = request.getEntityTypeAndAllSuperTypes();
+        final String entityId = request.getEntityId();
+        final String ownerUser = request.getEntity() != null ?
+                (String) request.getEntity().getAttribute(RESOURCE_ENTITY_OWNER) : null;
+        final String classification = request.getClassification() != null ?
+                request.getClassification().getTypeName() : null;
+
+        rangerResource.setValue(RESOURCE_ENTITY_TYPE, entityTypes);
+        rangerResource.setValue(RESOURCE_ENTITY_ID, entityId);
+        rangerResource.setOwnerUser(ownerUser);
+
+        if (AtlasPrivilege.ENTITY_ADD_LABEL.equals(request.getAction()) ||
+                AtlasPrivilege.ENTITY_REMOVE_LABEL.equals(request.getAction())) {
+            rangerResource.setValue(RESOURCE_ENTITY_LABEL, request.getLabel());
+        } else if (AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.equals(request.getAction())) {
+            rangerResource.setValue(RESOURCE_ENTITY_BUSINESS_METADATA, request.getBusinessMetadata());
+        } else if (StringUtils.isNotEmpty(classification) && CLASSIFICATION_PRIVILEGES.contains(request.getAction())) {
+            rangerResource.setValue(RESOURCE_CLASSIFICATION,
+                    request.getClassificationTypeAndAllSuperTypes(classification));
+        }
+
+        return rangerResource;
+    }
+
+    private RangerAccessRequestImpl createRangerAccessRequest(AtlasEntityAccessRequest request,
+                                                              RangerAccessResourceImpl rangerResource) {
+
+        RangerAccessRequestImpl rangerRequest = new RangerAccessRequestImpl();
+
+        final String action = request.getAction() != null ? request.getAction().getType() : null;
+
+        rangerRequest.setAccessType(action);
+        rangerRequest.setAction(action);
+        rangerRequest.setUser(request.getUser());
+        rangerRequest.setUserGroups(request.getUserGroups());
+        rangerRequest.setClientIPAddress(request.getClientIPAddress());
+        rangerRequest.setAccessTime(request.getAccessTime());
+        rangerRequest.setForwardedAddresses(request.getForwardedAddresses());
+        rangerRequest.setRemoteIPAddress(request.getRemoteIPAddress());
+        rangerRequest.setResource(rangerResource);
+
+        return rangerRequest;
+
+    }
+
+    private static void setClassificationContextForRanger(Set<RangerTagForEval> rangerTagForEval, RangerAccessRequestImpl rangerRequest) {
+        Map<String, Object> contextOjb = rangerRequest.getContext();
+
+        if (contextOjb == null) {
+            Map<String, Object> contextOjb1 = new HashMap<String, Object>();
+            contextOjb1.put("CLASSIFICATIONS", rangerTagForEval);
+            rangerRequest.setContext(contextOjb1);
+        } else {
+            contextOjb.put("CLASSIFICATIONS", rangerTagForEval);
+            rangerRequest.setContext(contextOjb);
+        }
+    }
 
     private void setClassificationsToRequestContext(Set<AtlasClassification> entityClassifications, RangerAccessRequestImpl rangerRequest) {
         Map<String, Object> contextOjb = rangerRequest.getContext();
@@ -903,10 +951,12 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
             rangerResource.setValue(RESOURCE_ENTITY_CLASSIFICATION, strClassifications);
             rangerResource.setValue(RESOURCE_ENTITY_ID, request.getEntityId());
 
-            if (AtlasPrivilege.ENTITY_ADD_LABEL.equals(request.getAction()) || AtlasPrivilege.ENTITY_REMOVE_LABEL.equals(request.getAction())) {
+            if (AtlasPrivilege.ENTITY_ADD_LABEL.equals(request.getAction()) ||
+                    AtlasPrivilege.ENTITY_REMOVE_LABEL.equals(request.getAction())) {
                 rangerResource.setValue(RESOURCE_ENTITY_LABEL, "label=" + request.getLabel());
             } else if (AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.equals(request.getAction())) {
-                rangerResource.setValue(RESOURCE_ENTITY_BUSINESS_METADATA, "business-metadata=" + request.getBusinessMetadata());
+                rangerResource.setValue(RESOURCE_ENTITY_BUSINESS_METADATA,
+                        "business-metadata=" + request.getBusinessMetadata());
             }
 
             auditEvents  = new HashMap<>();

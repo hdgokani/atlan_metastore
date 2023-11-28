@@ -43,6 +43,8 @@ import static org.apache.atlas.services.atlas.RangerServiceAtlas.RESOURCE_ENTITY
 
 public class RangerAtlasAuthorizerUtil {
 
+    public static Integer NUM_THREADS = 5;
+
     static void toRangerRequest(AtlasEntityAccessRequest request, RangerAccessRequestImpl rangerRequest, RangerAccessResourceImpl rangerResource){
 
         final String                   action         = request.getAction() != null ? request.getAction().getType() : null;
