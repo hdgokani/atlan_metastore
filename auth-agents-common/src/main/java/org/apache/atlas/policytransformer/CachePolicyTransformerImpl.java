@@ -65,16 +65,7 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.SERVICE_ENTITY_TYPE;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CONNECTION_QN;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_PRIORITY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SUB_CATEGORY;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
-import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
+import static org.apache.atlas.repository.util.AccessControlUtils.*;
 
 @Component
 public class CachePolicyTransformerImpl {
@@ -451,6 +442,7 @@ public class CachePolicyTransformerImpl {
             Set<String> attributes = new HashSet<>();
             attributes.add(NAME);
             attributes.add(ATTR_POLICY_CATEGORY);
+            attributes.add(ATTR_POLICY_FILTER_CRITERIA);
             attributes.add(ATTR_POLICY_SUB_CATEGORY);
             attributes.add(ATTR_POLICY_TYPE);
             attributes.add(ATTR_POLICY_SERVICE_NAME);
@@ -557,12 +549,18 @@ public class CachePolicyTransformerImpl {
         policy.setCreatedBy(atlasPolicy.getCreatedBy());
         policy.setCreateTime(atlasPolicy.getCreateTime());
         policy.setIsEnabled(getIsPolicyEnabled(atlasPolicy));
+        policy.setPolicyResourceCategory(getPolicyResourceCategory(atlasPolicy));
 
         policy.setConditions(getPolicyConditions(atlasPolicy));
         policy.setValiditySchedules(getPolicyValiditySchedule(atlasPolicy));
 
         if (atlasPolicy.hasAttribute(ATTR_POLICY_PRIORITY)) {
             policy.setPolicyPriority((Integer) atlasPolicy.getAttribute(ATTR_POLICY_PRIORITY));
+        }
+
+        if (POLICY_SERVICE_NAME_ABAC.equals(atlasPolicy.getAttribute(ATTR_POLICY_SERVICE_NAME))) {
+            String policyFilterCriteria = getPolicyFilterCriteria(atlasPolicy);
+            policy.setPolicyFilterCriteria(policyFilterCriteria);
         }
 
         return policy;

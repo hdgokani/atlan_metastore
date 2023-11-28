@@ -1044,7 +1044,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             mustClauseList.add(getMap("wrapper", getMap("query", userQueryBase64)));
 
 
-            JsonNode updateQueryNode = mapper.valueToTree(getMap("bool", getMap("filter", mustClauseList)));
+            JsonNode updateQueryNode = mapper.valueToTree(getMap("bool", getMap("must", mustClauseList)));
 
             ((ObjectNode) node).set("query", updateQueryNode);
             searchParams.setQuery(node.toString());

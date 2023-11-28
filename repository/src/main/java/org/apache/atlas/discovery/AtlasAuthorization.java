@@ -3,6 +3,7 @@ package org.apache.atlas.discovery;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 //import org.apache.atlas.model.audit.AuditSearchParams;
@@ -15,16 +16,19 @@ import org.apache.atlas.plugin.model.RangerRole;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
 //import org.apache.atlas.repository.audit.ESBasedAuditRepository;
+import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 //import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 import java.util.*;
 
+import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,13 +90,82 @@ public class AtlasAuthorization {
         }
     }
 
-    private Map<String, Object> getMap(String key, Object value) {
+    private static Map<String, Object> getMap(String key, Object value) {
         Map<String, Object> map = new HashMap<>();
         map.put(key, value);
         return map;
     }
 
-    public Map<String, Object> getElasticsearchDSL(String persona, String purpose, List<String> actions) {
+    public static void verifyAccess(String guid, String action) throws AtlasBaseException {
+        try {
+            if (!isAccessAllowed(guid, action)) {
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Unauthorised");
+            }
+        } catch (AtlasBaseException e) {
+            throw e;
+        }
+    }
+
+    private static boolean isAccessAllowed(String guid, String action) throws AtlasBaseException {
+        if (guid == null) {
+            return false;
+        }
+        List<Map<String, Object>> filterClauseList = new ArrayList<>();
+        Map<String, Object> policiesDSL = getElasticsearchDSL(null, null, Arrays.asList(action));
+        filterClauseList.add(policiesDSL);
+        filterClauseList.add(getMap("term", getMap("__guid", guid)));
+        Map<String, Object> dsl = getMap("bool", getMap("filter", filterClauseList));
+        Integer count = getCountFromElasticsearch(dsl.toString());
+        if (count != null && count > 0) {
+            return true;
+        }
+        return false;
+    }
+
+    public static void verifyAccess(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {
+        try {
+            if (!isAccessAllowed(entityTypeName, entityQualifiedName, action)) {
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Unauthorised");
+            }
+        } catch (AtlasBaseException e) {
+            throw e;
+        }
+    }
+
+    private static boolean isAccessAllowed(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {
+        List<Map<String, Object>> filterClauseList = new ArrayList<>();
+        Map<String, Object> policiesDSL = getElasticsearchDSL(null, null, Arrays.asList(action));
+        filterClauseList.add(policiesDSL);
+        filterClauseList.add(getMap("term", getMap("__typeName.keyword", entityTypeName)));
+        filterClauseList.add(getMap("term", getMap("qualifiedName", entityQualifiedName)));
+        Map<String, Object> dsl = getMap("bool", getMap("filter", filterClauseList));
+        Integer count = getCountFromElasticsearch(dsl.toString());
+        if (count != null && count > 0) {
+            return true;
+        }
+        return false;
+    }
+
+    private static Integer getCountFromElasticsearch(String query) throws AtlasBaseException {
+        RestClient restClient = getLowLevelClient();
+        AtlasElasticsearchQuery elasticsearchQuery = new AtlasElasticsearchQuery("janusgraph_vertex_index", restClient);
+        Map<String, Object> elasticsearchResult = null;
+        elasticsearchResult = elasticsearchQuery.runQueryWithLowLevelClient(query);
+        Integer count = null;
+        if (elasticsearchResult!=null) {
+            count = (Integer) elasticsearchResult.get("total");
+        }
+        return count;
+    }
+
+    public static Map<String, Object> getElasticsearchDSL(String persona, String purpose, List<String> actions) {
+
+        String policyQualifiedNamePrefix = null;
+        if (persona != null && !persona.isEmpty()) {
+            policyQualifiedNamePrefix = persona;
+        } else if (purpose != null && !purpose.isEmpty()) {
+            policyQualifiedNamePrefix = purpose;
+        }
 
         String user = "anshul.mehta"; //RequestContext.getCurrentUser();
 
@@ -101,18 +174,22 @@ public class AtlasAuthorization {
 
         RangerRoles allRoles = usersGroupsRolesStore.getAllRoles();
         List<String> roles = getRolesForUser(user, allRoles);
+        roles.addAll(getNestedRolesForUser(roles, allRoles));
 
         List<RangerPolicy> resourcePolicies = usersGroupsRolesStore.getResourcePolicies();
+        resourcePolicies = getFilteredPoliciesForQualifiedName(resourcePolicies, policyQualifiedNamePrefix);
         resourcePolicies = getFilteredPoliciesForUser(resourcePolicies, user, groups, roles);
         resourcePolicies = getFilteredPoliciesForActions(resourcePolicies, actions);
         List<Map<String, Object>> resourcePoliciesClauses = getDSLForResourcePolicies(resourcePolicies);
 
         List<RangerPolicy> tagPolicies = usersGroupsRolesStore.getTagPolicies();
+        tagPolicies = getFilteredPoliciesForQualifiedName(tagPolicies, policyQualifiedNamePrefix);
         tagPolicies = getFilteredPoliciesForUser(tagPolicies, user, groups, roles);
         tagPolicies = getFilteredPoliciesForActions(tagPolicies, actions);
         Map<String, Object> tagPoliciesClause = getDSLForTagPolicies(tagPolicies);
 
         List<RangerPolicy> abacPolicies = usersGroupsRolesStore.getAbacPolicies();
+        abacPolicies = getFilteredPoliciesForQualifiedName(abacPolicies, policyQualifiedNamePrefix);
         abacPolicies = getFilteredPoliciesForUser(abacPolicies, user, groups, roles);
         abacPolicies = getFilteredPoliciesForActions(abacPolicies, actions);
         List<Map<String, Object>> abacPoliciesClauses = getDSLForAbacPolicies(abacPolicies);
@@ -129,7 +206,7 @@ public class AtlasAuthorization {
         return getMap("bool", boolClause);
     }
 
-    private List<Map<String, Object>> getDSLForAbacPolicies(List<RangerPolicy> policies) {
+    private static List<Map<String, Object>> getDSLForAbacPolicies(List<RangerPolicy> policies) {
         List<String> filterCriteriaList = new ArrayList<>();
         for (RangerPolicy policy : policies) {
             String filterCriteria = policy.getPolicyFilterCriteria();
@@ -157,13 +234,13 @@ public class AtlasAuthorization {
         return clauses;
     }
 
-    private Map<String, Object> getDSLForTagPolicies(List<RangerPolicy> policies) {
+    private static Map<String, Object> getDSLForTagPolicies(List<RangerPolicy> policies) {
         // To reduce the number of clauses
         Set<String> allTags = new HashSet<>();
 
         for (RangerPolicy policy : policies) {
             if (!policy.getResources().isEmpty()) {
-                List<String> tags = (List<String>) policy.getResources().get("tag");
+                List<String> tags = policy.getResources().get("tag").getValues();
                 if (!tags.isEmpty()) {
                     allTags.addAll(tags);
                 }
@@ -172,7 +249,7 @@ public class AtlasAuthorization {
         return getDSLForTags(allTags);
     }
 
-    private Map<String, Object> getDSLForTags(Set<String> tags){
+    private static Map<String, Object> getDSLForTags(Set<String> tags){
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         shouldClauses.add(getMap("terms", getMap("__traitNames", tags)));
         shouldClauses.add(getMap("terms", getMap("__propagatedTraitNames", tags)));
@@ -184,7 +261,7 @@ public class AtlasAuthorization {
         return getMap("bool", boolClause);
     }
 
-    private List<Map<String, Object>> getDSLForResourcePolicies(List<RangerPolicy> policies) {
+    private static List<Map<String, Object>> getDSLForResourcePolicies(List<RangerPolicy> policies) {
 
         // To reduce the number of clauses
         List<String> combinedEntities = new ArrayList<>();
@@ -192,9 +269,11 @@ public class AtlasAuthorization {
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
 
         for (RangerPolicy policy : policies) {
-            if (!policy.getResources().isEmpty()) {
-                List<String> entities = ((RangerPolicy.RangerPolicyResource) policy.getResources().get("entity")).getValues();
-                List<String> entityTypes = ((RangerPolicy.RangerPolicyResource) policy.getResources().get("entity-type")).getValues();
+            if (!policy.getResources().isEmpty() && "ENTITY".equals(policy.getPolicyResourceCategory())) {
+                List<String> entities = policy.getResources().get("entity").getValues();
+                List<String> entityTypes = policy.getResources().get("entity-type").getValues();
+                entities.remove("*");
+                entityTypes.remove("*");
                 if (!entities.isEmpty() && entityTypes.isEmpty()) {
                     combinedEntities.addAll(entities);
                 } else if (entities.isEmpty() && !entityTypes.isEmpty()) {
@@ -205,10 +284,12 @@ public class AtlasAuthorization {
                 }
             }
         }
+        shouldClauses.add(getDSLForResources(combinedEntities, new ArrayList<>()));
+        shouldClauses.add(getDSLForResources(new ArrayList<>(), combinedEntityTypes));
         return shouldClauses;
     }
 
-    private Map<String, Object> getDSLForResources(List<String> entities, List<String> typeNames){
+    private static Map<String, Object> getDSLForResources(List<String> entities, List<String> typeNames){
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         List<String> termsQualifiedNames = new ArrayList<>();
         for (String entity: entities) {
@@ -224,22 +305,34 @@ public class AtlasAuthorization {
             shouldClauses.add(getMap("terms", getMap("qualifiedName", termsQualifiedNames)));
         }
 
-        List<String> filteredTypeNames = new ArrayList<>();
-        for(String typeName : typeNames) {
-            if (!typeName.equals("*")) {
-                filteredTypeNames.add(typeName);
-            }
+        Map<String, Object> boolClause = new HashMap<>();
+
+        if (!shouldClauses.isEmpty()) {
+            boolClause.put("should", shouldClauses);
+            boolClause.put("minimum_should_match", 1);
         }
 
-        Map<String, Object> boolClause = new HashMap<>();
-        boolClause.put("should", shouldClauses);
-        boolClause.put("minimum_should_match", 1);
-        boolClause.put("filter", getMap("terms", getMap("__typeName.keyword", filteredTypeNames)));
+        if (!typeNames.isEmpty()) {
+            boolClause.put("filter", getMap("terms", getMap("__typeName.keyword", typeNames)));
+        }
 
         return getMap("bool", boolClause);
     }
 
-    private List<RangerPolicy> getFilteredPoliciesForActions(List<RangerPolicy> policies, List<String> actions) {
+    static List<RangerPolicy> getFilteredPoliciesForQualifiedName(List<RangerPolicy> policies, String qualifiedNamePrefix) {
+        if (qualifiedNamePrefix != null && !qualifiedNamePrefix.isEmpty()) {
+            List<RangerPolicy> filteredPolicies = new ArrayList<>();
+            for(RangerPolicy policy : policies) {
+                if (policy.getName().startsWith(qualifiedNamePrefix)) {
+                    filteredPolicies.add(policy);
+                }
+            }
+            return filteredPolicies;
+        }
+        return policies;
+    }
+
+    private static List<RangerPolicy> getFilteredPoliciesForActions(List<RangerPolicy> policies, List<String> actions) {
         List<RangerPolicy> filteredPolicies = new ArrayList<>();
         for(RangerPolicy policy : policies) {
             if (!policy.getPolicyItems().isEmpty()) {
@@ -258,7 +351,7 @@ public class AtlasAuthorization {
         return filteredPolicies;
     }
 
-    private List<RangerPolicy> getFilteredPoliciesForUser(List<RangerPolicy> policies, String user, List<String> groups, List<String> roles) {
+    private static List<RangerPolicy> getFilteredPoliciesForUser(List<RangerPolicy> policies, String user, List<String> groups, List<String> roles) {
         List<RangerPolicy> filterPolicies = new ArrayList<>();
         for(RangerPolicy policy : policies) {
             if (!policy.getPolicyItems().isEmpty()) {
@@ -274,7 +367,7 @@ public class AtlasAuthorization {
         return filterPolicies;
     }
 
-    private List<String> getGroupsForUser(String user, RangerUserStore userStore) {
+    private static List<String> getGroupsForUser(String user, RangerUserStore userStore) {
         Map<String, Set<String>> userGroupMapping = userStore.getUserGroupMapping();
         List<String> groups = new ArrayList<>();
         Set<String> groupsSet = userGroupMapping.get(user);
@@ -284,7 +377,7 @@ public class AtlasAuthorization {
         return groups;
     }
 
-    private List<String> getRolesForUser(String user, RangerRoles allRoles) {
+    private static List<String> getRolesForUser(String user, RangerRoles allRoles) {
         List<String> roles = new ArrayList<>();
         Set<RangerRole> rangerRoles = allRoles.getRangerRoles();
         for (RangerRole role : rangerRoles) {
@@ -298,7 +391,23 @@ public class AtlasAuthorization {
         return roles;
     }
 
-    private boolean arrayListContains(List<String> listA, List<String> listB) {
+    private static List<String> getNestedRolesForUser(List<String> userRoles, RangerRoles allRoles) {
+        List<String> ret = new ArrayList<>();
+        Set<RangerRole> rangerRoles = allRoles.getRangerRoles();
+        for (RangerRole role : rangerRoles) {
+            List<RangerRole.RoleMember> nestedRoles = role.getRoles();
+            List<String> nestedRolesName = new ArrayList<>();
+            for (RangerRole.RoleMember nestedRole : nestedRoles) {
+                nestedRolesName.add(nestedRole.getName());
+            }
+            if (arrayListContains(userRoles, nestedRolesName)) {
+             ret.add(role.getName());
+            }
+        }
+        return ret;
+    }
+
+    private static boolean arrayListContains(List<String> listA, List<String> listB) {
         for (String listAItem : listA){
             if (listB.contains(listAItem)) {
                 return true;

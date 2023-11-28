@@ -60,6 +60,7 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CR
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SERVICE_NAME_ABAC;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
 
 public class AuthPolicyPreProcessor implements PreProcessor {
@@ -107,7 +108,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         AtlasEntity policy = (AtlasEntity) entity;
 
         String policyServiceName = getPolicyServiceName(policy);
-        if (POLICY_SERVICE_NAME_APE.equals(policyServiceName)) {
+        if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
             return;
         }
 
