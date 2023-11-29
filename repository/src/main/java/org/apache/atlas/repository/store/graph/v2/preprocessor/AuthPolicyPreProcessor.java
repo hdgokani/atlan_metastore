@@ -169,6 +169,12 @@ public class AuthPolicyPreProcessor implements PreProcessor {
     private void processUpdatePolicy(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdatePolicy");
         AtlasEntity policy = (AtlasEntity) entity;
+
+        String policyServiceName = getPolicyServiceName(policy);
+        if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
+            return;
+        }
+
         AtlasEntity existingPolicy = entityRetriever.toAtlasEntityWithExtInfo(vertex).getEntity();
 
         String policyCategory = policy.hasAttribute(ATTR_POLICY_CATEGORY) ? getPolicyCategory(policy) : getPolicyCategory(existingPolicy);
@@ -230,6 +236,11 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         try {
             AtlasEntity policy = entityRetriever.toAtlasEntity(vertex);
+
+            String policyServiceName = getPolicyServiceName(policy);
+            if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
+                return;
+            }
 
             authorizeDeleteAuthPolicy(policy);
 

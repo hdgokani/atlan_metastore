@@ -146,6 +146,32 @@ public class AtlasAuthorization {
         return false;
     }
 
+    public static boolean isRelationshipAccessAllowed(String endOneGuid, String endTwoGuid, String action) throws AtlasBaseException {
+        if (endOneGuid == null || endTwoGuid == null) {
+            return false;
+        }
+        List<Map<String, Object>> clauses = null;
+        try {
+            clauses = getElasticsearchDSLForRelationshipActions(Arrays.asList(action), endOneGuid, endTwoGuid);
+        } catch (JsonProcessingException e) {
+            return false;
+        }
+        Map<String, Object> dsl = getMap("query", getMap("bool", getMap("should", clauses)));
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            String dslString = mapper.writeValueAsString(dsl);
+            Integer count = getCountFromElasticsearch(dslString);
+            if (count != null && count == 2) {
+                return true;
+            }
+            LOG.info(dslString);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
     private static Integer getCountFromElasticsearch(String query) throws AtlasBaseException {
         RestClient restClient = getLowLevelClient();
         AtlasElasticsearchQuery elasticsearchQuery = new AtlasElasticsearchQuery("janusgraph_vertex_index", restClient);
@@ -158,8 +184,50 @@ public class AtlasAuthorization {
         return count;
     }
 
+    public static List<Map<String, Object>> getElasticsearchDSLForRelationshipActions(List<String> actions, String endOneGuid, String endTwoGuid) throws JsonProcessingException {
+        List<Map<String, Object>> clauses = new ArrayList<>();
+        List<RangerPolicy> resourcePolicies = getRelevantPolicies(null, null, "atlas", actions);
+        List<Map<String, Object>> resourcePoliciesClauses = getDSLForRelationshipResourcePolicies(resourcePolicies, endOneGuid, endTwoGuid);
+
+        List<RangerPolicy> tagPolicies = getRelevantPolicies(null, null, "atlas_tag", actions);
+        Map<String, Object> tagPoliciesClause = getDSLForTagResourcePolicies(tagPolicies, endOneGuid, endTwoGuid);
+
+        List<RangerPolicy> abacPolicies = getRelevantPolicies(null, null, "atlas_abac", actions);
+        List<Map<String, Object>> abacPoliciesClauses = getDSLForRelationshipAbacPolicies(abacPolicies, endOneGuid, endTwoGuid);
+
+        clauses.addAll(resourcePoliciesClauses);
+        if (tagPoliciesClause != null) {
+            clauses.add(tagPoliciesClause);
+        }
+        clauses.addAll(abacPoliciesClauses);
+
+        return clauses;
+    }
+
     public static Map<String, Object> getElasticsearchDSL(String persona, String purpose, List<String> actions) {
 
+        List<RangerPolicy> resourcePolicies = getRelevantPolicies(persona, purpose, "atlas", actions);
+        List<Map<String, Object>> resourcePoliciesClauses = getDSLForResourcePolicies(resourcePolicies);
+
+        List<RangerPolicy> tagPolicies = getRelevantPolicies(persona, purpose, "atlas_tag", actions);
+        Map<String, Object> tagPoliciesClause = getDSLForTagPolicies(tagPolicies);
+
+        List<RangerPolicy> abacPolicies = getRelevantPolicies(persona, purpose, "atlas_abac", actions);
+        List<Map<String, Object>> abacPoliciesClauses = getDSLForAbacPolicies(abacPolicies);
+
+        List<Map<String, Object>> shouldClauses = new ArrayList<>();
+        shouldClauses.addAll(resourcePoliciesClauses);
+        shouldClauses.add(tagPoliciesClause);
+        shouldClauses.addAll(abacPoliciesClauses);
+
+        Map<String, Object> boolClause = new HashMap<>();
+        boolClause.put("should", shouldClauses);
+        boolClause.put("minimum_should_match", 1);
+
+        return getMap("bool", boolClause);
+    }
+
+    private static List<RangerPolicy> getRelevantPolicies(String persona, String purpose, String serviceName, List<String> actions) {
         String policyQualifiedNamePrefix = null;
         if (persona != null && !persona.isEmpty()) {
             policyQualifiedNamePrefix = persona;
@@ -176,34 +244,22 @@ public class AtlasAuthorization {
         List<String> roles = getRolesForUser(user, allRoles);
         roles.addAll(getNestedRolesForUser(roles, allRoles));
 
-        List<RangerPolicy> resourcePolicies = usersGroupsRolesStore.getResourcePolicies();
-        resourcePolicies = getFilteredPoliciesForQualifiedName(resourcePolicies, policyQualifiedNamePrefix);
-        resourcePolicies = getFilteredPoliciesForUser(resourcePolicies, user, groups, roles);
-        resourcePolicies = getFilteredPoliciesForActions(resourcePolicies, actions);
-        List<Map<String, Object>> resourcePoliciesClauses = getDSLForResourcePolicies(resourcePolicies);
+        List<RangerPolicy> policies = new ArrayList<>();
+        if ("atlas".equals(serviceName)) {
+            policies = usersGroupsRolesStore.getResourcePolicies();
+        } else if ("atlas_tag".equals(serviceName)) {
+            policies = usersGroupsRolesStore.getTagPolicies();
+        } else if ("atlas_abac".equals(serviceName)) {
+            policies = usersGroupsRolesStore.getAbacPolicies();
+        }
 
-        List<RangerPolicy> tagPolicies = usersGroupsRolesStore.getTagPolicies();
-        tagPolicies = getFilteredPoliciesForQualifiedName(tagPolicies, policyQualifiedNamePrefix);
-        tagPolicies = getFilteredPoliciesForUser(tagPolicies, user, groups, roles);
-        tagPolicies = getFilteredPoliciesForActions(tagPolicies, actions);
-        Map<String, Object> tagPoliciesClause = getDSLForTagPolicies(tagPolicies);
+        if (!policies.isEmpty()) {
+            policies = getFilteredPoliciesForQualifiedName(policies, policyQualifiedNamePrefix);
+            policies = getFilteredPoliciesForUser(policies, user, groups, roles);
+            policies = getFilteredPoliciesForActions(policies, actions);
+        }
+        return policies;
 
-        List<RangerPolicy> abacPolicies = usersGroupsRolesStore.getAbacPolicies();
-        abacPolicies = getFilteredPoliciesForQualifiedName(abacPolicies, policyQualifiedNamePrefix);
-        abacPolicies = getFilteredPoliciesForUser(abacPolicies, user, groups, roles);
-        abacPolicies = getFilteredPoliciesForActions(abacPolicies, actions);
-        List<Map<String, Object>> abacPoliciesClauses = getDSLForAbacPolicies(abacPolicies);
-
-        List<Map<String, Object>> shouldClauses = new ArrayList<>();
-        shouldClauses.addAll(resourcePoliciesClauses);
-        shouldClauses.add(tagPoliciesClause);
-        shouldClauses.addAll(abacPoliciesClauses);
-
-        Map<String, Object> boolClause = new HashMap<>();
-        boolClause.put("should", shouldClauses);
-        boolClause.put("minimum_should_match", 1);
-
-        return getMap("bool", boolClause);
     }
 
     private static List<Map<String, Object>> getDSLForAbacPolicies(List<RangerPolicy> policies) {
@@ -223,8 +279,11 @@ public class AtlasAuthorization {
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
             }
-            JsonNode dsl = JsonToElasticsearchQuery.convertJsonToQuery(filterCriteriaNode, mapper);
-            dslList.add(dsl.toString());
+            if (filterCriteriaNode != null && filterCriteriaNode.get("entity") != null) {
+                JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("entity");
+                JsonNode dsl = JsonToElasticsearchQuery.convertJsonToQuery(entityFilterCriteriaNode, mapper);
+                dslList.add(dsl.toString());
+            }
         }
         List<Map<String, Object>> clauses = new ArrayList<>();
         for (String dsl: dslList) {
@@ -232,6 +291,41 @@ public class AtlasAuthorization {
             clauses.add(getMap("wrapper", getMap("query", policyDSLBase64)));
         }
         return clauses;
+    }
+
+    private static List<Map<String, Object>> getDSLForRelationshipAbacPolicies(List<RangerPolicy> policies,String endOneGuid, String endTwoGuid) throws JsonProcessingException {
+        return getDSLForRelationshipAbacPolicies(policies, Arrays.asList(getMap("term", getMap("__guid", endOneGuid))), Arrays.asList(getMap("term", getMap("__guid", endTwoGuid))));
+    }
+
+    private static List<Map<String, Object>> getDSLForRelationshipAbacPolicies(List<RangerPolicy> policies, String endOneQualifiedName, String endOneTypeName, String endTwoQualifiedName, String endTwoTypeName) throws JsonProcessingException {
+        return getDSLForRelationshipAbacPolicies(policies, Arrays.asList(getMap("term", getMap("__typeName.keyword", endOneTypeName)), getMap("term", getMap("qualifiedName", endOneQualifiedName))), Arrays.asList(getMap("term", getMap("__typeName.keyword", endTwoTypeName)), getMap("term", getMap("qualifiedName", endTwoQualifiedName))));
+    }
+
+    private static List<Map<String, Object>> getDSLForRelationshipAbacPolicies(List<RangerPolicy> policies, List<Map<String, Object>> endOneEntityDsl, List<Map<String, Object>> endTwoEntityDsl) throws JsonProcessingException {
+        List<Map<String, Object>> shouldClauses = new ArrayList<>();
+        for (RangerPolicy policy : policies) {
+            if ("RELATIONSHIP".equals(policy.getPolicyResourceCategory())) {
+                String filterCriteria = policy.getPolicyFilterCriteria();
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode filterCriteriaNode = mapper.readTree(filterCriteria);
+
+                JsonNode endOneFilterCriteriaNode = filterCriteriaNode.get("endOneEntity");
+                JsonNode endOneDsl = JsonToElasticsearchQuery.convertJsonToQuery(endOneFilterCriteriaNode, mapper);
+                String endOneDslBase64 = Base64.getEncoder().encodeToString(endOneDsl.toString().getBytes());
+                Map<String, Object> endOneFinalDsl = getMap("bool", getMap("filter", Arrays.asList(getMap("wrapper", getMap("query", endOneDslBase64)), endOneEntityDsl.toArray())));
+
+                JsonNode endTwoFilterCriteriaNode = filterCriteriaNode.get("endTwoEntity");
+                JsonNode endTwoDsl = JsonToElasticsearchQuery.convertJsonToQuery(endTwoFilterCriteriaNode, mapper);
+                String endTwoDslBase64 = Base64.getEncoder().encodeToString(endTwoDsl.toString().getBytes());
+                Map<String, Object> endTwoFinalDsl = getMap("bool", getMap("filter", Arrays.asList(getMap("wrapper", getMap("query", endTwoDslBase64)), endTwoEntityDsl.toArray())));
+
+                Map<String, Object> policyDsl = new HashMap<>();
+                policyDsl.put("should", Arrays.asList(endOneFinalDsl, endTwoFinalDsl));
+                policyDsl.put("minimum_should_match", 1);
+                shouldClauses.add(getMap("bool", policyDsl));
+            }
+        }
+        return shouldClauses;
     }
 
     private static Map<String, Object> getDSLForTagPolicies(List<RangerPolicy> policies) {
@@ -246,7 +340,39 @@ public class AtlasAuthorization {
                 }
             }
         }
-        return getDSLForTags(allTags);
+        if (!allTags.isEmpty()) {
+            return getDSLForTags(allTags);
+        }
+        return null;
+    }
+
+    private static Map<String, Object> getDSLForTagResourcePolicies(List<RangerPolicy> policies, String endOneGuid, String endTwoGuid) {
+        return getDSLForRelationshipTagPolicies(policies, Arrays.asList(getMap("term", getMap("__guid", endOneGuid))), Arrays.asList(getMap("term", getMap("__guid", endTwoGuid))));
+    }
+
+    private static Map<String, Object> getDSLForTagResourcePolicies(List<RangerPolicy> policies, String endOneQualifiedName, String endOneTypeName, String endTwoQualifiedName, String endTwoTypeName) {
+        return getDSLForRelationshipTagPolicies(policies, Arrays.asList(getMap("term", getMap("__typeName.keyword", endOneTypeName)), getMap("term", getMap("qualifiedName", endOneQualifiedName))), Arrays.asList(getMap("term", getMap("__typeName.keyword", endTwoTypeName)), getMap("term", getMap("qualifiedName", endTwoQualifiedName))));
+    }
+
+    private static Map<String, Object> getDSLForRelationshipTagPolicies(List<RangerPolicy> policies, List<Map<String, Object>> endOneEntityDsl, List<Map<String, Object>> endTwoEntityDsl) {
+        // To reduce the number of clauses
+        Set<String> allTags = new HashSet<>();
+        for (RangerPolicy policy : policies) {
+            if (!policy.getResources().isEmpty()) {
+                List<String> tags = policy.getResources().get("tag").getValues();
+                if (!tags.isEmpty()) {
+                    allTags.addAll(tags);
+                }
+            }
+        }
+        if (!allTags.isEmpty()) {
+            Map<String, Object> tagsDsl = getDSLForTags(allTags);
+            Map<String, Object> entityDsl = new HashMap<>();
+            entityDsl.put("should", Arrays.asList(endOneEntityDsl.toArray(), endTwoEntityDsl.toArray()));
+            entityDsl.put("minimum_should_match", 1);
+            return getMap("bool", getMap("filter", Arrays.asList(getDSLForTags(allTags), getMap("bool", entityDsl))));
+        }
+        return null;
     }
 
     private static Map<String, Object> getDSLForTags(Set<String> tags){
@@ -259,6 +385,53 @@ public class AtlasAuthorization {
         boolClause.put("minimum_should_match", 1);
 
         return getMap("bool", boolClause);
+    }
+
+    private static List<Map<String, Object>> getDSLForRelationshipResourcePolicies(List<RangerPolicy> policies, String endOneGuid, String endTwoGuid) {
+        return getDSLForRelationshipResourcePolicies(policies, Arrays.asList(getMap("term", getMap("__guid", endOneGuid))), Arrays.asList(getMap("term", getMap("__guid", endTwoGuid))));
+    }
+
+    private static List<Map<String, Object>> getDSLForRelationshipResourcePolicies(List<RangerPolicy> policies, String endOneQualifiedName, String endOneTypeName, String endTwoQualifiedName, String endTwoTypeName) {
+        return getDSLForRelationshipResourcePolicies(policies, Arrays.asList(getMap("term", getMap("__typeName.keyword", endOneTypeName)), getMap("term", getMap("qualifiedName", endOneQualifiedName))), Arrays.asList(getMap("term", getMap("__typeName.keyword", endTwoTypeName)), getMap("term", getMap("qualifiedName", endTwoQualifiedName))));
+    }
+
+    private static List<Map<String, Object>> getDSLForRelationshipResourcePolicies(List<RangerPolicy> policies, List<Map<String, Object>> endOneEntityDsl, List<Map<String, Object>> endTwoEntityDsl) {
+        List<Map<String, Object>> shouldClauses = new ArrayList<>();
+        for (RangerPolicy policy : policies) {
+            if (!policy.getResources().isEmpty() && "RELATIONSHIP".equals(policy.getPolicyResourceCategory())) {
+                List<String> endOneEntities = policy.getResources().get("end-one-entity").getValues();
+                List<String> endOneEntityTypes = policy.getResources().get("end-one-entity-type").getValues();
+                List<String> endTwoEntities = policy.getResources().get("end-two-entity").getValues();
+                List<String> endTwoEntityTypes = policy.getResources().get("end-two-entity-type").getValues();
+
+                endOneEntities.remove("*");
+                endOneEntityTypes.remove("*");
+                endTwoEntities.remove("*");
+                endTwoEntityTypes.remove("*");
+
+                List<Map<String, Object>> endOneFilterList = new ArrayList<>();
+                if (!endOneEntities.isEmpty() || !endOneEntityTypes.isEmpty()) {
+                    Map<String, Object> endOneDsl = getDSLForResources(endOneEntities, endOneEntityTypes);
+                    endOneFilterList.add(endOneDsl);
+                }
+                endOneFilterList.addAll(endOneEntityDsl);
+                Map<String, Object> endOneFinalDsl = getMap("bool", getMap("filter", endOneFilterList));
+
+                List<Map<String, Object>> endTwoFilterList = new ArrayList<>();
+                if (!endTwoEntities.isEmpty() || !endTwoEntityTypes.isEmpty()) {
+                    Map<String, Object> endTwoDsl = getDSLForResources(endTwoEntities, endTwoEntityTypes);
+                    endOneFilterList.add(endTwoDsl);
+                }
+                endTwoFilterList.addAll(endTwoEntityDsl);
+                Map<String, Object> endTwoFinalDsl = getMap("bool", getMap("filter", endTwoFilterList));
+
+                Map<String, Object> policyDsl = new HashMap<>();
+                policyDsl.put("should", Arrays.asList(endOneFinalDsl, endTwoFinalDsl));
+                policyDsl.put("minimum_should_match", 1);
+                shouldClauses.add(getMap("bool", policyDsl));
+            }
+        }
+        return shouldClauses;
     }
 
     private static List<Map<String, Object>> getDSLForResourcePolicies(List<RangerPolicy> policies) {
