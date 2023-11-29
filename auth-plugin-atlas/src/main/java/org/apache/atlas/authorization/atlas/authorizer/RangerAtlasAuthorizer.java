@@ -85,7 +85,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         add(AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION);
     }};
 
-    private static final ExecutorService classification_access_threadpool = Executors.newFixedThreadPool(NUM_THREADS);
+    private static final ExecutorService classificationAccessThreadpool = Executors.newFixedThreadPool(NUM_THREADS);
 
     @Override
     public void init() {
@@ -676,7 +676,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
 
                     RangerAccessRequestImpl  rangerRequest  = createRangerAccessRequest(request, classificationToAuthorize, rangerTagForEval);
 
-                    completableFutures.add(CompletableFuture.supplyAsync(()->checkAccess(rangerRequest, auditHandler), classification_access_threadpool));
+                    completableFutures.add(CompletableFuture.supplyAsync(()->checkAccess(rangerRequest, auditHandler), classificationAccessThreadpool));
                 }
 
                 // wait for all threads to complete their execution
