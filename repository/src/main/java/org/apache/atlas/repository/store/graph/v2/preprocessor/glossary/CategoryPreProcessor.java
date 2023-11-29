@@ -57,6 +57,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
+import static org.apache.atlas.discovery.AtlasAuthorization.verifyAccess;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.CATEGORY_PARENT_EDGE_LABEL;
@@ -127,8 +128,9 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
         validateParent(glossaryQualifiedName);
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(vertex));
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
-                "create entity: type=", entity.getTypeName());
+//        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
+//                "create entity: type=", entity.getTypeName());
+        verifyAccess(entity.getTypeName(), (String) entity.getAttribute(QUALIFIED_NAME), AtlasPrivilege.ENTITY_CREATE.getType());
 
         validateChildren(entity, null);
 

@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 
+import static org.apache.atlas.discovery.AtlasAuthorization.verifyAccess;
 import static org.apache.atlas.repository.Constants.ACTIVE_STATE_VALUE;
 import static org.apache.atlas.repository.Constants.ASSET_RELATION_ATTR;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;

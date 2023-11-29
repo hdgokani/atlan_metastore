@@ -147,8 +147,17 @@ public class AtlasAuthorization {
         filterClauseList.add(policiesDSL);
         filterClauseList.add(getMap("term", getMap("__typeName.keyword", entityTypeName)));
         filterClauseList.add(getMap("term", getMap("qualifiedName", entityQualifiedName)));
-        Map<String, Object> dsl = getMap("bool", getMap("filter", filterClauseList));
-        Integer count = getCountFromElasticsearch(dsl.toString());
+        Map<String, Object> dsl = getMap("query", getMap("bool", getMap("filter", filterClauseList)));
+        ObjectMapper mapper = new ObjectMapper();
+        String dslString = null;
+        Integer count = null;
+        try {
+            dslString = mapper.writeValueAsString(dsl);
+            count = getCountFromElasticsearch(dslString);
+            LOG.info(dslString);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
         if (count != null && count > 0) {
             return true;
         }

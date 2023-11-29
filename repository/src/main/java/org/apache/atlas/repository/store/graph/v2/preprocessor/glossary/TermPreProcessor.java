@@ -46,6 +46,7 @@ import org.springframework.stereotype.Component;
 import java.util.Iterator;
 import java.util.List;
 
+import static org.apache.atlas.discovery.AtlasAuthorization.verifyAccess;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getActiveParentVertices;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
@@ -98,8 +99,9 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         validateCategory(entity);
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
-                "create entity: type=", entity.getTypeName());
+//        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
+//                "create entity: type=", entity.getTypeName());
+        verifyAccess(entity.getTypeName(), (String) entity.getAttribute(QUALIFIED_NAME), AtlasPrivilege.ENTITY_CREATE.getType());
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
