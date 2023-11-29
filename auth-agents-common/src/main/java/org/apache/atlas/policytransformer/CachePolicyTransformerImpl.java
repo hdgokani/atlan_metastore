@@ -194,9 +194,17 @@ public class CachePolicyTransformerImpl {
 
                 AtlasPerfMetrics.MetricRecorder recorderFilterPolicies = RequestContext.get().startMetricRecord("filterPolicies");
                 //filter out policies based on serviceName
-                List<RangerPolicy> policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
-                List<RangerPolicy> policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
-                List<RangerPolicy> policiesC = allPolicies.stream().filter(x -> abacServiceName.equals(x.getService())).collect(Collectors.toList());
+
+                List<RangerPolicy> policiesA = new ArrayList<>();
+                List<RangerPolicy> policiesB = new ArrayList<>();
+                List<RangerPolicy> policiesC = new ArrayList<>();
+
+                try {
+                    policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
+                    policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
+                    policiesC = allPolicies.stream().filter(x -> abacServiceName.equals(x.getService())).collect(Collectors.toList());
+                }
+                catch (NullPointerException exception) {}
 
                 servicePolicies.setPolicies(policiesA);
                 servicePolicies.getTagPolicies().setPolicies(policiesB);
