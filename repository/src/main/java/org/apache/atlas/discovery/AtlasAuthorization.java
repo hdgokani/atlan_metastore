@@ -167,7 +167,7 @@ public class AtlasAuthorization {
             policyQualifiedNamePrefix = purpose;
         }
 
-        String user = "anshul.mehta"; //RequestContext.getCurrentUser();
+        String user = RequestContext.getCurrentUser();
 
         RangerUserStore userStore = usersGroupsRolesStore.getUserStore();
         List<String> groups = getGroupsForUser(user, userStore);
