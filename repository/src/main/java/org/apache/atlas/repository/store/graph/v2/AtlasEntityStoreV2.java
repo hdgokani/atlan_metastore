@@ -216,7 +216,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         // AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(ret.getEntity())), "read entity: guid=", guid);
-        verifyAccess(guid, AtlasPrivilege.ENTITY_READ.toString());
+        verifyAccess(guid, "entity-read");
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getById({}, {}): {}", guid, isMinExtInfo, ret);

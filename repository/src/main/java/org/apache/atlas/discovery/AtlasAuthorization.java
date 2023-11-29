@@ -99,7 +99,7 @@ public class AtlasAuthorization {
     public static void verifyAccess(String guid, String action) throws AtlasBaseException {
         try {
             if (!isAccessAllowed(guid, action)) {
-                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Unauthorised");
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), guid);
             }
         } catch (AtlasBaseException e) {
             throw e;
@@ -114,8 +114,17 @@ public class AtlasAuthorization {
         Map<String, Object> policiesDSL = getElasticsearchDSL(null, null, Arrays.asList(action));
         filterClauseList.add(policiesDSL);
         filterClauseList.add(getMap("term", getMap("__guid", guid)));
-        Map<String, Object> dsl = getMap("bool", getMap("filter", filterClauseList));
-        Integer count = getCountFromElasticsearch(dsl.toString());
+        Map<String, Object> dsl = getMap("query", getMap("bool", getMap("filter", filterClauseList)));
+        ObjectMapper mapper = new ObjectMapper();
+        String dslString = null;
+        Integer count = null;
+        try {
+            dslString = mapper.writeValueAsString(dsl);
+            count = getCountFromElasticsearch(dslString);
+            LOG.info(dslString);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
         if (count != null && count > 0) {
             return true;
         }
@@ -217,12 +226,18 @@ public class AtlasAuthorization {
 
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         shouldClauses.addAll(resourcePoliciesClauses);
-        shouldClauses.add(tagPoliciesClause);
+        if (tagPoliciesClause != null) {
+            shouldClauses.add(tagPoliciesClause);
+        }
         shouldClauses.addAll(abacPoliciesClauses);
 
         Map<String, Object> boolClause = new HashMap<>();
-        boolClause.put("should", shouldClauses);
-        boolClause.put("minimum_should_match", 1);
+        if (shouldClauses.isEmpty()) {
+            boolClause.put("must_not", getMap("match_all", new HashMap<>()));
+        } else {
+            boolClause.put("should", shouldClauses);
+            boolClause.put("minimum_should_match", 1);
+        }
 
         return getMap("bool", boolClause);
     }
@@ -445,6 +460,12 @@ public class AtlasAuthorization {
             if (!policy.getResources().isEmpty() && "ENTITY".equals(policy.getPolicyResourceCategory())) {
                 List<String> entities = policy.getResources().get("entity").getValues();
                 List<String> entityTypes = policy.getResources().get("entity-type").getValues();
+                if (entities.contains("*") && entityTypes.contains("*")) {
+                    Map<String, String> emptyMap = new HashMap<>();
+                    shouldClauses.removeAll(shouldClauses);
+                    shouldClauses.add(getMap("match_all",emptyMap));
+                    break;
+                }
                 entities.remove("*");
                 entityTypes.remove("*");
                 if (!entities.isEmpty() && entityTypes.isEmpty()) {
@@ -457,8 +478,12 @@ public class AtlasAuthorization {
                 }
             }
         }
-        shouldClauses.add(getDSLForResources(combinedEntities, new ArrayList<>()));
-        shouldClauses.add(getDSLForResources(new ArrayList<>(), combinedEntityTypes));
+        if (!combinedEntities.isEmpty()) {
+            shouldClauses.add(getDSLForResources(combinedEntities, new ArrayList<>()));
+        }
+        if (!combinedEntityTypes.isEmpty()) {
+            shouldClauses.add(getDSLForResources(new ArrayList<>(), combinedEntityTypes));
+        }
         return shouldClauses;
     }
 
