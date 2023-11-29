@@ -25,8 +25,8 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.plugin.util.ServicePolicies;
 import org.apache.atlas.plugin.model.RangerPolicy;
+import org.apache.atlas.plugin.util.ServicePolicies;
 import org.apache.atlas.plugin.model.RangerPolicy.RangerDataMaskPolicyItem;
 import org.apache.atlas.plugin.model.RangerPolicy.RangerPolicyItem;
 import org.apache.atlas.plugin.model.RangerPolicy.RangerPolicyItemAccess;
@@ -74,6 +74,8 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SU
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
 import static org.apache.atlas.repository.util.AccessControlUtils.getAttrPolicyFilterCriteria;
+import static org.apache.atlas.repository.util.AccessControlUtils.getAttrPolicyFilterCriteriaEndOne;
+import static org.apache.atlas.repository.util.AccessControlUtils.getAttrPolicyFilterCriteriaEndTwo;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyServiceName;
@@ -90,7 +92,10 @@ public class CachePolicyTransformerImpl {
     public static final String ATTR_POLICY_ACTIONS            = "policyActions";
     public static final String ATTR_POLICY_TYPE               = "policyType";
     public static final String ATTR_POLICY_RESOURCES          = "policyResources";
-    public static final String ATTR_POLICY_FILTER_CRITERIA    = "policyFilterCriteria";
+
+    public static final String ATTR_POLICY_FILTER_CRITERIA            = "policyFilterCriteria";
+    public static final String ATTR_POLICY_FILTER_CRITERIA_END_ONE    = "policyFilterCriteriaEndOne";
+    public static final String ATTR_POLICY_FILTER_CRITERIA_END_TWO    = "policyFilterCriteriaEndTwo";
 
     public static final String ATTR_SERVICE_SERVICE_TYPE = "authServiceType";
     public static final String ATTR_SERVICE_TAG_SERVICE  = "tagService";
@@ -301,6 +306,9 @@ public class CachePolicyTransformerImpl {
 
         if ("ape".equals(policyServiceName)) {
             rangerPolicy.setPolicyFilterCriteria(getAttrPolicyFilterCriteria(atlasPolicy));
+            rangerPolicy.setPolicyFilterCriteriaEndOne(getAttrPolicyFilterCriteriaEndOne(atlasPolicy));
+            rangerPolicy.setPolicyFilterCriteriaEndTwo(getAttrPolicyFilterCriteriaEndTwo(atlasPolicy));
+
         } else {
             List<String> atlasResources = (List<String>) atlasPolicy.getAttribute("policyResources");
 

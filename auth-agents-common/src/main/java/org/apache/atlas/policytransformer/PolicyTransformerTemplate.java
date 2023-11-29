@@ -68,6 +68,17 @@ public class PolicyTransformerTemplate {
                     templatePolicy.setPolicyFilterCriteria((String) filterCriteria);
                 }
 
+                filterCriteria = policy.get("policyFilterCriteriaEndOne");
+                if (filterCriteria != null) {
+                    templatePolicy.setPolicyFilterCriteriaEndOne((String) filterCriteria);
+                }
+
+                filterCriteria = policy.get("policyFilterCriteriaEndTwo");
+                if (filterCriteria != null) {
+                    templatePolicy.setPolicyFilterCriteriaEndTwo((String) filterCriteria);
+                }
+
+
                 policies.add(templatePolicy);
             }
 
@@ -82,6 +93,8 @@ public class PolicyTransformerTemplate {
         private List<String> actions;
         private String policyResourceCategory;
         private String policyFilterCriteria;
+        private String policyFilterCriteriaEndOne;
+        private String policyFilterCriteriaEndTwo;
 
         public String getPolicyServiceName() {
             return policyServiceName;
@@ -129,6 +142,22 @@ public class PolicyTransformerTemplate {
 
         public void setPolicyFilterCriteria(String policyFilterCriteria) {
             this.policyFilterCriteria = policyFilterCriteria;
+        }
+
+        public String getPolicyFilterCriteriaEndOne() {
+            return policyFilterCriteriaEndOne;
+        }
+
+        public void setPolicyFilterCriteriaEndOne(String policyFilterCriteriaEndOne) {
+            this.policyFilterCriteriaEndOne = policyFilterCriteriaEndOne;
+        }
+
+        public String getPolicyFilterCriteriaEndTwo() {
+            return policyFilterCriteriaEndTwo;
+        }
+
+        public void setPolicyFilterCriteriaEndTwo(String policyFilterCriteriaEndTwo) {
+            this.policyFilterCriteriaEndTwo = policyFilterCriteriaEndTwo;
         }
     }
 }

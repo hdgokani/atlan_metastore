@@ -33,6 +33,8 @@ import java.util.List;
 
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_NAME;
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_POLICY_FILTER_CRITERIA;
+import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_POLICY_FILTER_CRITERIA_END_ONE;
+import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_POLICY_FILTER_CRITERIA_END_TWO;
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ACTIONS;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
@@ -95,8 +97,28 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                 List<String> finalResources = new ArrayList<>();
 
                 if (getPolicySubCategory(atlasPolicy).equals("domain")) {
-                    if (templatePolicy.getPolicyFilterCriteria().contains(PLACEHOLDER_FILTER)) {
-                        header.setAttribute(ATTR_POLICY_FILTER_CRITERIA, templatePolicy.getPolicyFilterCriteria().replace(PLACEHOLDER_FILTER, getAttrPolicyFilterCriteria(atlasPolicy)));
+                    if (StringUtils.contains(templatePolicy.getPolicyFilterCriteria(), PLACEHOLDER_FILTER)) {
+                        header.setAttribute(ATTR_POLICY_FILTER_CRITERIA,
+                                templatePolicy.getPolicyFilterCriteria().replace(PLACEHOLDER_FILTER, getAttrPolicyFilterCriteria(atlasPolicy)));
+
+                    } else {
+
+                        header.removeAttribute(ATTR_POLICY_FILTER_CRITERIA);
+
+                        if (StringUtils.contains(templatePolicy.getPolicyFilterCriteriaEndOne(), PLACEHOLDER_FILTER)) {
+                            header.setAttribute(ATTR_POLICY_FILTER_CRITERIA_END_ONE,
+                                    templatePolicy.getPolicyFilterCriteriaEndOne().replace(PLACEHOLDER_FILTER, getAttrPolicyFilterCriteria(atlasPolicy)));
+
+                        } else {
+                            header.setAttribute(ATTR_POLICY_FILTER_CRITERIA_END_ONE, templatePolicy.getPolicyFilterCriteriaEndOne());
+                        }
+
+                        if (StringUtils.contains(templatePolicy.getPolicyFilterCriteriaEndTwo(), PLACEHOLDER_FILTER)) {
+                            header.setAttribute(ATTR_POLICY_FILTER_CRITERIA_END_TWO,
+                                    templatePolicy.getPolicyFilterCriteriaEndTwo().replace(PLACEHOLDER_FILTER, getAttrPolicyFilterCriteria(atlasPolicy)));
+                        } else {
+                            header.setAttribute(ATTR_POLICY_FILTER_CRITERIA_END_TWO, templatePolicy.getPolicyFilterCriteriaEndTwo());
+                        }
                     }
                 } else {
                     for (String templateResource : templatePolicy.getResources()) {

@@ -85,6 +85,8 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 	private Boolean                           isDenyAllElse;
 	private Map<String, String> 			  attributes;
 	private String 			                  policyFilterCriteria;
+	private String 			                  policyFilterCriteriaEndOne;
+	private String 			                  policyFilterCriteriaEndTwo;
 
 	public RangerPolicy() {
 		this(null, null, null, null, null, null, null, null, null, null, null);
@@ -542,6 +544,23 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 
 	public void setPolicyFilterCriteria(String policyFilterCriteria) {
 		this.policyFilterCriteria = policyFilterCriteria;
+	}
+
+
+	public String getPolicyFilterCriteriaEndOne() {
+		return policyFilterCriteriaEndOne;
+	}
+
+	public void setPolicyFilterCriteriaEndOne(String policyFilterCriteriaEndOne) {
+		this.policyFilterCriteriaEndOne = policyFilterCriteriaEndOne;
+	}
+
+	public String getPolicyFilterCriteriaEndTwo() {
+		return policyFilterCriteriaEndTwo;
+	}
+
+	public void setPolicyFilterCriteriaEndTwo(String policyFilterCriteriaEndTwo) {
+		this.policyFilterCriteriaEndTwo = policyFilterCriteriaEndTwo;
 	}
 
 	@Override
