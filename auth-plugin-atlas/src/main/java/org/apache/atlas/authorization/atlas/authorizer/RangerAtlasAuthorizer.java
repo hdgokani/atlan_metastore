@@ -53,6 +53,7 @@ import org.apache.atlas.plugin.policyresourcematcher.RangerPolicyResourceMatcher
 import org.apache.atlas.plugin.service.RangerBasePlugin;
 import org.apache.atlas.plugin.util.RangerPerfTracer;
 
+import java.awt.*;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -660,6 +661,8 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> isAccessAllowed(" + request + ")");
         }
+        long startTime = System.currentTimeMillis();
+        LOG.info("start isAccessAllowed : " + startTime);
         boolean ret = false;
 
         try {
@@ -672,6 +675,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                 List<CompletableFuture<Boolean>> completableFutures = new ArrayList<>();
 
                 // check authorization for each classification
+                LOG.info("start check authrization for each classification: " + (System.currentTimeMillis() - startTime));
                 for (AtlasClassification classificationToAuthorize : request.getEntityClassifications()) {
 
                     RangerAccessRequestImpl  rangerRequest  = createRangerAccessRequest(request, classificationToAuthorize, rangerTagForEval);
@@ -681,6 +685,8 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
 
                 // wait for all threads to complete their execution
                 CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0])).join();
+                LOG.info("end check authorization for each classification: " + (System.currentTimeMillis() - startTime));
+
 
                 // if all checkAccess calls return true, then ret is true, else it is false
                 ret = completableFutures
@@ -917,11 +923,13 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
             entityAccessRequest.setClientIPAddress(request.getClientIPAddress());
             entityAccessRequest.setForwardedAddresses(request.getForwardedAddresses());
             entityAccessRequest.setRemoteIPAddress(request.getRemoteIPAddress());
-
+            long startTime = System.currentTimeMillis();
             boolean isEntityAccessAllowed  = isScrubAuditEnabled ?  isAccessAllowed(entityAccessRequest) : isAccessAllowed(entityAccessRequest, null);
+            LOG.info("isEntityAccessAllowed: " + (System.currentTimeMillis() - startTime));
             if (!isEntityAccessAllowed) {
                 scrubEntityHeader(entity, request.getTypeRegistry());
             }
+            LOG.info("scrubEntityHeader completed" + (System.currentTimeMillis() - startTime));
         }
     }
 
