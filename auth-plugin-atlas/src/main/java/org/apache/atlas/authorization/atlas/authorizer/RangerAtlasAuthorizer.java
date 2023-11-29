@@ -643,6 +643,8 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
 
     private void checkAccessAndScrubAsync(List<AtlasEntityHeader> entitiesToCheck, AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) throws AtlasAuthorizationException {
         LOG.info("Creating futures to check access and scrub " + entitiesToCheck.size() + " entities");
+        long startTime = System.currentTimeMillis();
+        LOG.info("Started checkAccessAndScrubAsync: " + System.currentTimeMillis());
         List<CompletableFuture<AtlasAuthorizationException>> completableFutures = entitiesToCheck
                 .stream()
                 .map(entity -> CompletableFuture.supplyAsync(() -> {
@@ -654,10 +656,10 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                     }
                 }, entityAccessThreadpool))
                 .collect(Collectors.toList());
-
+        LOG.info("Completed async submission " + (System.currentTimeMillis()-startTime));
         // wait for all threads to complete their execution
         CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0])).join();
-
+        LOG.info("Completed waiting for completion of threads: " + (System.currentTimeMillis()-startTime));
         // get the first exception from any checkAccessAndScrub calls
         Optional<AtlasAuthorizationException> maybeAuthException = completableFutures
                 .stream()
@@ -665,7 +667,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                 .filter(Objects::nonNull)
                 .findFirst();
 
-        LOG.info("Async check access and scrub is complete");
+        LOG.info("Async check access and scrub is complete: "+ (System.currentTimeMillis()-startTime));
         if (maybeAuthException.isPresent()) {
             throw maybeAuthException.get();
         }
