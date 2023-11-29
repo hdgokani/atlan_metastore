@@ -89,7 +89,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         add(AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION);
     }};
 
-    static final ExecutorService entityAccessThreadpool = Executors.newFixedThreadPool(5);
+    static final ExecutorService entityAccessThreadpool = Executors.newFixedThreadPool(10);
 
     @Override
     public void init() {
