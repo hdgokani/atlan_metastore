@@ -46,6 +46,7 @@
         "name": "heka",
         "authServiceType": "heka",
         "tagService": "atlas_tag",
+        "abacService": "atlas_abac",
         "authServiceConfig": {}
       }
     }
