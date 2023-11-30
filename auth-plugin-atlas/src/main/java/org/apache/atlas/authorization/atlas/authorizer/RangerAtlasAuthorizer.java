@@ -54,15 +54,8 @@ import org.apache.atlas.plugin.service.RangerBasePlugin;
 import org.apache.atlas.plugin.util.RangerPerfTracer;
 
 import java.awt.*;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -254,7 +247,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
             boolean isAuditDisabled = ACCESS_TYPE_TYPE_READ.equalsIgnoreCase(action);
 
             if (isAuditDisabled) {
-                ret = checkAccess(rangerRequest, null);
+                ret = checkAccess(rangerRequest, null, "");
             } else {
                 ret = checkAccess(rangerRequest);
             }
@@ -661,8 +654,10 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> isAccessAllowed(" + request + ")");
         }
+
+        String uuid = UUID.randomUUID().toString();
         long startTime = System.currentTimeMillis();
-        LOG.info("start isAccessAllowed : " + startTime);
+        LOG.info("start isAccessAllowed : " + startTime + " uuid: " + uuid);
         boolean ret = false;
 
         try {
@@ -675,17 +670,17 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                 List<CompletableFuture<Boolean>> completableFutures = new ArrayList<>();
 
                 // check authorization for each classification
-                LOG.info("start check authrization for each classification: " + (System.currentTimeMillis() - startTime));
+                LOG.info("start check authrization for each classification: " + (System.currentTimeMillis() - startTime)+ " uuid: " + uuid);
                 for (AtlasClassification classificationToAuthorize : request.getEntityClassifications()) {
 
                     RangerAccessRequestImpl  rangerRequest  = createRangerAccessRequest(request, classificationToAuthorize, rangerTagForEval);
 
-                    completableFutures.add(CompletableFuture.supplyAsync(()->checkAccess(rangerRequest, auditHandler), classificationAccessThreadpool));
+                    completableFutures.add(CompletableFuture.supplyAsync(()->checkAccess(rangerRequest, auditHandler, uuid), classificationAccessThreadpool));
                 }
 
                 // wait for all threads to complete their execution
                 CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0])).join();
-                LOG.info("end check authorization for each classification: " + (System.currentTimeMillis() - startTime));
+                LOG.info("end check authorization for each classification: " + (System.currentTimeMillis() - startTime) + " uuid: " + uuid);
 
 
                 // if all checkAccess calls return true, then ret is true, else it is false
@@ -706,7 +701,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
 
                 rangerResource.setValue(RESOURCE_ENTITY_CLASSIFICATION, ENTITY_NOT_CLASSIFIED );
 
-                ret = checkAccess(rangerRequest, auditHandler);
+                ret = checkAccess(rangerRequest, auditHandler, uuid);
             }
 
         } finally {
@@ -726,6 +721,9 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                                                               AtlasClassification classificationToAuthorize,
                                                               Set<RangerTagForEval> rangerTagForEval) {
 
+        long startTime = System.currentTimeMillis();
+        LOG.info("createRangerAccessRequest start: " + startTime);
+
         RangerAccessRequestImpl rangerRequest = new RangerAccessRequestImpl();
         RangerAccessResourceImpl rangerResource = new RangerAccessResourceImpl();
 
@@ -737,6 +735,8 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         rangerRequest.setResource(rangerResource);
 
         setClassificationContextForRanger(rangerTagForEval, rangerRequest);
+
+        LOG.info("createRangerAccessRequest end: " + (System.currentTimeMillis() - startTime));
 
         return rangerRequest;
 
@@ -851,7 +851,9 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         return ret;
     }
 
-    private boolean checkAccess(RangerAccessRequestImpl request, RangerAtlasAuditHandler auditHandler) {
+    private boolean checkAccess(RangerAccessRequestImpl request, RangerAtlasAuditHandler auditHandler, String uuid) {
+        long startTime = System.currentTimeMillis();
+        LOG.info("Check Access started: " + startTime+ " uuid: " + uuid);
         boolean          ret    = false;
         
         RangerBasePlugin plugin = atlasPlugin;
@@ -874,7 +876,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         } else {
             LOG.warn("RangerAtlasPlugin not initialized. Access blocked!!!");
         }
-
+        LOG.info("Check Access ended: " + (System.currentTimeMillis()-startTime)+ "uuid: " + uuid);
         return ret;
     }
 
