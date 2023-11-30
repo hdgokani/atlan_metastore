@@ -10,16 +10,15 @@ import org.apache.atlas.exception.AtlasBaseException;
 //import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.plugin.model.RangerRole;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
-//import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.utils.AtlasPerfMetrics;
-//import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
 import static org.apache.atlas.repository.Constants.*;
@@ -50,6 +49,7 @@ public class AtlasAuthorization {
     private List<AtlasEntityHeader> allPolicies;
     private long lastUpdatedTime = -1;
     private List<String> serviceNames = new ArrayList<>();
+    private static Map<String, String> esEntityAttributeMap = new HashMap<>();
 
 
 
@@ -80,6 +80,8 @@ public class AtlasAuthorization {
             serviceNames.add("atlas");
             serviceNames.add("atlas_tag");
             serviceNames.add("ape");
+
+            esEntityAttributeMap.put("__typeName.keyword", "__typeName");
 
 //            PolicyRefresher policyRefresher = new PolicyRefresher();
 //            policyRefresher.start();
@@ -189,6 +191,100 @@ public class AtlasAuthorization {
         }
 
         return false;
+    }
+
+//    public static void verifyAccess(AtlasEntity entity, String action) throws AtlasBaseException {
+//        try {
+//            if (!isCreateAccessAllowed(entity, action)) {
+//                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Unauthorised");
+//            }
+//        } catch (AtlasBaseException e) {
+//            throw e;
+//        }
+//    }
+
+    public static boolean isCreateAccessAllowed(AtlasEntity entity, String action) {
+        List<RangerPolicy> policies = getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action));
+        List<String> filterCriteriaList = new ArrayList<>();
+        for (RangerPolicy policy : policies) {
+            String filterCriteria = policy.getPolicyFilterCriteria();
+            if (filterCriteria != null && !filterCriteria.isEmpty() ) {
+                filterCriteriaList.add(filterCriteria);
+            }
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        boolean ret = false;
+        boolean eval;
+        for (String filterCriteria: filterCriteriaList) {
+            eval = false;
+            JsonNode filterCriteriaNode = null;
+            try {
+                filterCriteriaNode = mapper.readTree(filterCriteria);
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+            if (filterCriteriaNode != null && filterCriteriaNode.get("entity") != null) {
+                JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("entity");
+                eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, entity);
+            }
+            ret = ret || eval;
+            if (ret) {
+                break;
+            }
+        }
+        return ret;
+    }
+
+    public static boolean validateFilterCriteriaWithEntity(JsonNode data, AtlasEntity entity) {
+        AtlasPerfMetrics.MetricRecorder convertJsonToQueryMetrics = RequestContext.get().startMetricRecord("convertJsonToQuery");
+        String condition = data.get("condition").asText();
+        JsonNode criterion = data.get("criterion");
+
+        boolean result = true;
+        boolean evaluation;
+
+        if (criterion.size() == 0) {
+            return false;
+        }
+
+        for (JsonNode crit : criterion) {
+
+            evaluation = false;
+
+            if (crit.has("condition")) {
+                evaluation = validateFilterCriteriaWithEntity(crit, entity);
+
+            } else {
+
+                String operator = crit.get("operator").asText();
+                String attributeName = crit.get("attributeName").asText();
+                String attributeValue = crit.get("attributeValue").asText();
+
+                if (esEntityAttributeMap.get(attributeName) != null) {
+                    attributeName = esEntityAttributeMap.get(attributeName);
+                }
+
+                String entityAttributeValue = (String) entity.getAttribute(attributeName);
+                if (operator.equals("EQUALS") && attributeValue.equals(entityAttributeValue)) {
+                    evaluation = true;
+                } else if ((operator.equals("STARTS_WITH") && entityAttributeValue.startsWith(attributeValue))) {
+                    evaluation = true;
+                } else if ((operator.equals("ENDS_WITH") && entityAttributeValue.endsWith(attributeValue))) {
+                    evaluation = true;
+                } else if ((operator.equals("NOT_EQUALS") && !entityAttributeValue.equals(attributeValue))) {
+                    evaluation = true;
+                }
+            }
+
+            if (condition.equals("AND")) {
+                result = result && evaluation;
+            } else {
+                result = result || evaluation;
+            }
+        }
+
+        RequestContext.get().endMetricRecord(convertJsonToQueryMetrics);
+        return result;
     }
 
     private static Integer getCountFromElasticsearch(String query) throws AtlasBaseException {
