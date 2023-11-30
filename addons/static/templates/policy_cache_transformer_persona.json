@@ -372,6 +372,108 @@
       ]
     }
   ],
+
+
+  "persona-domain-read": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-domain-create": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-create"]
+    }
+  ],
+  "persona-domain-update": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-update"]
+    }
+  ],
+  "persona-domain-delete": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-delete"]
+    }
+  ],
+
+  "persona-domain-sub-domain-read": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-domain-sub-domain-create": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-create"]
+    }
+  ],
+  "persona-domain-sub-domain-update": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-update"]
+    }
+  ],
+  "persona-domain-sub-domain-delete": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-delete"]
+    }
+  ],
+
+  "persona-domain-product-read": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-domain-product-create": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-create"]
+    }
+  ],
+  "persona-domain-product-update": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-update"]
+    }
+  ],
+  "persona-domain-product-delete": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-delete"]
+    }
+  ],
+
+
   "select": [
     {
       "policyType": "ACCESS",

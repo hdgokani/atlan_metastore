@@ -79,7 +79,8 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                 header.setAttribute(ATTR_NAME, "transformed_policy_persona");
 
                 if (policyServiceName.equals(POLICY_SERVICE_NAME_ABAC)) {
-                    header.setAttribute(ATTR_POLICY_FILTER_CRITERIA, policyFilterCriteria);
+                    header.setAttribute(ATTR_POLICY_FILTER_CRITERIA,
+                            templatePolicy.getPolicyFilterCriteria().replace(PLACEHOLDER_FILTER_CRITERIA, policyFilterCriteria));
                 } else {
                     String subCategory = getPolicySubCategory(atlasPolicy);
 
