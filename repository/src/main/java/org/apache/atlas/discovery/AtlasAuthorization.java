@@ -146,7 +146,8 @@ public class AtlasAuthorization {
         Map<String, Object> policiesDSL = getElasticsearchDSL(null, null, Arrays.asList(action));
         filterClauseList.add(policiesDSL);
         filterClauseList.add(getMap("term", getMap("__typeName.keyword", entityTypeName)));
-        filterClauseList.add(getMap("term", getMap("qualifiedName", entityQualifiedName)));
+        if (entityQualifiedName != null)
+            filterClauseList.add(getMap("term", getMap("qualifiedName", entityQualifiedName)));
         Map<String, Object> dsl = getMap("query", getMap("bool", getMap("filter", filterClauseList)));
         ObjectMapper mapper = new ObjectMapper();
         String dslString = null;

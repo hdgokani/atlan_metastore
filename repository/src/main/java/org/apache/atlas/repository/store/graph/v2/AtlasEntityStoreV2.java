@@ -518,10 +518,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         entity.setGuid(guid);
 
-        // AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, new AtlasEntityHeader(entity), "update entity ByUniqueAttributes");
-        if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(entity.getTypeName())) {
-            verifyAccess(entity.getGuid(), AtlasPrivilege.ENTITY_UPDATE.getType());
-        }
+        AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, new AtlasEntityHeader(entity), "update entity ByUniqueAttributes");
 
         return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), true, false, false, false);
     }
@@ -538,10 +535,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasEntityType   entityType = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
         AtlasAttribute    attr       = entityType.getAttribute(attrName);
 
-        // AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, entity, "update entity ByUniqueAttributes : guid=" + guid);
-        if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(entity.getTypeName())) {
-            verifyAccess(entity.getGuid(), AtlasPrivilege.ENTITY_UPDATE.getType());
-        }
+        AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, entity, "update entity ByUniqueAttributes : guid=" + guid);
 
         if (attr == null) {
             attr = entityType.getRelationshipAttribute(attrName, AtlasEntityUtil.getRelationshipType(attrValue));
@@ -1490,13 +1484,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             // Check if authorized to create entities
             if (!RequestContext.get().isImportInProgress() && !RequestContext.get().isSkipAuthorizationCheck()) {
                 for (AtlasEntity entity : context.getCreatedEntities()) {
-//                    if (!isAccessAllowed(entity, "CREATE")) {
-//                        throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser());
-//                    }
                     if (!PreProcessor.skipInitialAuthCheckTypes.contains(entity.getTypeName())) {
-//                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
-//                                "create entity: type=", entity.getTypeName());
-                        verifyAccess(entity.getTypeName(), (String) entity.getAttribute("qualifiedName"), AtlasPrivilege.ENTITY_CREATE.getType());
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
+                                "create entity: type=", entity.getTypeName());
                     }
                 }
             }
@@ -1562,16 +1552,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         if (skipAuthBaseConditions && (skipAuthMeaningsUpdate || skipAuthStarredDetailsUpdate)) {
                             //do nothing, only diff is relationshipAttributes.meanings or starred, allow update
                         } else {
-//                            if (!this.atlasAuthorization.isAccessAllowed(RequestContext.getCurrentUser(), AtlasPrivilege.ENTITY_UPDATE.toString(), entity.getAttribute(QUALIFIED_NAME).toString(), entity.getTypeName())) {
-//                                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser());
-//                            }
-//                            if (!isAccessAllowed(entity, "UPDATE")) {
-//                                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser());
-//                            }
-                            // AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, entityHeader,"update entity: type=" + entity.getTypeName());
-                            if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(entity.getTypeName())) {
-                                verifyAccess(entity.getGuid(), AtlasPrivilege.ENTITY_UPDATE.getType());
-                            }
+                            AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, entityHeader,"update entity: type=" + entity.getTypeName());
                         }
                     }
                 }
