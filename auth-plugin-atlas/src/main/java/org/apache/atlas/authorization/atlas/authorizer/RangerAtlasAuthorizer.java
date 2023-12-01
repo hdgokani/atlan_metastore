@@ -71,6 +71,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.authorization.atlas.authorizer.RangerAtlasAuthorizerUtil.*;
@@ -92,8 +93,8 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         add(AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION);
     }};
 
-    private static final ExecutorService classificationAndEntityAccessThreadpool = Executors.newFixedThreadPool(NUM_THREADS);
-
+    private static final ExecutorService classificationAccessThreadpool = Executors.newCachedThreadPool();
+    private static final ExecutorService entityAccessThreadpool = Executors.newCachedThreadPool();
     @Override
     public void init() {
         if (LOG.isDebugEnabled()) {
@@ -648,6 +649,8 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
 
     private void checkAccessAndScrubAsync(List<AtlasEntityHeader> entitiesToCheck, AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) throws AtlasAuthorizationException {
         LOG.info("Creating futures to check access and scrub " + entitiesToCheck.size() + " entities");
+        LOG.info("Number of tasks in queue "+((ThreadPoolExecutor)entityAccessThreadpool).getQueue().size());
+        LOG.info("Number of threads in threadpool "+((ThreadPoolExecutor)entityAccessThreadpool).getActiveCount());
         List<CompletableFuture<AtlasAuthorizationException>> completableFutures = entitiesToCheck
                 .stream()
                 .map(entity -> CompletableFuture.supplyAsync(() -> {
@@ -657,7 +660,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                     } catch (AtlasAuthorizationException e) {
                         return e;
                     }
-                }, classificationAndEntityAccessThreadpool))
+                }, entityAccessThreadpool))
                 .collect(Collectors.toList());
 
         // wait for all threads to complete their execution
@@ -726,7 +729,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                     long rangerRequestCreationStartTime = System.currentTimeMillis();
                     RangerAccessRequestImpl  rangerRequest  = createRangerAccessRequest(request, classificationToAuthorize, rangerTagForEval);
                     LOG.info("Time taken to create a ranger request for uuid: "+uuid+ "is "+ (System.currentTimeMillis()-rangerRequestCreationStartTime));
-                    completableFutures.add(CompletableFuture.supplyAsync(()->checkAccess(rangerRequest, auditHandler, uuid), classificationAndEntityAccessThreadpool));
+                    completableFutures.add(CompletableFuture.supplyAsync(()->checkAccess(rangerRequest, auditHandler, uuid), classificationAccessThreadpool));
                 }
 
                 // wait for all threads to complete their execution
@@ -970,6 +973,8 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
     }
 
     private void checkAccessAndScrub(AtlasEntityHeader entity, AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) throws AtlasAuthorizationException {
+        LOG.info("Number of tasks waiting "+((ThreadPoolExecutor)entityAccessThreadpool).getQueue().size());
+        LOG.info("Number of threads in threadpool "+((ThreadPoolExecutor)entityAccessThreadpool).getActiveCount());
         if (entity != null && request != null) {
             long startTimeOfAccessAndScrub = System.currentTimeMillis();
             final AtlasEntityAccessRequest entityAccessRequest = new AtlasEntityAccessRequest(request.getTypeRegistry(), AtlasPrivilege.ENTITY_READ, entity, request.getUser(), request.getUserGroups());
