@@ -1,5 +1,6 @@
 package org.apache.atlas.discovery;
 
+import com.datastax.oss.driver.internal.core.util.CollectionsUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +20,7 @@ import org.apache.atlas.plugin.util.RangerUserStore;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
 import static org.apache.atlas.repository.Constants.*;
@@ -26,8 +28,10 @@ import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDataba
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.elasticsearch.client.RestClient;
+import org.janusgraph.graphdb.util.CollectionsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -232,7 +236,84 @@ public class AtlasAuthorization {
                 break;
             }
         }
+
+        if (!ret) {
+            List<RangerPolicy> tagPolicies = getRelevantPolicies(null, null, "atlas_tag", Collections.singletonList(action));
+            List<RangerPolicy> resourcePolicies = getRelevantPolicies(null, null, "atlas", Collections.singletonList(action));
+
+            tagPolicies.addAll(resourcePolicies);
+
+            ret = validateResourcesForCreateEntity(tagPolicies, entity);
+        }
+
         return ret;
+    }
+
+    private static boolean validateResourcesForCreateEntity(List<RangerPolicy> resourcePolicies, AtlasEntity entity) {
+
+        for (RangerPolicy rangerPolicy : resourcePolicies) {
+            Map<String, RangerPolicy.RangerPolicyResource> resources = rangerPolicy.getResources();
+
+            boolean allStar = true;
+
+            for (String resource : resources.keySet()) {
+                if (!resources.get(resource).getValues().contains("*")){
+                    allStar = false;
+                    break;
+                }
+            }
+
+            if (allStar) {
+                return true;
+
+            } else {
+                boolean resourcesMatched = true;
+
+                for (String resource : resources.keySet()) {
+                    List<String> values = resources.get(resource).getValues();
+
+                    if ("entity-type".equals(resource)) {
+                        String assetTypeName = entity.getTypeName();
+                        Optional<String> match = values.stream().filter(x -> assetTypeName.matches(x.replace("*", ".*"))).findFirst();
+
+                        if (!match.isPresent()) {
+                            resourcesMatched = false;
+                            break;
+                        }
+                    }
+
+                    if ("entity".equals(resource)) {
+                        String assetQualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
+                        Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x.replace("*", ".*"))).findFirst();
+
+                        if (!match.isPresent()) {
+                            resourcesMatched = false;
+                            break;
+                        }
+                    }
+
+                    //for tag based policy
+                    if ("tag".equals(resource)) {
+                        List<String> assetTags = entity.getClassifications().stream().map(x -> x.getTypeName()).collect(Collectors.toList());
+
+                        for (String assetTag : assetTags) {
+                            Optional<String> match = values.stream().filter(x -> assetTag.matches(x.replace("*", ".*"))).findFirst();
+
+                            if (!match.isPresent()) {
+                                resourcesMatched = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (resourcesMatched) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public static boolean validateFilterCriteriaWithEntity(JsonNode data, AtlasEntity entity) {
@@ -374,7 +455,7 @@ public class AtlasAuthorization {
             policies = usersGroupsRolesStore.getAbacPolicies();
         }
 
-        if (!policies.isEmpty()) {
+        if (CollectionUtils.isNotEmpty(policies)) {
             policies = getFilteredPoliciesForQualifiedName(policies, policyQualifiedNamePrefix);
             policies = getFilteredPoliciesForUser(policies, user, groups, roles);
             policies = getFilteredPoliciesForActions(policies, actions);

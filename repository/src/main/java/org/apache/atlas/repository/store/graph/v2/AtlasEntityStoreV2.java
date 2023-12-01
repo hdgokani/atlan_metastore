@@ -104,6 +104,7 @@ import java.util.stream.Collectors;
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
+import static org.apache.atlas.discovery.AtlasAuthorization.isCreateAccessAllowed;
 import static org.apache.atlas.discovery.AtlasAuthorization.verifyAccess;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
@@ -1485,8 +1486,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (!RequestContext.get().isImportInProgress() && !RequestContext.get().isSkipAuthorizationCheck()) {
                 for (AtlasEntity entity : context.getCreatedEntities()) {
                     if (!PreProcessor.skipInitialAuthCheckTypes.contains(entity.getTypeName())) {
-                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
-                                "create entity: type=", entity.getTypeName());
+                        /*AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
+                                "create entity: type=", entity.getTypeName());*/
+
+                        if (!isCreateAccessAllowed(entity, AtlasPrivilege.ENTITY_CREATE.getType())){
+                            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "nikhil", "create entity:");
+                        }
                     }
                 }
             }
