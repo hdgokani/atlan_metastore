@@ -598,6 +598,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         if (LOG.isDebugEnabled())
             LOG.debug("==> scrubSearchResults(" + request + " " + isScrubAuditEnabled);
         RangerPerfTracer perf = null;
+        long startTime = System.currentTimeMillis();
         try {
             if (RangerPerfTracer.isPerfTraceEnabled(PERF_LOG))
                 perf = RangerPerfTracer.getPerfTracer(PERF_LOG, "RangerAtlasAuthorizer.scrubSearchResults(" + request + ")");
@@ -624,6 +625,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
 
             checkAccessAndScrubAsync(entitiesToCheck, request, isScrubAuditEnabled);
         } finally {
+            LOG.info("scrubSearchResults ended in : "+ (System.currentTimeMillis()-startTime));
             RangerPerfTracer.log(perf);
         }
         if (LOG.isDebugEnabled())
@@ -969,6 +971,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
 
     private void checkAccessAndScrub(AtlasEntityHeader entity, AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) throws AtlasAuthorizationException {
         if (entity != null && request != null) {
+            long startTimeOfAccessAndScrub = System.currentTimeMillis();
             final AtlasEntityAccessRequest entityAccessRequest = new AtlasEntityAccessRequest(request.getTypeRegistry(), AtlasPrivilege.ENTITY_READ, entity, request.getUser(), request.getUserGroups());
 
             entityAccessRequest.setClientIPAddress(request.getClientIPAddress());
@@ -982,6 +985,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                 scrubEntityHeader(entity, request.getTypeRegistry());
                 LOG.info("scrubEntityHeader ended" + (System.currentTimeMillis() - startTime));
             }
+            LOG.info("checkAccessAndScrub ended in " + (System.currentTimeMillis()-startTimeOfAccessAndScrub));
         }
     }
 
