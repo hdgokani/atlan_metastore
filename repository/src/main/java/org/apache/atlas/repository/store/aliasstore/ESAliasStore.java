@@ -204,15 +204,30 @@ public class ESAliasStore implements IndexAliasStore {
                         terms.add(glossaryQName);
                         allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + glossaryQName)));
                     }
-                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_DOMAIN)
-                        || getPolicyActions(policy).contains(ACCESS_READ_PERSONA_SUB_DOMAIN)
-                        || getPolicyActions(policy).contains(ACCESS_READ_PERSONA_PRODUCT)) {
+                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_DOMAIN)) {
 
                     for (String asset : assets) {
                         terms.add(asset);
                         allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
                     }
 
+                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_SUB_DOMAIN)) {
+                    for (String asset : assets) {
+                        //terms.add(asset);
+                        List<Map<String, Object>> mustMap = new ArrayList<>();
+                        mustMap.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/domain/*")));
+                        mustMap.add(mapOf("term", mapOf("__typeName.keyword", "DataDomain")));
+                        allowClauseList.add(mapOf("bool", mapOf("must", mustMap)));
+                    }
+
+                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_PRODUCT)) {
+                    for (String asset : assets) {
+                        //terms.add(asset);
+                        List<Map<String, Object>> mustMap = new ArrayList<>();
+                        mustMap.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*/product/*")));
+                        mustMap.add(mapOf("term", mapOf("__typeName.keyword", "DataProduct")));
+                        allowClauseList.add(mapOf("bool", mapOf("must", mustMap)));
+                    }
                 }
             }
 
