@@ -35,6 +35,8 @@ import org.elasticsearch.client.RestClient;
 import org.janusgraph.graphdb.util.CollectionsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 public class AtlasAuthorization {
 
@@ -450,7 +452,8 @@ public class AtlasAuthorization {
             policyQualifiedNamePrefix = purpose;
         }
 
-        String user = RequestContext.getCurrentUser();
+        //String user = RequestContext.getCurrentUser();
+        String user = getCurrentUserName();
         LOG.info("Getting relevant policies for user: {}", user);
 
         RangerUserStore userStore = usersGroupsRolesStore.getUserStore();
@@ -819,7 +822,7 @@ public class AtlasAuthorization {
         RangerUserStore userStore = usersGroupsRolesStore.getUserStore();
         RangerRoles allRoles = usersGroupsRolesStore.getAllRoles();
 
-        String user = RequestContext.getCurrentUser();
+        String user = getCurrentUserName();
         Map<String, Set<String>> userGroupMapping = userStore.getUserGroupMapping();
         List<String> groups = new ArrayList<>();
         Set<String> groupsSet = userGroupMapping.get(user);
@@ -1406,5 +1409,11 @@ public class AtlasAuthorization {
 //        RequestContext.get().endMetricRecord(base64EncodingMetrics);
 //        return shouldClauseList;
 //    }
+
+    public static String getCurrentUserName() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        return auth != null ? auth.getName() : "";
+    }
 
 }
