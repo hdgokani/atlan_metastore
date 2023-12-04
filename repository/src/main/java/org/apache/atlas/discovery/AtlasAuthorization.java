@@ -311,14 +311,16 @@ public class AtlasAuthorization {
 
                     //for tag based policy
                     if ("tag".equals(resource)) {
-                        List<String> assetTags = entity.getClassifications().stream().map(x -> x.getTypeName()).collect(Collectors.toList());
+                        if (entity.getClassifications() != null && !entity.getClassifications().isEmpty()) {
+                            List<String> assetTags = entity.getClassifications().stream().map(x -> x.getTypeName()).collect(Collectors.toList());
 
-                        for (String assetTag : assetTags) {
-                            Optional<String> match = values.stream().filter(x -> assetTag.matches(x.replace("*", ".*"))).findFirst();
+                            for (String assetTag : assetTags) {
+                                Optional<String> match = values.stream().filter(x -> assetTag.matches(x.replace("*", ".*"))).findFirst();
 
-                            if (!match.isPresent()) {
-                                resourcesMatched = false;
-                                break;
+                                if (!match.isPresent()) {
+                                    resourcesMatched = false;
+                                    break;
+                                }
                             }
                         }
                     }
