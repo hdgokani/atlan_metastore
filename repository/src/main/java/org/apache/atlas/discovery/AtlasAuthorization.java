@@ -106,6 +106,12 @@ public class AtlasAuthorization {
     }
 
     public static void verifyAccess(String guid, String action) throws AtlasBaseException {
+        String userName = getCurrentUserName();
+
+        if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
+            return;
+        }
+
         try {
             if (!isAccessAllowed(guid, action)) {
                 throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), guid);
@@ -116,6 +122,12 @@ public class AtlasAuthorization {
     }
 
     public static void verifyAccess(AtlasEntity entity, AtlasPrivilege action, String message) throws AtlasBaseException {
+        String userName = getCurrentUserName();
+
+        if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
+            return;
+        }
+
         try {
             if (AtlasPrivilege.ENTITY_CREATE == action) {
                 if (!isCreateAccessAllowed(entity, AtlasPrivilege.ENTITY_CREATE.getType())){
@@ -150,16 +162,6 @@ public class AtlasAuthorization {
             return true;
         }
         return false;
-    }
-
-    public static void verifyAccess(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {
-        try {
-            if (!isAccessAllowed(entityTypeName, entityQualifiedName, action)) {
-                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Unauthorised");
-            }
-        } catch (AtlasBaseException e) {
-            throw e;
-        }
     }
 
     private static boolean isAccessAllowed(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {
