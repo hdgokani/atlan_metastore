@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 //import org.apache.atlas.model.audit.AuditSearchParams;
 //import org.apache.atlas.model.audit.EntityAuditSearchResult;
@@ -106,6 +107,18 @@ public class AtlasAuthorization {
         try {
             if (!isAccessAllowed(guid, action)) {
                 throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), guid);
+            }
+        } catch (AtlasBaseException e) {
+            throw e;
+        }
+    }
+
+    public static void verifyAccess(AtlasEntity entity, AtlasPrivilege action, String message) throws AtlasBaseException {
+        try {
+            if (AtlasPrivilege.ENTITY_CREATE == action) {
+                if (!isCreateAccessAllowed(entity, AtlasPrivilege.ENTITY_CREATE.getType())){
+                    throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, message);
+                }
             }
         } catch (AtlasBaseException e) {
             throw e;
@@ -438,6 +451,7 @@ public class AtlasAuthorization {
         }
 
         String user = RequestContext.getCurrentUser();
+        LOG.info("Getting relevant policies for user: {}", user);
 
         RangerUserStore userStore = usersGroupsRolesStore.getUserStore();
         List<String> groups = getGroupsForUser(user, userStore);

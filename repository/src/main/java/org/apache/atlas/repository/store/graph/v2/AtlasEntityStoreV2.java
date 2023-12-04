@@ -519,7 +519,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         entity.setGuid(guid);
 
-        AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, new AtlasEntityHeader(entity), "update entity ByUniqueAttributes");
+        //AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, new AtlasEntityHeader(entity), "update entity ByUniqueAttributes");
+        if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(entity.getTypeName())) {
+            verifyAccess(entity.getGuid(), AtlasPrivilege.ENTITY_UPDATE.getType());
+        }
 
         return createOrUpdate(new AtlasEntityStream(updatedEntityInfo), true, false, false, false);
     }
@@ -536,7 +539,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasEntityType   entityType = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
         AtlasAttribute    attr       = entityType.getAttribute(attrName);
 
-        AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, entity, "update entity ByUniqueAttributes : guid=" + guid);
+        //AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, entity, "update entity ByUniqueAttributes : guid=" + guid);
+        if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(entity.getTypeName())) {
+            verifyAccess(entity.getGuid(), AtlasPrivilege.ENTITY_UPDATE.getType());
+        }
 
         if (attr == null) {
             attr = entityType.getRelationshipAttribute(attrName, AtlasEntityUtil.getRelationshipType(attrValue));
@@ -1489,9 +1495,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         /*AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
                                 "create entity: type=", entity.getTypeName());*/
 
-                        if (!isCreateAccessAllowed(entity, AtlasPrivilege.ENTITY_CREATE.getType())){
-                            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "nikhil", "create entity:");
-                        }
+                        verifyAccess(entity, AtlasPrivilege.ENTITY_CREATE, "create entity: type=" +  entity.getTypeName());
                     }
                 }
             }
@@ -1557,7 +1561,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         if (skipAuthBaseConditions && (skipAuthMeaningsUpdate || skipAuthStarredDetailsUpdate)) {
                             //do nothing, only diff is relationshipAttributes.meanings or starred, allow update
                         } else {
-                            AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, entityHeader,"update entity: type=" + entity.getTypeName());
+                            //AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, entityHeader,"update entity: type=" + entity.getTypeName());
+                            if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(entity.getTypeName())) {
+                                verifyAccess(entity.getGuid(), AtlasPrivilege.ENTITY_UPDATE.getType());
+                            }
                         }
                     }
                 }
