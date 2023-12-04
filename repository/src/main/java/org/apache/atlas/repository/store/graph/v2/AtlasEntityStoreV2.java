@@ -106,6 +106,7 @@ import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.discovery.AtlasAuthorization.isCreateAccessAllowed;
 import static org.apache.atlas.discovery.AtlasAuthorization.verifyAccess;
+import static org.apache.atlas.discovery.AtlasAuthorization.verifyDeleteEntityAccess;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
 import static org.apache.atlas.repository.Constants.*;
@@ -597,7 +598,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (vertex != null) {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
-            AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
+            //AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
+            verifyDeleteEntityAccess(entityHeader, "delete entity: guid=" + guid);
 
             deletionCandidates.add(vertex);
         } else {
@@ -643,7 +645,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
-            AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
+            //AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
+            verifyDeleteEntityAccess(entityHeader, "delete entity: guid=" + guid);
 
             deletionCandidates.add(vertex);
         }
@@ -686,7 +689,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
-            AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
+            //AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
+            verifyDeleteEntityAccess(entityHeader, "delete entity: guid=" + guid);
 
             restoreCandidates.add(vertex);
         }
@@ -752,7 +756,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (vertex != null) {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
-            AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader,
+            //AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader,
+             //       "delete entity: typeName=" + entityType.getTypeName() + ", uniqueAttributes=" + uniqAttributes);
+            verifyDeleteEntityAccess(entityHeader,
                     "delete entity: typeName=" + entityType.getTypeName() + ", uniqueAttributes=" + uniqAttributes);
 
             deletionCandidates.add(vertex);
@@ -805,7 +811,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 if (vertex != null) {
                     AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
-                    AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader,
+                    //AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader,
+                    //        "delete entity: typeName=" + entityType.getTypeName() + ", uniqueAttributes=" + objectId.getUniqueAttributes());
+                    verifyDeleteEntityAccess(entityHeader,
                             "delete entity: typeName=" + entityType.getTypeName() + ", uniqueAttributes=" + objectId.getUniqueAttributes());
 
                     deletionCandidates.add(vertex);
