@@ -301,7 +301,10 @@ public class AtlasAuthorization {
 
                     if ("entity".equals(resource)) {
                         String assetQualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
-                        Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x.replace("*", ".*"))).findFirst();
+                        Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
+                                .replace("{USER}", getCurrentUserName())
+                                .replace("*", ".*")))
+                                .findFirst();
 
                         if (!match.isPresent()) {
                             resourcesMatched = false;
