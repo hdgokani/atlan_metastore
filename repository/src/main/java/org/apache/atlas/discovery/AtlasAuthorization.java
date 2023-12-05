@@ -116,7 +116,7 @@ public class AtlasAuthorization {
 
         try {
             if (!isAccessAllowed(guid, action)) {
-                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), guid);
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, action + ":" + guid);
             }
         } catch (AtlasBaseException e) {
             throw e;

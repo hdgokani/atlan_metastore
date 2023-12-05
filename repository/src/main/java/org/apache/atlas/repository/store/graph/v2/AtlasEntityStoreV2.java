@@ -104,7 +104,6 @@ import java.util.stream.Collectors;
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
-import static org.apache.atlas.discovery.AtlasAuthorization.isCreateAccessAllowed;
 import static org.apache.atlas.discovery.AtlasAuthorization.verifyAccess;
 import static org.apache.atlas.discovery.AtlasAuthorization.verifyDeleteEntityAccess;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
