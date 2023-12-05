@@ -466,7 +466,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
 //            AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD,
 //                                                                                        relationship.getTypeName(), end1Entity, end2Entity));
-            AtlasAuthorization.verifyAccess(AtlasPrivilege.RELATIONSHIP_ADD.getType(), end1Entity.getGuid(), end2Entity.getGuid());
+            AtlasAuthorization.verifyAccess(AtlasPrivilege.RELATIONSHIP_ADD.getType(), end1Entity, end2Entity);
 
 
             if (existingRelationshipCheck) {

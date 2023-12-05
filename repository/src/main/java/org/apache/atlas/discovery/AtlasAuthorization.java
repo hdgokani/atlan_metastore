@@ -136,6 +136,22 @@ public class AtlasAuthorization {
         }
     }
 
+    public static void verifyAccess(String action, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
+        String userName = getCurrentUserName();
+
+        if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
+            return;
+        }
+
+        try {
+            if (!isRelationshipCreateAccessAllowed(action, endOneEntity, endTwoEntity)) {
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), endOneEntity.getTypeName() + "|" + endOneEntity.getTypeName());
+            }
+        } catch (AtlasBaseException e) {
+            throw e;
+        }
+    }
+
     public static void verifyDeleteEntityAccess(AtlasEntityHeader entityHeader, String message) throws AtlasBaseException {
         if (!SKIP_DELETE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
             verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_DELETE.getType());
@@ -191,10 +207,63 @@ public class AtlasAuthorization {
         return false;
     }
 
+    public static boolean isRelationshipCreateAccessAllowed(String action, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
+
+        try {
+            List<RangerPolicy> policies = getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action));
+            List<String> filterCriteriaList = new ArrayList<>();
+            for (RangerPolicy policy : policies) {
+                String filterCriteria = policy.getPolicyFilterCriteria();
+                if (filterCriteria != null && !filterCriteria.isEmpty() ) {
+                    filterCriteriaList.add(filterCriteria);
+                }
+            }
+            ObjectMapper mapper = new ObjectMapper();
+            boolean ret = false;
+            boolean eval;
+            for (String filterCriteria: filterCriteriaList) {
+                eval = false;
+                JsonNode filterCriteriaNode = null;
+                try {
+                    filterCriteriaNode = mapper.readTree(filterCriteria);
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
+                if (filterCriteriaNode != null && filterCriteriaNode.get("entity") != null) {
+                    JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("entity");
+                    //eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, entity);
+                }
+                ret = ret || eval;
+                if (ret) {
+                    break;
+                }
+            }
+
+            if (!ret) {
+                List<RangerPolicy> tagPolicies = getRelevantPolicies(null, null, "atlas_tag", Collections.singletonList(action));
+                List<RangerPolicy> resourcePolicies = getRelevantPolicies(null, null, "atlas", Collections.singletonList(action));
+
+                tagPolicies.addAll(resourcePolicies);
+
+                ret = validateResourcesForCreateRelationship(tagPolicies, endOneEntity, endTwoEntity);
+            }
+
+            return ret;
+        } catch (NullPointerException e) {
+            return false;
+        }
+
+    }
+
     public static boolean isRelationshipAccessAllowed(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
         if (endOneGuid == null || endTwoGuid == null) {
             return false;
         }
+
+        /*if (AtlasPrivilege.RELATIONSHIP_ADD.getType().equals(action)) {
+            return isRelationshipCreateAccessAllowed(action, endOneGuid, endTwoGuid);
+        }*/
+
         try {
             Map<String, Object> dsl = getElasticsearchDSLForRelationshipActions(Arrays.asList(action), endOneGuid, endTwoGuid);
             ObjectMapper mapper = new ObjectMapper();
@@ -357,6 +426,131 @@ public class AtlasAuthorization {
                 }
 
                 if (resourcesMatched) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean validateResourcesForCreateRelationship(List<RangerPolicy> resourcePolicies, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) {
+        RangerPolicy matchedPolicy = null;
+
+        for (RangerPolicy rangerPolicy : resourcePolicies) {
+            Map<String, RangerPolicy.RangerPolicyResource> resources = rangerPolicy.getResources();
+
+            boolean allStar = true;
+
+            for (String resource : resources.keySet()) {
+                if (!resources.get(resource).getValues().contains("*")){
+                    allStar = false;
+                    break;
+                }
+            }
+
+            if (allStar) {
+                matchedPolicy = rangerPolicy;
+                return true;
+
+            } else {
+                boolean resourcesMatched = true;
+
+                for (String resource : resources.keySet()) {
+                    List<String> values = resources.get(resource).getValues();
+
+                    if ("end-one-entity-type".equals(resource)) {
+                        String assetTypeName = endOneEntity.getTypeName();
+                        Optional<String> match = values.stream().filter(x -> assetTypeName.matches(x.replace("*", ".*"))).findFirst();
+
+                        if (!match.isPresent()) {
+                            resourcesMatched = false;
+                            break;
+                        }
+                    }
+
+                    if ("end-two-entity-type".equals(resource)) {
+                        String assetTypeName = endTwoEntity.getTypeName();
+                        Optional<String> match = values.stream().filter(x -> assetTypeName.matches(x.replace("*", ".*"))).findFirst();
+
+                        if (!match.isPresent()) {
+                            resourcesMatched = false;
+                            break;
+                        }
+                    }
+
+                    if ("end-one-entity".equals(resource)) {
+                        String assetQualifiedName = (String) endOneEntity.getAttribute(QUALIFIED_NAME);
+                        Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
+                                        .replace("{USER}", getCurrentUserName())
+                                        .replace("*", ".*")))
+                                .findFirst();
+
+                        if (!match.isPresent()) {
+                            resourcesMatched = false;
+                            break;
+                        }
+                    }
+
+                    if ("end-one-entity".equals(resource)) {
+                        String assetQualifiedName = (String) endTwoEntity.getAttribute(QUALIFIED_NAME);
+                        Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
+                                        .replace("{USER}", getCurrentUserName())
+                                        .replace("*", ".*")))
+                                .findFirst();
+
+                        if (!match.isPresent()) {
+                            resourcesMatched = false;
+                            break;
+                        }
+                    }
+
+                    //for tag based policy
+                    if ("end-one-entity-classification".equals(resource)) {
+                        if (!values.contains(("*"))) {
+                            if (endOneEntity.getClassifications() == null || endOneEntity.getClassifications().isEmpty()) {
+                                //since entity does not have tags at all, it should not pass this evaluation
+                                resourcesMatched = false;
+                                break;
+                            }
+
+                            List<String> assetTags = endOneEntity.getClassifications().stream().map(x -> x.getTypeName()).collect(Collectors.toList());
+
+                            for (String assetTag : assetTags) {
+                                Optional<String> match = values.stream().filter(x -> assetTag.matches(x.replace("*", ".*"))).findFirst();
+
+                                if (!match.isPresent()) {
+                                    resourcesMatched = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if ("end-two-entity-classification".equals(resource)) {
+                        if (!values.contains(("*"))) {
+                            if (endTwoEntity.getClassifications() == null || endTwoEntity.getClassifications().isEmpty()) {
+                                //since entity does not have tags at all, it should not pass this evaluation
+                                resourcesMatched = false;
+                                break;
+                            }
+
+                            List<String> assetTags = endTwoEntity.getClassifications().stream().map(x -> x.getTypeName()).collect(Collectors.toList());
+
+                            for (String assetTag : assetTags) {
+                                Optional<String> match = values.stream().filter(x -> assetTag.matches(x.replace("*", ".*"))).findFirst();
+
+                                if (!match.isPresent()) {
+                                    resourcesMatched = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (resourcesMatched) {
+                    matchedPolicy = rangerPolicy;
                     return true;
                 }
             }
