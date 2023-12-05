@@ -196,6 +196,22 @@ public class AtlasAuthorization {
         return false;
     }
 
+    public static void verifyAccess(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
+        String userName = getCurrentUserName();
+
+        if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
+            return;
+        }
+
+        try {
+            if (!isRelationshipAccessAllowed(action, endOneGuid, endTwoGuid)) {
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), endOneGuid + "|" + endTwoGuid);
+            }
+        } catch (AtlasBaseException e) {
+            throw e;
+        }
+    }
+
     public static boolean isRelationshipAccessAllowed(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
         if (endOneGuid == null || endTwoGuid == null) {
             return false;
