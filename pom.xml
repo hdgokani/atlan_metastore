@@ -684,7 +684,7 @@
         <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
         <codehaus.woodstox.stax2-api.version>3.1.4</codehaus.woodstox.stax2-api.version>
         <commons-cli.version>1.4</commons-cli.version>
-        <commons-codec.version>1.14</commons-codec.version>
+        <commons-codec.version>1.16.0</commons-codec.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <commons-conf.version>1.10</commons-conf.version>
