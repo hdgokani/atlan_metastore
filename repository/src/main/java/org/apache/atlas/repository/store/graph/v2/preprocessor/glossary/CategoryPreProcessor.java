@@ -131,7 +131,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 //        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
 //                "create entity: type=", entity.getTypeName());
         //verifyAccess(entity.getTypeName(), (String) entity.getAttribute(QUALIFIED_NAME), AtlasPrivilege.ENTITY_CREATE.getType());
-        verifyAccess(entity, AtlasPrivilege.ENTITY_CREATE, "create entity: type=" +  entity.getTypeName());
+        verifyAccess(entity, AtlasPrivilege.ENTITY_CREATE);
 
         validateChildren(entity, null);
 
