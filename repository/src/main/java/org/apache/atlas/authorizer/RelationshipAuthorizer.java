@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
@@ -16,8 +15,6 @@ import org.apache.atlas.type.*;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,12 +25,6 @@ import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 public class RelationshipAuthorizer {
 
     private static final Logger LOG = LoggerFactory.getLogger(RelationshipAuthorizer.class);
-
-    private static AtlasTypeRegistry typeRegistry;
-
-    public RelationshipAuthorizer(AtlasTypeRegistry typeRegistry) {
-        this.typeRegistry = typeRegistry;
-    }
 
     public static boolean isAccessAllowed(String action, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
         boolean deny = checkRelationshipAccessAllowed(action, endOneEntity, endTwoEntity, AuthorizerCommon.POLICY_TYPE_DENY);
@@ -306,7 +297,7 @@ public class RelationshipAuthorizer {
                     String typeName = entity.getTypeName();
                     boolean isArrayOfPrimitiveType = false;
                     boolean isArrayOfEnum = false;
-                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+                    AtlasEntityType entityType = AuthorizerCommon.getEntityTypeByName(typeName);
                     AtlasStructType.AtlasAttribute atlasAttribute = entityType.getAttribute(attributeName);
                     if (atlasAttribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
                         AtlasArrayType attributeType = (AtlasArrayType) atlasAttribute.getAttributeType();

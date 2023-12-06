@@ -156,11 +156,11 @@ public class AtlasAuthorization {
         }
     }
 
-    public static void verifyDeleteEntityAccess(AtlasEntityHeader entityHeader, String message) throws AtlasBaseException {
-        if (!SKIP_DELETE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
-            verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_DELETE.getType());
-        }
-    }
+//    public static void verifyDeleteEntityAccess(AtlasEntityHeader entityHeader, String message) throws AtlasBaseException {
+//        if (!SKIP_DELETE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
+//            verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_DELETE.getType());
+//        }
+//    }
 
     private static boolean isAccessAllowed(String guid, String action) throws AtlasBaseException {
         if (guid == null) {

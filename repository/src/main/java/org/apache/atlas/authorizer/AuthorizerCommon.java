@@ -1,5 +1,6 @@
 package org.apache.atlas.authorizer;
 
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -65,4 +66,9 @@ public class AuthorizerCommon {
 
         return entityTypes;
     }
+
+    public static AtlasEntityType getEntityTypeByName(String typeName) {
+        return typeRegistry.getEntityTypeByName(typeName);
+    }
+
 }

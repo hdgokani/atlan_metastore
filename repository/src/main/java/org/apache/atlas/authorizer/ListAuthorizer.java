@@ -5,22 +5,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.discovery.JsonToElasticsearchQuery;
 import org.apache.atlas.plugin.model.RangerPolicy;
-import org.apache.atlas.type.AtlasTypeRegistry;
 
 import java.util.*;
 
-import static org.apache.atlas.authorizer.AuthorizerCommon.getMap;
+import static org.apache.atlas.authorizer.AuthorizerCommon.*;
 
 public class ListAuthorizer {
-
-    private static AtlasTypeRegistry typeRegistry;
-
-    private static final String POLICY_TYPE_ALLOW = "allow";
-    private static final String POLICY_TYPE_DENY = "deny";
-
-    public ListAuthorizer(AtlasTypeRegistry typeRegistry) {
-        this.typeRegistry = typeRegistry;
-    }
 
     public static Map<String, Object> getElasticsearchDSL(String persona, String purpose, List<String> actions) {
         Map<String, Object> allowDsl = getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_ALLOW);

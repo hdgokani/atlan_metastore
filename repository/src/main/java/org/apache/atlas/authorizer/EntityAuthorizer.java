@@ -26,14 +26,8 @@ public class EntityAuthorizer {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizationUtils.class);
 
-    private static AtlasTypeRegistry typeRegistry;
-
     private static final String POLICY_TYPE_ALLOW = "allow";
     private static final String POLICY_TYPE_DENY = "deny";
-
-    public EntityAuthorizer(AtlasTypeRegistry typeRegistry) {
-        this.typeRegistry = typeRegistry;
-    }
 
     public static boolean isAccessAllowed(AtlasEntity entity, String action) {
         boolean deny = isAccessAllowed(entity, action, POLICY_TYPE_DENY);
@@ -239,7 +233,7 @@ public class EntityAuthorizer {
                     String typeName = entity.getTypeName();
                     boolean isArrayOfPrimitiveType = false;
                     boolean isArrayOfEnum = false;
-                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+                    AtlasEntityType entityType = AuthorizerCommon.getEntityTypeByName(typeName);
                     AtlasStructType.AtlasAttribute atlasAttribute = entityType.getAttribute(attributeName);
                     if (atlasAttribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
                         AtlasArrayType attributeType = (AtlasArrayType) atlasAttribute.getAttributeType();

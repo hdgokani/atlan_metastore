@@ -12,7 +12,11 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.Map;
+
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.SKIP_DELETE_AUTH_CHECK_TYPES;
 
 public class AuthorizerUtils {
 
@@ -61,6 +65,12 @@ public class AuthorizerUtils {
         }
     }
 
+    public static void verifyDeleteEntityAccess(AtlasEntityHeader entityHeader) throws AtlasBaseException {
+        if (!SKIP_DELETE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
+            verifyEntityAccess(new AtlasEntity(entityHeader), AtlasPrivilege.ENTITY_DELETE);
+        }
+    }
+
     public static void verifyRelationshipAccess(String action, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
         String userName = AuthorizerCommon.getCurrentUserName();
 
@@ -76,5 +86,9 @@ public class AuthorizerUtils {
         } catch (AtlasBaseException e) {
             throw e;
         }
+    }
+
+    public static Map<String, Object>  getPreFilterDsl(String persona, String purpose, List<String> actions) {
+        return ListAuthorizer.getElasticsearchDSL(persona, purpose, actions);
     }
 }
