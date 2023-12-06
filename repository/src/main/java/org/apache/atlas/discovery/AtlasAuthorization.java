@@ -187,7 +187,7 @@ public class AtlasAuthorization {
         return false;
     }
 
-    private static boolean isAccessAllowed(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {
+    /*private static boolean isAccessAllowed(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {
         List<Map<String, Object>> filterClauseList = new ArrayList<>();
         Map<String, Object> policiesDSL = getElasticsearchDSL(null, null, Arrays.asList(action));
         filterClauseList.add(policiesDSL);
@@ -209,7 +209,7 @@ public class AtlasAuthorization {
             return true;
         }
         return false;
-    }
+    }*/
 
     private static boolean isRelationshipAccessAllowed(String action, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
         boolean deny = checkRelationshipAccessAllowed(action, endOneEntity, endTwoEntity, POLICY_TYPE_DENY);
@@ -276,15 +276,11 @@ public class AtlasAuthorization {
         }
     }
 
-    public static boolean isRelationshipAccessAllowed(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
+    /*public static boolean isRelationshipAccessAllowed(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
         //Relationship update, remove access check with ES query
         if (endOneGuid == null || endTwoGuid == null) {
             return false;
         }
-
-        /*if (AtlasPrivilege.RELATIONSHIP_ADD.getType().equals(action)) {
-            return isRelationshipCreateAccessAllowed(action, endOneGuid, endTwoGuid);
-        }*/
 
         try {
             Map<String, Object> dsl = getElasticsearchDSLForRelationshipActions(Arrays.asList(action), endOneGuid, endTwoGuid);
@@ -335,7 +331,7 @@ public class AtlasAuthorization {
             return false;
         }
         return false;
-    }
+    }*/
 
     public static boolean isCreateAccessAllowed(AtlasEntity entity, String action) {
         boolean deny = isCreateAccessAllowed(entity, action, POLICY_TYPE_DENY);
@@ -648,8 +644,14 @@ public class AtlasAuthorization {
 
                 List<String> entityAttributeValues = new ArrayList<>();
 
-                if (attributeName.equals("typeName") || attributeName.equals("__typeName")) {
+                if (attributeName.equals("__superTypeNames")) {
                     entityAttributeValues.addAll(assetTypes);
+
+                } if (attributeName.equals("__typeName")) {
+                    entityAttributeValues.add(entity.getTypeName());
+
+                } if (attributeName.equals("__guid")) {
+                    entityAttributeValues.add(entity.getGuid());
 
                 } else if (attributeName.equals("__traitNames")) {
                     List<AtlasClassification> atlasClassifications = entity.getClassifications();
@@ -731,7 +733,7 @@ public class AtlasAuthorization {
         return count;
     }
 
-    public static Map<String, Object> getElasticsearchDSLForRelationshipActions(List<String> actions, String endOneGuid, String endTwoGuid) throws JsonProcessingException {
+    /*public static Map<String, Object> getElasticsearchDSLForRelationshipActions(List<String> actions, String endOneGuid, String endTwoGuid) throws JsonProcessingException {
         List<Map<String, Object>> policiesClauses = new ArrayList<>();
         List<RangerPolicy> resourcePolicies = getRelevantPolicies(null, null, "atlas", actions, POLICY_TYPE_ALLOW);
         List<Map<String, Object>> resourcePoliciesClauses = getDSLForRelationshipResourcePolicies(resourcePolicies);
@@ -769,7 +771,7 @@ public class AtlasAuthorization {
         boolClause.put("filter", clauses);
 
         return getMap("query", getMap("bool", boolClause));
-    }
+    }*/
 
     public static Map<String, Object> getElasticsearchDSL(String persona, String purpose, List<String> actions) {
         Map<String, Object> allowDsl = getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_ALLOW);
@@ -818,7 +820,7 @@ public class AtlasAuthorization {
 
     }
 
-    private static List<Map<String, Object>> getDSLForRelationshipAbacPolicies(List<RangerPolicy> policies) throws JsonProcessingException {
+    /*private static List<Map<String, Object>> getDSLForRelationshipAbacPolicies(List<RangerPolicy> policies) throws JsonProcessingException {
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         for (RangerPolicy policy : policies) {
             if ("RELATIONSHIP".equals(policy.getPolicyResourceCategory())) {
@@ -843,7 +845,7 @@ public class AtlasAuthorization {
             }
         }
         return shouldClauses;
-    }
+    }*/
 
     private static List<Map<String, Object>> getDSLForAbacPolicies(List<RangerPolicy> policies) {
         List<String> filterCriteriaList = new ArrayList<>();
@@ -876,7 +878,7 @@ public class AtlasAuthorization {
         return clauses;
     }
 
-    private static List<Map<String, Object>> getDSLForRelationshipTagPolicies(List<RangerPolicy> policies) {
+    /*private static List<Map<String, Object>> getDSLForRelationshipTagPolicies(List<RangerPolicy> policies) {
         // To reduce the number of clauses
         Set<String> allTags = new HashSet<>();
         for (RangerPolicy policy : policies) {
@@ -902,7 +904,7 @@ public class AtlasAuthorization {
             clauses.add(termsMapB);
         }
         return clauses;
-    }
+    }*/
 
     private static Map<String, Object> getDSLForTagPolicies(List<RangerPolicy> policies) {
         // To reduce the number of clauses
@@ -934,7 +936,7 @@ public class AtlasAuthorization {
         return getMap("bool", boolClause);
     }
 
-    private static List<Map<String, Object>> getDSLForRelationshipResourcePolicies(List<RangerPolicy> policies) {
+    /*private static List<Map<String, Object>> getDSLForRelationshipResourcePolicies(List<RangerPolicy> policies) {
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         for (RangerPolicy policy : policies) {
             if (!policy.getResources().isEmpty() && "RELATIONSHIP".equals(policy.getPolicyResourceCategory())) {
@@ -949,7 +951,10 @@ public class AtlasAuthorization {
                     String entityClassificationParamName = relationshipEnd + "-entity-classification";
 
                     List<String> entities = policy.getResources().get(entityParamName).getValues();
-                    List<String> entityTypes = policy.getResources().get(entityTypeParamName).getValues();
+                    List<String> entityTypesRaw = policy.getResources().get(entityTypeParamName).getValues();
+                    Set<String> entityTypes = new HashSet<>();
+                    entityTypesRaw.forEach(x -> entityTypes.addAll(getTypeAndSupertypesList(x)));
+
                     List<String> entityClassifications = policy.getResources().get(entityClassificationParamName).getValues();
                     if (entities.contains("*") && entityTypes.contains("*") && entityClassifications.contains("*")) {
                         shouldClauses.add(getMap("match_all", getMap("_name", clauseName)));
@@ -961,27 +966,33 @@ public class AtlasAuthorization {
             }
         }
         return shouldClauses;
-    }
+    }*/
 
     private static List<Map<String, Object>> getDSLForResourcePolicies(List<RangerPolicy> policies) {
 
         // To reduce the number of clauses
         List<String> combinedEntities = new ArrayList<>();
-        List<String> combinedEntityTypes = new ArrayList<>();
+        Set<String> combinedEntityTypes = new HashSet<>();
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
 
         for (RangerPolicy policy : policies) {
             if (!policy.getResources().isEmpty() && "ENTITY".equals(policy.getPolicyResourceCategory())) {
                 List<String> entities = policy.getResources().get("entity").getValues();
-                List<String> entityTypes = policy.getResources().get("entity-type").getValues();
-                if (entities.contains("*") && entityTypes.contains("*")) {
+                List<String> entityTypesRaw = policy.getResources().get("entity-type").getValues();
+
+                if (entities.contains("*") && entityTypesRaw.contains("*")) {
                     Map<String, String> emptyMap = new HashMap<>();
                     shouldClauses.removeAll(shouldClauses);
                     shouldClauses.add(getMap("match_all",emptyMap));
                     break;
                 }
+
                 entities.remove("*");
-                entityTypes.remove("*");
+                entityTypesRaw.remove("*");
+
+                Set<String> entityTypes = new HashSet<>();
+                entityTypesRaw.forEach(x -> entityTypes.addAll(getTypeAndSupertypesList(x)));
+
                 if (!entities.isEmpty() && entityTypes.isEmpty()) {
                     combinedEntities.addAll(entities);
                 } else if (entities.isEmpty() && !entityTypes.isEmpty()) {
@@ -993,7 +1004,7 @@ public class AtlasAuthorization {
             }
         }
         if (!combinedEntities.isEmpty()) {
-            shouldClauses.add(getDSLForResources(combinedEntities, new ArrayList<>(), null, null));
+            shouldClauses.add(getDSLForResources(combinedEntities, new HashSet<>(), null, null));
         }
         if (!combinedEntityTypes.isEmpty()) {
             shouldClauses.add(getDSLForResources(new ArrayList<>(), combinedEntityTypes, null, null));
@@ -1001,7 +1012,7 @@ public class AtlasAuthorization {
         return shouldClauses;
     }
 
-    private static Map<String, Object> getDSLForResources(List<String> entities, List<String> typeNames, List<String> classifications, String clauseName){
+    private static Map<String, Object> getDSLForResources(List<String> entities, Set<String> typeNames, List<String> classifications, String clauseName){
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         List<String> termsQualifiedNames = new ArrayList<>();
         for (String entity: entities) {
