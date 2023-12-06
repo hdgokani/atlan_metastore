@@ -9,6 +9,9 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 //import org.apache.atlas.model.audit.AuditSearchParams;
 //import org.apache.atlas.model.audit.EntityAuditSearchResult;
+import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.plugin.model.RangerPolicy;
@@ -16,11 +19,13 @@ import org.apache.atlas.plugin.model.RangerRole;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
+import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
+import static org.apache.atlas.model.TypeCategory.ARRAY;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
 
@@ -45,6 +50,8 @@ public class AtlasAuthorization {
     private static UsersGroupsRolesStore  usersGroupsRolesStore;
     private List<String> serviceNames = new ArrayList<>();
     private static Map<String, String> esEntityAttributeMap = new HashMap<>();
+    private static final String POLICY_TYPE_ALLOW = "allow";
+    private static final String POLICY_TYPE_DENY = "deny";
 
     public static AtlasAuthorization getInstance(EntityDiscoveryService discoveryService, AtlasTypeRegistry typeRegistry) {
         synchronized (AtlasAuthorization.class) {
@@ -53,6 +60,13 @@ public class AtlasAuthorization {
             }
             return atlasAuthorization;
         }
+    }
+
+    public static AtlasAuthorization getInstance() {
+        if (atlasAuthorization != null) {
+            return atlasAuthorization;
+        }
+        return null;
     }
 
     public AtlasAuthorization (EntityDiscoveryService discoveryService, AtlasTypeRegistry typeRegistry) {
@@ -202,7 +216,7 @@ public class AtlasAuthorization {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("isRelationshipAccessAllowed");
 
         try {
-            List<RangerPolicy> policies = getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action));
+            List<RangerPolicy> policies = getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), POLICY_TYPE_ALLOW);
             List<String> filterCriteriaList = new ArrayList<>();
             for (RangerPolicy policy : policies) {
                 String filterCriteria = policy.getPolicyFilterCriteria();
@@ -237,8 +251,8 @@ public class AtlasAuthorization {
             }
 
             if (!ret) {
-                List<RangerPolicy> tagPolicies = getRelevantPolicies(null, null, "atlas_tag", Collections.singletonList(action));
-                List<RangerPolicy> resourcePolicies = getRelevantPolicies(null, null, "atlas", Collections.singletonList(action));
+                List<RangerPolicy> tagPolicies = getRelevantPolicies(null, null, "atlas_tag", Collections.singletonList(action), POLICY_TYPE_ALLOW);
+                List<RangerPolicy> resourcePolicies = getRelevantPolicies(null, null, "atlas", Collections.singletonList(action), POLICY_TYPE_ALLOW);
 
                 tagPolicies.addAll(resourcePolicies);
 
@@ -315,7 +329,15 @@ public class AtlasAuthorization {
     }
 
     public static boolean isCreateAccessAllowed(AtlasEntity entity, String action) {
-        List<RangerPolicy> policies = getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action));
+        boolean deny = isCreateAccessAllowed(entity, action, POLICY_TYPE_DENY);
+        if (deny) {
+            return false;
+        }
+        return isCreateAccessAllowed(entity, action, POLICY_TYPE_ALLOW);
+    }
+
+    public static boolean isCreateAccessAllowed(AtlasEntity entity, String action, String policyType) {
+        List<RangerPolicy> policies = getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
         List<String> filterCriteriaList = new ArrayList<>();
         for (RangerPolicy policy : policies) {
             String filterCriteria = policy.getPolicyFilterCriteria();
@@ -345,8 +367,8 @@ public class AtlasAuthorization {
         }
 
         if (!ret) {
-            List<RangerPolicy> tagPolicies = getRelevantPolicies(null, null, "atlas_tag", Collections.singletonList(action));
-            List<RangerPolicy> resourcePolicies = getRelevantPolicies(null, null, "atlas", Collections.singletonList(action));
+            List<RangerPolicy> tagPolicies = getRelevantPolicies(null, null, "atlas_tag", Collections.singletonList(action), policyType);
+            List<RangerPolicy> resourcePolicies = getRelevantPolicies(null, null, "atlas", Collections.singletonList(action), policyType);
 
             tagPolicies.addAll(resourcePolicies);
 
@@ -586,23 +608,84 @@ public class AtlasAuthorization {
                 String attributeName = crit.get("attributeName").asText();
                 String attributeValue = crit.get("attributeValue").asText();
 
-                if (esEntityAttributeMap.get(attributeName) != null) {
-                    attributeName = esEntityAttributeMap.get(attributeName);
+//                List<String> attributeValues = new ArrayList<>();
+//                if (operator.equals("IN") || operator.equals("NOT_IN")) {
+//                    for (JsonNode valueNode : crit.get("attributeValue")) {
+//                        ObjectMapper mapper = new ObjectMapper();
+//                        String value = null;
+//                        try {
+//                            value = mapper.treeToValue(valueNode, String.class);
+//                        } catch (JsonProcessingException e) {
+//                            e.printStackTrace();
+//                        }
+//                        attributeValues.add(value);
+//                    }
+//                }
+
+
+                if (attributeName.endsWith(".text")) {
+                    attributeName.replace(".text", "");
+                } else if (attributeName.endsWith(".keyword")) {
+                    attributeName.replace(".keyword", "");
                 }
 
-                String entityAttributeValue = (String) entity.getAttribute(attributeName);
-
-                if (attributeName.equals("typeName")) {
-                    for (String assetType : assetTypes) {
-                        evaluation = validateCriteria(operator, attributeValue, assetType);
-                        if (evaluation) {
-                            break;
+                List<String> entityAttributeValues = new ArrayList<>();
+                if (attributeName.equals("__traitNames")) {
+                    List<AtlasClassification> atlasClassifications = entity.getClassifications();
+                    for (AtlasClassification atlasClassification : atlasClassifications) {
+                        if (atlasClassification.getEntityGuid().equals(entity.getGuid())) {
+                            entityAttributeValues.add(atlasClassification.getTypeName());
                         }
                     }
+                } else if (attributeName.equals("__propagatedTraitNames")) {
+                    List<AtlasClassification> atlasClassifications = entity.getClassifications();
+                    for (AtlasClassification atlasClassification : atlasClassifications) {
+                        if (!atlasClassification.getEntityGuid().equals(entity.getGuid())) {
+                            entityAttributeValues.add(atlasClassification.getTypeName());
+                        }
+                    }
+                } else if (attributeName.equals("__meaningNames")) {
+                    List<AtlasTermAssignmentHeader> atlasMeanings = entity.getMeanings();
+                    for (AtlasTermAssignmentHeader atlasMeaning : atlasMeanings) {
+                        entityAttributeValues.add(atlasMeaning.getDisplayText());
+                    }
                 } else {
-                    evaluation = validateCriteria(operator, attributeValue, entityAttributeValue);
+                    String typeName = entity.getTypeName();
+                    boolean isArrayOfPrimitiveType = false;
+                    boolean isArrayOfEnum = false;
+                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+                    AtlasStructType.AtlasAttribute atlasAttribute = entityType.getAttribute(attributeName);
+                    if (atlasAttribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
+                        AtlasArrayType attributeType = (AtlasArrayType) atlasAttribute.getAttributeType();
+                        AtlasType elementType = attributeType.getElementType();
+                        isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
+                        isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
+                    }
+
+                    if (entity.getAttribute(attributeName) != null) {
+                        if (isArrayOfEnum || isArrayOfPrimitiveType) {
+                            entityAttributeValues.addAll((Collection<? extends String>) entity.getAttribute(attributeName));
+                        } else {
+                            entityAttributeValues.add((String) entity.getAttribute(attributeName));
+                        }
+                    }
+                }
+
+                if (operator.equals("EQUALS") && entityAttributeValues.contains(attributeValue)) {
+                    evaluation = true;
+                }
+                if ((operator.equals("STARTS_WITH") && listStartsWith(attributeValue, entityAttributeValues))) {
+                    evaluation = true;
+                }
+                if ((operator.equals("ENDS_WITH") && listEndsWith(attributeValue, entityAttributeValues))) {
+                    evaluation = true;
+                }
+                if ((operator.equals("NOT_EQUALS") && !entityAttributeValues.contains(attributeValue))) {
+                    evaluation = true;
                 }
             }
+
+
 
             if (condition.equals("AND")) {
                 result = result && evaluation;
@@ -613,20 +696,6 @@ public class AtlasAuthorization {
 
         RequestContext.get().endMetricRecord(convertJsonToQueryMetrics);
         return result;
-    }
-
-    private static boolean validateCriteria(String operator, String attributeValue, String entityAttributeValue) {
-        if (operator.equals("EQUALS") && attributeValue.equals(entityAttributeValue)) {
-            return true;
-        } else if ((operator.equals("STARTS_WITH") && entityAttributeValue.startsWith(attributeValue))) {
-            return true;
-        } else if ((operator.equals("ENDS_WITH") && entityAttributeValue.endsWith(attributeValue))) {
-            return true;
-        } else if ((operator.equals("NOT_EQUALS") && !entityAttributeValue.equals(attributeValue))) {
-            return true;
-        }
-
-        return false;
     }
 
     private static Integer getCountFromElasticsearch(String query) throws AtlasBaseException {
@@ -643,13 +712,13 @@ public class AtlasAuthorization {
 
     public static Map<String, Object> getElasticsearchDSLForRelationshipActions(List<String> actions, String endOneGuid, String endTwoGuid) throws JsonProcessingException {
         List<Map<String, Object>> policiesClauses = new ArrayList<>();
-        List<RangerPolicy> resourcePolicies = getRelevantPolicies(null, null, "atlas", actions);
+        List<RangerPolicy> resourcePolicies = getRelevantPolicies(null, null, "atlas", actions, POLICY_TYPE_ALLOW);
         List<Map<String, Object>> resourcePoliciesClauses = getDSLForRelationshipResourcePolicies(resourcePolicies);
 
-        List<RangerPolicy> tagPolicies = getRelevantPolicies(null, null, "atlas_tag", actions);
+        List<RangerPolicy> tagPolicies = getRelevantPolicies(null, null, "atlas_tag", actions, POLICY_TYPE_ALLOW);
         List<Map<String, Object>> tagPoliciesClauses = getDSLForRelationshipTagPolicies(tagPolicies);
 
-        List<RangerPolicy> abacPolicies = getRelevantPolicies(null, null, "atlas_abac", actions);
+        List<RangerPolicy> abacPolicies = getRelevantPolicies(null, null, "atlas_abac", actions, POLICY_TYPE_ALLOW);
         List<Map<String, Object>> abacPoliciesClauses = getDSLForRelationshipAbacPolicies(abacPolicies);
 
         policiesClauses.addAll(resourcePoliciesClauses);
@@ -682,14 +751,26 @@ public class AtlasAuthorization {
     }
 
     public static Map<String, Object> getElasticsearchDSL(String persona, String purpose, List<String> actions) {
+        Map<String, Object> allowDsl = getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_ALLOW);
+        Map<String, Object> denyDsl = getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_DENY);
+        Map<String, Object> finaDsl = new HashMap<>();
+        if (allowDsl != null) {
+            finaDsl.put("filter", allowDsl);
+        }
+        if (denyDsl != null) {
+            finaDsl.put("must_not", denyDsl);
+        }
+        return getMap("bool", finaDsl);
+    }
 
-        List<RangerPolicy> resourcePolicies = getRelevantPolicies(persona, purpose, "atlas", actions);
+    public static Map<String, Object> getElasticsearchDSLForPolicyType(String persona, String purpose, List<String> actions, String policyType) {
+        List<RangerPolicy> resourcePolicies = getRelevantPolicies(persona, purpose, "atlas", actions, policyType);
         List<Map<String, Object>> resourcePoliciesClauses = getDSLForResourcePolicies(resourcePolicies);
 
-        List<RangerPolicy> tagPolicies = getRelevantPolicies(persona, purpose, "atlas_tag", actions);
+        List<RangerPolicy> tagPolicies = getRelevantPolicies(persona, purpose, "atlas_tag", actions, policyType);
         Map<String, Object> tagPoliciesClause = getDSLForTagPolicies(tagPolicies);
 
-        List<RangerPolicy> abacPolicies = getRelevantPolicies(persona, purpose, "atlas_abac", actions);
+        List<RangerPolicy> abacPolicies = getRelevantPolicies(persona, purpose, "atlas_abac", actions, policyType);
         List<Map<String, Object>> abacPoliciesClauses = getDSLForAbacPolicies(abacPolicies);
 
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
@@ -701,13 +782,19 @@ public class AtlasAuthorization {
 
         Map<String, Object> boolClause = new HashMap<>();
         if (shouldClauses.isEmpty()) {
-            boolClause.put("must_not", getMap("match_all", new HashMap<>()));
+            if (POLICY_TYPE_ALLOW.equals(policyType)) {
+                boolClause.put("must_not", getMap("match_all", new HashMap<>()));
+            } else {
+                return null;
+            }
+
         } else {
             boolClause.put("should", shouldClauses);
             boolClause.put("minimum_should_match", 1);
         }
 
         return getMap("bool", boolClause);
+
     }
 
     private static List<Map<String, Object>> getDSLForRelationshipAbacPolicies(List<RangerPolicy> policies) throws JsonProcessingException {
@@ -938,7 +1025,7 @@ public class AtlasAuthorization {
         return getMap("bool", boolClause);
     }
 
-    private static List<RangerPolicy> getRelevantPolicies(String persona, String purpose, String serviceName, List<String> actions) {
+    private static List<RangerPolicy> getRelevantPolicies(String persona, String purpose, String serviceName, List<String> actions, String policyType) {
         String policyQualifiedNamePrefix = null;
         if (persona != null && !persona.isEmpty()) {
             policyQualifiedNamePrefix = persona;
@@ -968,8 +1055,8 @@ public class AtlasAuthorization {
 
         if (CollectionUtils.isNotEmpty(policies)) {
             policies = getFilteredPoliciesForQualifiedName(policies, policyQualifiedNamePrefix);
-            policies = getFilteredPoliciesForUser(policies, user, groups, roles);
-            policies = getFilteredPoliciesForActions(policies, actions);
+            policies = getFilteredPoliciesForUser(policies, user, groups, roles, policyType);
+            policies = getFilteredPoliciesForActions(policies, actions, policyType);
         }
         return policies;
 
@@ -988,11 +1075,16 @@ public class AtlasAuthorization {
         return policies;
     }
 
-    private static List<RangerPolicy> getFilteredPoliciesForActions(List<RangerPolicy> policies, List<String> actions) {
+    private static List<RangerPolicy> getFilteredPoliciesForActions(List<RangerPolicy> policies, List<String> actions, String type) {
         List<RangerPolicy> filteredPolicies = new ArrayList<>();
         for(RangerPolicy policy : policies) {
-            if (!policy.getPolicyItems().isEmpty()) {
-                RangerPolicy.RangerPolicyItem policyItem = policy.getPolicyItems().get(0);
+            RangerPolicy.RangerPolicyItem policyItem = null;
+            if (POLICY_TYPE_ALLOW.equals(type) && !policy.getPolicyItems().isEmpty()) {
+                policyItem = policy.getPolicyItems().get(0);
+            } else if (POLICY_TYPE_DENY.equals(type) && !policy.getDenyPolicyItems().isEmpty()) {
+                policyItem = policy.getDenyPolicyItems().get(0);
+            }
+            if (policyItem != null) {
                 List<String> policyActions = new ArrayList<>();
                 if (!policyItem.getAccesses().isEmpty()) {
                     for (RangerPolicy.RangerPolicyItemAccess access : policyItem.getAccesses()) {
@@ -1007,11 +1099,16 @@ public class AtlasAuthorization {
         return filteredPolicies;
     }
 
-    private static List<RangerPolicy> getFilteredPoliciesForUser(List<RangerPolicy> policies, String user, List<String> groups, List<String> roles) {
+    private static List<RangerPolicy> getFilteredPoliciesForUser(List<RangerPolicy> policies, String user, List<String> groups, List<String> roles, String type) {
         List<RangerPolicy> filterPolicies = new ArrayList<>();
         for(RangerPolicy policy : policies) {
-            if (!policy.getPolicyItems().isEmpty()) {
-                RangerPolicy.RangerPolicyItem policyItem = policy.getPolicyItems().get(0);
+            RangerPolicy.RangerPolicyItem policyItem = null;
+            if (POLICY_TYPE_ALLOW.equals(type) && !policy.getPolicyItems().isEmpty()) {
+                policyItem = policy.getPolicyItems().get(0);
+            } else if (POLICY_TYPE_DENY.equals(type) && !policy.getDenyPolicyItems().isEmpty()) {
+                policyItem = policy.getDenyPolicyItems().get(0);
+            }
+            if (policyItem != null) {
                 List<String> policyUsers = policyItem.getUsers();
                 List<String> policyGroups = policyItem.getGroups();
                 List<String> policyRoles = policyItem.getRoles();
@@ -1066,6 +1163,24 @@ public class AtlasAuthorization {
     private static boolean arrayListContains(List<String> listA, List<String> listB) {
         for (String listAItem : listA){
             if (listB.contains(listAItem)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean listStartsWith(String value, List<String> list) {
+        for (String item : list){
+            if (item.startsWith(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean listEndsWith(String value, List<String> list) {
+        for (String item : list){
+            if (item.endsWith(value)) {
                 return true;
             }
         }

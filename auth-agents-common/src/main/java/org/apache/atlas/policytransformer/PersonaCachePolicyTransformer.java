@@ -17,6 +17,9 @@
  */
 package org.apache.atlas.policytransformer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -79,6 +82,18 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                 header.setAttribute(ATTR_NAME, "transformed_policy_persona");
 
                 if (policyServiceName.equals(POLICY_SERVICE_NAME_ABAC)) {
+                    if (policyFilterCriteria != null && !policyFilterCriteria.isEmpty()) {
+                        ObjectMapper mapper = new ObjectMapper();
+                        try {
+                            JsonNode filterCriteriaNode = mapper.readTree(policyFilterCriteria);
+                            if (filterCriteriaNode != null && filterCriteriaNode.get("entity") != null) {
+                                JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("entity");
+                                policyFilterCriteria = entityFilterCriteriaNode.toString();
+                            }
+                        } catch (JsonProcessingException e) {
+                            e.printStackTrace();
+                        }
+                    }
                     header.setAttribute(ATTR_POLICY_FILTER_CRITERIA,
                             templatePolicy.getPolicyFilterCriteria().replace(PLACEHOLDER_FILTER_CRITERIA, policyFilterCriteria));
                 } else {
