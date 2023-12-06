@@ -1,18 +1,14 @@
 package org.apache.atlas.discovery;
 
-import com.datastax.oss.driver.internal.core.util.CollectionsUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 //import org.apache.atlas.model.audit.AuditSearchParams;
 //import org.apache.atlas.model.audit.EntityAuditSearchResult;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
-import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.plugin.model.RangerPolicy;
@@ -20,7 +16,6 @@ import org.apache.atlas.plugin.model.RangerRole;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
-import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -28,13 +23,11 @@ import org.apache.commons.lang.StringUtils;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
-import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.elasticsearch.client.RestClient;
-import org.janusgraph.graphdb.util.CollectionsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -46,32 +39,27 @@ public class AtlasAuthorization {
 
     private EntityDiscoveryService discoveryService;
 
+    private static AtlasTypeRegistry typeRegistry;
+
     private static AtlasAuthorization  atlasAuthorization;
     private static UsersGroupsRolesStore  usersGroupsRolesStore;
     private List<String> serviceNames = new ArrayList<>();
     private static Map<String, String> esEntityAttributeMap = new HashMap<>();
 
-
-    public static AtlasAuthorization getInstance(EntityDiscoveryService discoveryService) {
+    public static AtlasAuthorization getInstance(EntityDiscoveryService discoveryService, AtlasTypeRegistry typeRegistry) {
         synchronized (AtlasAuthorization.class) {
             if (atlasAuthorization == null) {
-                atlasAuthorization = new AtlasAuthorization(discoveryService);
+                atlasAuthorization = new AtlasAuthorization(discoveryService, typeRegistry);
             }
             return atlasAuthorization;
         }
     }
 
-    public static AtlasAuthorization getInstance() {
-        if (atlasAuthorization != null) {
-            return atlasAuthorization;
-        }
-        return null;
-    }
-
-    public AtlasAuthorization (EntityDiscoveryService discoveryService) {
+    public AtlasAuthorization (EntityDiscoveryService discoveryService, AtlasTypeRegistry typeRegistry) {
         try {
             this.discoveryService = discoveryService;
 
+            this.typeRegistry = typeRegistry;
             this.usersGroupsRolesStore = UsersGroupsRolesStore.getInstance();
 
             serviceNames.add("atlas");
@@ -102,7 +90,7 @@ public class AtlasAuthorization {
         }
     }
 
-    public static void verifyAccess(AtlasEntity entity, AtlasPrivilege action, String message) throws AtlasBaseException {
+    public static void verifyAccess(AtlasEntity entity, AtlasPrivilege action) throws AtlasBaseException {
         String userName = getCurrentUserName();
 
         if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
@@ -112,7 +100,8 @@ public class AtlasAuthorization {
         try {
             if (AtlasPrivilege.ENTITY_CREATE == action) {
                 if (!isCreateAccessAllowed(entity, AtlasPrivilege.ENTITY_CREATE.getType())){
-                    throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, message);
+                    String message = action.getType() + ":" + entity.getTypeName() + ":" + entity.getAttributes().get(QUALIFIED_NAME);
+                    throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, message);
                 }
             }
         } catch (AtlasBaseException e) {
@@ -120,7 +109,7 @@ public class AtlasAuthorization {
         }
     }
 
-    public static void verifyAccess(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
+    /*public static void verifyAccess(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
         String userName = getCurrentUserName();
 
         if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
@@ -134,7 +123,7 @@ public class AtlasAuthorization {
         } catch (AtlasBaseException e) {
             throw e;
         }
-    }
+    }*/
 
     public static void verifyAccess(String action, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
         String userName = getCurrentUserName();
@@ -144,8 +133,9 @@ public class AtlasAuthorization {
         }
 
         try {
-            if (!isRelationshipCreateAccessAllowed(action, endOneEntity, endTwoEntity)) {
-                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), endOneEntity.getTypeName() + "|" + endOneEntity.getTypeName());
+            if (!isRelationshipAccessAllowed(action, endOneEntity, endTwoEntity)) {
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(),
+                        action + ":" + endOneEntity.getTypeName() + "|" + endTwoEntity.getTypeName());
             }
         } catch (AtlasBaseException e) {
             throw e;
@@ -207,7 +197,9 @@ public class AtlasAuthorization {
         return false;
     }
 
-    public static boolean isRelationshipCreateAccessAllowed(String action, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
+    public static boolean isRelationshipAccessAllowed(String action, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
+        //Relationship add, update, remove access check in memory
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("isRelationshipAccessAllowed");
 
         try {
             List<RangerPolicy> policies = getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action));
@@ -256,11 +248,13 @@ public class AtlasAuthorization {
             return ret;
         } catch (NullPointerException e) {
             return false;
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
         }
-
     }
 
     public static boolean isRelationshipAccessAllowed(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
+        //Relationship update, remove access check with ES query
         if (endOneGuid == null || endTwoGuid == null) {
             return false;
         }
@@ -363,6 +357,8 @@ public class AtlasAuthorization {
     }
 
     private static boolean validateResourcesForCreateEntity(List<RangerPolicy> resourcePolicies, AtlasEntity entity) {
+        RangerPolicy matchedPolicy = null;
+        Set<String> entityTypes = getTypeAndSupertypesList(entity.getTypeName());
 
         for (RangerPolicy rangerPolicy : resourcePolicies) {
             Map<String, RangerPolicy.RangerPolicyResource> resources = rangerPolicy.getResources();
@@ -386,10 +382,9 @@ public class AtlasAuthorization {
                     List<String> values = resources.get(resource).getValues();
 
                     if ("entity-type".equals(resource)) {
-                        String assetTypeName = entity.getTypeName();
-                        Optional<String> match = values.stream().filter(x -> assetTypeName.matches(x.replace("*", ".*"))).findFirst();
+                        boolean match = entityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
 
-                        if (!match.isPresent()) {
+                        if (!match) {
                             resourcesMatched = false;
                             break;
                         }
@@ -431,6 +426,8 @@ public class AtlasAuthorization {
                 }
 
                 if (resourcesMatched) {
+                    matchedPolicy = rangerPolicy;
+                    LOG.info("Matched with policy: {}:{}", matchedPolicy.getName(), matchedPolicy.getGuid());
                     return true;
                 }
             }
@@ -441,6 +438,9 @@ public class AtlasAuthorization {
 
     private static boolean validateResourcesForCreateRelationship(List<RangerPolicy> resourcePolicies, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) {
         RangerPolicy matchedPolicy = null;
+
+        Set<String> endOneEntityTypes = getTypeAndSupertypesList(endOneEntity.getTypeName());
+        Set<String> endTwoEntityTypes = getTypeAndSupertypesList(endTwoEntity.getTypeName());
 
         for (RangerPolicy rangerPolicy : resourcePolicies) {
             Map<String, RangerPolicy.RangerPolicyResource> resources = rangerPolicy.getResources();
@@ -456,6 +456,7 @@ public class AtlasAuthorization {
 
             if (allStar) {
                 matchedPolicy = rangerPolicy;
+                LOG.info("Matched with policy: {}:{}", matchedPolicy.getName(), matchedPolicy.getGuid());
                 return true;
 
             } else {
@@ -465,20 +466,18 @@ public class AtlasAuthorization {
                     List<String> values = resources.get(resource).getValues();
 
                     if ("end-one-entity-type".equals(resource)) {
-                        String assetTypeName = endOneEntity.getTypeName();
-                        Optional<String> match = values.stream().filter(x -> assetTypeName.matches(x.replace("*", ".*"))).findFirst();
+                        boolean match = endOneEntityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
 
-                        if (!match.isPresent()) {
+                        if (!match) {
                             resourcesMatched = false;
                             break;
                         }
                     }
 
                     if ("end-two-entity-type".equals(resource)) {
-                        String assetTypeName = endTwoEntity.getTypeName();
-                        Optional<String> match = values.stream().filter(x -> assetTypeName.matches(x.replace("*", ".*"))).findFirst();
+                        boolean match = endTwoEntityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
 
-                        if (!match.isPresent()) {
+                        if (!match) {
                             resourcesMatched = false;
                             break;
                         }
@@ -521,13 +520,11 @@ public class AtlasAuthorization {
 
                             List<String> assetTags = endOneEntity.getClassifications().stream().map(x -> x.getTypeName()).collect(Collectors.toList());
 
-                            for (String assetTag : assetTags) {
-                                Optional<String> match = values.stream().filter(x -> assetTag.matches(x.replace("*", ".*"))).findFirst();
+                            boolean match = assetTags.stream().anyMatch(assetTag -> values.stream().anyMatch(policyAssetType -> assetTag.matches(policyAssetType.replace("*", ".*"))));
 
-                                if (!match.isPresent()) {
-                                    resourcesMatched = false;
-                                    break;
-                                }
+                            if (!match) {
+                                resourcesMatched = false;
+                                break;
                             }
                         }
                     }
@@ -542,13 +539,11 @@ public class AtlasAuthorization {
 
                             List<String> assetTags = endTwoEntity.getClassifications().stream().map(x -> x.getTypeName()).collect(Collectors.toList());
 
-                            for (String assetTag : assetTags) {
-                                Optional<String> match = values.stream().filter(x -> assetTag.matches(x.replace("*", ".*"))).findFirst();
+                            boolean match = assetTags.stream().anyMatch(assetTag -> values.stream().anyMatch(policyAssetType -> assetTag.matches(policyAssetType.replace("*", ".*"))));
 
-                                if (!match.isPresent()) {
-                                    resourcesMatched = false;
-                                    break;
-                                }
+                            if (!match) {
+                                resourcesMatched = false;
+                                break;
                             }
                         }
                     }
@@ -556,6 +551,7 @@ public class AtlasAuthorization {
 
                 if (resourcesMatched) {
                     matchedPolicy = rangerPolicy;
+                    LOG.info("Matched with policy: {}:{}", matchedPolicy.getName(), matchedPolicy.getGuid());
                     return true;
                 }
             }
@@ -584,7 +580,6 @@ public class AtlasAuthorization {
                 evaluation = validateFilterCriteriaWithEntity(crit, entity);
 
             } else {
-
                 String operator = crit.get("operator").asText();
                 String attributeName = crit.get("attributeName").asText();
                 String attributeValue = crit.get("attributeValue").asText();
@@ -1069,6 +1064,13 @@ public class AtlasAuthorization {
         Map<String, Object> map = new HashMap<>();
         map.put(key, value);
         return map;
+    }
+
+    private static Set<String> getTypeAndSupertypesList(String typeName) {
+        Set<String> entityTypes = typeRegistry.getEntityDefByName(typeName).getSuperTypes();
+        entityTypes.add(typeName);
+
+        return entityTypes;
     }
 
 //    private List<AtlasEntityHeader> getPolicies() {

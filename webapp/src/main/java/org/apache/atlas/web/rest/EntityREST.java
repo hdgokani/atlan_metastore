@@ -174,7 +174,7 @@ public class EntityREST {
 
 //                        AtlasAuthorizationUtils.verifyAccess(entityAccessRequest, entities.get(i).getAction() + "guid=" + entities.get(i).getEntityGuid());
                         if (ENTITY_CREATE.name().equals(action)) {
-                            verifyAccess(new AtlasEntity(entityHeader), ENTITY_CREATE, "create entity: type=" +  entityHeader.getTypeName());
+                            verifyAccess(new AtlasEntity(entityHeader), ENTITY_CREATE);
                         } else {
                             verifyAccess(entities.get(i).getEntityGuid(), AtlasPrivilege.valueOf(entities.get(i).getAction()).getType());
                         }
@@ -215,11 +215,8 @@ public class EntityREST {
                         AtlasEntityHeader end2Entity = getAtlasEntityHeader(entities.get(i).getEntityGuidEnd2(), entities.get(i).getEntityIdEnd2(), entities.get(i).getEntityTypeEnd2());
 
 //                        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entities.get(i).getRelationShipTypeName(), end1Entity, end2Entity));
-                        if (RELATIONSHIP_ADD.name().equals(action)) {
-                            AtlasAuthorization.verifyAccess(AtlasPrivilege.valueOf(action).getType(), end1Entity, end2Entity);
-                        } else {
-                            AtlasAuthorization.verifyAccess(AtlasPrivilege.valueOf(action).getType(), end1Entity.getGuid(), end2Entity.getGuid());
-                        }
+                        AtlasAuthorization.verifyAccess(AtlasPrivilege.valueOf(action).getType(), end1Entity, end2Entity);
+
 
                         response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(), entities.get(i).getEntityIdEnd2(), true, null));
                     } catch (AtlasBaseException e) {
