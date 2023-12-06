@@ -565,6 +565,8 @@ public class AtlasAuthorization {
         String condition = data.get("condition").asText();
         JsonNode criterion = data.get("criterion");
 
+        Set<String> assetTypes = getTypeAndSupertypesList(entity.getTypeName());
+
         boolean result = true;
         boolean evaluation;
 
@@ -589,14 +591,16 @@ public class AtlasAuthorization {
                 }
 
                 String entityAttributeValue = (String) entity.getAttribute(attributeName);
-                if (operator.equals("EQUALS") && attributeValue.equals(entityAttributeValue)) {
-                    evaluation = true;
-                } else if ((operator.equals("STARTS_WITH") && entityAttributeValue.startsWith(attributeValue))) {
-                    evaluation = true;
-                } else if ((operator.equals("ENDS_WITH") && entityAttributeValue.endsWith(attributeValue))) {
-                    evaluation = true;
-                } else if ((operator.equals("NOT_EQUALS") && !entityAttributeValue.equals(attributeValue))) {
-                    evaluation = true;
+
+                if (attributeName.equals("typeName")) {
+                    for (String assetType : assetTypes) {
+                        evaluation = validateCriteria(operator, attributeValue, assetType);
+                        if (evaluation) {
+                            break;
+                        }
+                    }
+                } else {
+                    evaluation = validateCriteria(operator, attributeValue, entityAttributeValue);
                 }
             }
 
@@ -609,6 +613,20 @@ public class AtlasAuthorization {
 
         RequestContext.get().endMetricRecord(convertJsonToQueryMetrics);
         return result;
+    }
+
+    private static boolean validateCriteria(String operator, String attributeValue, String entityAttributeValue) {
+        if (operator.equals("EQUALS") && attributeValue.equals(entityAttributeValue)) {
+            return true;
+        } else if ((operator.equals("STARTS_WITH") && entityAttributeValue.startsWith(attributeValue))) {
+            return true;
+        } else if ((operator.equals("ENDS_WITH") && entityAttributeValue.endsWith(attributeValue))) {
+            return true;
+        } else if ((operator.equals("NOT_EQUALS") && !entityAttributeValue.equals(attributeValue))) {
+            return true;
+        }
+
+        return false;
     }
 
     private static Integer getCountFromElasticsearch(String query) throws AtlasBaseException {
