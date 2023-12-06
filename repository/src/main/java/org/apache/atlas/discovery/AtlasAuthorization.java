@@ -211,12 +211,21 @@ public class AtlasAuthorization {
         return false;
     }
 
-    public static boolean isRelationshipAccessAllowed(String action, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
+    private static boolean isRelationshipAccessAllowed(String action, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
+        boolean deny = checkRelationshipAccessAllowed(action, endOneEntity, endTwoEntity, POLICY_TYPE_DENY);
+        if (deny) {
+            return false;
+        }
+        return checkRelationshipAccessAllowed(action, endOneEntity, endTwoEntity, POLICY_TYPE_ALLOW);
+    }
+
+    public static boolean checkRelationshipAccessAllowed(String action, AtlasEntityHeader endOneEntity,
+                                                         AtlasEntityHeader endTwoEntity, String policyType) throws AtlasBaseException {
         //Relationship add, update, remove access check in memory
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("isRelationshipAccessAllowed");
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("isRelationshipAccessAllowed."+policyType);
 
         try {
-            List<RangerPolicy> policies = getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), POLICY_TYPE_ALLOW);
+            List<RangerPolicy> policies = getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
             List<String> filterCriteriaList = new ArrayList<>();
             for (RangerPolicy policy : policies) {
                 String filterCriteria = policy.getPolicyFilterCriteria();
@@ -251,8 +260,8 @@ public class AtlasAuthorization {
             }
 
             if (!ret) {
-                List<RangerPolicy> tagPolicies = getRelevantPolicies(null, null, "atlas_tag", Collections.singletonList(action), POLICY_TYPE_ALLOW);
-                List<RangerPolicy> resourcePolicies = getRelevantPolicies(null, null, "atlas", Collections.singletonList(action), POLICY_TYPE_ALLOW);
+                List<RangerPolicy> tagPolicies = getRelevantPolicies(null, null, "atlas_tag", Collections.singletonList(action), policyType);
+                List<RangerPolicy> resourcePolicies = getRelevantPolicies(null, null, "atlas", Collections.singletonList(action), policyType);
 
                 tagPolicies.addAll(resourcePolicies);
 
@@ -488,46 +497,54 @@ public class AtlasAuthorization {
                     List<String> values = resources.get(resource).getValues();
 
                     if ("end-one-entity-type".equals(resource)) {
-                        boolean match = endOneEntityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
+                        if (!values.contains(("*"))) {
+                            boolean match = endOneEntityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
 
-                        if (!match) {
-                            resourcesMatched = false;
-                            break;
+                            if (!match) {
+                                resourcesMatched = false;
+                                break;
+                            }
                         }
                     }
 
                     if ("end-two-entity-type".equals(resource)) {
-                        boolean match = endTwoEntityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
+                        if (!values.contains(("*"))) {
+                            boolean match = endTwoEntityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
 
-                        if (!match) {
-                            resourcesMatched = false;
-                            break;
+                            if (!match) {
+                                resourcesMatched = false;
+                                break;
+                            }
                         }
                     }
 
                     if ("end-one-entity".equals(resource)) {
-                        String assetQualifiedName = (String) endOneEntity.getAttribute(QUALIFIED_NAME);
-                        Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
-                                        .replace("{USER}", getCurrentUserName())
-                                        .replace("*", ".*")))
-                                .findFirst();
+                        if (!values.contains(("*"))) {
+                            String assetQualifiedName = (String) endOneEntity.getAttribute(QUALIFIED_NAME);
+                            Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
+                                            .replace("{USER}", getCurrentUserName())
+                                            .replace("*", ".*")))
+                                    .findFirst();
 
-                        if (!match.isPresent()) {
-                            resourcesMatched = false;
-                            break;
+                            if (!match.isPresent()) {
+                                resourcesMatched = false;
+                                break;
+                            }
                         }
                     }
 
                     if ("end-two-entity".equals(resource)) {
-                        String assetQualifiedName = (String) endTwoEntity.getAttribute(QUALIFIED_NAME);
-                        Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
-                                        .replace("{USER}", getCurrentUserName())
-                                        .replace("*", ".*")))
-                                .findFirst();
+                        if (!values.contains(("*"))) {
+                            String assetQualifiedName = (String) endTwoEntity.getAttribute(QUALIFIED_NAME);
+                            Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
+                                            .replace("{USER}", getCurrentUserName())
+                                            .replace("*", ".*")))
+                                    .findFirst();
 
-                        if (!match.isPresent()) {
-                            resourcesMatched = false;
-                            break;
+                            if (!match.isPresent()) {
+                                resourcesMatched = false;
+                                break;
+                            }
                         }
                     }
 
@@ -630,7 +647,11 @@ public class AtlasAuthorization {
                 }
 
                 List<String> entityAttributeValues = new ArrayList<>();
-                if (attributeName.equals("__traitNames")) {
+
+                if (attributeName.equals("typeName") || attributeName.equals("__typeName")) {
+                    entityAttributeValues.addAll(assetTypes);
+
+                } else if (attributeName.equals("__traitNames")) {
                     List<AtlasClassification> atlasClassifications = entity.getClassifications();
                     for (AtlasClassification atlasClassification : atlasClassifications) {
                         if (atlasClassification.getEntityGuid().equals(entity.getGuid())) {
