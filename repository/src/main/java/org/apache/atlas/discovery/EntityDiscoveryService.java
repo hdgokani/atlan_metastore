@@ -131,7 +131,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.dslQueryExecutor         = AtlasConfiguration.DSL_EXECUTOR_TRAVERSAL.getBoolean()
                                             ? new TraversalBasedExecutor(typeRegistry, graph, entityRetriever)
                                             : new ScriptEngineBasedExecutor(typeRegistry, graph, entityRetriever);
-        this.atlasAuthorization = AtlasAuthorization.getInstance(this);
+        this.atlasAuthorization = AtlasAuthorization.getInstance(this, typeRegistry);
     }
 
     @Override
