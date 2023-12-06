@@ -24,6 +24,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.*;
+import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.discovery.AtlasAuthorization;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -74,7 +75,6 @@ import java.util.*;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
 import static org.apache.atlas.authorize.AtlasPrivilege.*;
-import static org.apache.atlas.discovery.AtlasAuthorization.verifyAccess;
 
 
 /**
@@ -173,11 +173,7 @@ public class EntityREST {
                         AtlasEntityAccessRequest entityAccessRequest = requestBuilder.build();
 
 //                        AtlasAuthorizationUtils.verifyAccess(entityAccessRequest, entities.get(i).getAction() + "guid=" + entities.get(i).getEntityGuid());
-                        if (ENTITY_CREATE.name().equals(action)) {
-                            verifyAccess(new AtlasEntity(entityHeader), ENTITY_CREATE);
-                        } else {
-                            verifyAccess(entities.get(i).getEntityGuid(), AtlasPrivilege.valueOf(entities.get(i).getAction()).getType());
-                        }
+                        AuthorizerUtils.verifyEntityAccess(new AtlasEntity(entityHeader), AtlasPrivilege.valueOf(entities.get(i).getAction()));
                         response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), true, null , entities.get(i).getBusinessMetadata()));
                     } catch (AtlasBaseException e) {
                         AtlasErrorCode code = e.getAtlasErrorCode();
@@ -194,7 +190,7 @@ public class EntityREST {
                         AtlasEntityHeader entityHeader = getAtlasEntityHeader(entities.get(i).getEntityGuid(), entities.get(i).getEntityId(),entities.get(i).getTypeName());
 
 //                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), entityHeader, new AtlasClassification(entities.get(i).getClassification())));
-                        verifyAccess(entities.get(i).getEntityGuid(), AtlasPrivilege.valueOf(entities.get(i).getAction()).getType());
+                        AuthorizerUtils.verifyEntityAccess(new AtlasEntity(entityHeader), AtlasPrivilege.valueOf(entities.get(i).getAction()));
                         response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), entities.get(i).getClassification(), true, null));
 
                     } catch (AtlasBaseException e) {
@@ -215,7 +211,7 @@ public class EntityREST {
                         AtlasEntityHeader end2Entity = getAtlasEntityHeader(entities.get(i).getEntityGuidEnd2(), entities.get(i).getEntityIdEnd2(), entities.get(i).getEntityTypeEnd2());
 
 //                        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entities.get(i).getRelationShipTypeName(), end1Entity, end2Entity));
-                        AtlasAuthorization.verifyAccess(AtlasPrivilege.valueOf(action).getType(), end1Entity, end2Entity);
+                        AuthorizerUtils.verifyRelationshipAccess(AtlasPrivilege.valueOf(action).getType(), end1Entity, end2Entity);
 
 
                         response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(), entities.get(i).getEntityIdEnd2(), true, null));
@@ -1153,7 +1149,7 @@ public class EntityREST {
                     AtlasEntityHeader entityHeader = getEntityHeaderFromPurgedAudit(guid);
 
 //                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, ENTITY_READ, entityHeader), "read entity audit: guid=", guid);
-                    verifyAccess(guid, ENTITY_READ.getType());
+                    AuthorizerUtils.verifyEntityAccess(new AtlasEntity(entityHeader), ENTITY_READ);
                 } else {
                     throw e;
                 }

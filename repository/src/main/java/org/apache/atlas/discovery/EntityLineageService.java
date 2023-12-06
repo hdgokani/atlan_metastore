@@ -29,6 +29,7 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
+import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -70,7 +71,6 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_LINEAGE_QUERY_FAILED;
-import static org.apache.atlas.discovery.AtlasAuthorization.verifyAccess;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*;
 import static org.apache.atlas.repository.Constants.*;
@@ -665,7 +665,7 @@ public class EntityLineageService implements AtlasLineageService {
 
 //        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(entity)),
 //                "read entity schema: guid=", guid);
-        verifyAccess(entity.getGuid(), AtlasPrivilege.ENTITY_READ.getType());
+        AuthorizerUtils.verifyEntityAccess(entity, AtlasPrivilege.ENTITY_READ);
 
         Map<String, AtlasEntity> referredEntities = entityWithExtInfo.getReferredEntities();
         List<String> columnIds = getColumnIds(entity);
