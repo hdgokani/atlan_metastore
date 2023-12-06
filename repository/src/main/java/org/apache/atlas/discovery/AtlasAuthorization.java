@@ -229,9 +229,14 @@ public class AtlasAuthorization {
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                 }
-                if (filterCriteriaNode != null && filterCriteriaNode.get("entity") != null) {
-                    JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("entity");
-                    //eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, entity);
+                if (filterCriteriaNode != null && filterCriteriaNode.get("entityOneEntity") != null) {
+                    JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("entityOneEntity");
+                    eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, new AtlasEntity(endOneEntity));
+
+                    if (eval) {
+                        entityFilterCriteriaNode = filterCriteriaNode.get("entityTwoEntity");
+                        eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, new AtlasEntity(endOneEntity));
+                    }
                 }
                 ret = ret || eval;
                 if (ret) {
