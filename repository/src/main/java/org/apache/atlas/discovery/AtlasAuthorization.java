@@ -632,15 +632,8 @@ public class AtlasAuthorization {
                 List<String> entityAttributeValues = new ArrayList<>();
                 if (attributeName.equals("__traitNames")) {
                     List<AtlasClassification> atlasClassifications = entity.getClassifications();
-                    for (AtlasClassification atlasClassification : atlasClassifications) {
-                        if (atlasClassification.getEntityGuid().equals(entity.getGuid())) {
-                            entityAttributeValues.add(atlasClassification.getTypeName());
-                        }
-                    }
-                } else if (attributeName.equals("__propagatedTraitNames")) {
-                    List<AtlasClassification> atlasClassifications = entity.getClassifications();
-                    for (AtlasClassification atlasClassification : atlasClassifications) {
-                        if (!atlasClassification.getEntityGuid().equals(entity.getGuid())) {
+                    if (atlasClassifications != null && !atlasClassifications.isEmpty()) {
+                        for (AtlasClassification atlasClassification : atlasClassifications) {
                             entityAttributeValues.add(atlasClassification.getTypeName());
                         }
                     }
