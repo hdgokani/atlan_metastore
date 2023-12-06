@@ -3,10 +3,7 @@ package org.apache.atlas.discovery;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
-
-import java.util.Set;
 
 public class JsonToElasticsearchQuery {
 
