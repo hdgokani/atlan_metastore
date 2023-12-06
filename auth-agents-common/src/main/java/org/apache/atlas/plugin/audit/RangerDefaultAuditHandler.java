@@ -43,7 +43,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 
 public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
@@ -136,9 +135,9 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 			ret.setClientType(request.getClientType());
 			ret.setSessionId(request.getSessionId());
 			ret.setAclEnforcer(moduleName);
-			Set<RangerTagForEval> tags = getTags(request);
+			Set<String> tags = getTags(request);
 			if (tags != null) {
-				ret.setTags(tags.stream().map(tag -> (Object) tag).collect(Collectors.toSet()));
+				ret.setTags(tags);
 			}
 			ret.setAdditionalInfo(getAdditionalInfo(request));
 			ret.setClusterName(request.getClusterName());
@@ -252,15 +251,15 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 		return new AuthzAuditEvent();
 	}
 
-	protected final Set<RangerTagForEval> getTags(RangerAccessRequest request) {
-		Set<RangerTagForEval>     ret  = null;
+	protected final Set<String> getTags(RangerAccessRequest request) {
+		Set<String>     ret  = null;
 		Set<RangerTagForEval> tags = RangerAccessRequestUtil.getRequestTagsFromContext(request.getContext());
 
 		if (CollectionUtils.isNotEmpty(tags)) {
 			ret = new HashSet<>();
 
 			for (RangerTagForEval tag : tags) {
-				ret.add(tag);
+				ret.add(writeObjectAsString(tag));
 			}
 		}
 

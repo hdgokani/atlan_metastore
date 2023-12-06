@@ -21,24 +21,16 @@ package org.apache.atlas.audit.model;
 
 import com.google.gson.annotations.SerializedName;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.htrace.shaded.fasterxml.jackson.databind.ObjectMapper;
 
-import java.io.Serializable;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class AuthzAuditEvent extends AuditEventBase {
 	protected static String FIELD_SEPARATOR = ";";
 
-	private static ObjectMapper objectMapper = new ObjectMapper();
 	protected static final int MAX_ACTION_FIELD_SIZE = 1800;
 	protected static final int MAX_REQUEST_DATA_FIELD_SIZE = 1800;
-
-	private static final Log LOG = LogFactory.getLog(AuthzAuditEvent.class);
 
 	@SerializedName("repoType")
 	protected int repositoryType = 0;
@@ -118,7 +110,7 @@ public class AuthzAuditEvent extends AuditEventBase {
 	protected long eventDurationMS = 0;
 
 	@SerializedName("tags")
-	protected Set<Object> tags = new HashSet<>();
+	protected Set<String> tags = new HashSet<>();
 
 	@SerializedName("additional_info")
 	protected String additionalInfo;
@@ -491,14 +483,14 @@ public class AuthzAuditEvent extends AuditEventBase {
 	}
 
 	public Set<String> getTags() {
-		return tags.stream().map(tag -> writeObjectAsString((Serializable) tag)).collect(Collectors.toSet());
+		return tags;
 	}
 
 	public void setEventDurationMS(long frequencyDurationMS) {
 		this.eventDurationMS = frequencyDurationMS;
 	}
 
-	public void setTags(Set<Object> tags) {
+	public void setTags(Set<String> tags) {
 		this.tags = tags;
 	}
 
@@ -589,15 +581,5 @@ public class AuthzAuditEvent extends AuditEventBase {
 				.append(FIELD_SEPARATOR).append("additionalInfo=").append(additionalInfo);
 
 		return sb;
-	}
-
-	private String writeObjectAsString(Serializable obj) {
-		String jsonStr = StringUtils.EMPTY;
-		try {
-			jsonStr = objectMapper.writeValueAsString(obj);
-		} catch (Exception e) {
-			LOG.error("Cannot create JSON string for object:[" + obj + "]", e);
-		}
-		return jsonStr;
 	}
 }
