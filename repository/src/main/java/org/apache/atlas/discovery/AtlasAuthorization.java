@@ -497,7 +497,7 @@ public class AtlasAuthorization {
                         }
                     }
 
-                    if ("end-one-entity".equals(resource)) {
+                    if ("end-two-entity".equals(resource)) {
                         String assetQualifiedName = (String) endTwoEntity.getAttribute(QUALIFIED_NAME);
                         Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
                                         .replace("{USER}", getCurrentUserName())
