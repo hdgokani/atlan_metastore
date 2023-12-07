@@ -17,6 +17,7 @@ import java.util.Map;
 
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.SKIP_DELETE_AUTH_CHECK_TYPES;
+import static org.apache.atlas.repository.Constants.SKIP_UPDATE_AUTH_CHECK_TYPES;
 
 public class AuthorizerUtils {
 
@@ -46,6 +47,18 @@ public class AuthorizerUtils {
         }
     }
 
+    public static void verifyUpdateEntityAccess(AtlasEntityHeader entityHeader) throws AtlasBaseException {
+        if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
+            verifyEntityAccess(new AtlasEntity(entityHeader), AtlasPrivilege.ENTITY_UPDATE);
+        }
+    }
+
+    public static void verifyDeleteEntityAccess(AtlasEntityHeader entityHeader) throws AtlasBaseException {
+        if (!SKIP_DELETE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
+            verifyEntityAccess(new AtlasEntity(entityHeader), AtlasPrivilege.ENTITY_DELETE);
+        }
+    }
+
     public static void verifyEntityAccess(AtlasEntity entity, AtlasPrivilege action) throws AtlasBaseException {
         String userName = AuthorizerCommon.getCurrentUserName();
 
@@ -62,12 +75,6 @@ public class AuthorizerUtils {
             //}
         } catch (AtlasBaseException e) {
             throw e;
-        }
-    }
-
-    public static void verifyDeleteEntityAccess(AtlasEntityHeader entityHeader) throws AtlasBaseException {
-        if (!SKIP_DELETE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
-            verifyEntityAccess(new AtlasEntity(entityHeader), AtlasPrivilege.ENTITY_DELETE);
         }
     }
 
