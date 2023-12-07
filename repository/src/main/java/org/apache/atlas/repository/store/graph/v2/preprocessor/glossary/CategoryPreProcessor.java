@@ -23,6 +23,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -57,7 +58,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
-import static org.apache.atlas.discovery.AtlasAuthorization.verifyAccess;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.CATEGORY_PARENT_EDGE_LABEL;
@@ -130,8 +130,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(vertex));
 //        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
 //                "create entity: type=", entity.getTypeName());
-        //verifyAccess(entity.getTypeName(), (String) entity.getAttribute(QUALIFIED_NAME), AtlasPrivilege.ENTITY_CREATE.getType());
-        verifyAccess(entity, AtlasPrivilege.ENTITY_CREATE);
+        AuthorizerUtils.verifyEntityAccess(entity, AtlasPrivilege.ENTITY_CREATE);
 
         validateChildren(entity, null);
 

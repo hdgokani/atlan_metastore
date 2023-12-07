@@ -156,11 +156,11 @@ public class AtlasAuthorization {
         }
     }
 
-    public static void verifyDeleteEntityAccess(AtlasEntityHeader entityHeader, String message) throws AtlasBaseException {
-        if (!SKIP_DELETE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
-            verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_DELETE.getType());
-        }
-    }
+//    public static void verifyDeleteEntityAccess(AtlasEntityHeader entityHeader, String message) throws AtlasBaseException {
+//        if (!SKIP_DELETE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
+//            verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_DELETE.getType());
+//        }
+//    }
 
     private static boolean isAccessAllowed(String guid, String action) throws AtlasBaseException {
         if (guid == null) {
@@ -655,15 +655,8 @@ public class AtlasAuthorization {
 
                 } else if (attributeName.equals("__traitNames")) {
                     List<AtlasClassification> atlasClassifications = entity.getClassifications();
-                    for (AtlasClassification atlasClassification : atlasClassifications) {
-                        if (atlasClassification.getEntityGuid().equals(entity.getGuid())) {
-                            entityAttributeValues.add(atlasClassification.getTypeName());
-                        }
-                    }
-                } else if (attributeName.equals("__propagatedTraitNames")) {
-                    List<AtlasClassification> atlasClassifications = entity.getClassifications();
-                    for (AtlasClassification atlasClassification : atlasClassifications) {
-                        if (!atlasClassification.getEntityGuid().equals(entity.getGuid())) {
+                    if (atlasClassifications != null && !atlasClassifications.isEmpty()) {
+                        for (AtlasClassification atlasClassification : atlasClassifications) {
                             entityAttributeValues.add(atlasClassification.getTypeName());
                         }
                     }

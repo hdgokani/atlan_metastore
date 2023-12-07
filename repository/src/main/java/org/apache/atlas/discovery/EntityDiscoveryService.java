@@ -27,6 +27,7 @@ import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
+import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
@@ -106,7 +107,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final SuggestionsProvider             suggestionsProvider;
     private final DSLQueryExecutor                dslQueryExecutor;
     private final StatsClient                     statsClient;
-    private final AtlasAuthorization              atlasAuthorization;
+    private final AuthorizerUtils                 authorizerUtils;
 
     @Inject
     public EntityDiscoveryService(AtlasTypeRegistry typeRegistry,
@@ -131,7 +132,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.dslQueryExecutor         = AtlasConfiguration.DSL_EXECUTOR_TRAVERSAL.getBoolean()
                                             ? new TraversalBasedExecutor(typeRegistry, graph, entityRetriever)
                                             : new ScriptEngineBasedExecutor(typeRegistry, graph, entityRetriever);
-        this.atlasAuthorization = AtlasAuthorization.getInstance(this, typeRegistry);
+        this.authorizerUtils = AuthorizerUtils.getInstance(this, typeRegistry);
     }
 
     @Override
@@ -1034,7 +1035,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             List<String> actions = new ArrayList<>();
             actions.add("entity-read");
 
-            Map<String, Object> allPreFiltersBoolClause = atlasAuthorization.getElasticsearchDSL(persona, purpose, actions);
+            Map<String, Object> allPreFiltersBoolClause = authorizerUtils.getPreFilterDsl(persona, purpose, actions);
             mustClauseList.add(allPreFiltersBoolClause);
 
             String dslString = searchParams.getQuery();

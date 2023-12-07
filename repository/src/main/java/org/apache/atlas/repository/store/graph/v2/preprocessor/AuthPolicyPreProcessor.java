@@ -23,6 +23,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.discovery.AtlasAuthorization;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
@@ -276,7 +277,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         if (!RequestContext.get().isSkipAuthorizationCheck()) {
 //            AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, new AtlasEntityHeader(policy));
 //            verifyAccess(request, "delete entity: guid=" + policy.getGuid());
-            AtlasAuthorization.verifyAccess(policy.getGuid(), AtlasPrivilege.ENTITY_DELETE.getType());
+            AuthorizerUtils.verifyEntityAccess(policy, AtlasPrivilege.ENTITY_DELETE);
         }
         /* else,
         * skip auth check
