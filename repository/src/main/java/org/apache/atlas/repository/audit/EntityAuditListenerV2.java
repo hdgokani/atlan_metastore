@@ -204,13 +204,25 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
             FixedBufferList<EntityAuditEventV2> classificationsAdded = getAuditEventsList();
-            for (AtlasClassification classification : classifications) {
+            Map<AtlasEntity, List<AtlasClassification>> entityClassifications = new HashMap<>();
+            Map<AtlasEntity, List<AtlasClassification>> propagatedClassifications = new HashMap<>();
+
+            classifications.forEach(classification -> {
                 if (entity.getGuid().equals(classification.getEntityGuid())) {
-                    createEvent(classificationsAdded.next(), entity, CLASSIFICATION_ADD, "Added classification: " + AtlasType.toJson(classification));
+                    entityClassifications.computeIfAbsent(entity, key -> new ArrayList<>()).add(classification);
                 } else {
-                    createEvent(classificationsAdded.next(), entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification));
+                    propagatedClassifications.computeIfAbsent(entity, key -> new ArrayList<>()).add(classification);
                 }
+            });
+
+            if (entityClassifications.get(entity) != null) {
+                createEvent(classificationsAdded.next(), entity, CLASSIFICATION_ADD, "Added classification: " + AtlasType.toJson(entityClassifications.get(entity)));
             }
+
+            if (propagatedClassifications.get(entity) != null) {
+                createEvent(classificationsAdded.next(), entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(propagatedClassifications.get(entity)));
+            }
+
 
             for (EntityAuditRepository auditRepository: auditRepositories) {
                 auditRepository.putEventsV2(classificationsAdded.toList());
