@@ -78,7 +78,7 @@ public class AuthorizerUtils {
         }
     }
 
-    public static void verifyRelationshipAccess(String action, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
+    public static void verifyRelationshipAccess(String action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
         String userName = AuthorizerCommon.getCurrentUserName();
 
         if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
@@ -86,7 +86,7 @@ public class AuthorizerUtils {
         }
 
         try {
-            if (!RelationshipAuthorizer.isAccessAllowed(action, endOneEntity, endTwoEntity)) {
+            if (!RelationshipAuthorizer.isAccessAllowed(action, relationshipType, endOneEntity, endTwoEntity)) {
                 throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(),
                         action + ":" + endOneEntity.getTypeName() + "|" + endTwoEntity.getTypeName());
             }
