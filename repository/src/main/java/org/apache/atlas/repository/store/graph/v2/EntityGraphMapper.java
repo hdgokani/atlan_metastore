@@ -2764,13 +2764,17 @@ public class EntityGraphMapper {
                 notificationVertices.addAll(entitiesToPropagateTo);
             }
 
-            for (AtlasClassification classification : addedClassifications.keySet()) {
-                Set<AtlasVertex>  vertices           = addedClassifications.get(classification);
-                List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
+            Map<AtlasEntity, List<AtlasClassification>> entityClassification = new HashMap<>();
 
-                entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification), false);
+            for (AtlasClassification classification : addedClassifications.keySet()) {
+                Set<AtlasVertex> vertices = addedClassifications.get(classification);
+                List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
+                propagatedEntities.forEach(entity -> entityClassification.computeIfAbsent(entity, key -> new ArrayList<>()).add(classification));
             }
 
+            for (Map.Entry<AtlasEntity, List<AtlasClassification>> atlasEntityListEntry : entityClassification.entrySet()) {
+                entityChangeNotifier.onClassificationAddedToEntity(atlasEntityListEntry.getKey(), atlasEntityListEntry.getValue());
+            }
             RequestContext.get().endMetricRecord(metric);
         }
     }
