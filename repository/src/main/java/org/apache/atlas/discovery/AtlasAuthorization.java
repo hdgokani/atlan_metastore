@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorizer.AuthorizerCommon;
 import org.apache.atlas.exception.AtlasBaseException;
 //import org.apache.atlas.model.audit.AuditSearchParams;
 //import org.apache.atlas.model.audit.EntityAuditSearchResult;
@@ -37,7 +38,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
+import javax.inject.Inject;
+
+@Component
 public class AtlasAuthorization {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorization.class);
@@ -53,7 +59,7 @@ public class AtlasAuthorization {
     private static final String POLICY_TYPE_ALLOW = "allow";
     private static final String POLICY_TYPE_DENY = "deny";
 
-    public static AtlasAuthorization getInstance(EntityDiscoveryService discoveryService, AtlasTypeRegistry typeRegistry) {
+    /*public static AtlasAuthorization getInstance(EntityDiscoveryService discoveryService, AtlasTypeRegistry typeRegistry) {
         synchronized (AtlasAuthorization.class) {
             if (atlasAuthorization == null) {
                 atlasAuthorization = new AtlasAuthorization(discoveryService, typeRegistry);
@@ -67,14 +73,17 @@ public class AtlasAuthorization {
             return atlasAuthorization;
         }
         return null;
-    }
+    }*/
 
+    @Inject
     public AtlasAuthorization (EntityDiscoveryService discoveryService, AtlasTypeRegistry typeRegistry) {
         try {
             this.discoveryService = discoveryService;
 
             this.typeRegistry = typeRegistry;
-            this.usersGroupsRolesStore = UsersGroupsRolesStore.getInstance();
+
+            AtlasAuthorization.usersGroupsRolesStore = UsersGroupsRolesStore.getInstance();
+            AuthorizerCommon.setTypeRegistry(typeRegistry);
 
             serviceNames.add("atlas");
             serviceNames.add("atlas_tag");

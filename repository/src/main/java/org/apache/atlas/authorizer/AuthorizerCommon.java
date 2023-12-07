@@ -17,8 +17,8 @@ public class AuthorizerCommon {
 
     private static AtlasTypeRegistry typeRegistry;
 
-    public AuthorizerCommon(AtlasTypeRegistry typeRegistry) {
-        this.typeRegistry = typeRegistry;
+    public static void setTypeRegistry(AtlasTypeRegistry typeRegistry) {
+        AuthorizerCommon.typeRegistry = typeRegistry;
     }
 
     public static String getCurrentUserName() {
