@@ -211,7 +211,7 @@ public class EntityREST {
                         AtlasEntityHeader end2Entity = getAtlasEntityHeader(entities.get(i).getEntityGuidEnd2(), entities.get(i).getEntityIdEnd2(), entities.get(i).getEntityTypeEnd2());
 
 //                        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entities.get(i).getRelationShipTypeName(), end1Entity, end2Entity));
-                        AuthorizerUtils.verifyRelationshipAccess(AtlasPrivilege.valueOf(action).getType(), end1Entity, end2Entity);
+                        AuthorizerUtils.verifyRelationshipAccess(AtlasPrivilege.valueOf(action).getType(), entities.get(i).getRelationShipTypeName(), end1Entity, end2Entity);
 
 
                         response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(), entities.get(i).getEntityIdEnd2(), true, null));
