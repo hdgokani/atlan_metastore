@@ -54,12 +54,12 @@ public class AuthorizerUtils {
         }
 
         try {
-            if (AtlasPrivilege.ENTITY_CREATE == action) {
-                if (!EntityAuthorizer.isAccessAllowed(entity, AtlasPrivilege.ENTITY_CREATE.getType())){
-                    String message = action.getType() + ":" + entity.getTypeName() + ":" + entity.getAttributes().get(QUALIFIED_NAME);
-                    throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, message);
-                }
+            //if (AtlasPrivilege.ENTITY_CREATE == action) {
+            if (!EntityAuthorizer.isAccessAllowed(entity, action.getType())){
+                String message = action.getType() + ":" + entity.getTypeName() + ":" + entity.getAttributes().get(QUALIFIED_NAME);
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, message);
             }
+            //}
         } catch (AtlasBaseException e) {
             throw e;
         }
