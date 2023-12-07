@@ -61,8 +61,7 @@ public class AuthorizerCommon {
     }
 
     public static Set<String> getTypeAndSupertypesList(String typeName) {
-        Set<String> entityTypes = typeRegistry.getEntityDefByName(typeName).getSuperTypes();
-        entityTypes.add(typeName);
+        Set<String> entityTypes = typeRegistry.getEntityTypeByName(typeName).getTypeAndAllSuperTypes();
 
         return entityTypes;
     }

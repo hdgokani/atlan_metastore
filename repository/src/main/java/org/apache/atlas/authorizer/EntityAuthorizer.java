@@ -114,37 +114,55 @@ public class EntityAuthorizer {
                     }
 
                     if ("entity".equals(resource)) {
-                        String assetQualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
-                        Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
-                                        .replace("{USER}", AuthorizerCommon.getCurrentUserName())
-                                        .replace("*", ".*")))
-                                .findFirst();
-
-                        if (!match.isPresent()) {
-                            resourcesMatched = false;
-                            break;
-                        }
-                    }
-
-                    //for tag based policy
-                    if ("tag".equals(resource)) {
-                        if (entity.getClassifications() == null || entity.getClassifications().isEmpty()) {
-                            //since entity does not have tags at all, it should not pass this evaluation
-                            resourcesMatched = false;
-                            break;
-                        }
-
-                        List<String> assetTags = entity.getClassifications().stream().map(x -> x.getTypeName()).collect(Collectors.toList());
-
-                        for (String assetTag : assetTags) {
-                            Optional<String> match = values.stream().filter(x -> assetTag.matches(x.replace("*", ".*"))).findFirst();
+                        if (!values.contains(("*"))) {
+                            String assetQualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
+                            Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
+                                            .replace("{USER}", AuthorizerCommon.getCurrentUserName())
+                                            .replace("*", ".*")))
+                                    .findFirst();
 
                             if (!match.isPresent()) {
                                 resourcesMatched = false;
                                 break;
                             }
                         }
+                    }
 
+                    if ("entity-business-metadata".equals(resource)) {
+                        if (!values.contains(("*"))) {
+                            String assetQualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
+                            Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
+                                            .replace("{USER}", AuthorizerCommon.getCurrentUserName())
+                                            .replace("*", ".*")))
+                                    .findFirst();
+
+                            if (!match.isPresent()) {
+                                resourcesMatched = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    //for tag based policy
+                    if ("tag".equals(resource)) {
+                        if (!values.contains(("*"))) {
+                            if (entity.getClassifications() == null || entity.getClassifications().isEmpty()) {
+                                //since entity does not have tags at all, it should not pass this evaluation
+                                resourcesMatched = false;
+                                break;
+                            }
+
+                            List<String> assetTags = entity.getClassifications().stream().map(x -> x.getTypeName()).collect(Collectors.toList());
+
+                            for (String assetTag : assetTags) {
+                                Optional<String> match = values.stream().filter(x -> assetTag.matches(x.replace("*", ".*"))).findFirst();
+
+                                if (!match.isPresent()) {
+                                    resourcesMatched = false;
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
 

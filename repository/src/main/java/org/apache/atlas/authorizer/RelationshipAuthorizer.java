@@ -26,15 +26,15 @@ public class RelationshipAuthorizer {
 
     private static final Logger LOG = LoggerFactory.getLogger(RelationshipAuthorizer.class);
 
-    public static boolean isAccessAllowed(String action, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
-        boolean deny = checkRelationshipAccessAllowed(action, endOneEntity, endTwoEntity, AuthorizerCommon.POLICY_TYPE_DENY);
+    public static boolean isAccessAllowed(String action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
+        boolean deny = checkRelationshipAccessAllowed(action, relationshipType, endOneEntity, endTwoEntity, AuthorizerCommon.POLICY_TYPE_DENY);
         if (deny) {
             return false;
         }
-        return checkRelationshipAccessAllowed(action, endOneEntity, endTwoEntity, AuthorizerCommon.POLICY_TYPE_ALLOW);
+        return checkRelationshipAccessAllowed(action, relationshipType, endOneEntity, endTwoEntity, AuthorizerCommon.POLICY_TYPE_ALLOW);
     }
 
-    public static boolean checkRelationshipAccessAllowed(String action, AtlasEntityHeader endOneEntity,
+    public static boolean checkRelationshipAccessAllowed(String action, String relationshipType, AtlasEntityHeader endOneEntity,
                                                          AtlasEntityHeader endTwoEntity, String policyType) throws AtlasBaseException {
         //Relationship add, update, remove access check in memory
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("isRelationshipAccessAllowed."+policyType);
@@ -80,7 +80,7 @@ public class RelationshipAuthorizer {
 
                 tagPolicies.addAll(resourcePolicies);
 
-                ret = validateResourcesForCreateRelationship(tagPolicies, endOneEntity, endTwoEntity);
+                ret = validateResourcesForCreateRelationship(tagPolicies, relationshipType, endOneEntity, endTwoEntity);
             }
 
             return ret;
@@ -91,7 +91,8 @@ public class RelationshipAuthorizer {
         }
     }
 
-    private static boolean validateResourcesForCreateRelationship(List<RangerPolicy> resourcePolicies, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) {
+    private static boolean validateResourcesForCreateRelationship(List<RangerPolicy> resourcePolicies, String relationshipType,
+                                                                  AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) {
         RangerPolicy matchedPolicy = null;
 
         Set<String> endOneEntityTypes = AuthorizerCommon.getTypeAndSupertypesList(endOneEntity.getTypeName());
@@ -119,6 +120,19 @@ public class RelationshipAuthorizer {
 
                 for (String resource : resources.keySet()) {
                     List<String> values = resources.get(resource).getValues();
+
+                    if ("relationship-type".equals(resource)) {
+                        if (!values.contains(("*"))) {
+                            Optional<String> match = values.stream().filter(x -> relationshipType.matches(x
+                                            .replace("*", ".*")))
+                                    .findFirst();
+
+                            if (!match.isPresent()) {
+                                resourcesMatched = false;
+                                break;
+                            }
+                        }
+                    }
 
                     if ("end-one-entity-type".equals(resource)) {
                         if (!values.contains(("*"))) {
