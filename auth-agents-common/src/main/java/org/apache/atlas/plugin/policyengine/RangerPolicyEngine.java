@@ -62,7 +62,7 @@ public interface RangerPolicyEngine {
 
 	void setRoles(RangerRoles roles);
 
-	RangerAccessResult evaluatePolicies(RangerAccessRequest request, String policyType, RangerAccessResultProcessor resultProcessor, String uuid);
+	RangerAccessResult evaluatePolicies(RangerAccessRequest request, String policyType, RangerAccessResultProcessor resultProcessor);
 
 	Collection<RangerAccessResult> evaluatePolicies(Collection<RangerAccessRequest> requests, String policyType, RangerAccessResultProcessor resultProcessor);
 
