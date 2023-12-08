@@ -53,7 +53,17 @@ import org.apache.atlas.plugin.policyresourcematcher.RangerPolicyResourceMatcher
 import org.apache.atlas.plugin.service.RangerBasePlugin;
 import org.apache.atlas.plugin.util.RangerPerfTracer;
 
-import java.util.*;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.UUID;
+import java.util.Collection;
 
 import static org.apache.atlas.authorization.atlas.authorizer.RangerAtlasAuthorizerUtil.*;
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserGroups;
@@ -810,7 +820,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                 LOG.debug("Setting UserGroup for user :" + userName + " Groups: " + groupUtil.getContainedGroups(userName));
             }
             
-            RangerAccessResult result = plugin.isAccessAllowed(request, auditHandler);
+            RangerAccessResult result = plugin.isAccessAllowed(request, auditHandler, "");
 
             ret = result != null && result.getIsAllowed();
         
