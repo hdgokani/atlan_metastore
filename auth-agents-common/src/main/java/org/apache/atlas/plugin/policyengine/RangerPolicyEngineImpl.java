@@ -112,10 +112,11 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 	}
 
 	@Override
-	public RangerAccessResult evaluatePolicies(RangerAccessRequest request, String policyType, RangerAccessResultProcessor resultProcessor) {
+	public RangerAccessResult evaluatePolicies(RangerAccessRequest request, String policyType, RangerAccessResultProcessor resultProcessor, String uuid) {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerPolicyEngineImpl.evaluatePolicies(" + request + ", policyType=" + policyType + ")");
 		}
+		long t0 = System.currentTimeMillis();
 
 		RangerPerfTracer perf = null;
 
@@ -124,6 +125,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 
 			perf = RangerPerfTracer.getPerfTracer(PERF_POLICYENGINE_REQUEST_LOG, "RangerPolicyEngine.evaluatePolicies(requestHashCode=" + requestHashCode + ")");
 		}
+		LOG.info("evaluatePolicies : perf-trace " + (System.currentTimeMillis() - t0));
 
 		RangerAccessResult ret;
 
@@ -135,8 +137,10 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 			}
 
 			requestProcessor.preProcess(request);
+			LOG.info("evaluatePolicies : pre-process " + (System.currentTimeMillis() - t0) + "uuid: " + uuid);
 
 			ret = zoneAwareAccessEvaluationWithNoAudit(request, policyType);
+			LOG.info("evaluatePolicies: zoneAwareAccessEval " + (System.currentTimeMillis() - t0)+ "uuid: " + uuid);
 
 			if (resultProcessor != null) {
 				RangerPerfTracer perfAuditTracer = null;
@@ -146,8 +150,10 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 
 					perfAuditTracer = RangerPerfTracer.getPerfTracer(PERF_POLICYENGINE_AUDIT_LOG, "RangerPolicyEngine.processAudit(requestHashCode=" + requestHashCode + ")");
 				}
+				LOG.info("evaluatePolicies : perf-tracer " + (System.currentTimeMillis() - t0)+ "uuid: " + uuid);
 
 				resultProcessor.processResult(ret);
+				LOG.info("evaluatePolicies : pre-process result " + (System.currentTimeMillis() - t0)+ "uuid: " + uuid);
 
 				RangerPerfTracer.log(perfAuditTracer);
 			}
@@ -158,6 +164,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("<== RangerPolicyEngineImpl.evaluatePolicies(" + request + ", policyType=" + policyType + "): " + ret);
 		}
+		LOG.info("evaluatePolicies _ final return" + (System.currentTimeMillis() - t0)+ "uuid: " + uuid);
 
 		return ret;
 	}
