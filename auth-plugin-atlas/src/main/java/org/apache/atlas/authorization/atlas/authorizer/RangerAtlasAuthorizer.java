@@ -53,7 +53,17 @@ import org.apache.atlas.plugin.policyresourcematcher.RangerPolicyResourceMatcher
 import org.apache.atlas.plugin.service.RangerBasePlugin;
 import org.apache.atlas.plugin.util.RangerPerfTracer;
 
-import java.util.*;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.UUID;
+import java.util.Collection;
 
 import static org.apache.atlas.authorization.atlas.authorizer.RangerAtlasAuthorizerUtil.*;
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserGroups;
@@ -810,7 +820,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                 LOG.debug("Setting UserGroup for user :" + userName + " Groups: " + groupUtil.getContainedGroups(userName));
             }
             
-            RangerAccessResult result = plugin.isAccessAllowed(request, auditHandler);
+            RangerAccessResult result = plugin.isAccessAllowed(request, auditHandler, uuid);
 
             ret = result != null && result.getIsAllowed();
         
@@ -861,17 +871,20 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
     }
 
     private void checkAccessAndScrub(AtlasEntityHeader entity, AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) throws AtlasAuthorizationException {
+        long t0 = System.currentTimeMillis();
         if (entity != null && request != null) {
             final AtlasEntityAccessRequest entityAccessRequest = new AtlasEntityAccessRequest(request.getTypeRegistry(), AtlasPrivilege.ENTITY_READ, entity, request.getUser(), request.getUserGroups());
 
             entityAccessRequest.setClientIPAddress(request.getClientIPAddress());
             entityAccessRequest.setForwardedAddresses(request.getForwardedAddresses());
             entityAccessRequest.setRemoteIPAddress(request.getRemoteIPAddress());
-
+            LOG.info("isEntityAccessAllowed started in: " + (System.currentTimeMillis() - t0));
             boolean isEntityAccessAllowed  = isScrubAuditEnabled ?  isAccessAllowed(entityAccessRequest) : isAccessAllowed(entityAccessRequest, null);
+            LOG.info("isEntityAccessAllowed ended in: " + (System.currentTimeMillis() - t0));
             if (!isEntityAccessAllowed) {
                 scrubEntityHeader(entity, request.getTypeRegistry());
             }
+            LOG.info("scrubEntityHeader ended in: " + (System.currentTimeMillis() - t0));
         }
     }
 
