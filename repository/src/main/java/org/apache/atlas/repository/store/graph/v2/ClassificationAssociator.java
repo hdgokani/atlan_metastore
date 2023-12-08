@@ -236,15 +236,16 @@ public class ClassificationAssociator {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
+            String classificationNames = getClassificationNames(list);
 
-            for (AtlasClassification c : list) {
+            //for (AtlasClassification c : list) {
                 try {
-                    entitiesStore.deleteClassification(entityGuid, c.getTypeName());
+                    entitiesStore.deleteClassifications(entityGuid, list);
                 } catch (AtlasBaseException e) {
-                    LOG.error("Failed to remove classification association between {}, entity with guid {}", c.getTypeName(), c.getEntityGuid());
+                    LOG.error("Failed to remove classification association between {}, entity with guid {}", classificationNames, entityGuid);
                     throw e;
                 }
-            }
+          //  }
         }
 
         AtlasEntityHeader getByUniqueAttributes(AtlasEntityType entityType, String qualifiedName, Map<String, Object> attrValues) {
