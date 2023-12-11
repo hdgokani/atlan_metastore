@@ -237,15 +237,12 @@ public class ClassificationAssociator {
                 return;
             }
             String classificationNames = getClassificationNames(list);
-
-            //for (AtlasClassification c : list) {
-                try {
-                    entitiesStore.deleteClassifications(entityGuid, list);
-                } catch (AtlasBaseException e) {
-                    LOG.error("Failed to remove classification association between {}, entity with guid {}", classificationNames, entityGuid);
-                    throw e;
-                }
-          //  }
+            try {
+                entitiesStore.deleteClassifications(entityGuid, list);
+            } catch (AtlasBaseException e) {
+                LOG.error("Failed to remove classification association between {}, entity with guid {}", classificationNames, entityGuid);
+                throw e;
+            }
         }
 
         AtlasEntityHeader getByUniqueAttributes(AtlasEntityType entityType, String qualifiedName, Map<String, Object> attrValues) {
