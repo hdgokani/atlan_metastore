@@ -29,7 +29,6 @@ import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
-import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
@@ -227,12 +226,14 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             EntityAuditEventV2 event = new EntityAuditEventV2();
             event.setEntityId(entityGuid);
             event.setAction(EntityAuditEventV2.EntityAuditActionV2.fromString((String) source.get(ACTION)));
-            if (source.get(DETAIL) instanceof java.util.ArrayList){
-                List<Map<String, Object>> classificationMap = (List<Map<String, Object>>) source.get(DETAIL);
-                event.setDetail(classificationMap);
-            }else {
-                List<Map<String,Object>> classificationMap = new ArrayList<>();
-                classificationMap.add((Map<String, Object>) source.get(DETAIL));
+            if (source.get(DETAIL) != null) {
+                List<Map<String, Object>> classificationMap;
+                if (source.get(DETAIL) instanceof java.util.ArrayList) {
+                    classificationMap = (List<Map<String, Object>>) source.get(DETAIL);
+                } else {
+                    classificationMap = new ArrayList<>();
+                    classificationMap.add((Map<String, Object>) source.get(DETAIL));
+                }
                 event.setDetail(classificationMap);
             }
             event.setUser((String) source.get(USER));

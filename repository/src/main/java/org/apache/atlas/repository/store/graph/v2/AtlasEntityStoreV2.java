@@ -1103,8 +1103,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 LOG.debug("Deleting classification={} from entity={}", classification.getDisplayName(), guid);
             }
         }
-
-
         entityGraphMapper.deleteClassifications(guid, classifications, associatedEntityGuid);
     }
 
@@ -1133,8 +1131,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Deleting classification={} from entity={}", classificationName, guid);
         }
-
-
         entityGraphMapper.deleteClassification(guid, classificationName, associatedEntityGuid);
     }
 
