@@ -1073,6 +1073,42 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
+    public void deleteClassifications(final String guid, final List<AtlasClassification> classifications) throws AtlasBaseException {
+        deleteClassifications(guid, classifications, null);
+    }
+
+    @Override
+    @GraphTransaction
+    public void deleteClassifications(final String guid, final List<AtlasClassification> classifications, final String associatedEntityGuid) throws AtlasBaseException {
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
+        }
+        if (CollectionUtils.isEmpty(classifications)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classifications not specified");
+        }
+
+        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
+
+        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+
+        // verify authorization only for removal of directly associated classification and not propagated one.
+        for (AtlasClassification classification: classifications){
+            if (StringUtils.isEmpty(associatedEntityGuid) || guid.equals(associatedEntityGuid)) {
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION,
+                                entityHeader, new AtlasClassification(classification.getTypeName())),
+                        "remove classification: guid=", guid, ", classification=", classification.getDisplayName());
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Deleting classification={} from entity={}", classification.getDisplayName(), guid);
+            }
+        }
+        entityGraphMapper.deleteClassifications(guid, classifications, associatedEntityGuid);
+    }
+
+
+    @Override
+    @GraphTransaction
     public void deleteClassification(final String guid, final String classificationName, final String associatedEntityGuid) throws AtlasBaseException {
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
@@ -1095,8 +1131,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Deleting classification={} from entity={}", classificationName, guid);
         }
-
-
         entityGraphMapper.deleteClassification(guid, classificationName, associatedEntityGuid);
     }
 
@@ -1560,7 +1594,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("preCreateOrUpdate");
-
+        this.graph.setEnableCache(RequestContext.get().isCacheEnabled());
         EntityGraphDiscovery        graphDiscoverer  = new AtlasEntityGraphDiscoveryV2(graph, typeRegistry, entityStream, entityGraphMapper);
         EntityGraphDiscoveryContext discoveryContext = graphDiscoverer.discoverEntities();
         EntityMutationContext       context          = new EntityMutationContext(discoveryContext);
