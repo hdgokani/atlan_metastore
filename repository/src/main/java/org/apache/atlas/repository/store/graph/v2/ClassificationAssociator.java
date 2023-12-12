@@ -223,12 +223,14 @@ public class ClassificationAssociator {
                         AtlasEntity entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), IGNORE_REL);
 
                         allVertices.add(vertex);
+
                         propagatedEntities.add(entity);
                     }
 
                     entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(addedClassification), false);
                 }
             }
+
             entityGraphMapper.updateClassificationText(null, allVertices);
             transactionInterceptHelper.intercept();
 
