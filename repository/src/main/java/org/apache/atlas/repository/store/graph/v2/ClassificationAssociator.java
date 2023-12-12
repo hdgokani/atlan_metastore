@@ -187,7 +187,8 @@ public class ClassificationAssociator {
                     throw e;
                 }
             }
-            //TODO: send Notifications & update __classificationText
+
+            //send Notifications & update __classificationText
             RequestContext.get().clearEntityCache();
 
             AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("commitChanges.notify");
@@ -211,7 +212,6 @@ public class ClassificationAssociator {
                 }
             }
 
-            AtlasPerfMetrics.MetricRecorder recorder1 = RequestContext.get().startMetricRecord("commitChanges.notify.added");
             Map<AtlasClassification, Collection<Object>> added = RequestContext.get().getAddedClassificationAndVertices();
             if (MapUtils.isNotEmpty(added)) {
                 for (AtlasClassification addedClassification: added.keySet()) {
@@ -222,27 +222,17 @@ public class ClassificationAssociator {
                         AtlasVertex vertex = (AtlasVertex) obj;
                         AtlasEntity entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), IGNORE_REL);
 
-                        AtlasPerfMetrics.MetricRecorder recorder5 = RequestContext.get().startMetricRecord("commitChanges.notify.allVertices");
                         allVertices.add(vertex);
-                        RequestContext.get().endMetricRecord(recorder5);
 
                         propagatedEntities.add(entity);
                     }
 
-                    AtlasPerfMetrics.MetricRecorder recorder4 = RequestContext.get().startMetricRecord("commitChanges.notify.sendAddedNotif");
                     entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(addedClassification), false);
-                    RequestContext.get().endMetricRecord(recorder4);
                 }
             }
-            RequestContext.get().endMetricRecord(recorder1);
 
-            AtlasPerfMetrics.MetricRecorder recorder2 = RequestContext.get().startMetricRecord("commitChanges.notify.added");
             entityGraphMapper.updateClassificationText(null, allVertices);
-            RequestContext.get().endMetricRecord(recorder2);
-
-            AtlasPerfMetrics.MetricRecorder recorder3 = RequestContext.get().startMetricRecord("commitChanges.notify.intercept");
             transactionInterceptHelper.intercept();
-            RequestContext.get().endMetricRecord(recorder3);
 
             RequestContext.get().endMetricRecord(recorder);
             RequestContext.get().setDelayTagNotifications(false);
