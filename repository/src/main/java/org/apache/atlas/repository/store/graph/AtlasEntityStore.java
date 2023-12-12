@@ -303,8 +303,6 @@ public interface AtlasEntityStore {
 
     AtlasClassification getClassification(String guid, String classificationName) throws AtlasBaseException;
 
-    void setClassifications(AtlasEntityHeaders entityHeaders) throws AtlasBaseException;
-
     /**
      * Set labels to given entity, if labels is null/empty, existing labels will all be removed.
      */

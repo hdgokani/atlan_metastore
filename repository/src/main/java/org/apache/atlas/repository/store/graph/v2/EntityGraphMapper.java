@@ -2766,17 +2766,26 @@ public class EntityGraphMapper {
                 notificationVertices.addAll(entitiesToPropagateTo);
             }
 
-            Map<AtlasEntity, List<AtlasClassification>> entityClassification = new HashMap<>();
+            if (RequestContext.get().isDelayTagNotifications()) {
+                for (AtlasClassification classification : addedClassifications.keySet()) {
+                    Set<AtlasVertex>  vertices = addedClassifications.get(classification);
+                    RequestContext.get().addAddedClassificationAndVertices(classification, new ArrayList<>(vertices));
+                }
 
-            for (AtlasClassification classification : addedClassifications.keySet()) {
-                Set<AtlasVertex> vertices = addedClassifications.get(classification);
-                List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
-                propagatedEntities.forEach(entity -> entityClassification.computeIfAbsent(entity, key -> new ArrayList<>()).add(classification));
+            } else {
+                Map<AtlasEntity, List<AtlasClassification>> entityClassification = new HashMap<>();
+
+                for (AtlasClassification classification : addedClassifications.keySet()) {
+                    Set<AtlasVertex> vertices = addedClassifications.get(classification);
+                    List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
+                    propagatedEntities.forEach(entity -> entityClassification.computeIfAbsent(entity, key -> new ArrayList<>()).add(classification));
+                }
+
+                for (Map.Entry<AtlasEntity, List<AtlasClassification>> atlasEntityListEntry : entityClassification.entrySet()) {
+                    entityChangeNotifier.onClassificationAddedToEntity(atlasEntityListEntry.getKey(), atlasEntityListEntry.getValue());
+                }
             }
 
-            for (Map.Entry<AtlasEntity, List<AtlasClassification>> atlasEntityListEntry : entityClassification.entrySet()) {
-                entityChangeNotifier.onClassificationAddedToEntity(atlasEntityListEntry.getKey(), atlasEntityListEntry.getValue());
-            }
             RequestContext.get().endMetricRecord(metric);
         }
     }
@@ -3025,15 +3034,21 @@ public class EntityGraphMapper {
 
         updateModificationMetadata(entityVertex);
 
-        Map<AtlasEntity, List<AtlasClassification>> entityClassification = new HashMap<>();
-        if (CollectionUtils.isNotEmpty(entityVertices)) {
-            List<AtlasEntity> propagatedEntities = updateClassificationText(classification, entityVertices);
-            propagatedEntities.forEach(entity -> entityClassification.computeIfAbsent(entity, key -> new ArrayList<>()).add(classification));
-        }
+        if (RequestContext.get().isDelayTagNotifications()) {
+            RequestContext.get().addDeletedClassificationAndVertices(classification, new ArrayList<>(entityVertices));
+        } else if (CollectionUtils.isNotEmpty(entityVertices)) {
 
-        //Sending audit request for all entities at once
-        for (Map.Entry<AtlasEntity, List<AtlasClassification>> atlasEntityListEntry : entityClassification.entrySet()) {
-            entityChangeNotifier.onClassificationDeletedFromEntity(atlasEntityListEntry.getKey(), atlasEntityListEntry.getValue());
+            Map<AtlasEntity, List<AtlasClassification>> entityClassification = new HashMap<>();
+            if (CollectionUtils.isNotEmpty(entityVertices)) {
+
+                List<AtlasEntity> propagatedEntities = updateClassificationText(classification, entityVertices);
+                propagatedEntities.forEach(entity -> entityClassification.computeIfAbsent(entity, key -> new ArrayList<>()).add(classification));
+
+                //Sending audit request for all entities at once
+                for (Map.Entry<AtlasEntity, List<AtlasClassification>> atlasEntityListEntry : entityClassification.entrySet()) {
+                    entityChangeNotifier.onClassificationDeletedFromEntity(atlasEntityListEntry.getKey(), atlasEntityListEntry.getValue());
+                }
+            }
         }
 
         AtlasPerfTracer.log(perf);
@@ -4093,7 +4108,7 @@ public class EntityGraphMapper {
         }
     }
 
-    private List<AtlasEntity> updateClassificationText(AtlasClassification classification, Collection<AtlasVertex> propagatedVertices) throws AtlasBaseException {
+    List<AtlasEntity> updateClassificationText(AtlasClassification classification, Collection<AtlasVertex> propagatedVertices) throws AtlasBaseException {
         List<AtlasEntity> propagatedEntities = new ArrayList<>();
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateClassificationText");
 
@@ -4102,10 +4117,7 @@ public class EntityGraphMapper {
                 AtlasEntity entity = null;
                 for (int i = 1; i <= MAX_NUMBER_OF_RETRIES; i++) {
                     try {
-                        AtlasPerfMetrics.MetricRecorder metricRecorder2 = RequestContext.get().startMetricRecord("updateClassificationText.getAndCacheEntity");
                         entity = instanceConverter.getAndCacheEntity(graphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
-                        RequestContext.get().endMetricRecord(metricRecorder2);
-
                         break; //do not retry on success
                     } catch (AtlasBaseException ex) {
                         if (i == MAX_NUMBER_OF_RETRIES) {
@@ -4120,10 +4132,6 @@ public class EntityGraphMapper {
                     String classificationTextForEntity = fullTextMapperV2.getClassificationTextForEntity(entity);
                     vertex.setProperty(CLASSIFICATION_TEXT_KEY, classificationTextForEntity);
                     propagatedEntities.add(entity);
-
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("updateClassificationText: {}: {}", classification.getTypeName(), classificationTextForEntity);
-                    }
                 }
             }
         }
