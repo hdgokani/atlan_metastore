@@ -103,11 +103,11 @@ public class GlossaryTermUtils extends GlossaryUtils {
             LOG.debug("==> GlossaryTermUtils.processTermAssignments({}, {})", glossaryTerm, relatedObjectIds);
         }
 
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("GlossaryTermUtils.processTermAssignments");
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("processTermAssignments");
         AtlasPerfTracer perf = null;
 
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "GlossaryTermUtils.processTermAssignments");
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "processTermAssignments");
         }
 
         Objects.requireNonNull(glossaryTerm);
