@@ -461,38 +461,47 @@ public class RangerBasePlugin {
 	}
 
 	public RangerAccessResult isAccessAllowed(RangerAccessRequest request) {
-		return isAccessAllowed(request, resultProcessor);
+		return isAccessAllowed(request, resultProcessor, "");
 	}
 
 	public Collection<RangerAccessResult> isAccessAllowed(Collection<RangerAccessRequest> requests) {
 		return isAccessAllowed(requests, resultProcessor);
 	}
 
-	public RangerAccessResult isAccessAllowed(RangerAccessRequest request, RangerAccessResultProcessor resultProcessor) {
+	public RangerAccessResult isAccessAllowed(RangerAccessRequest request, RangerAccessResultProcessor resultProcessor, String uuid) {
+
 		RangerAccessResult ret          = null;
 		RangerPolicyEngine policyEngine = this.policyEngine;
 
 		if (policyEngine != null) {
-			ret = policyEngine.evaluatePolicies(request, RangerPolicy.POLICY_TYPE_ACCESS, null);
+			long startTime = System.currentTimeMillis();
+			ret = policyEngine.evaluatePolicies(request, RangerPolicy.POLICY_TYPE_ACCESS, null, uuid);
+			LOG.info("policyEngine.evaluatePolicies ended in "+(System.currentTimeMillis() - startTime)+ " uuid: " + uuid);
 		}
 
 		if (ret != null) {
 			for (RangerChainedPlugin chainedPlugin : chainedPlugins) {
+				long startTime = System.currentTimeMillis();
 				RangerAccessResult chainedResult = chainedPlugin.isAccessAllowed(request);
-
+				LOG.info("chainedPlugin.isAccessAllowed ended in " + (System.currentTimeMillis() - startTime) + "uuid: " + uuid);
 				if (chainedResult != null) {
 					updateResultFromChainedResult(ret, chainedResult);
 				}
+				LOG.info("chainedPlugin.isAccessAllowed : " + chainedPlugin.getClass().getName() + " ended in " + (System.currentTimeMillis() - startTime) + " uuid: "+ uuid);
 			}
 
 		}
 
 		if (policyEngine != null) {
+			long startTime = System.currentTimeMillis();
 			policyEngine.evaluateAuditPolicies(ret);
+			LOG.info("policyEngine.evaluateAuditPolicies ended in " + (System.currentTimeMillis()-startTime) + "uuid: " + uuid);
 		}
 
 		if (resultProcessor != null) {
+			long startTime = System.currentTimeMillis();
 			resultProcessor.processResult(ret);
+			LOG.info("resultProcessor.processResult ended in " + (System.currentTimeMillis()-startTime) + "uuid: " + uuid);
 		}
 
 		return ret;
@@ -544,7 +553,7 @@ public class RangerBasePlugin {
 		RangerPolicyEngine policyEngine = this.policyEngine;
 
 		if (policyEngine != null) {
-			ret = policyEngine.evaluatePolicies(request, RangerPolicy.POLICY_TYPE_ACCESS, null);
+			ret = policyEngine.evaluatePolicies(request, RangerPolicy.POLICY_TYPE_ACCESS, null, "");
 		}
 
 		return ret;
@@ -555,7 +564,7 @@ public class RangerBasePlugin {
 		RangerAccessResult ret          = null;
 
 		if(policyEngine != null) {
-			ret = policyEngine.evaluatePolicies(request, RangerPolicy.POLICY_TYPE_DATAMASK, resultProcessor);
+			ret = policyEngine.evaluatePolicies(request, RangerPolicy.POLICY_TYPE_DATAMASK, resultProcessor, "");
 
 			policyEngine.evaluateAuditPolicies(ret);
 		}
@@ -568,7 +577,7 @@ public class RangerBasePlugin {
 		RangerAccessResult ret          = null;
 
 		if(policyEngine != null) {
-			ret = policyEngine.evaluatePolicies(request, RangerPolicy.POLICY_TYPE_ROWFILTER, resultProcessor);
+			ret = policyEngine.evaluatePolicies(request, RangerPolicy.POLICY_TYPE_ROWFILTER, resultProcessor, "");
 
 			policyEngine.evaluateAuditPolicies(ret);
 		}
@@ -948,7 +957,7 @@ public class RangerBasePlugin {
 			accessRequest.setSessionId(request.getSessionId());
 
 			// call isAccessAllowed() to determine if audit is enabled or not
-			RangerAccessResult accessResult = isAccessAllowed(accessRequest, null);
+			RangerAccessResult accessResult = isAccessAllowed(accessRequest, null, "");
 
 			if(accessResult != null && accessResult.getIsAudited()) {
 				accessRequest.setAccessType(action);
