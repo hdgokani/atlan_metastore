@@ -2771,10 +2771,11 @@ public class EntityGraphMapper {
                     Set<AtlasVertex>  vertices = addedClassifications.get(classification);
                     RequestContext.get().addAddedClassificationAndVertices(classification, new ArrayList<>(vertices));
                 }
-
             } else {
+                /** ToDO : @aarshi: remove this after testing :
+             * this is dead code it will never be executed as isDelayTagNotifications() always true
+             **/
                 Map<AtlasEntity, List<AtlasClassification>> entityClassification = new HashMap<>();
-
                 for (AtlasClassification classification : addedClassifications.keySet()) {
                     Set<AtlasVertex> vertices = addedClassifications.get(classification);
                     List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
@@ -3037,6 +3038,9 @@ public class EntityGraphMapper {
         if (RequestContext.get().isDelayTagNotifications()) {
             RequestContext.get().addDeletedClassificationAndVertices(classification, new ArrayList<>(entityVertices));
         } else if (CollectionUtils.isNotEmpty(entityVertices)) {
+            /** ToDO : @aarshi: remove this after testing :
+             * this is dead code it will never be executed as isDelayTagNotifications() always true
+             **/
 
             Map<AtlasEntity, List<AtlasClassification>> entityClassification = new HashMap<>();
             if (CollectionUtils.isNotEmpty(entityVertices)) {
