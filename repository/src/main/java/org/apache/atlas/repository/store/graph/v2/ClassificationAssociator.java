@@ -18,7 +18,6 @@
 
 package org.apache.atlas.repository.store.graph.v2;
 
-import com.google.gson.Gson;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
