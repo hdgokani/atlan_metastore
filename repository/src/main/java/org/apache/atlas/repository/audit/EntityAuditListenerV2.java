@@ -320,20 +320,11 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         if (CollectionUtils.isNotEmpty(classifications) && CollectionUtils.isNotEmpty(entities)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("onClassificationsDeleted");
             FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
+            Map<AtlasEntity, List<Map<String,Object>>> entityClassifications = new HashMap<>();
+            Map<AtlasEntity, List<Map<String,Object>>> propagatedClassifications = new HashMap<>();
 
-            for (AtlasClassification classification : classifications) {
-                for (AtlasEntity entity : entities) {
-                    if (StringUtils.equals(entity.getGuid(), classification.getEntityGuid())) {
-                        createEvent(events.next(), entity, CLASSIFICATION_DELETE, "Deleted classification: " + getDeleteClassificationString(classification.getTypeName()));
-                    } else {
-                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + getDeleteClassificationString(classification.getTypeName()));
-                    }
-                }
-            }
-
-            for (EntityAuditRepository auditRepository: auditRepositories) {
-                auditRepository.putEventsV2(events.toList());
-            }
+            getClassificationsTextFromEntities(classifications, entities, entityClassifications, propagatedClassifications);
+            emitDeleteClassificationEvent(events, entityClassifications, propagatedClassifications);
 
             RequestContext.get().endMetricRecord(metric);
         }
