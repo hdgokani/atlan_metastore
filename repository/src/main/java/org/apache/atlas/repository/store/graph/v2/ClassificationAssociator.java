@@ -290,6 +290,7 @@ public class ClassificationAssociator {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
+
             String classificationNames = getClassificationNames(list);
             try {
                 entitiesStore.deleteClassifications(entityGuid, list);
