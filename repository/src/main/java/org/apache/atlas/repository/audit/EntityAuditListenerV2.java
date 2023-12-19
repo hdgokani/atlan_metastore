@@ -243,7 +243,6 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             RequestContext.get().endMetricRecord(metric);
         }
     }
-
     @Override
     public void onClassificationsUpdated(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
@@ -251,22 +250,43 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
             FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
             String guid = entity.getGuid();
+            Map<AtlasEntity, List<AtlasClassification>> entityClassifications = new HashMap<>();
+            Map<AtlasEntity, List<AtlasClassification>> propagatedClassifications = new HashMap<>();
+            getClassificationsFromEntity(classifications, entity, entityClassifications, propagatedClassifications);
 
-            for (AtlasClassification classification : classifications) {
-                if (guid.equals(classification.getEntityGuid())) {
-                    createEvent(events.next(), entity, CLASSIFICATION_UPDATE, "Updated classification: " + AtlasType.toJson(classification));
-                } else {
+            List<AtlasClassification> addedClassification = new ArrayList<>(0);
+            List<AtlasClassification> deletedClassification = new ArrayList<>(0);
+            List<AtlasClassification> updatedClassification = new ArrayList<>(0);
+
+            if (CollectionUtils.isNotEmpty(propagatedClassifications.get(entity))) {
+                propagatedClassifications.get(entity).forEach(classification -> {
                     if (isPropagatedClassificationAdded(guid, classification)) {
-                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification));
+                        addedClassification.add(classification);
                     } else if (isPropagatedClassificationDeleted(guid, classification)) {
-                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + getDeleteClassificationString(classification.getTypeName()));
+                        deletedClassification.add(classification);
                     } else {
-                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_UPDATE, "Updated propagated classification: " + AtlasType.toJson(classification));
+                        updatedClassification.add(classification);
                     }
-                }
+                });
             }
 
-            for (EntityAuditRepository auditRepository: auditRepositories) {
+            if (CollectionUtils.isNotEmpty(addedClassification)) {
+                createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classifications: " + AtlasType.toJson(addedClassification));
+            }
+
+            if (CollectionUtils.isNotEmpty(deletedClassification)) {
+                createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classifications: " + getDeleteClassificationsMap(deletedClassification));
+            }
+
+            if (CollectionUtils.isNotEmpty(updatedClassification)) {
+                createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_UPDATE, "Updated propagated classifications: " + AtlasType.toJson(updatedClassification));
+            }
+
+            if (entityClassifications.get(entity) != null) {
+                createEvent(events.next(), entity, CLASSIFICATION_UPDATE, "Updated classifications: " + AtlasType.toJson(entityClassifications.get(entity)));
+            }
+
+            for (EntityAuditRepository auditRepository : auditRepositories) {
                 auditRepository.putEventsV2(events.toList());
             }
 
