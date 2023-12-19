@@ -21,6 +21,7 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Iterators;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -387,6 +388,17 @@ public final class GraphHelper {
         }
 
         return ret;
+    }
+
+    public static Integer getCountOfCategoryEdges(AtlasVertex entityVertex) {
+
+        Iterator<AtlasEdge> edges = getOutGoingEdgesByLabel(entityVertex, CATEGORY_TERMS_EDGE_LABEL);
+
+        if (edges!=null) {
+            return Iterators.size(edges);
+        }
+
+        return 0;
     }
 
     public static boolean isClassificationAttached(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
