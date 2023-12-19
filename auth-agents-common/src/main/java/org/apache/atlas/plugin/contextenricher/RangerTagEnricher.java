@@ -243,9 +243,6 @@ public class RangerTagEnricher extends RangerAbstractContextEnricher {
 		Set<RangerTagForEval> atlasClassificationSet = new HashSet<>();
 
 		if (requestContext != null && requestContext.get("CLASSIFICATIONS") != null) {
-			if (LOG.isDebugEnabled()) {
-				LOG.debug("Classification found " + requestContext.get("CLASSIFICATIONS"));
-			}
 			atlasClassificationSet = (Set<RangerTagForEval>) requestContext.get("CLASSIFICATIONS");
 		}
 		return atlasClassificationSet;
