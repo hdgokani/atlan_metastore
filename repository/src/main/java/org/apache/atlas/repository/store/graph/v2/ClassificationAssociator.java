@@ -193,43 +193,20 @@ public class ClassificationAssociator {
 
             AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("commitChanges.notify");
             Map<AtlasClassification, Collection<Object>> deleted = RequestContext.get().getDeletedClassificationAndVertices();
-            Set<AtlasVertex> allVertices = new HashSet<>();
-
             if (MapUtils.isNotEmpty(deleted)) {
-                for (AtlasClassification deletedClassification: deleted.keySet()) {
-                    Collection<Object> vertices =  deleted.get(deletedClassification);
-                    List<AtlasEntity> propagatedEntities = new ArrayList<>();
-
-                    for (Object obj: vertices) {
-                        AtlasVertex vertex = (AtlasVertex) obj;
-                        AtlasEntity entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), IGNORE_REL);
-
-                        allVertices.add(vertex);
-                        propagatedEntities.add(entity);
-                    }
-
-                    entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(deletedClassification));
+                Map<AtlasEntity, List<AtlasClassification>> entityClassification = getEntityClassificationsMapping(deleted);
+                for (Map.Entry<AtlasEntity, List<AtlasClassification>> atlasEntityListEntry : entityClassification.entrySet()) {
+                    entityChangeNotifier.onClassificationDeletedFromEntity(atlasEntityListEntry.getKey(), atlasEntityListEntry.getValue());
                 }
             }
 
             Map<AtlasClassification, Collection<Object>> added = RequestContext.get().getAddedClassificationAndVertices();
             if (MapUtils.isNotEmpty(added)) {
-                for (AtlasClassification addedClassification: added.keySet()) {
-                    Collection<Object> vertices =  added.get(addedClassification);
-                    List<AtlasEntity> propagatedEntities = new ArrayList<>();
-
-                    for (Object obj: vertices) {
-                        AtlasVertex vertex = (AtlasVertex) obj;
-                        AtlasEntity entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), IGNORE_REL);
-
-                        allVertices.add(vertex);
-                        propagatedEntities.add(entity);
-                    }
-
-                    entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(addedClassification), false);
+                Map<AtlasEntity, List<AtlasClassification>> entityClassification = getEntityClassificationsMapping(added);
+                for (Map.Entry<AtlasEntity, List<AtlasClassification>> atlasEntityListEntry : entityClassification.entrySet()) {
+                    entityChangeNotifier.onClassificationAddedToEntity(atlasEntityListEntry.getKey(), atlasEntityListEntry.getValue());
                 }
             }
-            entityGraphMapper.updateClassificationText(null, allVertices);
             transactionInterceptHelper.intercept();
 
             RequestContext.get().endMetricRecord(recorder);
@@ -382,6 +359,20 @@ public class ClassificationAssociator {
 
         private String getJsonArray(StringBuilder actionSummary) {
             return "[" + StringUtils.removeEnd(actionSummary.toString(), ",") + "]";
+        }
+
+        private Map<AtlasEntity, List<AtlasClassification>> getEntityClassificationsMapping(Map<AtlasClassification, Collection<Object>> classificationVertices) throws AtlasBaseException {
+            Map<AtlasEntity, List<AtlasClassification>> entityClassifications = new HashMap<>();
+            Set<AtlasVertex> vertices = new HashSet<>();
+            for (AtlasClassification classification : classificationVertices.keySet()) {
+                for (Object obj : classificationVertices.get(classification)) {
+                    AtlasVertex vertex = (AtlasVertex) obj;
+                    vertices.add(vertex);
+                }
+                List<AtlasEntity> propagatedEntities = entityGraphMapper.updateClassificationText(null, vertices);
+                propagatedEntities.forEach(entity -> entityClassifications.computeIfAbsent(entity, key -> new ArrayList<>()).add(classification));
+            }
+            return entityClassifications;
         }
     }
 
