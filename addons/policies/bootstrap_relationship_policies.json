@@ -764,7 +764,7 @@
             "attributes":
             {
                 "name": "LINK_RESOURCES_TO_DATA_MESH",
-                "qualifiedName": "LINK_MESH_DATA_DOMAIN_TO_DATA_DOMAIN",
+                "qualifiedName": "LINK_RESOURCES_TO_DATA_MESH",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
