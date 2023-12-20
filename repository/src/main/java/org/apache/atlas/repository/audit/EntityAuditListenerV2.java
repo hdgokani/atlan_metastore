@@ -346,7 +346,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
 
             for (AtlasRelatedObjectId relatedObjectId : entities) {
-                AtlasEntity entity = instanceConverter.getAndCacheEntity(relatedObjectId.getGuid());
+                AtlasEntity entity = instanceConverter.getAndCacheEntity(relatedObjectId.getGuid(), true);
 
                 if (entity != null) {
                     createEvent(events.next(), entity, TERM_ADD, "Added term: " + term.toAuditString());
