@@ -19,18 +19,23 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
+import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -38,16 +43,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES;
+
 @Component
 public class ClassificationAssociator {
     private static final Logger LOG = LoggerFactory.getLogger(ClassificationAssociator.class);
+
+    private static TransactionInterceptHelper transactionInterceptHelper;
+
+    @Inject
+    public ClassificationAssociator(TransactionInterceptHelper transactionInterceptHelper) {
+        ClassificationAssociator.transactionInterceptHelper = transactionInterceptHelper;
+    }
 
     public static class Retriever {
         private final EntityAuditRepository auditRepository;
@@ -60,11 +78,6 @@ public class ClassificationAssociator {
 
         public Retriever(AtlasTypeRegistry typeRegistry, EntityAuditRepository auditRepository) {
             this(AtlasGraphProvider.getGraphInstance(), typeRegistry, auditRepository);
-        }
-
-        Retriever(EntityGraphRetriever entityGraphRetriever, EntityAuditRepository auditRepository) {
-            this.entityRetriever = entityGraphRetriever;
-            this.auditRepository = auditRepository;
         }
 
         public AtlasEntityHeaders get(long fromTimestamp, long toTimestamp) throws AtlasBaseException {
@@ -116,20 +129,34 @@ public class ClassificationAssociator {
         private final AtlasTypeRegistry typeRegistry;
         private final AtlasEntityStore entitiesStore;
         private final EntityGraphRetriever entityRetriever;
+        private final EntityGraphMapper entityGraphMapper;
+        private final IAtlasEntityChangeNotifier entityChangeNotifier;
+        private final AtlasInstanceConverter instanceConverter;
         private final StringBuilder actionSummary = new StringBuilder();
 
-        public Updater(AtlasGraph graph, AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore) {
+        private static final boolean IGNORE_REL = ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES.getBoolean();
+
+        public Updater(AtlasGraph graph, AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore,
+                       EntityGraphMapper entityGraphMapper, IAtlasEntityChangeNotifier entityChangeNotifier,
+                       AtlasInstanceConverter instanceConverter) {
             this.graph = graph;
             this.typeRegistry = typeRegistry;
             this.entitiesStore = entitiesStore;
+            this.entityGraphMapper = entityGraphMapper;
+            this.entityChangeNotifier = entityChangeNotifier;
+            this.instanceConverter = instanceConverter;
             entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
         }
 
-        public Updater(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore) {
-            this(AtlasGraphProvider.getGraphInstance(), typeRegistry, entitiesStore);
+        public Updater(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore,
+                       EntityGraphMapper entityGraphMapper, IAtlasEntityChangeNotifier entityChangeNotifier,
+                       AtlasInstanceConverter instanceConverter) {
+            this(AtlasGraphProvider.getGraphInstance(), typeRegistry, entitiesStore, entityGraphMapper, entityChangeNotifier, instanceConverter);
         }
 
         public void setClassifications(Map<String, AtlasEntityHeader> map) throws AtlasBaseException {
+            RequestContext.get().setDelayTagNotifications(true);
+
             for (String guid  : map.keySet()) {
                 AtlasEntityHeader incomingEntityHeader = map.get(guid);
                 String typeName = incomingEntityHeader.getTypeName();
@@ -160,6 +187,33 @@ public class ClassificationAssociator {
                     throw e;
                 }
             }
+
+            //send Notifications & update __classificationText
+            RequestContext.get().clearEntityCache();
+
+            AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("commitChanges.notify");
+            Map<AtlasClassification, Collection<Object>> deleted = RequestContext.get().getDeletedClassificationAndVertices();
+
+            if (MapUtils.isNotEmpty(deleted)) {
+                Map<AtlasEntity, List<AtlasClassification>> entityClassification = getEntityClassificationsMapping(deleted);
+
+                for (Map.Entry<AtlasEntity, List<AtlasClassification>> atlasEntityListEntry : entityClassification.entrySet()) {
+                    entityChangeNotifier.onClassificationDeletedFromEntity(atlasEntityListEntry.getKey(), atlasEntityListEntry.getValue());
+                }
+            }
+
+            Map<AtlasClassification, Collection<Object>> added = RequestContext.get().getAddedClassificationAndVertices();
+            if (MapUtils.isNotEmpty(added)) {
+                Map<AtlasEntity, List<AtlasClassification>> entityClassification = getEntityClassificationsMapping(added);
+
+                for (Map.Entry<AtlasEntity, List<AtlasClassification>> atlasEntityListEntry : entityClassification.entrySet()) {
+                    entityChangeNotifier.onClassificationAddedToEntity(atlasEntityListEntry.getKey(), atlasEntityListEntry.getValue());
+                }
+            }
+
+            transactionInterceptHelper.intercept();
+            RequestContext.get().endMetricRecord(recorder);
+            RequestContext.get().setDelayTagNotifications(false);
         }
 
         private void commitChanges(String entityGuid, String typeName, Map<String, List<AtlasClassification>> operationListMap) throws AtlasBaseException {
@@ -237,13 +291,12 @@ public class ClassificationAssociator {
                 return;
             }
 
-            for (AtlasClassification c : list) {
-                try {
-                    entitiesStore.deleteClassification(entityGuid, c.getTypeName());
-                } catch (AtlasBaseException e) {
-                    LOG.error("Failed to remove classification association between {}, entity with guid {}", c.getTypeName(), c.getEntityGuid());
-                    throw e;
-                }
+            String classificationNames = getClassificationNames(list);
+            try {
+                entitiesStore.deleteClassifications(entityGuid, list);
+            } catch (AtlasBaseException e) {
+                LOG.error("Failed to remove classification association between {}, entity with guid {}", classificationNames, entityGuid);
+                throw e;
             }
         }
 
@@ -308,6 +361,19 @@ public class ClassificationAssociator {
 
         private String getJsonArray(StringBuilder actionSummary) {
             return "[" + StringUtils.removeEnd(actionSummary.toString(), ",") + "]";
+        }
+        private Map<AtlasEntity, List<AtlasClassification>> getEntityClassificationsMapping(Map<AtlasClassification, Collection<Object>> classificationVertices) throws AtlasBaseException {
+            Map<AtlasEntity, List<AtlasClassification>> entityClassifications = new HashMap<>();
+            Set<AtlasVertex> vertices = new HashSet<>();
+            for (AtlasClassification classification : classificationVertices.keySet()) {
+                for (Object obj : classificationVertices.get(classification)) {
+                    AtlasVertex vertex = (AtlasVertex) obj;
+                    vertices.add(vertex);
+                }
+                List<AtlasEntity> propagatedEntities = entityGraphMapper.updateClassificationText(null, vertices);
+                propagatedEntities.forEach(entity -> entityClassifications.computeIfAbsent(entity, key -> new ArrayList<>()).add(classification));
+            }
+            return entityClassifications;
         }
     }
 
