@@ -226,16 +226,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             EntityAuditEventV2 event = new EntityAuditEventV2();
             event.setEntityId(entityGuid);
             event.setAction(EntityAuditEventV2.EntityAuditActionV2.fromString((String) source.get(ACTION)));
-            if (source.get(DETAIL) != null) {
-                List<Map<String, Object>> classificationMap;
-                if (source.get(DETAIL) instanceof java.util.ArrayList) {
-                    classificationMap = (List<Map<String, Object>>) source.get(DETAIL);
-                } else {
-                    classificationMap = new ArrayList<>();
-                    classificationMap.add((Map<String, Object>) source.get(DETAIL));
-                }
-                event.setDetail(classificationMap);
-            }
+            event.setDetail((Map<String, Object>) source.get(DETAIL));
             event.setUser((String) source.get(USER));
             event.setCreated((long) source.get(CREATED));
             if (source.get(TIMESTAMP) != null) {

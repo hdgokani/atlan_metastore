@@ -2770,18 +2770,10 @@ public class EntityGraphMapper {
                     RequestContext.get().addAddedClassificationAndVertices(classification, new ArrayList<>(vertices));
                 }
             } else {
-                /** ToDO : @aarshi: remove this after testing :
-             * this is dead code it will never be executed as isDelayTagNotifications() always true
-             **/
-                Map<AtlasEntity, List<AtlasClassification>> entityClassification = new HashMap<>();
                 for (AtlasClassification classification : addedClassifications.keySet()) {
                     Set<AtlasVertex> vertices = addedClassifications.get(classification);
                     List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
-                    propagatedEntities.forEach(entity -> entityClassification.computeIfAbsent(entity, key -> new ArrayList<>()).add(classification));
-                }
-
-                for (Map.Entry<AtlasEntity, List<AtlasClassification>> atlasEntityListEntry : entityClassification.entrySet()) {
-                    entityChangeNotifier.onClassificationAddedToEntity(atlasEntityListEntry.getKey(), atlasEntityListEntry.getValue());
+                    entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification), false);
                 }
             }
 
@@ -3036,23 +3028,11 @@ public class EntityGraphMapper {
         if (RequestContext.get().isDelayTagNotifications()) {
             RequestContext.get().addDeletedClassificationAndVertices(classification, new ArrayList<>(entityVertices));
         } else if (CollectionUtils.isNotEmpty(entityVertices)) {
-            /** ToDO : @aarshi: remove this after testing :
-             * this is dead code it will never be executed as isDelayTagNotifications() always true
-             **/
+            List<AtlasEntity> propagatedEntities = updateClassificationText(classification, entityVertices);
+            //Sending audit request for all entities at once
+            entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification));
 
-            Map<AtlasEntity, List<AtlasClassification>> entityClassification = new HashMap<>();
-            if (CollectionUtils.isNotEmpty(entityVertices)) {
-
-                List<AtlasEntity> propagatedEntities = updateClassificationText(classification, entityVertices);
-                propagatedEntities.forEach(entity -> entityClassification.computeIfAbsent(entity, key -> new ArrayList<>()).add(classification));
-
-                //Sending audit request for all entities at once
-                for (Map.Entry<AtlasEntity, List<AtlasClassification>> atlasEntityListEntry : entityClassification.entrySet()) {
-                    entityChangeNotifier.onClassificationDeletedFromEntity(atlasEntityListEntry.getKey(), atlasEntityListEntry.getValue());
-                }
-            }
         }
-
         AtlasPerfTracer.log(perf);
     }
 
