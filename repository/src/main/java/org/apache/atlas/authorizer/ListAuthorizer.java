@@ -32,15 +32,15 @@ public class ListAuthorizer {
         List<RangerPolicy> tagPolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas_tag", actions, policyType);
         Map<String, Object> tagPoliciesClause = getDSLForTagPolicies(tagPolicies);
 
-        List<RangerPolicy> abacPolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas_abac", actions, policyType);
-        List<Map<String, Object>> abacPoliciesClauses = getDSLForAbacPolicies(abacPolicies);
+        //List<RangerPolicy> abacPolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas_abac", actions, policyType);
+        //List<Map<String, Object>> abacPoliciesClauses = getDSLForAbacPolicies(abacPolicies);
 
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         shouldClauses.addAll(resourcePoliciesClauses);
         if (tagPoliciesClause != null) {
             shouldClauses.add(tagPoliciesClause);
         }
-        shouldClauses.addAll(abacPoliciesClauses);
+        //shouldClauses.addAll(abacPoliciesClauses);
 
         Map<String, Object> boolClause = new HashMap<>();
         if (shouldClauses.isEmpty()) {
