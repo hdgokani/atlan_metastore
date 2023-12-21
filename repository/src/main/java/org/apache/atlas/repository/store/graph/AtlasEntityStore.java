@@ -295,8 +295,6 @@ public interface AtlasEntityStore {
 
     void deleteClassification(String guid, String classificationName, String associatedEntityGuid) throws AtlasBaseException;
 
-    void deleteClassifications(String guid, List<AtlasClassification> classificationName) throws AtlasBaseException;
-    public void deleteClassifications(final String guid, final List<AtlasClassification> classifications, final String associatedEntityGuid) throws AtlasBaseException;
     List<AtlasClassification> getClassifications(String guid) throws AtlasBaseException;
 
     AtlasClassification getClassification(String guid, String classificationName) throws AtlasBaseException;

@@ -132,7 +132,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
     private String              eventKey;
     private AtlasEntity         entity;
     private EntityAuditType     type;
-    private List<Map<String, Object>> detail;
+    private Map<String, Object> detail;
     private AtlasEntityHeader   entityDetail;
     private Map<String, String> headers;
 
@@ -226,11 +226,11 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         this.type = type;
     }
 
-    public List<Map<String, Object>> getDetail() {
+    public Map<String, Object> getDetail() {
         return detail;
     }
 
-    public void setDetail(List<Map<String, Object>> detail) {
+    public void setDetail(Map<String, Object> detail) {
         this.detail = detail;
     }
 
@@ -355,7 +355,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
             if(bracketStartPosition != -1) {
                 ret = details.substring(bracketStartPosition);
             }
-        } else if(!detail.isEmpty()) {
+        } else if(MapUtils.isNotEmpty(detail)) {
             ret = AtlasType.toJson(detail);
         }
 
