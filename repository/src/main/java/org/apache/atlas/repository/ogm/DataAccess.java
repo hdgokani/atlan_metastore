@@ -28,6 +28,8 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -143,6 +145,7 @@ public class DataAccess {
     public <T extends AtlasBaseModelObject> T load(T obj, boolean loadDeleted) throws AtlasBaseException {
         Objects.requireNonNull(obj, "Can't load a null object");
 
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("DataAccess.load()");
         AtlasPerfTracer perf = null;
 
         try {
@@ -182,9 +185,9 @@ public class DataAccess {
             return dto.from(entityWithExtInfo);
 
         } finally {
+            RequestContext.get().endMetricRecord(metric);
             AtlasPerfTracer.log(perf);
         }
-
     }
 
     public <T extends AtlasBaseModelObject> T load(String guid, Class<? extends AtlasBaseModelObject> clazz) throws AtlasBaseException {
