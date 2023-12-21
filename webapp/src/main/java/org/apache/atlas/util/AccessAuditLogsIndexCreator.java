@@ -17,6 +17,7 @@
 package org.apache.atlas.util;
 
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.authorization.credutils.CredentialsProviderUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -203,12 +204,19 @@ public class AccessAuditLogsIndexCreator extends Thread {
                         .map(x -> new HttpHost(x, port, protocol))
                         .<HttpHost>toArray(i -> new HttpHost[i])
         );
+        if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password) && !user.equalsIgnoreCase("NONE") && !password.equalsIgnoreCase("NONE")) {
 
-        LOG.error("ElasticSearch Credentials not provided!!");
-        final CredentialsProvider credentialsProvider = null;
-        restClientBuilder.setHttpClientConfigCallback(clientBuilder ->
-                clientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+            final CredentialsProvider credentialsProvider =
+                    CredentialsProviderUtil.getBasicCredentials(user, password);
+            restClientBuilder.setHttpClientConfigCallback(clientBuilder ->
+                    clientBuilder.setDefaultCredentialsProvider(credentialsProvider));
 
+        } else {
+            LOG.error("ElasticSearch Credentials not provided!!");
+            final CredentialsProvider credentialsProvider = null;
+            restClientBuilder.setHttpClientConfigCallback(clientBuilder ->
+                    clientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+        }
         return restClientBuilder;
     }
 

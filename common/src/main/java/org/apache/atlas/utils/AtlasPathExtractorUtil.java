@@ -544,13 +544,17 @@ public class AtlasPathExtractorUtil {
             LOG.debug("==> addHDFSPathEntity(strPath={})", strPath);
         }
 
-        String      attrPath          = strPath;
+        String      nameServiceID     = HdfsNameServiceResolver.getNameServiceIDForPath(strPath);
+        String      attrPath          = StringUtils.isEmpty(nameServiceID) ? strPath : HdfsNameServiceResolver.getPathWithNameServiceID(strPath);
         String      pathQualifiedName = getQualifiedName(attrPath, context.getMetadataNamespace());
         AtlasEntity ret               = context.getEntity(pathQualifiedName);
 
         if (ret == null) {
             ret = new AtlasEntity(HDFS_TYPE_PATH);
 
+            if (StringUtils.isNotEmpty(nameServiceID)) {
+                ret.setAttribute(ATTRIBUTE_NAMESERVICE_ID, nameServiceID);
+            }
 
             String name = Path.getPathWithoutSchemeAndAuthority(path).toString();
 
@@ -597,6 +601,9 @@ public class AtlasPathExtractorUtil {
     }
 
     private static String getQualifiedName(String path, String metadataNamespace) {
+        if (path.startsWith(HdfsNameServiceResolver.HDFS_SCHEME)) {
+            return path + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
+        }
 
         return path.toLowerCase();
     }

@@ -22,6 +22,7 @@ package org.apache.atlas.plugin.util;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.atlas.authorization.hadoop.utils.RangerCredentialProvider;
 import org.apache.atlas.authorization.utils.StringUtil;
 
 import javax.net.ssl.HostnameVerifier;
@@ -89,7 +90,14 @@ public class RangerSslHelper {
 		}
 
 	}
-
+	
+	public SSLContext createContext() {
+		readConfig();
+		KeyManager[]   kmList     = getKeyManagers();
+		TrustManager[] tmList     = getTrustManagers();
+		SSLContext     sslContext = getSSLContext(kmList, tmList);
+		return sslContext;
+	}
 	
 	public HostnameVerifier getHostnameVerifier() {
 		return _Hv;
@@ -129,6 +137,92 @@ public class RangerSslHelper {
 		}
 	}
 	
+	private KeyManager[] getKeyManagers() {
+		KeyManager[] kmList = null;
+
+		String keyStoreFilepwd = getCredential(mKeyStoreURL, mKeyStoreAlias);
+
+		if (!StringUtil.isEmpty(mKeyStoreFile) && !StringUtil.isEmpty(keyStoreFilepwd)) {
+			InputStream in =  null;
+
+			try {
+				in = getFileInputStream(mKeyStoreFile);
+
+				if (in != null) {
+					KeyStore keyStore = KeyStore.getInstance(mKeyStoreType);
+
+					keyStore.load(in, keyStoreFilepwd.toCharArray());
+
+					KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(RANGER_SSL_KEYMANAGER_ALGO_TYPE);
+
+					keyManagerFactory.init(keyStore, keyStoreFilepwd.toCharArray());
+
+					kmList = keyManagerFactory.getKeyManagers();
+				} else {
+					LOG.error("Unable to obtain keystore from file [" + mKeyStoreFile + "]");
+				}
+			} catch (KeyStoreException e) {
+				LOG.error("Unable to obtain from KeyStore", e);
+			} catch (NoSuchAlgorithmException e) {
+				LOG.error("SSL algorithm is available in the environment", e);
+			} catch (CertificateException e) {
+				LOG.error("Unable to obtain the requested certification ", e);
+			} catch (FileNotFoundException e) {
+				LOG.error("Unable to find the necessary SSL Keystore and TrustStore Files", e);
+			} catch (IOException e) {
+				LOG.error("Unable to read the necessary SSL Keystore and TrustStore Files", e);
+			} catch (UnrecoverableKeyException e) {
+				LOG.error("Unable to recover the key from keystore", e);
+			} finally {
+				close(in, mKeyStoreFile);
+			}
+		}
+
+		return kmList;
+	}
+
+	private TrustManager[] getTrustManagers() {
+		TrustManager[] tmList = null;
+
+		String trustStoreFilepwd = getCredential(mTrustStoreURL, mTrustStoreAlias);
+
+		if (!StringUtil.isEmpty(mTrustStoreFile) && !StringUtil.isEmpty(trustStoreFilepwd)) {
+			InputStream in =  null;
+
+			try {
+				in = getFileInputStream(mTrustStoreFile);
+
+				if (in != null) {
+					KeyStore trustStore = KeyStore.getInstance(mTrustStoreType);
+
+					trustStore.load(in, trustStoreFilepwd.toCharArray());
+
+					TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(RANGER_SSL_TRUSTMANAGER_ALGO_TYPE);
+
+					trustManagerFactory.init(trustStore);
+
+					tmList = trustManagerFactory.getTrustManagers();
+				} else {
+					LOG.error("Unable to obtain keystore from file [" + mTrustStoreFile + "]");
+				}
+			} catch (KeyStoreException e) {
+				LOG.error("Unable to obtain from KeyStore", e);
+			} catch (NoSuchAlgorithmException e) {
+				LOG.error("SSL algorithm is available in the environment", e);
+			} catch (CertificateException e) {
+				LOG.error("Unable to obtain the requested certification ", e);
+			} catch (FileNotFoundException e) {
+				LOG.error("Unable to find the necessary SSL Keystore and TrustStore Files", e);
+			} catch (IOException e) {
+				LOG.error("Unable to read the necessary SSL Keystore and TrustStore Files", e);
+			} finally {
+				close(in, mTrustStoreFile);
+			}
+		}
+		
+		return tmList;
+	}
+	
 	private SSLContext getSSLContext(KeyManager[] kmList, TrustManager[] tmList) {
 		try {
 			if(tmList != null) {
@@ -145,6 +239,10 @@ public class RangerSslHelper {
 		}
 		
 		return null;
+	}
+
+	private String getCredential(String url, String alias) {
+		return RangerCredentialProvider.getInstance().getCredentialString(url, alias);
 	}
 
 	private InputStream getFileInputStream(String fileName)  throws IOException {

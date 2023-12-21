@@ -35,6 +35,7 @@ import org.apache.commons.lang.Validate;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.atlas.authorization.hadoop.utils.RangerCredentialProvider;
 import org.apache.atlas.authorization.utils.StringUtil;
 
 import javax.net.ssl.HostnameVerifier;
@@ -188,6 +189,25 @@ public class RangerRESTClient {
 	private Client buildClient() {
 		Client client = null;
 
+		if (mIsSSL) {
+			KeyManager[]   kmList     = getKeyManagers();
+			TrustManager[] tmList     = getTrustManagers();
+			SSLContext     sslContext = getSSLContext(kmList, tmList);
+			ClientConfig   config     = new DefaultClientConfig();
+
+			config.getClasses().add(JacksonJsonProvider.class); // to handle List<> unmarshalling
+
+			HostnameVerifier hv = new HostnameVerifier() {
+				public boolean verify(String urlHostName, SSLSession session) {
+					return session.getPeerHost().equals(urlHostName);
+				}
+			};
+
+			config.getProperties().put(HTTPSProperties.PROPERTY_HTTPS_PROPERTIES, new HTTPSProperties(hv, sslContext));
+
+			client = Client.create(config);
+		}
+
 		if(client == null) {
 			ClientConfig config = new DefaultClientConfig();
 
@@ -247,6 +267,75 @@ public class RangerRESTClient {
 			}
 
 		}
+	}
+
+	private KeyManager[] getKeyManagers() {
+		KeyManager[] kmList = null;
+
+		String keyStoreFilepwd = getCredential(mKeyStoreURL, mKeyStoreAlias);
+
+		kmList = getKeyManagers(mKeyStoreFile,keyStoreFilepwd);
+		return kmList;
+	}
+
+	public KeyManager[] getKeyManagers(String keyStoreFile, String keyStoreFilePwd) {
+		KeyManager[] kmList = null;
+
+		if (StringUtils.isNotEmpty(keyStoreFile) && StringUtils.isNotEmpty(keyStoreFilePwd)) {
+			InputStream in =  null;
+
+			try {
+				in = getFileInputStream(keyStoreFile);
+
+				if (in != null) {
+					KeyStore keyStore = KeyStore.getInstance(mKeyStoreType);
+
+					keyStore.load(in, keyStoreFilePwd.toCharArray());
+
+					KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(RANGER_SSL_KEYMANAGER_ALGO_TYPE);
+
+					keyManagerFactory.init(keyStore, keyStoreFilePwd.toCharArray());
+
+					kmList = keyManagerFactory.getKeyManagers();
+				} else {
+					LOG.error("Unable to obtain keystore from file [" + keyStoreFile + "]");
+					throw new IllegalStateException("Unable to find keystore file :" + keyStoreFile);
+				}
+			} catch (KeyStoreException e) {
+				LOG.error("Unable to obtain from KeyStore :" + e.getMessage(), e);
+				throw new IllegalStateException("Unable to init keystore:" + e.getMessage(), e);
+			} catch (NoSuchAlgorithmException e) {
+				LOG.error("SSL algorithm is NOT available in the environment", e);
+				throw new IllegalStateException("SSL algorithm is NOT available in the environment :" + e.getMessage(), e);
+			} catch (CertificateException e) {
+				LOG.error("Unable to obtain the requested certification ", e);
+				throw new IllegalStateException("Unable to obtain the requested certification :" + e.getMessage(), e);
+			} catch (FileNotFoundException e) {
+				LOG.error("Unable to find the necessary SSL Keystore Files", e);
+				throw new IllegalStateException("Unable to find keystore file :" + keyStoreFile + ", error :" + e.getMessage(), e);
+			} catch (IOException e) {
+				LOG.error("Unable to read the necessary SSL Keystore Files", e);
+				throw new IllegalStateException("Unable to read keystore file :" + keyStoreFile + ", error :" + e.getMessage(), e);
+			} catch (UnrecoverableKeyException e) {
+				LOG.error("Unable to recover the key from keystore", e);
+				throw new IllegalStateException("Unable to recover the key from keystore :" + keyStoreFile+", error :" + e.getMessage(), e);
+			} finally {
+				close(in, keyStoreFile);
+			}
+		}
+
+		return kmList;
+	}
+
+	private TrustManager[] getTrustManagers() {
+		TrustManager[] tmList = null;
+		if (StringUtils.isNotEmpty(mTrustStoreURL) && StringUtils.isNotEmpty(mTrustStoreAlias)) {
+			String trustStoreFilepwd = getCredential(mTrustStoreURL, mTrustStoreAlias);
+			if (StringUtils.isNotEmpty(trustStoreFilepwd)) {
+				tmList = getTrustManagers(mTrustStoreFile, trustStoreFilepwd);
+			}
+		}
+		return tmList;
 	}
 
 	public TrustManager[] getTrustManagers(String trustStoreFile, String trustStoreFilepwd) {
@@ -324,6 +413,9 @@ public class RangerRESTClient {
 		}
 	}
 
+	private String getCredential(String url, String alias) {
+		return RangerCredentialProvider.getInstance().getCredentialString(url, alias);
+	}
 
 	private InputStream getFileInputStream(String fileName)  throws IOException {
 		InputStream in = null;
