@@ -318,10 +318,6 @@
                 [],
                 "policyRoles":
                 [
-                    "$admin",
-                    "$guest",
-                    "$member",
-                    "$api-token-default-access"
                 ],
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
@@ -464,10 +460,7 @@
                 [],
                 "policyRoles":
                 [
-                    "$admin",
-                    "$guest",
-                    "$member",
-                    "$api-token-default-access"
+
                 ],
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
@@ -610,10 +603,7 @@
                 [],
                 "policyRoles":
                 [
-                    "$admin",
-                    "$guest",
-                    "$member",
-                    "$api-token-default-access"
+
                 ],
                 "policyResourceCategory": "ENTITY",
                 "policyResources":

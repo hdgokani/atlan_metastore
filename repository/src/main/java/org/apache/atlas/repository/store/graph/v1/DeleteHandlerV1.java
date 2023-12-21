@@ -521,8 +521,7 @@ public abstract class DeleteHandlerV1 {
         end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getOutVertex());
         end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
 
-//        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
-        AuthorizerUtils.verifyRelationshipAccess(AtlasPrivilege.RELATIONSHIP_REMOVE.getType(), relationShipType, end1Entity, end2Entity);
+        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
 
         RequestContext.get().endMetricRecord(metric);
     }

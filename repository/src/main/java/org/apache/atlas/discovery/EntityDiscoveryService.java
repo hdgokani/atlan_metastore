@@ -1036,15 +1036,17 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             actions.add("entity-read");
 
             Map<String, Object> allPreFiltersBoolClause = authorizerUtils.getPreFilterDsl(persona, purpose, actions);
+            LOG.info(AtlasType.toJson(allPreFiltersBoolClause));
             mustClauseList.add(allPreFiltersBoolClause);
 
             String dslString = searchParams.getQuery();
             JsonNode node = mapper.readTree(dslString);
-            String userQueryString = node.get("query").toString();
-            String userQueryBase64 = Base64.getEncoder().encodeToString(userQueryString.getBytes());;
-            mustClauseList.add(getMap("wrapper", getMap("query", userQueryBase64)));
-
-
+            JsonNode userQueryNode = node.get("query");
+            if (userQueryNode != null) {
+                String userQueryString = userQueryNode.toString();
+                String userQueryBase64 = Base64.getEncoder().encodeToString(userQueryString.getBytes());
+                mustClauseList.add(getMap("wrapper", getMap("query", userQueryBase64)));
+            }
             JsonNode updateQueryNode = mapper.valueToTree(getMap("bool", getMap("must", mustClauseList)));
 
             ((ObjectNode) node).set("query", updateQueryNode);
@@ -1144,7 +1146,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         } catch (Exception e) {
                 throw e;
         }
-        scrubSearchResults(ret, searchParams.getSuppressLogs());
+        if (searchParams.getUseAccessControlv2()) {
+            scrubSearchResults(ret, searchParams.getSuppressLogs());
+        }
     }
 
     private Map<String, Object> getMap(String key, Object value) {

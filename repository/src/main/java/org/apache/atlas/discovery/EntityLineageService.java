@@ -663,9 +663,8 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(guid);
         AtlasEntity entity = entityWithExtInfo.getEntity();
 
-//        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(entity)),
-//                "read entity schema: guid=", guid);
-        AuthorizerUtils.verifyEntityAccess(entity, AtlasPrivilege.ENTITY_READ);
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(entity)),
+                "read entity schema: guid=", guid);
 
         Map<String, AtlasEntity> referredEntities = entityWithExtInfo.getReferredEntities();
         List<String> columnIds = getColumnIds(entity);

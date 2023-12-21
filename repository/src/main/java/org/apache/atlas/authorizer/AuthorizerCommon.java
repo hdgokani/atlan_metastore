@@ -5,6 +5,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,9 +62,13 @@ public class AuthorizerCommon {
     }
 
     public static Set<String> getTypeAndSupertypesList(String typeName) {
-        Set<String> entityTypes = typeRegistry.getEntityTypeByName(typeName).getTypeAndAllSuperTypes();
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
-        return entityTypes;
+        if (entityType == null) {
+            return Collections.singleton(typeName);
+        } else {
+            return typeRegistry.getEntityTypeByName(typeName).getTypeAndAllSuperTypes();
+        }
     }
 
     public static AtlasEntityType getEntityTypeByName(String typeName) {

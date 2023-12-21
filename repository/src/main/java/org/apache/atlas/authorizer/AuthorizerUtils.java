@@ -47,54 +47,6 @@ public class AuthorizerUtils {
         }
     }
 
-    public static void verifyUpdateEntityAccess(AtlasEntityHeader entityHeader) throws AtlasBaseException {
-        if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
-            verifyEntityAccess(new AtlasEntity(entityHeader), AtlasPrivilege.ENTITY_UPDATE);
-        }
-    }
-
-    public static void verifyDeleteEntityAccess(AtlasEntityHeader entityHeader) throws AtlasBaseException {
-        if (!SKIP_DELETE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
-            verifyEntityAccess(new AtlasEntity(entityHeader), AtlasPrivilege.ENTITY_DELETE);
-        }
-    }
-
-    public static void verifyEntityAccess(AtlasEntity entity, AtlasPrivilege action) throws AtlasBaseException {
-        String userName = AuthorizerCommon.getCurrentUserName();
-
-        if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
-            return;
-        }
-
-        try {
-            //if (AtlasPrivilege.ENTITY_CREATE == action) {
-            if (!EntityAuthorizer.isAccessAllowed(entity, action.getType())){
-                String message = action.getType() + ":" + entity.getTypeName() + ":" + entity.getAttributes().get(QUALIFIED_NAME);
-                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, message);
-            }
-            //}
-        } catch (AtlasBaseException e) {
-            throw e;
-        }
-    }
-
-    public static void verifyRelationshipAccess(String action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
-        String userName = AuthorizerCommon.getCurrentUserName();
-
-        if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
-            return;
-        }
-
-        try {
-            if (!RelationshipAuthorizer.isAccessAllowed(action, relationshipType, endOneEntity, endTwoEntity)) {
-                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(),
-                        action + ":" + endOneEntity.getTypeName() + "|" + endTwoEntity.getTypeName());
-            }
-        } catch (AtlasBaseException e) {
-            throw e;
-        }
-    }
-
     public static Map<String, Object>  getPreFilterDsl(String persona, String purpose, List<String> actions) {
         return ListAuthorizer.getElasticsearchDSL(persona, purpose, actions);
     }

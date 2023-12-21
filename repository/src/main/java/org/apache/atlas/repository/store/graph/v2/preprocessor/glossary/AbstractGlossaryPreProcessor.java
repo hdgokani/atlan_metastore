@@ -24,7 +24,6 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
@@ -228,35 +227,25 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
     protected void isAuthorized(AtlasEntityHeader sourceGlossary, AtlasEntityHeader targetGlossary) throws AtlasBaseException {
 
         // source -> CREATE + UPDATE + DELETE
-//        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, sourceGlossary),
-//                );
-//
-//        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceGlossary),
-//                "update on source Glossary: ", sourceGlossary.getAttribute(NAME));
-//
-//        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, sourceGlossary),
-//                "delete on source Glossary: ", sourceGlossary.getAttribute(NAME));
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, sourceGlossary),
+                "create on source Glossary: ", sourceGlossary.getAttribute(NAME));
 
-        //verifyAccess(new AtlasEntity(sourceGlossary), AtlasPrivilege.ENTITY_CREATE, "create on source Glossary: " +  sourceGlossary.getAttribute(NAME));
-        AuthorizerUtils.verifyEntityAccess(new AtlasEntity(sourceGlossary), AtlasPrivilege.ENTITY_CREATE);
-        AuthorizerUtils.verifyEntityAccess(new AtlasEntity(sourceGlossary), AtlasPrivilege.ENTITY_UPDATE);
-        AuthorizerUtils.verifyEntityAccess(new AtlasEntity(sourceGlossary), AtlasPrivilege.ENTITY_DELETE);
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceGlossary),
+                "update on source Glossary: ", sourceGlossary.getAttribute(NAME));
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, sourceGlossary),
+                "delete on source Glossary: ", sourceGlossary.getAttribute(NAME));
 
 
         // target -> CREATE + UPDATE + DELETE
-//        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, targetGlossary),
-//                "create on source Glossary: ", targetGlossary.getAttribute(NAME));
-//
-//        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetGlossary),
-//                "update on source Glossary: ", targetGlossary.getAttribute(NAME));
-//
-//        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, targetGlossary),
-//                "delete on source Glossary: ", targetGlossary.getAttribute(NAME));
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, targetGlossary),
+                "create on source Glossary: ", targetGlossary.getAttribute(NAME));
 
-        //verifyAccess(new AtlasEntity(targetGlossary), AtlasPrivilege.ENTITY_CREATE, "create on source Glossary: " + targetGlossary.getAttribute(NAME));
-        AuthorizerUtils.verifyEntityAccess(new AtlasEntity(targetGlossary), AtlasPrivilege.ENTITY_CREATE);
-        AuthorizerUtils.verifyEntityAccess(new AtlasEntity(targetGlossary), AtlasPrivilege.ENTITY_UPDATE);
-        AuthorizerUtils.verifyEntityAccess(new AtlasEntity(targetGlossary), AtlasPrivilege.ENTITY_DELETE);
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetGlossary),
+                "update on source Glossary: ", targetGlossary.getAttribute(NAME));
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, targetGlossary),
+                "delete on source Glossary: ", targetGlossary.getAttribute(NAME));
     }
 
     /**

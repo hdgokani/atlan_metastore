@@ -23,7 +23,6 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -99,10 +98,8 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         validateCategory(entity);
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
-//        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
-//                "create entity: type=", entity.getTypeName());
-        //verifyAccess(entity.getTypeName(), (String) entity.getAttribute(QUALIFIED_NAME), AtlasPrivilege.ENTITY_CREATE.getType());
-        AuthorizerUtils.verifyEntityAccess(entity, AtlasPrivilege.ENTITY_CREATE);
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
+                "create entity: type=", entity.getTypeName());
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
