@@ -25,8 +25,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.util.KerberosName;
 import org.apache.hadoop.security.authentication.util.KerberosUtil;
-import org.apache.atlas.authorization.hadoop.utils.RangerCredentialProvider;
-
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
@@ -442,14 +440,6 @@ public class MiscUtil {
 			}
 		}
 		return list;
-	}
-
-	public static String getCredentialString(String url, String alias) {
-		if (url != null && alias != null) {
-			return RangerCredentialProvider.getInstance()
-					.getCredentialString(url, alias);
-		}
-		return null;
 	}
 
 	public static UserGroupInformation createUGIFromSubject(Subject subject)
