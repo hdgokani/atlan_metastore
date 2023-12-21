@@ -204,12 +204,17 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
             FixedBufferList<EntityAuditEventV2> classificationsAdded = getAuditEventsList();
-            Map<AtlasEntity, List<AtlasClassification>> entityClassifications = new HashMap<>();
-            Map<AtlasEntity, List<AtlasClassification>> propagatedClassifications = new HashMap<>();
+            for (AtlasClassification classification : classifications) {
+                if (entity.getGuid().equals(classification.getEntityGuid())) {
+                    createEvent(classificationsAdded.next(), entity, CLASSIFICATION_ADD, "Added classification: " + AtlasType.toJson(classification));
+                } else {
+                    createEvent(classificationsAdded.next(), entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification));
+                }
+            }
 
-            getClassificationsFromEntity(classifications, entity, entityClassifications, propagatedClassifications);
-            emitAddClassificationEvent(classificationsAdded, entityClassifications, propagatedClassifications);
-
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(classificationsAdded.toList());
+            }
             RequestContext.get().endMetricRecord(metric);
         }
     }
@@ -222,11 +227,20 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         if (CollectionUtils.isNotEmpty(classifications)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
             FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
-            Map<AtlasEntity, List<AtlasClassification>> entityClassifications = new HashMap<>();
-            Map<AtlasEntity, List<AtlasClassification>> propagatedClassifications = new HashMap<>();
+            for (AtlasClassification classification : classifications) {
+                for (AtlasEntity entity : entities) {
+                    if (entity.getGuid().equals(classification.getEntityGuid())) {
+                        createEvent(events.next(), entity, CLASSIFICATION_ADD, "Added classification: " + AtlasType.toJson(classification));
+                    } else {
+                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification));
+                    }
+                }
+            }
 
-            getClassificationsFromEntities(classifications, entities,entityClassifications, propagatedClassifications );
-            emitAddClassificationEvent(events, entityClassifications, propagatedClassifications);
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(events.toList());
+            }
+
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -239,45 +253,21 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
             FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
             String guid = entity.getGuid();
-
-            Map<AtlasEntity, List<AtlasClassification>> entityClassifications = new HashMap<>();
-            Map<AtlasEntity, List<AtlasClassification>> propagatedClassifications = new HashMap<>();
-
-            getClassificationsFromEntity(classifications, entity, entityClassifications, propagatedClassifications);
-
-            List<AtlasClassification> addedClassification = new ArrayList<>(0);
-            List<AtlasClassification> deletedClassification = new ArrayList<>(0);
-            List<AtlasClassification> updatedClassification = new ArrayList<>(0);
-
-            if (CollectionUtils.isNotEmpty(propagatedClassifications.get(entity))) {
-                propagatedClassifications.get(entity).forEach(classification -> {
+            for (AtlasClassification classification : classifications) {
+                if (guid.equals(classification.getEntityGuid())) {
+                    createEvent(events.next(), entity, CLASSIFICATION_UPDATE, "Updated classification: " + AtlasType.toJson(classification));
+                } else {
                     if (isPropagatedClassificationAdded(guid, classification)) {
-                        addedClassification.add(classification);
+                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification));
                     } else if (isPropagatedClassificationDeleted(guid, classification)) {
-                        deletedClassification.add(classification);
+                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + getDeleteClassificationString(classification.getTypeName()));
                     } else {
-                        updatedClassification.add(classification);
+                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_UPDATE, "Updated propagated classification: " + AtlasType.toJson(classification));
                     }
-                });
+                }
             }
 
-            if (CollectionUtils.isNotEmpty(addedClassification)) {
-                createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classifications: " + AtlasType.toJson(addedClassification));
-            }
-
-            if (CollectionUtils.isNotEmpty(deletedClassification)) {
-                createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classifications: " + getDeleteClassificationsMap(deletedClassification));
-            }
-
-            if (CollectionUtils.isNotEmpty(updatedClassification)) {
-                createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_UPDATE, "Updated propagated classifications: " + AtlasType.toJson(updatedClassification));
-            }
-
-            if (entityClassifications.get(entity) != null) {
-                createEvent(events.next(), entity, CLASSIFICATION_UPDATE, "Updated classifications: " + AtlasType.toJson(entityClassifications.get(entity)));
-            }
-
-            for (EntityAuditRepository auditRepository : auditRepositories) {
+            for (EntityAuditRepository auditRepository: auditRepositories) {
                 auditRepository.putEventsV2(events.toList());
             }
 
@@ -311,11 +301,18 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             MetricRecorder metric = RequestContext.get().startMetricRecord("onClassificationsDeleted");
 
             FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
-            Map<AtlasEntity, List<Map<String,Object>>> entityClassifications = new HashMap<>();
-            Map<AtlasEntity, List<Map<String,Object>>> propagatedClassifications = new HashMap<>();
 
-            getClassificationTextFromEntity(classifications, entity, entityClassifications, propagatedClassifications);
-            emitDeleteClassificationEvent(events, entityClassifications, propagatedClassifications);
+            for (AtlasClassification classification : classifications) {
+                if (StringUtils.equals(entity.getGuid(), classification.getEntityGuid())) {
+                    createEvent(events.next(), entity, CLASSIFICATION_DELETE, "Deleted classification: " + getDeleteClassificationString(classification.getTypeName()));
+                } else {
+                    createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + getDeleteClassificationString(classification.getTypeName()));
+                }
+            }
+
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(events.toList());
+            }
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -328,11 +325,19 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             MetricRecorder metric = RequestContext.get().startMetricRecord("onClassificationsDeleted");
             FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
 
-            Map<AtlasEntity, List<Map<String,Object>>> entityClassifications = new HashMap<>();
-            Map<AtlasEntity, List<Map<String,Object>>> propagatedClassifications = new HashMap<>();
+            for (AtlasClassification classification : classifications) {
+                for (AtlasEntity entity : entities) {
+                    if (StringUtils.equals(entity.getGuid(), classification.getEntityGuid())) {
+                        createEvent(events.next(), entity, CLASSIFICATION_DELETE, "Deleted classification: " + getDeleteClassificationString(classification.getTypeName()));
+                    } else {
+                        createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classification: " + getDeleteClassificationString(classification.getTypeName()));
+                    }
+                }
+            }
 
-            getClassificationsTextFromEntities(classifications, entities, entityClassifications, propagatedClassifications);
-            emitDeleteClassificationEvent(events, entityClassifications, propagatedClassifications);
+            for (EntityAuditRepository auditRepository : auditRepositories) {
+                auditRepository.putEventsV2(events.toList());
+            }
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -771,22 +776,22 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 ret = "Purged: ";
                 break;
             case CLASSIFICATION_ADD:
-                ret = "Added classifications: ";
+                ret = "Added classification: ";
                 break;
             case CLASSIFICATION_DELETE:
-                ret = "Deleted classifications: ";
+                ret = "Deleted classification: ";
                 break;
             case CLASSIFICATION_UPDATE:
-                ret = "Updated classifications: ";
+                ret = "Updated classification: ";
                 break;
             case PROPAGATED_CLASSIFICATION_ADD:
-                ret = "Added propagated classifications: ";
+                ret = "Added propagated classification: ";
                 break;
             case PROPAGATED_CLASSIFICATION_DELETE:
-                ret = "Deleted propagated classifications: ";
+                ret = "Deleted propagated classification: ";
                 break;
             case PROPAGATED_CLASSIFICATION_UPDATE:
-                ret = "Updated propagated classifications: ";
+                ret = "Updated propagated classification: ";
                 break;
             case ENTITY_IMPORT_CREATE:
                 ret = "Created by import: ";
