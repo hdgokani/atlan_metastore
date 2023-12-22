@@ -493,10 +493,7 @@
                 "policyGroups":
                 [],
                 "policyRoles":
-                [
-                    "$member",
-                    "$admin"
-                ],
+                [],
                 "policyResourceCategory": "RELATIONSHIP",
                 "policyResources":
                 [
