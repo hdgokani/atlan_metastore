@@ -23,6 +23,8 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorizer.AuthorizerUtils;
+import org.apache.atlas.discovery.AtlasAuthorization;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -58,10 +60,9 @@ import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserN
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.verifyAccess;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
-import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_ADMIN;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SERVICE_NAME_ABAC;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
 
 public class AuthPolicyPreProcessor implements PreProcessor {
@@ -107,6 +108,23 @@ public class AuthPolicyPreProcessor implements PreProcessor {
     private void processCreatePolicy(AtlasStruct entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreatePolicy");
         AtlasEntity policy = (AtlasEntity) entity;
+
+        String policyServiceName = getPolicyServiceName(policy);
+        if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
+//            AtlasEntity parentEntity = getAccessControlEntity(policy).getEntity();
+//
+//            policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
+//
+//            //extract role
+//            String roleName = getPersonaRoleName(parentEntity);
+//            List<String> roles = Arrays.asList(roleName);
+//            policy.setAttribute(ATTR_POLICY_ROLES, roles);
+//
+//            policy.setAttribute(ATTR_POLICY_USERS, new ArrayList<>());
+//            policy.setAttribute(ATTR_POLICY_GROUPS, new ArrayList<>());
+
+            return;
+        }
 
         String policyCategory = getPolicyCategory(policy);
         if (StringUtils.isEmpty(policyCategory)) {
@@ -169,6 +187,12 @@ public class AuthPolicyPreProcessor implements PreProcessor {
     private void processUpdatePolicy(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdatePolicy");
         AtlasEntity policy = (AtlasEntity) entity;
+
+        String policyServiceName = getPolicyServiceName(policy);
+        if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
+            return;
+        }
+
         AtlasEntity existingPolicy = entityRetriever.toAtlasEntityWithExtInfo(vertex).getEntity();
 
         String policyCategory = policy.hasAttribute(ATTR_POLICY_CATEGORY) ? getPolicyCategory(policy) : getPolicyCategory(existingPolicy);
@@ -234,6 +258,11 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         try {
             AtlasEntity policy = entityRetriever.toAtlasEntity(vertex);
+
+            String policyServiceName = getPolicyServiceName(policy);
+            if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
+                return;
+            }
 
             authorizeDeleteAuthPolicy(policy);
 

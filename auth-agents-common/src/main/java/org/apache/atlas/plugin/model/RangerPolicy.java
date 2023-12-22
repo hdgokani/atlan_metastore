@@ -64,7 +64,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 
 	private String                            service;
 	private String                            name;
-	private String                           policyType;
+	private String                            policyType;
 	private Integer                           policyPriority;
 	private String                            description;
 	private String							  resourceSignature;
@@ -84,6 +84,8 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 	private String                            zoneName;
 	private Boolean                           isDenyAllElse;
 	private Map<String, String> 			  attributes;
+	private String 			                  policyFilterCriteria;
+	private String 			                  policyResourceCategory;
 
 	public RangerPolicy() {
 		this(null, null, null, null, null, null, null, null, null, null, null);
@@ -101,6 +103,10 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		this(service, name, policyType, policyPriority, description, resources, policyItems, resourceSignature, options, validitySchedules, policyLables, zoneName, conditions, null);
 	}
 
+	public RangerPolicy(String service, String name, String policyType, Integer policyPriority, String description, Map<String, RangerPolicyResource> resources, List<RangerPolicyItem> policyItems, String resourceSignature, Map<String, Object> options, List<RangerValiditySchedule> validitySchedules, List<String> policyLables, String zoneName, List<RangerPolicyItemCondition> conditions, Boolean isDenyAllElse) {
+		this(service, name, policyType, policyPriority, description, resources, policyItems, resourceSignature, options, validitySchedules, policyLables, zoneName, conditions, null, null, null);
+	}
+
 	/**
 	 * @param service
 	 * @param name
@@ -110,7 +116,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 	 * @param policyItems
 	 * @param resourceSignature TODO
 	 */
-	public RangerPolicy(String service, String name, String policyType, Integer policyPriority, String description, Map<String, RangerPolicyResource> resources, List<RangerPolicyItem> policyItems, String resourceSignature, Map<String, Object> options, List<RangerValiditySchedule> validitySchedules, List<String> policyLables, String zoneName, List<RangerPolicyItemCondition> conditions, Boolean isDenyAllElse) {
+	public RangerPolicy(String service, String name, String policyType, Integer policyPriority, String description, Map<String, RangerPolicyResource> resources, List<RangerPolicyItem> policyItems, String resourceSignature, Map<String, Object> options, List<RangerValiditySchedule> validitySchedules, List<String> policyLables, String zoneName, List<RangerPolicyItemCondition> conditions, Boolean isDenyAllElse, String policyFilterCriteria, String policyResourceCategory) {
 		super();
 
 		setService(service);
@@ -133,6 +139,8 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		setZoneName(zoneName);
 		setConditions(conditions);
 		setIsDenyAllElse(isDenyAllElse);
+		setPolicyFilterCriteria(null);
+		setPolicyResourceCategory(null);
 
 	}
 
@@ -163,6 +171,8 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		setPolicyLabels(other.getPolicyLabels());
 		setZoneName(other.getZoneName());
 		setIsDenyAllElse(other.getIsDenyAllElse());
+		setPolicyFilterCriteria(other.getPolicyFilterCriteria());
+		setPolicyResourceCategory(other.getPolicyResourceCategory());
 	}
 
 	public Map<String, String> getAttributes() {
@@ -242,7 +252,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 	public void setDescription(String description) {
 		this.description = description;
 	}
-	
+
 	/**
 	 * @return the resourceSignature
 	 */
@@ -471,44 +481,44 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		}
 	}
 
-    public Map<String, Object> getOptions() { return options; }
+	public Map<String, Object> getOptions() { return options; }
 
-    public void setOptions(Map<String, Object> options) {
-	    if (this.options == null) {
-	        this.options = new HashMap<>();
-        }
-        if (this.options == options) {
-	        return;
-        }
-        this.options.clear();
+	public void setOptions(Map<String, Object> options) {
+		if (this.options == null) {
+			this.options = new HashMap<>();
+		}
+		if (this.options == options) {
+			return;
+		}
+		this.options.clear();
 
-        if(options != null) {
-            for(Map.Entry<String, Object> e : options.entrySet()) {
-                this.options.put(e.getKey(), e.getValue());
-            }
-        }
-    }
+		if(options != null) {
+			for(Map.Entry<String, Object> e : options.entrySet()) {
+				this.options.put(e.getKey(), e.getValue());
+			}
+		}
+	}
 
-    public List<RangerValiditySchedule> getValiditySchedules() { return validitySchedules; }
+	public List<RangerValiditySchedule> getValiditySchedules() { return validitySchedules; }
 
-    public void setValiditySchedules(List<RangerValiditySchedule> validitySchedules) {
-        if (this.validitySchedules == null) {
-            this.validitySchedules = new ArrayList<>();
-        }
-        if (this.validitySchedules == validitySchedules) {
-            return;
-        }
-        this.validitySchedules.clear();
+	public void setValiditySchedules(List<RangerValiditySchedule> validitySchedules) {
+		if (this.validitySchedules == null) {
+			this.validitySchedules = new ArrayList<>();
+		}
+		if (this.validitySchedules == validitySchedules) {
+			return;
+		}
+		this.validitySchedules.clear();
 
-        if(validitySchedules != null) {
-            this.validitySchedules.addAll(validitySchedules);
-        }
-    }
-    public String getZoneName() { return zoneName; }
+		if(validitySchedules != null) {
+			this.validitySchedules.addAll(validitySchedules);
+		}
+	}
+	public String getZoneName() { return zoneName; }
 
-    public void setZoneName(String zoneName) {
-	    this.zoneName = zoneName;
-    }
+	public void setZoneName(String zoneName) {
+		this.zoneName = zoneName;
+	}
 
 	/**
 	 * @return the conditions
@@ -527,6 +537,22 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 
 	public void setIsDenyAllElse(Boolean isDenyAllElse) {
 		this.isDenyAllElse = isDenyAllElse == null ? Boolean.FALSE : isDenyAllElse;
+	}
+
+	public String getPolicyFilterCriteria() {
+		return policyFilterCriteria;
+	}
+
+	public void setPolicyFilterCriteria(String policyFilterCriteria) {
+		this.policyFilterCriteria = policyFilterCriteria;
+	}
+
+	public String getPolicyResourceCategory() {
+		return policyResourceCategory;
+	}
+
+	public void setPolicyResourceCategory(String policyResourceCategory) {
+		this.policyResourceCategory = policyResourceCategory;
 	}
 
 	@Override
@@ -561,15 +587,15 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 			}
 		}
 		sb.append("} ");
-                sb.append("policyLabels={");
-                if(policyLabels != null) {
-                        for(String policyLabel : policyLabels) {
-                                if(policyLabel != null) {
-                                        sb.append(policyLabel).append(" ");
-                                }
-                        }
-                }
-                sb.append("} ");
+		sb.append("policyLabels={");
+		if(policyLabels != null) {
+			for(String policyLabel : policyLabels) {
+				if(policyLabel != null) {
+					sb.append(policyLabel).append(" ");
+				}
+			}
+		}
+		sb.append("} ");
 
 		sb.append("policyConditions={");
 		if(conditions != null) {
@@ -641,26 +667,30 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		}
 		sb.append("} ");
 
-        sb.append("options={");
-        if(options != null) {
-            for(Map.Entry<String, Object> e : options.entrySet()) {
-                sb.append(e.getKey()).append("={");
-                sb.append(e.getValue().toString());
-                sb.append("} ");
-            }
-        }
-        sb.append("} ");
+		sb.append("options={");
+		if(options != null) {
+			for(Map.Entry<String, Object> e : options.entrySet()) {
+				sb.append(e.getKey()).append("={");
+				sb.append(e.getValue().toString());
+				sb.append("} ");
+			}
+		}
+		sb.append("} ");
 
-        //sb.append("validitySchedules={").append(validitySchedules).append("} ");
-        sb.append("validitySchedules={");
-        if (CollectionUtils.isNotEmpty(validitySchedules)) {
-            for (RangerValiditySchedule schedule : validitySchedules) {
-                if (schedule != null) {
-                    sb.append("schedule={").append(schedule).append("}");
-                }
-            }
-        }
-        sb.append(", zoneName=").append(zoneName);
+		//sb.append("validitySchedules={").append(validitySchedules).append("} ");
+		sb.append("validitySchedules={");
+		if (CollectionUtils.isNotEmpty(validitySchedules)) {
+			for (RangerValiditySchedule schedule : validitySchedules) {
+				if (schedule != null) {
+					sb.append("schedule={").append(schedule).append("}");
+				}
+			}
+		}
+		sb.append(", zoneName=").append(zoneName);
+
+		sb.append(", policyFilterCriteria=").append(policyFilterCriteria);
+
+		sb.append(", policyResourceCategory=").append(policyResourceCategory);
 
 		sb.append(", isDenyAllElse={").append(isDenyAllElse).append("} ");
 
@@ -841,7 +871,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 				return false;
 			return true;
 		}
-		
+
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -1404,7 +1434,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 				return false;
 			return true;
 		}
-		
+
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -1520,7 +1550,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 				return false;
 			return true;
 		}
-		
+
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)

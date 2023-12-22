@@ -17,11 +17,17 @@
  */
 package org.apache.atlas.discovery;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
+import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
@@ -37,6 +43,7 @@ import org.apache.atlas.query.executors.DSLQueryExecutor;
 import org.apache.atlas.query.executors.ScriptEngineBasedExecutor;
 import org.apache.atlas.query.executors.TraversalBasedExecutor;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
@@ -75,9 +82,9 @@ import static org.apache.atlas.AtlasErrorCode.*;
 import static org.apache.atlas.SortOrder.ASCENDING;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.repository.Constants.ASSET_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.OWNER_ATTRIBUTE;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
+import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_DOMAIN;
+import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.BASIC_SEARCH_STATE_FILTER;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TO_RANGE_LIST;
 
@@ -100,14 +107,15 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final SuggestionsProvider             suggestionsProvider;
     private final DSLQueryExecutor                dslQueryExecutor;
     private final StatsClient                     statsClient;
+    private final AuthorizerUtils                 authorizerUtils;
 
     @Inject
     public EntityDiscoveryService(AtlasTypeRegistry typeRegistry,
-                           AtlasGraph graph,
-                           GraphBackedSearchIndexer indexer,
-                           SearchTracker searchTracker,
-                           UserProfileService userProfileService,
-                           StatsClient statsClient) throws AtlasException {
+                                  AtlasGraph graph,
+                                  GraphBackedSearchIndexer indexer,
+                                  SearchTracker searchTracker,
+                                  UserProfileService userProfileService,
+                                  StatsClient statsClient) throws AtlasException {
         this.graph                    = graph;
         this.entityRetriever          = new EntityGraphRetriever(this.graph, typeRegistry);
         this.indexer                  = indexer;
@@ -124,6 +132,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.dslQueryExecutor         = AtlasConfiguration.DSL_EXECUTOR_TRAVERSAL.getBoolean()
                                             ? new TraversalBasedExecutor(typeRegistry, graph, entityRetriever)
                                             : new ScriptEngineBasedExecutor(typeRegistry, graph, entityRetriever);
+        this.authorizerUtils = AuthorizerUtils.getInstance(this, typeRegistry);
     }
 
     @Override
@@ -996,6 +1005,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             String indexName = getIndexName(params);
 
             indexQuery = graph.elasticsearchQuery(indexName);
+            if (searchParams.getUseAccessControlv2()) {
+                addPreFiltersToSearchQuery(searchParams);
+            }
+            LOG.info(searchParams.getQuery());
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
             RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
@@ -1008,6 +1021,41 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             throw e;
         }
         return ret;
+    }
+
+    private void addPreFiltersToSearchQuery(SearchParams searchParams) {
+        try {
+            String persona = ((IndexSearchParams) searchParams).getPersona();
+            String purpose = ((IndexSearchParams) searchParams).getPurpose();
+
+            AtlasPerfMetrics.MetricRecorder addPreFiltersToSearchQueryMetric = RequestContext.get().startMetricRecord("addPreFiltersToSearchQuery");
+            ObjectMapper mapper = new ObjectMapper();
+            List<Map<String, Object>> mustClauseList = new ArrayList<>();
+
+            List<String> actions = new ArrayList<>();
+            actions.add("entity-read");
+
+            Map<String, Object> allPreFiltersBoolClause = authorizerUtils.getPreFilterDsl(persona, purpose, actions);
+            LOG.info(AtlasType.toJson(allPreFiltersBoolClause));
+            mustClauseList.add(allPreFiltersBoolClause);
+
+            String dslString = searchParams.getQuery();
+            JsonNode node = mapper.readTree(dslString);
+            JsonNode userQueryNode = node.get("query");
+            if (userQueryNode != null) {
+                String userQueryString = userQueryNode.toString();
+                String userQueryBase64 = Base64.getEncoder().encodeToString(userQueryString.getBytes());
+                mustClauseList.add(getMap("wrapper", getMap("query", userQueryBase64)));
+            }
+            JsonNode updateQueryNode = mapper.valueToTree(getMap("bool", getMap("must", mustClauseList)));
+
+            ((ObjectNode) node).set("query", updateQueryNode);
+            searchParams.setQuery(node.toString());
+            RequestContext.get().endMetricRecord(addPreFiltersToSearchQueryMetric);
+
+        } catch (Exception e) {
+            LOG.error("Error -> addPreFiltersToSearchQuery!", e);
+        }
     }
 
     @Override
@@ -1098,7 +1146,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         } catch (Exception e) {
                 throw e;
         }
-        scrubSearchResults(ret, searchParams.getSuppressLogs());
+        if (searchParams.getUseAccessControlv2()) {
+            scrubSearchResults(ret, searchParams.getSuppressLogs());
+        }
     }
 
     private Map<String, Object> getMap(String key, Object value) {
