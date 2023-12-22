@@ -29,6 +29,7 @@ public abstract class AbstractRedisService implements RedisService {
     private static final String ATLAS_REDIS_LOCK_WATCHDOG_TIMEOUT_MS = "atlas.redis.lock.watchdog_timeout.ms";
     private static final int DEFAULT_REDIS_WAIT_TIME_MS = 15_000;
     private static final int DEFAULT_REDIS_LOCK_WATCHDOG_TIMEOUT_MS = 600_000;
+    private static final String ATLAS_METASTORE_SERVICE = "atlas-metastore-service";
 
     RedissonClient redisClient;
     Map<String, RLock> keyLockMap;
@@ -45,7 +46,6 @@ public abstract class AbstractRedisService implements RedisService {
             isLockAcquired = lock.tryLock(waitTimeInMS, TimeUnit.MILLISECONDS);
             if (isLockAcquired) {
                 keyLockMap.put(key, lock);
-                getLogger().info("Successfully acquired distributed lock for {}, host:{}", key, getHostAddress());
             } else {
                 getLogger().info("Attempt failed as lock {} is already acquired, host: {}.", key, getHostAddress());
             }
@@ -64,9 +64,7 @@ public abstract class AbstractRedisService implements RedisService {
         try {
             RLock lock = keyLockMap.get(key);
             if (lock.isHeldByCurrentThread()) {
-                getLogger().info("Attempt to release distributed lock for {}, host: {}", key, getHostAddress());
                 lock.unlock();
-                getLogger().info("Successfully released distributed lock for {}, host: {}", key, getHostAddress());
             }
         } catch (Exception e) {
             getLogger().error("Failed to release distributed lock for {}", key, e);
@@ -99,6 +97,7 @@ public abstract class AbstractRedisService implements RedisService {
     Config getProdConfig() throws AtlasException {
         Config config = initAtlasConfig();
         config.useSentinelServers()
+                .setClientName(ATLAS_METASTORE_SERVICE)
                 .setReadMode(ReadMode.MASTER_SLAVE)
                 .setCheckSentinelsList(false)
                 .setMasterName(atlasConfig.getString(ATLAS_REDIS_MASTER_NAME))
