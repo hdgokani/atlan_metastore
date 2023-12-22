@@ -112,18 +112,22 @@ public class GlossaryTermUtils extends GlossaryUtils {
 
         Objects.requireNonNull(glossaryTerm);
 
-        Set<AtlasRelatedObjectId> assignedEntities = glossaryTerm.getAssignedEntities();
+        // Set<AtlasRelatedObjectId> assignedEntities = glossaryTerm.getAssignedEntities();
         for (AtlasRelatedObjectId objectId : relatedObjectIds) {
-            if (CollectionUtils.isNotEmpty(assignedEntities) && assignedEntities.contains(objectId)) {
-                if (DEBUG_ENABLED) {
-                    LOG.debug("Skipping already assigned entity {}", objectId);
-                }
-                continue;
-            }
+            /***
+             *  Discuss with @Aayush :PLT-305
+             */
+//            if (CollectionUtils.isNotEmpty(assignedEntities) && assignedEntities.contains(objectId)) {
+//                if (DEBUG_ENABLED) {
+//                    LOG.debug("Skipping already assigned entity {}", objectId);
+//                }
+//                continue;
+//            }
 
             if (DEBUG_ENABLED) {
                 LOG.debug("Assigning term guid={}, to entity guid = {}", glossaryTerm.getGuid(), objectId.getGuid());
             }
+
             createRelationship(defineTermAssignment(glossaryTerm.getGuid(), objectId));
 
             AtlasVertex vertex = getVertexById(objectId.getGuid());
