@@ -1146,7 +1146,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         } catch (Exception e) {
                 throw e;
         }
-        if (searchParams.getUseAccessControlv2()) {
+
+        if (!searchParams.getUseAccessControlv2()) {
             scrubSearchResults(ret, searchParams.getSuppressLogs());
         }
     }
