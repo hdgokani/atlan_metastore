@@ -1187,13 +1187,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public void setClassifications(AtlasEntityHeaders entityHeaders) throws AtlasBaseException {
-        ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(graph, typeRegistry, this);
-        associator.setClassifications(entityHeaders.getGuidHeaderMap());
-    }
-
-    @Override
-    @GraphTransaction
     public void addOrUpdateBusinessAttributesByDisplayName(String guid, Map<String, Map<String, Object>> businessAttrbutes, boolean isOverwrite) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> addOrUpdateBusinessAttributesByDisplayName(guid={}, businessAttributes={}, isOverwrite={})", guid, businessAttrbutes, isOverwrite);
@@ -1624,7 +1617,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("preCreateOrUpdate");
-
+        this.graph.setEnableCache(RequestContext.get().isCacheEnabled());
         EntityGraphDiscovery        graphDiscoverer  = new AtlasEntityGraphDiscoveryV2(graph, typeRegistry, entityStream, entityGraphMapper);
         EntityGraphDiscoveryContext discoveryContext = graphDiscoverer.discoverEntities();
         EntityMutationContext       context          = new EntityMutationContext(discoveryContext);
@@ -1974,6 +1967,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
                 entity.setDeleteHandler(handler);
                 entity.setStatus(Status.DELETED);
+                entity.setUpdatedBy(RequestContext.get().getUser());
                 response.addEntity(DELETE, entity);
             }
 
