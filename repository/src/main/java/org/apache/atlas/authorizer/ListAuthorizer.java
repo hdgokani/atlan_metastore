@@ -129,12 +129,20 @@ public class ListAuthorizer {
         List<Map<String, Object>> filterClauses = new ArrayList<>();
 
         if (!typeNames.isEmpty() && !typeNames.contains("*")) {
-            filterClauses.add(getMap("terms", getMap("__typeName.keyword", typeNames)));
+            List<Map<String, Object>> typeClauses = new ArrayList<>();
+            typeClauses.add(getMap("terms", getMap("__typeName.keyword", typeNames)));
+            typeClauses.add(getMap("terms", getMap("__superTypeNames.keyword", typeNames)));
+
+            filterClauses.add(getMap("bool", getMap("should", typeClauses)));
         }
 
         if (classifications != null && !classifications.isEmpty() && !classifications.contains("*")) {
-            filterClauses.add(getMap("terms", getMap("__traitNames", classifications)));
-            filterClauses.add(getMap("terms", getMap("__propagatedTraitNames", classifications)));
+            List<Map<String, Object>> classificationClauses = new ArrayList<>();
+
+            classificationClauses.add(getMap("terms", getMap("__traitNames", classifications)));
+            classificationClauses.add(getMap("terms", getMap("__propagatedTraitNames", classifications)));
+
+            filterClauses.add(getMap("bool", getMap("should", classificationClauses)));
         }
 
         if (!filterClauses.isEmpty()) {

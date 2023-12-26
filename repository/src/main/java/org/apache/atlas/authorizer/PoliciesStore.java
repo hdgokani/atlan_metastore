@@ -75,7 +75,7 @@ public class PoliciesStore {
         if ("atlas".equals(serviceName)) {
             policies = getResourcePolicies();
         } else if ("atlas_tag".equals(serviceName)) {
-            policies =getTagPolicies();
+            policies = getTagPolicies();
         } else if ("atlas_abac".equals(serviceName)) {
             policies = getAbacPolicies();
         }
@@ -139,7 +139,10 @@ public class PoliciesStore {
                 List<String> policyUsers = policyItem.getUsers();
                 List<String> policyGroups = policyItem.getGroups();
                 List<String> policyRoles = policyItem.getRoles();
-                if (policyUsers.contains(user) || AuthorizerCommon.arrayListContains(policyGroups, groups) || AuthorizerCommon.arrayListContains(policyRoles, roles)) {
+                if (policyUsers.contains(user)
+                        || policyGroups.contains("public")
+                        || AuthorizerCommon.arrayListContains(policyGroups, groups)
+                        || AuthorizerCommon.arrayListContains(policyRoles, roles)) {
                     filterPolicies.add(policy);
                 }
             }
