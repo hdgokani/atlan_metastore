@@ -81,15 +81,15 @@ public class ListAuthorizer {
                 entities.remove("*");
                 entityTypesRaw.remove("*");
 
-                Set<String> entityTypes = new HashSet<>();
-                entityTypesRaw.forEach(x -> entityTypes.addAll(AuthorizerCommon.getTypeAndSupertypesList(x)));
+                //Set<String> entityTypes = new HashSet<>();
+                //entityTypesRaw.forEach(x -> entityTypes.addAll(AuthorizerCommon.getTypeAndSupertypesList(x)));
 
-                if (!entities.isEmpty() && entityTypes.isEmpty()) {
+                if (!entities.isEmpty() && entityTypesRaw.isEmpty()) {
                     combinedEntities.addAll(entities);
-                } else if (entities.isEmpty() && !entityTypes.isEmpty()) {
-                    combinedEntityTypes.addAll(entityTypes);
-                } else if (!entities.isEmpty() && !entityTypes.isEmpty()) {
-                    Map<String, Object> dslForPolicyResources = getDSLForResources(entities, entityTypes, null, null);
+                } else if (entities.isEmpty() && !entityTypesRaw.isEmpty()) {
+                    combinedEntityTypes.addAll(entityTypesRaw);
+                } else if (!entities.isEmpty() && !entityTypesRaw.isEmpty()) {
+                    Map<String, Object> dslForPolicyResources = getDSLForResources(entities, new HashSet<>(entityTypesRaw), null, null);
                     shouldClauses.add(dslForPolicyResources);
                 }
             }
