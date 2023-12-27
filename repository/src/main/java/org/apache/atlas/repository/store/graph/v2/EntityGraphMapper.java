@@ -25,6 +25,7 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorizer.AuthorizerUtils;
+import org.apache.atlas.discovery.AtlasAuthorization;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.TimeBoundary;
@@ -648,7 +649,7 @@ public class EntityGraphMapper {
             requestBuilder.setBusinessMetadata(bmName);
 
 //            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add/update business-metadata: guid=", guid, ", business-metadata-name=", bmName);
-            AuthorizerUtils.verifyEntityAccess(new AtlasEntity(entityHeader), AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA);
+            AtlasAuthorization.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.getType());
         }
 
         if (isOverwrite) {
@@ -836,7 +837,7 @@ public class EntityGraphMapper {
             requestBuilder.setBusinessMetadata(bmName);
 
 //            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "remove business-metadata: guid=", entityHeader.getGuid(), ", business-metadata=", bmName);
-            AuthorizerUtils.verifyEntityAccess(new AtlasEntity(entityHeader), AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA);
+            AtlasAuthorization.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.getType());
         }
 
         Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessAttributes = entityType.getBusinessAttributes();

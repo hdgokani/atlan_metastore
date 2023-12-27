@@ -29,15 +29,15 @@ public class EntityAuthorizer {
     private static final String POLICY_TYPE_ALLOW = "allow";
     private static final String POLICY_TYPE_DENY = "deny";
 
-    public static boolean isAccessAllowed(AtlasEntity entity, String action) {
-        boolean deny = isAccessAllowed(entity, action, POLICY_TYPE_DENY);
+    public static boolean isAccessAllowedInMemory(AtlasEntity entity, String action) {
+        boolean deny = isAccessAllowedInMemory(entity, action, POLICY_TYPE_DENY);
         if (deny) {
             return false;
         }
-        return isAccessAllowed(entity, action, POLICY_TYPE_ALLOW);
+        return isAccessAllowedInMemory(entity, action, POLICY_TYPE_ALLOW);
     }
 
-    public static boolean isAccessAllowed(AtlasEntity entity, String action, String policyType) {
+    public static boolean isAccessAllowedInMemory(AtlasEntity entity, String action, String policyType) {
         List<RangerPolicy> policies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
         List<String> filterCriteriaList = new ArrayList<>();
         for (RangerPolicy policy : policies) {
@@ -73,13 +73,13 @@ public class EntityAuthorizer {
 
             tagPolicies.addAll(resourcePolicies);
 
-            ret = validateResourcesForCreateEntity(tagPolicies, entity);
+            ret = validateResourcesForCreateEntityInMemory(tagPolicies, entity);
         }
 
         return ret;
     }
 
-    private static boolean validateResourcesForCreateEntity(List<RangerPolicy> resourcePolicies, AtlasEntity entity) {
+    private static boolean validateResourcesForCreateEntityInMemory(List<RangerPolicy> resourcePolicies, AtlasEntity entity) {
         RangerPolicy matchedPolicy = null;
         Set<String> entityTypes = AuthorizerCommon.getTypeAndSupertypesList(entity.getTypeName());
 

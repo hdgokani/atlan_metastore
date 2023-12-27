@@ -26,15 +26,15 @@ public class RelationshipAuthorizer {
 
     private static final Logger LOG = LoggerFactory.getLogger(RelationshipAuthorizer.class);
 
-    public static boolean isAccessAllowed(String action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
-        boolean deny = checkRelationshipAccessAllowed(action, relationshipType, endOneEntity, endTwoEntity, AuthorizerCommon.POLICY_TYPE_DENY);
+    public static boolean isAccessAllowedInMemory(String action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
+        boolean deny = checkRelationshipAccessAllowedInMemory(action, relationshipType, endOneEntity, endTwoEntity, AuthorizerCommon.POLICY_TYPE_DENY);
         if (deny) {
             return false;
         }
-        return checkRelationshipAccessAllowed(action, relationshipType, endOneEntity, endTwoEntity, AuthorizerCommon.POLICY_TYPE_ALLOW);
+        return checkRelationshipAccessAllowedInMemory(action, relationshipType, endOneEntity, endTwoEntity, AuthorizerCommon.POLICY_TYPE_ALLOW);
     }
 
-    public static boolean checkRelationshipAccessAllowed(String action, String relationshipType, AtlasEntityHeader endOneEntity,
+    public static boolean checkRelationshipAccessAllowedInMemory(String action, String relationshipType, AtlasEntityHeader endOneEntity,
                                                          AtlasEntityHeader endTwoEntity, String policyType) throws AtlasBaseException {
         //Relationship add, update, remove access check in memory
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("isRelationshipAccessAllowed."+policyType);

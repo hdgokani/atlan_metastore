@@ -688,7 +688,7 @@ public class EntityLineageService implements AtlasLineageService {
 
 //        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(entity)),
 //                "read entity schema: guid=", guid);
-        AuthorizerUtils.verifyEntityAccess(entity, AtlasPrivilege.ENTITY_READ);
+        AtlasAuthorization.verifyAccess(entity.getGuid(), AtlasPrivilege.ENTITY_READ.getType());
 
         Map<String, AtlasEntity> referredEntities = entityWithExtInfo.getReferredEntities();
         List<String> columnIds = getColumnIds(entity);
