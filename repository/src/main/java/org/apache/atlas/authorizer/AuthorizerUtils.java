@@ -50,13 +50,13 @@ public class AuthorizerUtils {
 
     public static void verifyUpdateEntityAccess(AtlasEntityHeader entityHeader) throws AtlasBaseException {
         if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
-            AtlasAuthorization.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_UPDATE.getType());
+            verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_UPDATE.getType());
         }
     }
 
     public static void verifyDeleteEntityAccess(AtlasEntityHeader entityHeader) throws AtlasBaseException {
         if (!SKIP_DELETE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
-            AtlasAuthorization.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_DELETE.getType());
+            verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_DELETE.getType());
         }
     }
 
@@ -73,6 +73,38 @@ public class AuthorizerUtils {
                     String message = action.getType() + ":" + entity.getTypeName() + ":" + entity.getAttributes().get(QUALIFIED_NAME);
                     throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, message);
                 }
+            }
+        } catch (AtlasBaseException e) {
+            throw e;
+        }
+    }
+
+    public static void verifyAccess(String guid, String action) throws AtlasBaseException {
+        String userName = AuthorizerCommon.getCurrentUserName();
+
+        if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
+            return;
+        }
+
+        try {
+            if (!EntityAuthorizer.isAccessAllowed(guid, action)) {
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, action + ":" + guid);
+            }
+        } catch (AtlasBaseException e) {
+            throw e;
+        }
+    }
+
+    public static void verifyAccess(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
+        String userName = AuthorizerCommon.getCurrentUserName();
+
+        if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
+            return;
+        }
+
+        try {
+            if (!RelationshipAuthorizer.isRelationshipAccessAllowed(action, endOneGuid, endTwoGuid)) {
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), endOneGuid + "|" + endTwoGuid);
             }
         } catch (AtlasBaseException e) {
             throw e;

@@ -97,7 +97,7 @@ public class AtlasAuthorization {
         }
     }
 
-    public static void verifyAccess(String guid, String action) throws AtlasBaseException {
+    /*public static void verifyAccess(String guid, String action) throws AtlasBaseException {
         String userName = getCurrentUserName();
 
         if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
@@ -1196,7 +1196,7 @@ public class AtlasAuthorization {
         entityTypes.add(typeName);
 
         return entityTypes;
-    }
+    }*/
 
 //    private List<AtlasEntityHeader> getPolicies() {
 //        List<AtlasEntityHeader> ret = new ArrayList<>();

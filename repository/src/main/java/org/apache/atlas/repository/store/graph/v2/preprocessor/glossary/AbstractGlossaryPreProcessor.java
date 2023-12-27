@@ -240,8 +240,8 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
 
         //verifyAccess(new AtlasEntity(sourceGlossary), AtlasPrivilege.ENTITY_CREATE, "create on source Glossary: " +  sourceGlossary.getAttribute(NAME));
         AuthorizerUtils.verifyEntityCreateAccess(new AtlasEntity(sourceGlossary), AtlasPrivilege.ENTITY_CREATE);
-        AtlasAuthorization.verifyAccess(sourceGlossary.getGuid(), AtlasPrivilege.ENTITY_UPDATE.getType());
-        AtlasAuthorization.verifyAccess(sourceGlossary.getGuid(), AtlasPrivilege.ENTITY_DELETE.getType());
+        AuthorizerUtils.verifyAccess(sourceGlossary.getGuid(), AtlasPrivilege.ENTITY_UPDATE.getType());
+        AuthorizerUtils.verifyAccess(sourceGlossary.getGuid(), AtlasPrivilege.ENTITY_DELETE.getType());
 
 
         // target -> CREATE + UPDATE + DELETE
@@ -256,8 +256,8 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
 
         //verifyAccess(new AtlasEntity(targetGlossary), AtlasPrivilege.ENTITY_CREATE, "create on source Glossary: " + targetGlossary.getAttribute(NAME));
         AuthorizerUtils.verifyEntityCreateAccess(new AtlasEntity(targetGlossary), AtlasPrivilege.ENTITY_CREATE);
-        AtlasAuthorization.verifyAccess(targetGlossary.getGuid(), AtlasPrivilege.ENTITY_UPDATE.getType());
-        AtlasAuthorization.verifyAccess(targetGlossary.getGuid(), AtlasPrivilege.ENTITY_DELETE.getType());
+        AuthorizerUtils.verifyAccess(targetGlossary.getGuid(), AtlasPrivilege.ENTITY_UPDATE.getType());
+        AuthorizerUtils.verifyAccess(targetGlossary.getGuid(), AtlasPrivilege.ENTITY_DELETE.getType());
     }
 
     /**

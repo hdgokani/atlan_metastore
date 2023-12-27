@@ -59,7 +59,7 @@ public class ListAuthorizer {
 
     }
 
-    private static List<Map<String, Object>> getDSLForResourcePolicies(List<RangerPolicy> policies) {
+    public static List<Map<String, Object>> getDSLForResourcePolicies(List<RangerPolicy> policies) {
 
         // To reduce the number of clauses
         List<String> combinedEntities = new ArrayList<>();
@@ -103,7 +103,7 @@ public class ListAuthorizer {
         return shouldClauses;
     }
 
-    private static Map<String, Object> getDSLForResources(List<String> entities, Set<String> typeNames, List<String> classifications, String clauseName){
+    public static Map<String, Object> getDSLForResources(List<String> entities, Set<String> typeNames, List<String> classifications, String clauseName){
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         List<String> termsQualifiedNames = new ArrayList<>();
         for (String entity: entities) {
@@ -156,7 +156,7 @@ public class ListAuthorizer {
         return getMap("bool", boolClause);
     }
 
-    private static Map<String, Object> getDSLForTagPolicies(List<RangerPolicy> policies) {
+    public static Map<String, Object> getDSLForTagPolicies(List<RangerPolicy> policies) {
         // To reduce the number of clauses
         Set<String> allTags = new HashSet<>();
 
@@ -186,7 +186,7 @@ public class ListAuthorizer {
         return getMap("bool", boolClause);
     }
 
-    private static List<Map<String, Object>> getDSLForAbacPolicies(List<RangerPolicy> policies) {
+    public static List<Map<String, Object>> getDSLForAbacPolicies(List<RangerPolicy> policies) {
         List<String> filterCriteriaList = new ArrayList<>();
         for (RangerPolicy policy : policies) {
             String filterCriteria = policy.getPolicyFilterCriteria();

@@ -217,7 +217,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         // AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(ret.getEntity())), "read entity: guid=", guid);
-        AtlasAuthorization.verifyAccess(ret.getEntity().getGuid(), AtlasPrivilege.ENTITY_READ.getType());
+        AuthorizerUtils.verifyAccess(ret.getEntity().getGuid(), AtlasPrivilege.ENTITY_READ.getType());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getById({}, {}): {}", guid, isMinExtInfo, ret);
@@ -264,7 +264,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         // AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, ret), "read entity: guid=", guid);
-        AtlasAuthorization.verifyAccess(ret.getGuid(), AtlasPrivilege.ENTITY_READ.getType());
+        AuthorizerUtils.verifyAccess(ret.getGuid(), AtlasPrivilege.ENTITY_READ.getType());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getHeaderById({}): {}", guid, ret);
@@ -295,7 +295,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 AtlasEntity entity = ret.getEntity(guid);
                 try {
                     // AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(entity)), "read entity: guid=", guid);
-                    AtlasAuthorization.verifyAccess(entity.getGuid(), AtlasPrivilege.ENTITY_READ.getType());
+                    AuthorizerUtils.verifyAccess(entity.getGuid(), AtlasPrivilege.ENTITY_READ.getType());
                 } catch (AtlasBaseException e) {
                     if (RequestContext.get().isSkipFailedEntities()) {
                         if (LOG.isDebugEnabled()) {
@@ -336,7 +336,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (ret != null && ret.getEntities() != null) {
             for (AtlasEntity entity : ret.getEntities()) {
                 // AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(entity)), "read entity: typeName=", entityType.getTypeName(), ", guid=", entity.getGuid());
-                AtlasAuthorization.verifyAccess(entity.getGuid(), AtlasPrivilege.ENTITY_READ.getType());
+                AuthorizerUtils.verifyAccess(entity.getGuid(), AtlasPrivilege.ENTITY_READ.getType());
             }
         }
 
@@ -373,7 +373,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         // AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(ret.getEntity())), "read entity: typeName=", entityType.getTypeName(), ", uniqueAttributes=", uniqAttributes);
-        AtlasAuthorization.verifyAccess(ret.getEntity().getGuid(), AtlasPrivilege.ENTITY_READ.getType());
+        AuthorizerUtils.verifyAccess(ret.getEntity().getGuid(), AtlasPrivilege.ENTITY_READ.getType());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getByUniqueAttribute({}, {}): {}", entityType.getTypeName(), uniqAttributes, ret);
@@ -407,7 +407,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         // AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, ret), "read entity: typeName=", entityType.getTypeName(), ", uniqueAttributes=", uniqAttributes);
-        AtlasAuthorization.verifyAccess(ret.getGuid(), AtlasPrivilege.ENTITY_READ.getType());
+        AuthorizerUtils.verifyAccess(ret.getGuid(), AtlasPrivilege.ENTITY_READ.getType());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getEntityHeaderByUniqueAttributes({}, {}): {}", entityType.getTypeName(), uniqAttributes, ret);
@@ -959,7 +959,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         for (AtlasClassification classification : classifications) {
 //            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, entityHeader, classification),
 //                                                 "add classification: guid=", guid, ", classification=", classification.getTypeName());
-            AtlasAuthorization.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_ADD_CLASSIFICATION.getType());
+            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_ADD_CLASSIFICATION.getType());
         }
 
         EntityMutationContext context = new EntityMutationContext();
@@ -1010,7 +1010,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         for (AtlasClassification classification : classifications) {
             // AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION, entityHeader, classification), "update classification: guid=", guid, ", classification=", classification.getTypeName());
-            AtlasAuthorization.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION.getType());
+            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION.getType());
 
         }
 
@@ -1063,7 +1063,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
 //                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, entityHeader, classification),
 //                        "add classification: guid=", guid, ", classification=", classification.getTypeName());
-                AtlasAuthorization.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_ADD_CLASSIFICATION.getType());
+                AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_ADD_CLASSIFICATION.getType());
 
                 validateEntityAssociations(guid, classifications);
 
@@ -1112,7 +1112,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 //            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION,
 //                            entityHeader, new AtlasClassification(classificationName)),
 //                    "remove classification: guid=", guid, ", classification=", classificationName);
-            AtlasAuthorization.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION.getType());
+            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION.getType());
         }
 
         if (LOG.isDebugEnabled()) {
@@ -1146,7 +1146,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
 
 //        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader), "get classifications: guid=", guid);
-        AtlasAuthorization.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_READ.getType());
+        AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_READ.getType());
 
         return entityHeader.getClassifications();
     }
@@ -1163,7 +1163,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         if (CollectionUtils.isNotEmpty(entityHeader.getClassifications())) {
 //            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader), "get classification: guid=", guid, ", classification=", classificationName);
-            AtlasAuthorization.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_READ.getType());
+            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_READ.getType());
             for (AtlasClassification classification : entityHeader.getClassifications()) {
                 if (!StringUtils.equalsIgnoreCase(classification.getTypeName(), classificationName)) {
                     continue;
@@ -1335,7 +1335,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 requestBuilder.setLabel(label);
 
 //                AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add label: guid=", guid, ", label=", label);
-                AtlasAuthorization.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_ADD_LABEL.getType());
+                AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_ADD_LABEL.getType());
             }
         }
 
@@ -1346,7 +1346,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 requestBuilder.setLabel(label);
 
 //                AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "remove label: guid=", guid, ", label=", label);
-                AtlasAuthorization.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_REMOVE_LABEL.getType());
+                AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_REMOVE_LABEL.getType());
             }
         }
 
@@ -1385,7 +1385,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             requestBuilder.setLabel(label);
 
 //            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "remove label: guid=", guid, ", label=", label);
-            AtlasAuthorization.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_REMOVE_LABEL.getType());
+            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_REMOVE_LABEL.getType());
         }
 
         validateLabels(labels);
@@ -1425,7 +1425,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             requestBuilder.setLabel(label);
 
 //            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add/update label: guid=", guid, ", label=", label);
-            AtlasAuthorization.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_ADD_LABEL.getType());
+            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_ADD_LABEL.getType());
         }
 
         validateLabels(labels);

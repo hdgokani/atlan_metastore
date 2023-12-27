@@ -5,22 +5,30 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.plugin.model.RangerPolicy;
+import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.type.*;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.authorizer.AuthorizerCommon.getMap;
+import static org.apache.atlas.authorizer.ListAuthorizer.getDSLForAbacPolicies;
+import static org.apache.atlas.authorizer.ListAuthorizer.getDSLForResourcePolicies;
+import static org.apache.atlas.authorizer.ListAuthorizer.getDSLForTagPolicies;
 import static org.apache.atlas.model.TypeCategory.ARRAY;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
 
 public class EntityAuthorizer {
 
@@ -295,4 +303,114 @@ public class EntityAuthorizer {
         RequestContext.get().endMetricRecord(convertJsonToQueryMetrics);
         return result;
     }
+
+    public static boolean isAccessAllowed(String guid, String action) throws AtlasBaseException {
+        if (guid == null) {
+            return false;
+        }
+        List<Map<String, Object>> filterClauseList = new ArrayList<>();
+        Map<String, Object> policiesDSL = getElasticsearchDSL(null, null, Arrays.asList(action));
+        filterClauseList.add(policiesDSL);
+        filterClauseList.add(getMap("term", getMap("__guid", guid)));
+        Map<String, Object> dsl = getMap("query", getMap("bool", getMap("filter", filterClauseList)));
+        ObjectMapper mapper = new ObjectMapper();
+        String dslString = null;
+        Integer count = null;
+        try {
+            dslString = mapper.writeValueAsString(dsl);
+            count = getCountFromElasticsearch(dslString);
+            LOG.info(dslString);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        if (count != null && count > 0) {
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean isAccessAllowed(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {
+        List<Map<String, Object>> filterClauseList = new ArrayList<>();
+        Map<String, Object> policiesDSL = getElasticsearchDSL(null, null, Arrays.asList(action));
+        filterClauseList.add(policiesDSL);
+        filterClauseList.add(getMap("term", getMap("__typeName.keyword", entityTypeName)));
+        if (entityQualifiedName != null)
+            filterClauseList.add(getMap("term", getMap("qualifiedName", entityQualifiedName)));
+        Map<String, Object> dsl = getMap("query", getMap("bool", getMap("filter", filterClauseList)));
+        ObjectMapper mapper = new ObjectMapper();
+        String dslString = null;
+        Integer count = null;
+        try {
+            dslString = mapper.writeValueAsString(dsl);
+            count = getCountFromElasticsearch(dslString);
+            LOG.info(dslString);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        if (count != null && count > 0) {
+            return true;
+        }
+        return false;
+    }
+
+    public static Map<String, Object> getElasticsearchDSL(String persona, String purpose, List<String> actions) {
+        Map<String, Object> allowDsl = getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_ALLOW);
+        Map<String, Object> denyDsl = getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_DENY);
+        Map<String, Object> finaDsl = new HashMap<>();
+        if (allowDsl != null) {
+            finaDsl.put("filter", allowDsl);
+        }
+        if (denyDsl != null) {
+            finaDsl.put("must_not", denyDsl);
+        }
+        return getMap("bool", finaDsl);
+    }
+
+    private static Integer getCountFromElasticsearch(String query) throws AtlasBaseException {
+        RestClient restClient = getLowLevelClient();
+        AtlasElasticsearchQuery elasticsearchQuery = new AtlasElasticsearchQuery("janusgraph_vertex_index", restClient);
+        Map<String, Object> elasticsearchResult = null;
+        elasticsearchResult = elasticsearchQuery.runQueryWithLowLevelClient(query);
+        Integer count = null;
+        if (elasticsearchResult!=null) {
+            count = (Integer) elasticsearchResult.get("total");
+        }
+        return count;
+    }
+
+    public static Map<String, Object> getElasticsearchDSLForPolicyType(String persona, String purpose, List<String> actions, String policyType) {
+        List<RangerPolicy> resourcePolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas", actions, policyType);
+        List<Map<String, Object>> resourcePoliciesClauses = getDSLForResourcePolicies(resourcePolicies);
+
+        List<RangerPolicy> tagPolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas_tag", actions, policyType);
+        Map<String, Object> tagPoliciesClause = getDSLForTagPolicies(tagPolicies);
+
+        List<RangerPolicy> abacPolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas_abac", actions, policyType);
+        List<Map<String, Object>> abacPoliciesClauses = getDSLForAbacPolicies(abacPolicies);
+
+        List<Map<String, Object>> shouldClauses = new ArrayList<>();
+        shouldClauses.addAll(resourcePoliciesClauses);
+        if (tagPoliciesClause != null) {
+            shouldClauses.add(tagPoliciesClause);
+        }
+        shouldClauses.addAll(abacPoliciesClauses);
+
+        Map<String, Object> boolClause = new HashMap<>();
+        if (shouldClauses.isEmpty()) {
+            if (POLICY_TYPE_ALLOW.equals(policyType)) {
+                boolClause.put("must_not", getMap("match_all", new HashMap<>()));
+            } else {
+                return null;
+            }
+
+        } else {
+            boolClause.put("should", shouldClauses);
+            boolClause.put("minimum_should_match", 1);
+        }
+
+        return getMap("bool", boolClause);
+
+    }
+
+
 }

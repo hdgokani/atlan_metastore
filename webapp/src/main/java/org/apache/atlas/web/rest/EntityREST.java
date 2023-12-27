@@ -187,7 +187,7 @@ public class EntityREST {
                         if (priv == ENTITY_CREATE) {
                             AuthorizerUtils.verifyEntityCreateAccess(new AtlasEntity(entityHeader), ENTITY_CREATE);
                         } else {
-                            AtlasAuthorization.verifyAccess(entityHeader.getGuid(), priv.getType());
+                            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), priv.getType());
                         }
 
                         response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), true, null , entities.get(i).getBusinessMetadata()));
@@ -206,7 +206,7 @@ public class EntityREST {
                         AtlasEntityHeader entityHeader = getAtlasEntityHeader(entities.get(i).getEntityGuid(), entities.get(i).getEntityId(),entities.get(i).getTypeName());
 
 //                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), entityHeader, new AtlasClassification(entities.get(i).getClassification())));
-                        AtlasAuthorization.verifyAccess(entityHeader.getGuid(), entities.get(i).getAction());
+                        AuthorizerUtils.verifyAccess(entityHeader.getGuid(), entities.get(i).getAction());
                         response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), entities.get(i).getClassification(), true, null));
 
                     } catch (AtlasBaseException e) {
@@ -233,7 +233,7 @@ public class EntityREST {
                             AuthorizerUtils.verifyRelationshipCreateAccess(priv.getType(), entities.get(i).getRelationShipTypeName(),
                                     end1Entity, end2Entity);
                         } else {
-                            AtlasAuthorization.verifyAccess(priv.getType(), end1Entity.getGuid(), end2Entity.getGuid());
+                            AuthorizerUtils.verifyAccess(priv.getType(), end1Entity.getGuid(), end2Entity.getGuid());
                         }
 
                         response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(), entities.get(i).getEntityIdEnd2(), true, null));
@@ -1171,7 +1171,7 @@ public class EntityREST {
                     AtlasEntityHeader entityHeader = getEntityHeaderFromPurgedAudit(guid);
 
 //                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, ENTITY_READ, entityHeader), "read entity audit: guid=", guid);
-                    AtlasAuthorization.verifyAccess(entityHeader.getGuid(), ENTITY_READ.getType());
+                    AuthorizerUtils.verifyAccess(entityHeader.getGuid(), ENTITY_READ.getType());
                 } else {
                     throw e;
                 }
