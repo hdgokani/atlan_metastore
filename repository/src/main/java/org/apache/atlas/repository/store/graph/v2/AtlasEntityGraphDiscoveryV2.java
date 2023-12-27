@@ -358,6 +358,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         for (String attrName : entityType.getRelationshipAttributes().keySet()) {
 
             // if attribute is not in 'relationshipAttributes', try 'attributes'
+            // if appendRelationshipAttribute exists try attrName there
             if (entity.hasRelationshipAttribute(attrName)) {
                 Object         attrVal          = entity.getRelationshipAttribute(attrName);
                 String         relationshipType = AtlasEntityUtil.getRelationshipType(attrVal);
@@ -374,6 +375,15 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
                 visitAttribute(attribute.getAttributeType(), attrVal, entity.getGuid());
 
                 visitedAttributes.add(attrName);
+            } else if (entity.hasAppendRelationshipAttribute(attrName)){
+                Object         attrVal          = entity.getRelationshipAttribute(attrName);
+                String         relationshipType = AtlasEntityUtil.getRelationshipType(attrVal);
+                AtlasAttribute attribute        = entityType.getRelationshipAttribute(attrName, relationshipType);
+
+                visitAttribute(attribute.getAttributeType(), attrVal, entity.getGuid());
+
+                visitedAttributes.add(attrName);
+
             }
         }
     }
