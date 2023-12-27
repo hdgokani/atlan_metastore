@@ -92,6 +92,25 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Boolean starred       = null;
 
     private Map<String, Object>              relationshipAttributes;
+
+    public Map<String, Object> getAppendRelationshipAttributes() {
+        return appendRelationshipAttributes;
+    }
+
+    public void setAppendRelationshipAttributes(Map<String, Object> appendRelationshipAttributes) {
+        this.appendRelationshipAttributes = appendRelationshipAttributes;
+    }
+
+    public Map<String, Object> getRemoveRelationshipAttributes() {
+        return removeRelationshipAttributes;
+    }
+
+    public void setRemoveRelationshipAttributes(Map<String, Object> removeRelationshipAttributes) {
+        this.removeRelationshipAttributes = removeRelationshipAttributes;
+    }
+
+    private Map<String, Object>              appendRelationshipAttributes;
+    private Map<String, Object>              removeRelationshipAttributes;
     private List<AtlasClassification>        classifications;
     private List<AtlasTermAssignmentHeader>  meanings;
     private Map<String, String>              customAttributes;
@@ -230,6 +249,8 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setBusinessAttributes(other.getBusinessAttributes());
             setLabels(other.getLabels());
             setPendingTasks(other.getPendingTasks());
+            setAppendRelationshipAttributes(other.getAppendRelationshipAttributes());
+            setRemoveRelationshipAttributes(other.getRemoveRelationshipAttributes());
         }
     }
 
