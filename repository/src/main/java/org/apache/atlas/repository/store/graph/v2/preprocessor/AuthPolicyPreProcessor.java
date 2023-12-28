@@ -110,7 +110,10 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         AtlasEntity policy = (AtlasEntity) entity;
 
         String policyServiceName = getPolicyServiceName(policy);
-        if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
+        String policyCategory = getPolicyCategory(policy);
+
+        if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName) &&
+                (POLICY_CATEGORY_PERSONA.equals(policyCategory) || POLICY_CATEGORY_PURPOSE.equals(policyCategory))) {
             AtlasEntity parentEntity = getAccessControlEntity(policy).getEntity();
 
             policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
@@ -128,7 +131,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             return;
         }
 
-        String policyCategory = getPolicyCategory(policy);
+
         if (StringUtils.isEmpty(policyCategory)) {
             throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_CATEGORY);
         }
