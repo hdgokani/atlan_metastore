@@ -375,6 +375,12 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         return a != null ? a.get(name) : null;
     }
 
+    public Object getAppendRelationshipAttribute(String name) {
+        Map<String, Object> a = this.appendRelationshipAttributes;
+
+        return a != null ? a.get(name) : null;
+    }
+
     public boolean hasRelationshipAttribute(String name) {
         Map<String, Object> r = this.relationshipAttributes;
 
