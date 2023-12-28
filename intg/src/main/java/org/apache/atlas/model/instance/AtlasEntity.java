@@ -92,23 +92,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Boolean starred       = null;
 
     private Map<String, Object>              relationshipAttributes;
-
-    public Map<String, Object> getAppendRelationshipAttributes() {
-        return appendRelationshipAttributes;
-    }
-
-    public void setAppendRelationshipAttributes(Map<String, Object> appendRelationshipAttributes) {
-        this.appendRelationshipAttributes = appendRelationshipAttributes;
-    }
-
-    public Map<String, Object> getRemoveRelationshipAttributes() {
-        return removeRelationshipAttributes;
-    }
-
-    public void setRemoveRelationshipAttributes(Map<String, Object> removeRelationshipAttributes) {
-        this.removeRelationshipAttributes = removeRelationshipAttributes;
-    }
-
     private Map<String, Object>              appendRelationshipAttributes;
     private Map<String, Object>              removeRelationshipAttributes;
     private List<AtlasClassification>        classifications;
@@ -392,6 +375,35 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
         return r != null ? r.containsKey(name) : false;
     }
+
+    public Map<String, Object> getAppendRelationshipAttributes() {
+        return appendRelationshipAttributes;
+    }
+
+    public void setAppendRelationshipAttributes(Map<String, Object> appendRelationshipAttributes) {
+        this.appendRelationshipAttributes = appendRelationshipAttributes;
+    }
+
+    public void setAppendRelationshipAttribute(String name, Object value) {
+        Map<String, Object> r = this.appendRelationshipAttributes;
+
+        if (r != null) {
+            r.put(name, value);
+        } else {
+            r = new HashMap<>();
+            r.put(name, value);
+
+            this.appendRelationshipAttributes = r;
+        }
+    }
+    public Map<String, Object> getRemoveRelationshipAttributes() {
+        return removeRelationshipAttributes;
+    }
+
+    public void setRemoveRelationshipAttributes(Map<String, Object> removeRelationshipAttributes) {
+        this.removeRelationshipAttributes = removeRelationshipAttributes;
+    }
+
 
     public Map<String, String> getCustomAttributes() {
         return customAttributes;
