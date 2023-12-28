@@ -175,26 +175,26 @@ public class EntityREST {
                     try {
                         AtlasEntityHeader entityHeader = getAtlasEntityHeader(entities.get(i).getEntityGuid(), entities.get(i).getEntityId(),entities.get(i).getTypeName());
 
-                        AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), entityHeader);
+                        AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.valueOf(action), entityHeader);
                         if (entities.get(i).getBusinessMetadata() != null) {
                             requestBuilder.setBusinessMetadata(entities.get(i).getBusinessMetadata());
                         }
 
                         AtlasEntityAccessRequest entityAccessRequest = requestBuilder.build();
 
-//                        AtlasAuthorizationUtils.verifyAccess(entityAccessRequest, entities.get(i).getAction() + "guid=" + entities.get(i).getEntityGuid());
-                        AtlasPrivilege priv = AtlasPrivilege.valueOf(entities.get(i).getAction());
+//                        AtlasAuthorizationUtils.verifyAccess(entityAccessRequest, action + "guid=" + entities.get(i).getEntityGuid());
+                        AtlasPrivilege priv = AtlasPrivilege.valueOf(action);
                         if (priv == ENTITY_CREATE) {
                             AuthorizerUtils.verifyEntityCreateAccess(new AtlasEntity(entityHeader), ENTITY_CREATE);
                         } else {
                             AuthorizerUtils.verifyAccess(entityHeader.getGuid(), priv.getType());
                         }
 
-                        response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), true, null , entities.get(i).getBusinessMetadata()));
+                        response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), action, entities.get(i).getEntityId(), true, null , entities.get(i).getBusinessMetadata()));
                     } catch (AtlasBaseException e) {
                         AtlasErrorCode code = e.getAtlasErrorCode();
                         String errorCode = code.getErrorCode();
-                        response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), false, errorCode, entities.get(i).getBusinessMetadata()));
+                        response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), action, entities.get(i).getEntityId(), false, errorCode, entities.get(i).getBusinessMetadata()));
                     }
 
                 } else if (ENTITY_REMOVE_CLASSIFICATION.name().equals(action) || ENTITY_ADD_CLASSIFICATION.name().equals(action) || ENTITY_UPDATE_CLASSIFICATION.name().equals(action)) {
@@ -205,14 +205,14 @@ public class EntityREST {
                     try {
                         AtlasEntityHeader entityHeader = getAtlasEntityHeader(entities.get(i).getEntityGuid(), entities.get(i).getEntityId(),entities.get(i).getTypeName());
 
-//                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), entityHeader, new AtlasClassification(entities.get(i).getClassification())));
-                        AuthorizerUtils.verifyAccess(entityHeader.getGuid(), entities.get(i).getAction());
-                        response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), entities.get(i).getClassification(), true, null));
+//                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entityHeader, new AtlasClassification(entities.get(i).getClassification())));
+                        AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.valueOf(action).getType());
+                        response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), action, entities.get(i).getEntityId(), entities.get(i).getClassification(), true, null));
 
                     } catch (AtlasBaseException e) {
                         AtlasErrorCode code = e.getAtlasErrorCode();
                         String errorCode = code.getErrorCode();
-                        response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), entities.get(i).getClassification(), false, errorCode));
+                        response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), action, entities.get(i).getEntityId(), entities.get(i).getClassification(), false, errorCode));
                     }
 
                 }    else if (RELATIONSHIP_ADD.name().equals(action) || RELATIONSHIP_REMOVE.name().equals(action) || RELATIONSHIP_UPDATE.name().equals(action)) {
@@ -228,7 +228,7 @@ public class EntityREST {
 
 //                        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entities.get(i).getRelationShipTypeName(), end1Entity, end2Entity));
 
-                        AtlasPrivilege priv = AtlasPrivilege.valueOf(entities.get(i).getAction());
+                        AtlasPrivilege priv = AtlasPrivilege.valueOf(action);
                         if (priv == RELATIONSHIP_ADD) {
                             AuthorizerUtils.verifyRelationshipCreateAccess(priv.getType(), entities.get(i).getRelationShipTypeName(),
                                     end1Entity, end2Entity);
