@@ -111,17 +111,19 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         String policyServiceName = getPolicyServiceName(policy);
         if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
-//            AtlasEntity parentEntity = getAccessControlEntity(policy).getEntity();
-//
-//            policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
-//
-//            //extract role
-//            String roleName = getPersonaRoleName(parentEntity);
-//            List<String> roles = Arrays.asList(roleName);
-//            policy.setAttribute(ATTR_POLICY_ROLES, roles);
-//
-//            policy.setAttribute(ATTR_POLICY_USERS, new ArrayList<>());
-//            policy.setAttribute(ATTR_POLICY_GROUPS, new ArrayList<>());
+            AtlasEntity parentEntity = getAccessControlEntity(policy).getEntity();
+
+            policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
+
+            //extract role
+            String roleName = getPersonaRoleName(parentEntity);
+            List<String> roles = Arrays.asList(roleName);
+            policy.setAttribute(ATTR_POLICY_ROLES, roles);
+
+            policy.setAttribute(ATTR_POLICY_USERS, new ArrayList<>());
+            policy.setAttribute(ATTR_POLICY_GROUPS, new ArrayList<>());
+
+            //aliasStore.updateAlias(parentEntity, policy);
 
             return;
         }
