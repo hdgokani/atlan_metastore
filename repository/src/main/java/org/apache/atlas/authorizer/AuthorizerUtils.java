@@ -95,7 +95,23 @@ public class AuthorizerUtils {
         }
     }
 
-    public static void verifyAccess(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
+    public static void verifyAccessForEvaluator(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {
+        String userName = AuthorizerCommon.getCurrentUserName();
+
+        if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
+            return;
+        }
+
+        try {
+            if (!EntityAuthorizer.isAccessAllowedEvaluator(entityTypeName, entityQualifiedName, action)) {
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, action + ":" + entityTypeName + ":" + entityQualifiedName);
+            }
+        } catch (AtlasBaseException e) {
+            throw e;
+        }
+    }
+
+    public static void verifyRelationshipAccess(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
         String userName = AuthorizerCommon.getCurrentUserName();
 
         if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {

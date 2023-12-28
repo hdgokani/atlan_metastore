@@ -523,7 +523,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasEntityHeader     end2Entity   = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
 
 //        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_UPDATE, relationship.getTypeName(), end1Entity, end2Entity));
-        AuthorizerUtils.verifyAccess(AtlasPrivilege.RELATIONSHIP_UPDATE.getType(), end1Entity.getGuid(), end2Entity.getGuid());
+        AuthorizerUtils.verifyRelationshipAccess(AtlasPrivilege.RELATIONSHIP_UPDATE.getType(), end1Entity.getGuid(), end2Entity.getGuid());
 
         updateTagPropagations(relationshipEdge, relationship);
 

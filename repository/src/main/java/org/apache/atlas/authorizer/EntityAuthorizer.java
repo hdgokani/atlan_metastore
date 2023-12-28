@@ -329,13 +329,13 @@ public class EntityAuthorizer {
         return false;
     }
 
-    private static boolean isAccessAllowed(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {
+    public static boolean isAccessAllowedEvaluator(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {
         List<Map<String, Object>> filterClauseList = new ArrayList<>();
         Map<String, Object> policiesDSL = getElasticsearchDSL(null, null, Arrays.asList(action));
         filterClauseList.add(policiesDSL);
-        filterClauseList.add(getMap("term", getMap("__typeName.keyword", entityTypeName)));
+        filterClauseList.add(getMap("wildcard", getMap("__typeName.keyword", entityTypeName)));
         if (entityQualifiedName != null)
-            filterClauseList.add(getMap("term", getMap("qualifiedName", entityQualifiedName)));
+            filterClauseList.add(getMap("wildcard", getMap("qualifiedName", entityQualifiedName)));
         Map<String, Object> dsl = getMap("query", getMap("bool", getMap("filter", filterClauseList)));
         ObjectMapper mapper = new ObjectMapper();
         String dslString = null;
