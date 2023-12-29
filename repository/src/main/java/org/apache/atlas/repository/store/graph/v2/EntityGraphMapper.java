@@ -1939,40 +1939,21 @@ public class EntityGraphMapper {
             LOG.debug("==> mapArrayValue({})", ctx);
         }
 
-        // contains
-        // 1. attribute Definition for assignedEntities here like name: assignedEntities, typeNme: array<ref>, cardinality : set
-        // 2. entityDef for AtlasGlossaryTerm, struct Def, possible relationshipAttributes :127, typeName : , minInfo/header
+
         AtlasAttribute attribute           = ctx.getAttribute();
-        // contains payload of assignedKeys : example connection values
         List           newElements         = (List) ctx.getValue();
-        // contains info , typeName: array<objectId> , typeCategory : ARRAY, service_type: atlas_core
         AtlasArrayType arrType             = (AtlasArrayType) attribute.getAttributeType();
-        // contains typeName : objectid, typeCategory : object_id_type, service_type : atlas_core, objectType : Referenceable
         AtlasType      elementType         = arrType.getElementType();
-        // false : this is objectIdType, neither struct nor entity
         boolean        isStructType        = (TypeCategory.STRUCT == elementType.getTypeCategory()) ||
                 (TypeCategory.STRUCT == attribute.getDefinedInType().getTypeCategory());
-
-        // true
         boolean        isReference         = isReference(elementType);
-
-        //false
         boolean        isSoftReference     = ctx.getAttribute().getAttributeDef().isSoftReferenced();
-
-        // null
         AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
-
-        // SET
         Cardinality    cardinality         = attribute.getAttributeDef().getCardinality();
-        //List<AtlasEdge> removedElements    = new ArrayList<>();
         List<Object>   newElementsCreated  = new ArrayList<>();
-        //List<Object>   allArrayElements    = null;
         List<Object>   currentElements;
 
-        // don't delete existing relationships if cardinality of both relationship end is SET
-        boolean deleteExistingRelations = shouldDeleteExistingRelations(ctx, attribute);
 
-        // if block executes
         if (isReference && !isSoftReference) {
             // returns already attached assets
             currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute, isStructType);
@@ -1981,11 +1962,9 @@ public class EntityGraphMapper {
         }
 
         if (PARTIAL_UPDATE.equals(ctx.getOp()) && attribute.getAttributeDef().isAppendOnPartialUpdate() && CollectionUtils.isNotEmpty(currentElements)) {
-            // enters here
             if (CollectionUtils.isEmpty(newElements)) {
                 newElements = new ArrayList<>(currentElements);
             } else {
-                // enters here : as new elements contains payload passed in request (:assignedEntities)
                 List<Object> mergedVal = new ArrayList<>(currentElements);
 
                 mergedVal.addAll(newElements);
@@ -1994,32 +1973,24 @@ public class EntityGraphMapper {
             }
         }
 
-        // false : size = 1
         boolean isNewElementsNull = newElements == null;
 
         if (isNewElementsNull) {
             newElements = new ArrayList();
         }
 
-        // removes duplicates from payload
         if (cardinality == SET) {
             newElements = (List) newElements.stream().distinct().collect(Collectors.toList());
         }
 
-        // payload processing
         for (int index = 0; index < newElements.size(); index++) {
             AtlasEdge               existingEdge = (isSoftReference) ? null : getEdgeAt(currentElements, index, elementType);
             AttributeMutationContext arrCtx      = new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), ctx.getAttribute(), newElements.get(index),
                     ctx.getVertexProperty(), elementType, existingEdge);
 
-            // this is false : not executed
-            if (deleteExistingRelations) {
-                removeExistingRelationWithOtherVertex(arrCtx, ctx, context);
-            }
 
             Object newEntry = mapCollectionElementsToVertex(arrCtx, context);
 
-            // this not executed
             if (isReference && newEntry != null && newEntry instanceof AtlasEdge && inverseRefAttribute != null) {
                 // Update the inverse reference value.
                 AtlasEdge newEdge = (AtlasEdge) newEntry;
@@ -2027,28 +1998,10 @@ public class EntityGraphMapper {
                 addInverseReference(context, inverseRefAttribute, newEdge, getRelationshipAttributes(ctx.getValue()));
             }
 
-            // not null
             if(newEntry != null) {
                 newElementsCreated.add(newEntry);
             }
         }
-
-        // executes, combines old and new values
-//        if (isReference && !isSoftReference ) {
-//            // false
-//            boolean isAppendOnPartialUpdate = !isStructType ? getAppendOptionForRelationship(ctx.getReferringVertex(), attribute.getName()) : false;
-//
-//            if (isAppendOnPartialUpdate) {
-//                allArrayElements = unionCurrentAndNewElements(attribute, (List) currentElements, (List) newElementsCreated);
-//            } else {
-//                // executes
-//                removedElements = removeUnusedArrayEntries(attribute, (List) currentElements, (List) newElementsCreated, ctx);
-//
-//                allArrayElements = unionCurrentAndNewElements(attribute, removedElements, (List) newElementsCreated);
-//            }
-//        } else {
-//            allArrayElements = newElementsCreated;
-//        }
 
         // add index to attributes of array type
         for (int index = 0; newElements != null && index < newElements.size(); index++) {
@@ -2062,7 +2015,6 @@ public class EntityGraphMapper {
         if (isNewElementsNull) {
             setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), null, null, cardinality);
         } else {
-            // executes
             setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), newElements, currentElements, cardinality);
         }
 
@@ -2118,10 +2070,6 @@ public class EntityGraphMapper {
 
     private boolean shouldDeleteExistingRelations(AttributeMutationContext ctx, AtlasAttribute attribute) {
         boolean ret = false;
-        // TODO : add change for entityType.hasRelationshipAttribute(attribute.getName())
-        // typeName : AtlasTermGlossary, entityDef, relationshipAttributes: 27
-        // attribute.getName() : assignedEntities
-        // (ctx.getAttribute().getRelationshipName() : AtlasGlossarySemanticAssignment
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(AtlasGraphUtilsV2.getTypeName(ctx.getReferringVertex()));
         if (entityType !=null && entityType.hasRelationshipAttribute(attribute.getName())) {
             AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByName(ctx.getAttribute().getRelationshipName());
