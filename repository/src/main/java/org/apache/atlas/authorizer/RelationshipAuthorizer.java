@@ -67,13 +67,13 @@ public class RelationshipAuthorizer {
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                 }
-                if (filterCriteriaNode != null && filterCriteriaNode.get("entityOneEntity") != null) {
-                    JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("entityOneEntity");
+                if (filterCriteriaNode != null && filterCriteriaNode.get("endOneEntity") != null) {
+                    JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("endOneEntity");
                     eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, new AtlasEntity(endOneEntity));
 
                     if (eval) {
-                        entityFilterCriteriaNode = filterCriteriaNode.get("entityTwoEntity");
-                        eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, new AtlasEntity(endOneEntity));
+                        entityFilterCriteriaNode = filterCriteriaNode.get("endTwoEntity");
+                        eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, new AtlasEntity(endTwoEntity));
                     }
                 }
                 ret = ret || eval;
@@ -287,9 +287,9 @@ public class RelationshipAuthorizer {
 
 
                 if (attributeName.endsWith(".text")) {
-                    attributeName.replace(".text", "");
+                    attributeName = attributeName.replace(".text", "");
                 } else if (attributeName.endsWith(".keyword")) {
-                    attributeName.replace(".keyword", "");
+                    attributeName = attributeName.replace(".keyword", "");
                 }
 
                 List<String> entityAttributeValues = new ArrayList<>();
@@ -535,14 +535,15 @@ public class RelationshipAuthorizer {
                 relationshipEnds.add("end-two");
 
                 for (String relationshipEnd : relationshipEnds) {
-                    JsonNode endFilterCriteriaNode = filterCriteriaNode.get(relationshipEnd == "end-one" ? "endOneEntity" : "endTwoEntity");
+                    JsonNode endFilterCriteriaNode = filterCriteriaNode.get(relationshipEnd.equals("end-one")  ? "endOneEntity" : "endTwoEntity");
                     JsonNode Dsl = JsonToElasticsearchQuery.convertJsonToQuery(endFilterCriteriaNode, mapper);
                     String DslBase64 = Base64.getEncoder().encodeToString(Dsl.toString().getBytes());
                     String clauseName = relationshipEnd + "-" + policy.getGuid();
-                    Map<String, Object> wrapperMap = new HashMap<>();
-                    wrapperMap.put("_name", clauseName);
-                    wrapperMap.put("query", DslBase64);
-                    shouldClauses.add(wrapperMap);
+                    Map<String, Object> boolMap = new HashMap<>();
+                    boolMap.put("_name", clauseName);
+                    boolMap.put("filter", getMap("wrapper", getMap("query", DslBase64)));
+
+                    shouldClauses.add(getMap("bool", boolMap));
                 }
             }
         }

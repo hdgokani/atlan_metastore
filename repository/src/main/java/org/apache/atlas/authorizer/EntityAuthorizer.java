@@ -190,18 +190,19 @@ public class EntityAuthorizer {
         String condition = data.get("condition").asText();
         JsonNode criterion = data.get("criterion");
 
-        Set<String> assetTypes = AuthorizerCommon.getTypeAndSupertypesList(entity.getTypeName());
-
-        boolean result = true;
-        boolean evaluation;
-
         if (criterion.size() == 0) {
             return false;
         }
 
+        Set<String> assetTypes = AuthorizerCommon.getTypeAndSupertypesList(entity.getTypeName());
+        boolean result = true;
+        if (condition.equals("OR")) {
+            result = false;
+        }
+
         for (JsonNode crit : criterion) {
 
-            evaluation = false;
+            boolean evaluation = false;
 
             if (crit.has("condition")) {
                 evaluation = validateFilterCriteriaWithEntity(crit, entity);

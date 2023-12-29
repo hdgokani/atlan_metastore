@@ -120,7 +120,7 @@ public class AuthorizerUtils {
 
         try {
             if (!RelationshipAuthorizer.isRelationshipAccessAllowed(action, endOneGuid, endTwoGuid)) {
-                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), endOneGuid + "|" + endTwoGuid);
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), action + "|" + endOneGuid + "|" + endTwoGuid);
             }
         } catch (AtlasBaseException e) {
             throw e;
