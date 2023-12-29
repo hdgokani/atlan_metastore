@@ -1643,7 +1643,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 String entityActiveKey = Status.ACTIVE.toString();
                 boolean isRestoreRequested = ((StringUtils.isNotEmpty(entityStateValue) && entityStateValue.equals(entityActiveKey)) || (StringUtils.isNotEmpty(entityStatusValue) && entityStatusValue.equals(entityActiveKey)));
 
-                if (MapUtils.isNotEmpty(entity.getAppendRelationshipAttributes())){
+                if (discoveryContext.isAppendRelationshipAttributeVisited() && MapUtils.isNotEmpty(entity.getAppendRelationshipAttributes())) {
                     context.setUpdatedWithRelationshipAttributes(entity);
                 }
 
