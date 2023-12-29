@@ -377,6 +377,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
 
                 visitedAttributes.add(attrName);
             } else if (entity.hasAppendRelationshipAttribute(attrName)) {
+                discoveryContext.setAppendRelationshipAttributeVisited(true);
                 Object         attrVal          = entity.getAppendRelationshipAttribute(attrName);
                 String         relationshipType = AtlasEntityUtil.getRelationshipType(attrVal);
                 AtlasAttribute attribute        = entityType.getRelationshipAttribute(attrName, relationshipType);
