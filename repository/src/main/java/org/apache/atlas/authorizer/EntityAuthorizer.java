@@ -11,6 +11,8 @@ import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.type.*;
@@ -220,6 +222,7 @@ public class EntityAuthorizer {
                 result = true;
             } else {
                 result = result || evaluation;
+                break;
             }
         }
 
@@ -276,19 +279,19 @@ public class EntityAuthorizer {
                 }
                 break;
             case "__meanings":
-                List<AtlasTermAssignmentHeader> atlasMeanings = entity.getMeanings();
+                List<AtlasObjectId> atlasMeanings = (List<AtlasObjectId>) entity.getRelationshipAttribute("meanings");
                 if (CollectionUtils.isNotEmpty(atlasMeanings)) {
-                    for (AtlasTermAssignmentHeader atlasMeaning : atlasMeanings) {
-                        entityAttributeValues.add(atlasMeaning.getDisplayText());
+                    for (AtlasObjectId atlasMeaning : atlasMeanings) {
+                        entityAttributeValues.add((String) atlasMeaning.getUniqueAttributes().get(QUALIFIED_NAME));
                     }
                 }
                 break;
-            case "__meaningNames":
+            /*case "__meaningNames":
                 atlasMeanings = entity.getMeanings();
                 for (AtlasTermAssignmentHeader atlasMeaning : atlasMeanings) {
                     entityAttributeValues.add(atlasMeaning.getDisplayText());
                 }
-                break;
+                break;*/
             default:
                 String typeName = entity.getTypeName();
                 boolean isArrayOfPrimitiveType = false;
