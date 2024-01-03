@@ -52,6 +52,15 @@ public class AuthorizerCommon {
         return false;
     }
 
+    public static boolean listMatchesWith(String value, List<String> list) {
+        for (String item : list){
+            if (item.matches(value.replace("*", ".*"))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean listEndsWith(String value, List<String> list) {
         for (String item : list){
             if (item.endsWith(value)) {

@@ -186,31 +186,49 @@ public class EntityAuthorizer {
     }
 
     public static boolean validateFilterCriteriaWithEntity(JsonNode data, AtlasEntity entity) {
-        AtlasPerfMetrics.MetricRecorder convertJsonToQueryMetrics = RequestContext.get().startMetricRecord("convertJsonToQuery");
+        AtlasPerfMetrics.MetricRecorder convertJsonToQueryMetrics = RequestContext.get().startMetricRecord("validateFilterCriteriaWithEntity");
         String condition = data.get("condition").asText();
         JsonNode criterion = data.get("criterion");
 
         if (criterion.size() == 0) {
             return false;
         }
+        boolean result = true;
 
         Set<String> assetTypes = AuthorizerCommon.getTypeAndSupertypesList(entity.getTypeName());
-        boolean result = true;
-        if (condition.equals("OR")) {
-            result = false;
-        }
 
         for (JsonNode crit : criterion) {
 
+            result = true;
+            if (condition.equals("OR")) {
+                result = false;
+            }
             boolean evaluation = false;
 
             if (crit.has("condition")) {
                 evaluation = validateFilterCriteriaWithEntity(crit, entity);
-
             } else {
-                String operator = crit.get("operator").asText();
-                String attributeName = crit.get("attributeName").asText();
-                String attributeValue = crit.get("attributeValue").asText();
+                evaluation = evaluateFilterCriteria(crit, entity, assetTypes);
+            }
+
+            if (condition.equals("AND")) {
+                if (!evaluation) {
+                    return false;
+                }
+                result = true;
+            } else {
+                result = result || evaluation;
+            }
+        }
+
+        RequestContext.get().endMetricRecord(convertJsonToQueryMetrics);
+        return result;
+    }
+
+    private static boolean evaluateFilterCriteria(JsonNode crit, AtlasEntity entity, Set<String> assetTypes) {
+        String operator = crit.get("operator").asText();
+        String attributeName = crit.get("attributeName").asText();
+        String attributeValue = crit.get("attributeValue").asText();
 
 //                List<String> attributeValues = new ArrayList<>();
 //                if (operator.equals("IN") || operator.equals("NOT_IN")) {
@@ -226,83 +244,95 @@ public class EntityAuthorizer {
 //                    }
 //                }
 
-
-                if (attributeName.endsWith(".text")) {
-                    attributeName.replace(".text", "");
-                } else if (attributeName.endsWith(".keyword")) {
-                    attributeName.replace(".keyword", "");
-                }
-
-                List<String> entityAttributeValues = new ArrayList<>();
-
-                if (attributeName.equals("__superTypeNames")) {
-                    entityAttributeValues.addAll(assetTypes);
-
-                } if (attributeName.equals("__typeName")) {
-                    entityAttributeValues.add(entity.getTypeName());
-
-                } if (attributeName.equals("__guid")) {
-                    entityAttributeValues.add(entity.getGuid());
-
-                } else if (attributeName.equals("__traitNames")) {
-                    List<AtlasClassification> atlasClassifications = entity.getClassifications();
-                    if (atlasClassifications != null && !atlasClassifications.isEmpty()) {
-                        for (AtlasClassification atlasClassification : atlasClassifications) {
-                            entityAttributeValues.add(atlasClassification.getTypeName());
-                        }
-                    }
-                } else if (attributeName.equals("__meaningNames")) {
-                    List<AtlasTermAssignmentHeader> atlasMeanings = entity.getMeanings();
-                    for (AtlasTermAssignmentHeader atlasMeaning : atlasMeanings) {
-                        entityAttributeValues.add(atlasMeaning.getDisplayText());
-                    }
-                } else {
-                    String typeName = entity.getTypeName();
-                    boolean isArrayOfPrimitiveType = false;
-                    boolean isArrayOfEnum = false;
-                    AtlasEntityType entityType = AuthorizerCommon.getEntityTypeByName(typeName);
-                    AtlasStructType.AtlasAttribute atlasAttribute = entityType.getAttribute(attributeName);
-                    if (atlasAttribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
-                        AtlasArrayType attributeType = (AtlasArrayType) atlasAttribute.getAttributeType();
-                        AtlasType elementType = attributeType.getElementType();
-                        isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
-                        isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
-                    }
-
-                    if (entity.getAttribute(attributeName) != null) {
-                        if (isArrayOfEnum || isArrayOfPrimitiveType) {
-                            entityAttributeValues.addAll((Collection<? extends String>) entity.getAttribute(attributeName));
-                        } else {
-                            entityAttributeValues.add((String) entity.getAttribute(attributeName));
-                        }
-                    }
-                }
-
-                if (operator.equals("EQUALS") && entityAttributeValues.contains(attributeValue)) {
-                    evaluation = true;
-                }
-                if ((operator.equals("STARTS_WITH") && AuthorizerCommon.listStartsWith(attributeValue, entityAttributeValues))) {
-                    evaluation = true;
-                }
-                if ((operator.equals("ENDS_WITH") && AuthorizerCommon.listEndsWith(attributeValue, entityAttributeValues))) {
-                    evaluation = true;
-                }
-                if ((operator.equals("NOT_EQUALS") && !entityAttributeValues.contains(attributeValue))) {
-                    evaluation = true;
-                }
-            }
-
-
-
-            if (condition.equals("AND")) {
-                result = result && evaluation;
-            } else {
-                result = result || evaluation;
-            }
+        if (attributeName.endsWith(".text")) {
+            attributeName = attributeName.replace(".text", "");
+        } else if (attributeName.endsWith(".keyword")) {
+            attributeName = attributeName.replace(".keyword", "");
         }
 
-        RequestContext.get().endMetricRecord(convertJsonToQueryMetrics);
-        return result;
+        List<String> entityAttributeValues = new ArrayList<>();
+
+        switch (attributeName) {
+            case "__superTypeNames":
+                entityAttributeValues.addAll(assetTypes);
+
+                break;
+            case "__typeName":
+                entityAttributeValues.add(entity.getTypeName());
+
+                break;
+            case "__guid":
+                entityAttributeValues.add(entity.getGuid());
+
+                break;
+            case "__traitNames":
+                List<AtlasClassification> atlasClassifications = entity.getClassifications();
+                if (atlasClassifications != null && !atlasClassifications.isEmpty()) {
+                    for (AtlasClassification atlasClassification : atlasClassifications) {
+                        entityAttributeValues.add(atlasClassification.getTypeName());
+                    }
+                }
+                break;
+            case "__meaningNames":
+                List<AtlasTermAssignmentHeader> atlasMeanings = entity.getMeanings();
+                for (AtlasTermAssignmentHeader atlasMeaning : atlasMeanings) {
+                    entityAttributeValues.add(atlasMeaning.getDisplayText());
+                }
+                break;
+            default:
+                String typeName = entity.getTypeName();
+                boolean isArrayOfPrimitiveType = false;
+                boolean isArrayOfEnum = false;
+                AtlasEntityType entityType = AuthorizerCommon.getEntityTypeByName(typeName);
+                AtlasStructType.AtlasAttribute atlasAttribute = entityType.getAttribute(attributeName);
+                if (atlasAttribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
+                    AtlasArrayType attributeType = (AtlasArrayType) atlasAttribute.getAttributeType();
+                    AtlasType elementType = attributeType.getElementType();
+                    isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
+                    isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
+                }
+
+                if (entity.getAttribute(attributeName) != null) {
+                    if (isArrayOfEnum || isArrayOfPrimitiveType) {
+                        entityAttributeValues.addAll((Collection<? extends String>) entity.getAttribute(attributeName));
+                    } else {
+                        entityAttributeValues.add((String) entity.getAttribute(attributeName));
+                    }
+                }
+                break;
+        }
+
+        switch (operator) {
+            case "EQUALS":
+                if (entityAttributeValues.contains(attributeValue)) {
+                    return true;
+                }
+                break;
+            case "STARTS_WITH":
+                if (AuthorizerCommon.listStartsWith(attributeValue, entityAttributeValues)) {
+                    return true;
+                }
+                break;
+            case "LIKE":
+                if (AuthorizerCommon.listMatchesWith(attributeValue, entityAttributeValues)) {
+                    return true;
+                }
+                break;
+            case "ENDS_WITH":
+                if (AuthorizerCommon.listEndsWith(attributeValue, entityAttributeValues)) {
+                    return true;
+                }
+                break;
+            case "NOT_EQUALS":
+                if (!entityAttributeValues.contains(attributeValue)) {
+                    return true;
+                }
+                break;
+
+            default: LOG.warn("Found unknown operator {}", operator);
+        }
+
+        return false;
     }
 
     public static boolean isAccessAllowed(String guid, String action) throws AtlasBaseException {
