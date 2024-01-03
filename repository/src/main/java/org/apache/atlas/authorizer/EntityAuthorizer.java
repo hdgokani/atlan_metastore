@@ -11,10 +11,13 @@ import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.type.*;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +74,7 @@ public class EntityAuthorizer {
             }
             ret = ret || eval;
             if (ret) {
+                LOG.info("Matched with criteria {} : {}", policyType, filterCriteria);
                 break;
             }
         }
@@ -218,6 +222,7 @@ public class EntityAuthorizer {
                 result = true;
             } else {
                 result = result || evaluation;
+                break;
             }
         }
 
@@ -273,19 +278,27 @@ public class EntityAuthorizer {
                     }
                 }
                 break;
-            case "__meaningNames":
-                List<AtlasTermAssignmentHeader> atlasMeanings = entity.getMeanings();
+            case "__meanings":
+                List<AtlasObjectId> atlasMeanings = (List<AtlasObjectId>) entity.getRelationshipAttribute("meanings");
+                if (CollectionUtils.isNotEmpty(atlasMeanings)) {
+                    for (AtlasObjectId atlasMeaning : atlasMeanings) {
+                        entityAttributeValues.add((String) atlasMeaning.getUniqueAttributes().get(QUALIFIED_NAME));
+                    }
+                }
+                break;
+            /*case "__meaningNames":
+                atlasMeanings = entity.getMeanings();
                 for (AtlasTermAssignmentHeader atlasMeaning : atlasMeanings) {
                     entityAttributeValues.add(atlasMeaning.getDisplayText());
                 }
-                break;
+                break;*/
             default:
                 String typeName = entity.getTypeName();
                 boolean isArrayOfPrimitiveType = false;
                 boolean isArrayOfEnum = false;
                 AtlasEntityType entityType = AuthorizerCommon.getEntityTypeByName(typeName);
                 AtlasStructType.AtlasAttribute atlasAttribute = entityType.getAttribute(attributeName);
-                if (atlasAttribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
+                if (atlasAttribute != null && atlasAttribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
                     AtlasArrayType attributeType = (AtlasArrayType) atlasAttribute.getAttributeType();
                     AtlasType elementType = attributeType.getElementType();
                     isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
