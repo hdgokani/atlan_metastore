@@ -15,6 +15,7 @@ import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.type.*;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +72,7 @@ public class EntityAuthorizer {
             }
             ret = ret || eval;
             if (ret) {
+                LOG.info("Matched with criteria {} : {}", policyType, filterCriteria);
                 break;
             }
         }
@@ -273,8 +275,16 @@ public class EntityAuthorizer {
                     }
                 }
                 break;
-            case "__meaningNames":
+            case "__meanings":
                 List<AtlasTermAssignmentHeader> atlasMeanings = entity.getMeanings();
+                if (CollectionUtils.isNotEmpty(atlasMeanings)) {
+                    for (AtlasTermAssignmentHeader atlasMeaning : atlasMeanings) {
+                        entityAttributeValues.add(atlasMeaning.getDisplayText());
+                    }
+                }
+                break;
+            case "__meaningNames":
+                atlasMeanings = entity.getMeanings();
                 for (AtlasTermAssignmentHeader atlasMeaning : atlasMeanings) {
                     entityAttributeValues.add(atlasMeaning.getDisplayText());
                 }
@@ -285,7 +295,7 @@ public class EntityAuthorizer {
                 boolean isArrayOfEnum = false;
                 AtlasEntityType entityType = AuthorizerCommon.getEntityTypeByName(typeName);
                 AtlasStructType.AtlasAttribute atlasAttribute = entityType.getAttribute(attributeName);
-                if (atlasAttribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
+                if (atlasAttribute != null && atlasAttribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
                     AtlasArrayType attributeType = (AtlasArrayType) atlasAttribute.getAttributeType();
                     AtlasType elementType = attributeType.getElementType();
                     isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
