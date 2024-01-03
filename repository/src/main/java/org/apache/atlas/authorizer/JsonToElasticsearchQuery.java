@@ -1,4 +1,4 @@
-package org.apache.atlas.discovery;
+package org.apache.atlas.authorizer;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,8 +1,10 @@
 package org.apache.atlas.authorizer;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +56,7 @@ public class PoliciesStore {
     }
 
     public static List<RangerPolicy> getRelevantPolicies(String persona, String purpose, String serviceName, List<String> actions, String policyType) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getRelevantPolicies");
         String policyQualifiedNamePrefix = null;
         if (persona != null && !persona.isEmpty()) {
             policyQualifiedNamePrefix = persona;
@@ -85,11 +88,13 @@ public class PoliciesStore {
             policies = getFilteredPoliciesForUser(policies, user, groups, roles, policyType);
             policies = getFilteredPoliciesForActions(policies, actions, policyType);
         }
-        return policies;
 
+        RequestContext.get().endMetricRecord(recorder);
+        return policies;
     }
 
     static List<RangerPolicy> getFilteredPoliciesForQualifiedName(List<RangerPolicy> policies, String qualifiedNamePrefix) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getFilteredPoliciesForQualifiedName");
         if (qualifiedNamePrefix != null && !qualifiedNamePrefix.isEmpty()) {
             List<RangerPolicy> filteredPolicies = new ArrayList<>();
             for(RangerPolicy policy : policies) {
@@ -99,10 +104,13 @@ public class PoliciesStore {
             }
             return filteredPolicies;
         }
+
+        RequestContext.get().endMetricRecord(recorder);
         return policies;
     }
 
     private static List<RangerPolicy> getFilteredPoliciesForActions(List<RangerPolicy> policies, List<String> actions, String type) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getFilteredPoliciesForActions");
         List<RangerPolicy> filteredPolicies = new ArrayList<>();
         for(RangerPolicy policy : policies) {
             RangerPolicy.RangerPolicyItem policyItem = null;
@@ -123,10 +131,14 @@ public class PoliciesStore {
                 }
             }
         }
+
+        RequestContext.get().endMetricRecord(recorder);
         return filteredPolicies;
     }
 
     private static List<RangerPolicy> getFilteredPoliciesForUser(List<RangerPolicy> policies, String user, List<String> groups, List<String> roles, String type) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getFilteredPoliciesForUser");
+
         List<RangerPolicy> filterPolicies = new ArrayList<>();
         for(RangerPolicy policy : policies) {
             RangerPolicy.RangerPolicyItem policyItem = null;
@@ -147,6 +159,8 @@ public class PoliciesStore {
                 }
             }
         }
+
+        RequestContext.get().endMetricRecord(recorder);
         return filterPolicies;
     }
 }
