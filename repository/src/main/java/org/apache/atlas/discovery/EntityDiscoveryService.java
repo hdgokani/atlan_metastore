@@ -107,7 +107,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final SuggestionsProvider             suggestionsProvider;
     private final DSLQueryExecutor                dslQueryExecutor;
     private final StatsClient                     statsClient;
-    private final AuthorizerUtils                 authorizerUtils;
 
     @Inject
     public EntityDiscoveryService(AtlasTypeRegistry typeRegistry,
@@ -132,7 +131,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.dslQueryExecutor         = AtlasConfiguration.DSL_EXECUTOR_TRAVERSAL.getBoolean()
                                             ? new TraversalBasedExecutor(typeRegistry, graph, entityRetriever)
                                             : new ScriptEngineBasedExecutor(typeRegistry, graph, entityRetriever);
-        this.authorizerUtils = AuthorizerUtils.getInstance(this, typeRegistry);
     }
 
     @Override
@@ -1035,7 +1033,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             List<String> actions = new ArrayList<>();
             actions.add("entity-read");
 
-            Map<String, Object> allPreFiltersBoolClause = authorizerUtils.getPreFilterDsl(persona, purpose, actions);
+            Map<String, Object> allPreFiltersBoolClause = AuthorizerUtils.getPreFilterDsl(persona, purpose, actions);
             mustClauseList.add(allPreFiltersBoolClause);
 
             String dslString = searchParams.getQuery();

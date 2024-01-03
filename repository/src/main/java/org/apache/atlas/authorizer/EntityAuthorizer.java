@@ -49,6 +49,7 @@ public class EntityAuthorizer {
     }
 
     public static boolean isAccessAllowedInMemory(AtlasEntity entity, String action, String policyType) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("isAccessAllowedInMemory."+policyType);
         List<RangerPolicy> policies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
         List<String> filterCriteriaList = new ArrayList<>();
         for (RangerPolicy policy : policies) {
@@ -88,10 +89,12 @@ public class EntityAuthorizer {
             ret = validateResourcesForCreateEntityInMemory(tagPolicies, entity);
         }
 
+        RequestContext.get().endMetricRecord(recorder);
         return ret;
     }
 
     private static boolean validateResourcesForCreateEntityInMemory(List<RangerPolicy> resourcePolicies, AtlasEntity entity) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("validateResourcesForCreateEntityInMemory");
         RangerPolicy matchedPolicy = null;
         Set<String> entityTypes = AuthorizerCommon.getTypeAndSupertypesList(entity.getTypeName());
 
@@ -186,11 +189,12 @@ public class EntityAuthorizer {
             }
         }
 
+        RequestContext.get().endMetricRecord(recorder);
         return false;
     }
 
     public static boolean validateFilterCriteriaWithEntity(JsonNode data, AtlasEntity entity) {
-        AtlasPerfMetrics.MetricRecorder convertJsonToQueryMetrics = RequestContext.get().startMetricRecord("validateFilterCriteriaWithEntity");
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("validateFilterCriteriaWithEntity");
         String condition = data.get("condition").asText();
         JsonNode criterion = data.get("criterion");
 
@@ -226,11 +230,12 @@ public class EntityAuthorizer {
             }
         }
 
-        RequestContext.get().endMetricRecord(convertJsonToQueryMetrics);
+        RequestContext.get().endMetricRecord(recorder);
         return result;
     }
 
     private static boolean evaluateFilterCriteria(JsonNode crit, AtlasEntity entity, Set<String> assetTypes) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("evaluateFilterCriteria");
         String operator = crit.get("operator").asText();
         String attributeName = crit.get("attributeName").asText();
         String attributeValue = crit.get("attributeValue").asText();
@@ -345,10 +350,12 @@ public class EntityAuthorizer {
             default: LOG.warn("Found unknown operator {}", operator);
         }
 
+        RequestContext.get().endMetricRecord(recorder);
         return false;
     }
 
     public static boolean isAccessAllowed(String guid, String action) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("EntityAuthorizer.isAccessAllowed");
         if (guid == null) {
             return false;
         }
@@ -370,6 +377,8 @@ public class EntityAuthorizer {
         if (count != null && count > 0) {
             return true;
         }
+
+        RequestContext.get().endMetricRecord(recorder);
         return false;
     }
 
@@ -398,6 +407,7 @@ public class EntityAuthorizer {
     }
 
     public static Map<String, Object> getElasticsearchDSL(String persona, String purpose, List<String> actions) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("EntityAuthorizer.getElasticsearchDSL");
         Map<String, Object> allowDsl = getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_ALLOW);
         Map<String, Object> denyDsl = getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_DENY);
         Map<String, Object> finaDsl = new HashMap<>();
@@ -407,10 +417,12 @@ public class EntityAuthorizer {
         if (denyDsl != null) {
             finaDsl.put("must_not", denyDsl);
         }
+        RequestContext.get().endMetricRecord(recorder);
         return getMap("bool", finaDsl);
     }
 
     private static Integer getCountFromElasticsearch(String query) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("EntityAuthorizer.getCountFromElasticsearch");
         RestClient restClient = getLowLevelClient();
         AtlasElasticsearchQuery elasticsearchQuery = new AtlasElasticsearchQuery("janusgraph_vertex_index", restClient);
         Map<String, Object> elasticsearchResult = null;
@@ -419,6 +431,7 @@ public class EntityAuthorizer {
         if (elasticsearchResult!=null) {
             count = (Integer) elasticsearchResult.get("total");
         }
+        RequestContext.get().endMetricRecord(recorder);
         return count;
     }
 
@@ -455,6 +468,4 @@ public class EntityAuthorizer {
         return getMap("bool", boolClause);
 
     }
-
-
 }

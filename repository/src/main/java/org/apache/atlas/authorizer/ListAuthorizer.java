@@ -3,8 +3,9 @@ package org.apache.atlas.authorizer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.atlas.discovery.JsonToElasticsearchQuery;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.plugin.model.RangerPolicy;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 
 import java.util.*;
 
@@ -13,6 +14,7 @@ import static org.apache.atlas.authorizer.AuthorizerCommon.*;
 public class ListAuthorizer {
 
     public static Map<String, Object> getElasticsearchDSL(String persona, String purpose, List<String> actions) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("ListAuthorizer.getElasticsearchDSL");
         Map<String, Object> allowDsl = getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_ALLOW);
         Map<String, Object> denyDsl = getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_DENY);
         Map<String, Object> finaDsl = new HashMap<>();
@@ -22,10 +24,13 @@ public class ListAuthorizer {
         if (denyDsl != null) {
             finaDsl.put("must_not", denyDsl);
         }
+
+        RequestContext.get().endMetricRecord(recorder);
         return getMap("bool", finaDsl);
     }
 
     public static Map<String, Object> getElasticsearchDSLForPolicyType(String persona, String purpose, List<String> actions, String policyType) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("ListAuthorizer.getElasticsearchDSLForPolicyType."+ policyType);
         List<RangerPolicy> resourcePolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas", actions, policyType);
         List<Map<String, Object>> resourcePoliciesClauses = getDSLForResourcePolicies(resourcePolicies);
 
@@ -55,8 +60,8 @@ public class ListAuthorizer {
             boolClause.put("minimum_should_match", 1);
         }
 
+        RequestContext.get().endMetricRecord(recorder);
         return getMap("bool", boolClause);
-
     }
 
     public static List<Map<String, Object>> getDSLForResourcePolicies(List<RangerPolicy> policies) {

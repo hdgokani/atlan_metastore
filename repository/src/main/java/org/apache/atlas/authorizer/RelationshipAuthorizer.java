@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.discovery.JsonToElasticsearchQuery;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
@@ -45,7 +44,7 @@ public class RelationshipAuthorizer {
     public static boolean checkRelationshipAccessAllowedInMemory(String action, String relationshipType, AtlasEntityHeader endOneEntity,
                                                          AtlasEntityHeader endTwoEntity, String policyType) throws AtlasBaseException {
         //Relationship add, update, remove access check in memory
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("isRelationshipAccessAllowed."+policyType);
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("checkRelationshipAccessAllowedInMemory."+policyType);
 
         try {
             List<RangerPolicy> policies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
@@ -101,6 +100,8 @@ public class RelationshipAuthorizer {
 
     private static boolean validateResourcesForCreateRelationship(List<RangerPolicy> resourcePolicies, String relationshipType,
                                                                   AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("validateResourcesForCreateRelationship");
+
         RangerPolicy matchedPolicy = null;
 
         Set<String> endOneEntityTypes = AuthorizerCommon.getTypeAndSupertypesList(endOneEntity.getTypeName());
@@ -242,11 +243,13 @@ public class RelationshipAuthorizer {
             }
         }
 
+        RequestContext.get().endMetricRecord(recorder);
         return false;
     }
 
     public static boolean validateFilterCriteriaWithEntity(JsonNode data, AtlasEntity entity) {
-        AtlasPerfMetrics.MetricRecorder convertJsonToQueryMetrics = RequestContext.get().startMetricRecord("convertJsonToQuery");
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("RelationshipAuthorizer.validateFilterCriteriaWithEntity");
+
         String condition = data.get("condition").asText();
         JsonNode criterion = data.get("criterion");
 
@@ -360,11 +363,13 @@ public class RelationshipAuthorizer {
             }
         }
 
-        RequestContext.get().endMetricRecord(convertJsonToQueryMetrics);
+        RequestContext.get().endMetricRecord(recorder);
         return result;
     }
 
     public static boolean isRelationshipAccessAllowed(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("RelationshipAuthorizer.isRelationshipAccessAllowed");
+
         //Relationship update, remove access check with ES query
         if (endOneGuid == null || endTwoGuid == null) {
             return false;
@@ -417,11 +422,15 @@ public class RelationshipAuthorizer {
             LOG.info(dslString);
         } catch (JsonProcessingException e) {
             return false;
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
         }
         return false;
     }
 
     public static Map<String, Object> getElasticsearchDSLForRelationshipActions(List<String> actions, String endOneGuid, String endTwoGuid) throws JsonProcessingException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("RelationshipAuthorizer.getElasticsearchDSLForRelationshipActions");
+
         List<Map<String, Object>> policiesClauses = new ArrayList<>();
         List<RangerPolicy> resourcePolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas", actions, POLICY_TYPE_ALLOW);
         List<Map<String, Object>> resourcePoliciesClauses = getDSLForRelationshipResourcePolicies(resourcePolicies);
@@ -458,10 +467,14 @@ public class RelationshipAuthorizer {
         Map<String, Object> boolClause = new HashMap<>();
         boolClause.put("filter", clauses);
 
+
+        RequestContext.get().endMetricRecord(recorder);
         return getMap("query", getMap("bool", boolClause));
     }
 
     private static List<Map<String, Object>> getDSLForRelationshipResourcePolicies(List<RangerPolicy> policies) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("RelationshipAuthorizer.getDSLForRelationshipResourcePolicies");
+
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         for (RangerPolicy policy : policies) {
             if (!policy.getResources().isEmpty() && "RELATIONSHIP".equals(policy.getPolicyResourceCategory())) {
@@ -491,6 +504,8 @@ public class RelationshipAuthorizer {
                 }
             }
         }
+
+        RequestContext.get().endMetricRecord(recorder);
         return shouldClauses;
     }
 
