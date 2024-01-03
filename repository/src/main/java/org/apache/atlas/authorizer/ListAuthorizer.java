@@ -4,14 +4,19 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.plugin.model.RangerPolicy;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 import static org.apache.atlas.authorizer.AuthorizerCommon.*;
 
 public class ListAuthorizer {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizationUtils.class);
 
     public static Map<String, Object> getElasticsearchDSL(String persona, String purpose, List<String> actions) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("ListAuthorizer.getElasticsearchDSL");
@@ -164,9 +169,11 @@ public class ListAuthorizer {
     public static Map<String, Object> getDSLForTagPolicies(List<RangerPolicy> policies) {
         // To reduce the number of clauses
         Set<String> allTags = new HashSet<>();
+        LOG.info("Found {} tag policies", policies.size());
 
         for (RangerPolicy policy : policies) {
             if (!policy.getResources().isEmpty()) {
+                LOG.info("policy {}", AtlasType.toJson(policies));
                 List<String> tags = policy.getResources().get("tag").getValues();
                 if (!tags.isEmpty()) {
                     allTags.addAll(tags);
