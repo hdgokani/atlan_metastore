@@ -29,6 +29,7 @@ import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
@@ -229,7 +230,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             event.setAction(EntityAuditEventV2.EntityAuditActionV2.fromString((String) source.get(ACTION)));
             event.setDetail((Map<String, Object>) source.get(DETAIL));
             if(source.get(CLASSIFICATION_DETAILS) instanceof java.util.ArrayList){
-                event.setClassificationDetails((List<Map<String, Object>>) source.get(CLASSIFICATION_DETAILS));
+                event.setClassificationDetails((List<AtlasClassification>) source.get(CLASSIFICATION_DETAILS));
             }
             event.setUser((String) source.get(USER));
             event.setCreated((long) source.get(CREATED));
