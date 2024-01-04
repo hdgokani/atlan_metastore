@@ -81,7 +81,7 @@ public class AuthorizerUtils {
     }
 
     public static void verifyAccessForEvaluator(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccessForEvaluator");
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccess");
         String userName = AuthorizerCommon.getCurrentUserName();
 
         if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
@@ -100,7 +100,7 @@ public class AuthorizerUtils {
     }
 
     public static void verifyRelationshipAccess(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyRelationshipAccess");
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccess");
         String userName = AuthorizerCommon.getCurrentUserName();
 
         if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
@@ -119,7 +119,7 @@ public class AuthorizerUtils {
     }
 
     public static void verifyRelationshipCreateAccess(String action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyRelationshipCreateAccess");
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccess");
         String userName = AuthorizerCommon.getCurrentUserName();
 
         if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {

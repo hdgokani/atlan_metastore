@@ -173,7 +173,7 @@ public class ListAuthorizer {
 
         for (RangerPolicy policy : policies) {
             if (!policy.getResources().isEmpty()) {
-                LOG.info("policy {}", AtlasType.toJson(policies));
+                LOG.info("policy {}", AtlasType.toJson(policy));
                 List<String> tags = policy.getResources().get("tag").getValues();
                 if (!tags.isEmpty()) {
                     allTags.addAll(tags);
