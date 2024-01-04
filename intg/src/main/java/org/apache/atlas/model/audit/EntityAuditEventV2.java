@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.Clearable;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasType;
@@ -133,7 +134,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
     private AtlasEntity         entity;
     private EntityAuditType     type;
     private Map<String, Object> detail;
-    private List<Map<String, Object>> classificationDetails;
+    private List<AtlasClassification> classificationDetails;
     private AtlasEntityHeader   entityDetail;
     private Map<String, String> headers;
 
@@ -417,11 +418,11 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         events.sort(sortOrderDesc ? comparator.reversed() : comparator);
     }
 
-    public List<Map<String, Object>> getClassificationDetails() {
+    public List<AtlasClassification> getClassificationDetails() {
         return classificationDetails;
     }
 
-    public void setClassificationDetails(List<Map<String, Object>> classificationDetails) {
+    public void setClassificationDetails(List<AtlasClassification> classificationDetails) {
         this.classificationDetails = classificationDetails;
     }
 }
