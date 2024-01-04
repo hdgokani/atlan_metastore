@@ -133,6 +133,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
     private AtlasEntity         entity;
     private EntityAuditType     type;
     private Map<String, Object> detail;
+    private List<Map<String, Object>> classificationDetails;
     private AtlasEntityHeader   entityDetail;
     private Map<String, String> headers;
 
@@ -414,5 +415,13 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         }
 
         events.sort(sortOrderDesc ? comparator.reversed() : comparator);
+    }
+
+    public List<Map<String, Object>> getClassificationDetails() {
+        return classificationDetails;
+    }
+
+    public void setClassificationDetails(List<Map<String, Object>> classificationDetails) {
+        this.classificationDetails = classificationDetails;
     }
 }
