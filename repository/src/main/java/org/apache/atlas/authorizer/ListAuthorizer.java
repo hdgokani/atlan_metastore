@@ -45,6 +45,8 @@ public class ListAuthorizer {
         List<RangerPolicy> abacPolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas_abac", actions, policyType);
         List<Map<String, Object>> abacPoliciesClauses = getDSLForAbacPolicies(abacPolicies);
 
+        LOG.info("Applicable policies to user {}", resourcePolicies.size() + tagPolicies.size() + abacPolicies.size());
+        
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         shouldClauses.addAll(resourcePoliciesClauses);
         if (tagPoliciesClause != null) {
