@@ -85,7 +85,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String USER = "user";
     private static final String DETAIL = "detail";
     private static final String ENTITY = "entity";
-    private static final String CLASSIFICATION_DETAILS = "classification_details";
+    private static final String CLASSIFICATION_DETAIL= "classificationDetail";
     private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
 
     /*
@@ -136,7 +136,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                             event.getEntityQualifiedName(),
                             event.getEntity().getTypeName(),
                             created,
-                            "" + event.getEntity().getUpdateTime().getTime());
+                            "" + event.getEntity().getUpdateTime().getTime(),
+                            event.getClassificationDetail());
 
                     bulkRequestBody.append(bulkMetadata);
                     bulkRequestBody.append(bulkItem);
@@ -176,7 +177,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         StringBuilder template = new StringBuilder();
 
         template.append("'{'\"entityId\":\"{0}\",\"action\":\"{1}\",\"detail\":{2},\"user\":\"{3}\", \"eventKey\":\"{4}\", " +
-                        "\"entityQualifiedName\": {5}, \"typeName\": \"{6}\",\"created\":{7}, \"timestamp\":{8}");
+                        "\"entityQualifiedName\": {5}, \"typeName\": \"{6}\",\"created\":{7}, \"timestamp\":{8}, \"classificationDetail\":{9}");
 
         if (MapUtils.isNotEmpty(requestContextHeaders)) {
             template.append(",")
@@ -228,9 +229,13 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             EntityAuditEventV2 event = new EntityAuditEventV2();
             event.setEntityId(entityGuid);
             event.setAction(EntityAuditEventV2.EntityAuditActionV2.fromString((String) source.get(ACTION)));
-            event.setDetail((Map<String, Object>) source.get(DETAIL));
-            if(source.get(CLASSIFICATION_DETAILS) instanceof java.util.ArrayList){
-                event.setClassificationDetails((List<AtlasClassification>) source.get(CLASSIFICATION_DETAILS));
+            if (source.get(DETAIL) != null) {
+                if (source.get(DETAIL) instanceof Map) {
+                    event.setDetail((Map<String, Object>) source.get(DETAIL));
+                }
+            }
+            if (source.get(CLASSIFICATION_DETAIL) instanceof List) {
+                event.setClassificationDetails((List<Map<String, Object>>) source.get(CLASSIFICATION_DETAIL));
             }
             event.setUser((String) source.get(USER));
             event.setCreated((long) source.get(CREATED));

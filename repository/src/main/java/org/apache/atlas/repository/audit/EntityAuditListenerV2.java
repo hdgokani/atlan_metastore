@@ -256,25 +256,25 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
             if (CollectionUtils.isNotEmpty(addedClassification)) {
                 EntityAuditEventV2 auditEvent = events.next();
-                auditEvent.setClassificationDetails(addedClassification);
+                auditEvent.setClassificationDetail(AtlasJson.toV1Json(addedClassification));
                 createEvent(auditEvent, entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classifications: " + AtlasType.toJson(new AtlasClassification()));
             }
 
             if (CollectionUtils.isNotEmpty(deletedClassification)) {
                 EntityAuditEventV2 auditEvent = events.next();
-                auditEvent.setClassificationDetails(deletedClassification);
+                auditEvent.setClassificationDetail(AtlasJson.toV1Json(deletedClassification));
                 createEvent(auditEvent, entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classifications: " + AtlasType.toJson(new AtlasClassification()));
             }
 
             if (CollectionUtils.isNotEmpty(updatedClassification)) {
                 EntityAuditEventV2 auditEvent = events.next();
-                auditEvent.setClassificationDetails(updatedClassification);
+                auditEvent.setClassificationDetail(AtlasJson.toV1Json(updatedClassification));
                 createEvent(auditEvent, entity, PROPAGATED_CLASSIFICATION_UPDATE, "Updated propagated classifications: " + AtlasType.toJson(new AtlasClassification()));
             }
 
             if (entityClassifications.get(entity) != null) {
                 EntityAuditEventV2 auditEvent = events.next();
-                auditEvent.setClassificationDetails(entityClassifications.get(entity));
+                auditEvent.setClassificationDetail(AtlasJson.toV1Json(entityClassifications.get(entity)));
                 createEvent(auditEvent, entity, CLASSIFICATION_UPDATE, "Updated classifications: " + AtlasType.toJson(new AtlasClassification()));
             }
 
@@ -300,8 +300,8 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             MetricRecorder metric = RequestContext.get().startMetricRecord("onClassificationsDeleted");
 
             FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
-            Map<AtlasEntity, List<AtlasClassification>> entityClassifications = new HashMap<>();
-            Map<AtlasEntity, List<AtlasClassification>> propagatedClassifications = new HashMap<>();
+            Map<AtlasEntity, List<Map<String,Object>>> entityClassifications = new HashMap<>();
+            Map<AtlasEntity, List<Map<String,Object>>> propagatedClassifications = new HashMap<>();
             getClassificationTextFromEntity(classifications, entity, entityClassifications, propagatedClassifications);
             emitDeleteClassificationEvent(events, entityClassifications, propagatedClassifications);
 
@@ -314,8 +314,8 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         if (CollectionUtils.isNotEmpty(classifications) && CollectionUtils.isNotEmpty(entities)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("onClassificationsDeleted");
             FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
-            Map<AtlasEntity, List<AtlasClassification>> entityClassifications = new HashMap<>();
-            Map<AtlasEntity, List<AtlasClassification>> propagatedClassifications = new HashMap<>();
+            Map<AtlasEntity, List<Map<String,Object>>> entityClassifications = new HashMap<>();
+            Map<AtlasEntity, List<Map<String,Object>>> propagatedClassifications = new HashMap<>();
             getClassificationsTextFromEntities(classifications, entities, entityClassifications, propagatedClassifications);
             emitDeleteClassificationEvent(events, entityClassifications, propagatedClassifications);
 
@@ -838,20 +838,20 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     private void emitAddClassificationEvent(FixedBufferList<EntityAuditEventV2> events, Map<AtlasEntity, List<AtlasClassification>> entityClassifications, Map<AtlasEntity, List<AtlasClassification>> propagatedClassifications) throws AtlasBaseException {
         entityClassifications.forEach((entity, eClassifications) -> {
             EntityAuditEventV2 auditEvent = events.next();
-            auditEvent.setClassificationDetails(eClassifications);
-            createEvent(auditEvent, entity, CLASSIFICATION_ADD, "Added classifications: " + AtlasType.toJson(new AtlasClassification()));
+            auditEvent.setClassificationDetail(AtlasJson.toV1Json(eClassifications));
+            createEvent(auditEvent, entity, CLASSIFICATION_ADD, "Added classifications: " + null);
         });
 
         propagatedClassifications.forEach((entity, pClassifications) -> {
             EntityAuditEventV2 auditEvent = events.next();
-            auditEvent.setClassificationDetails(pClassifications);
-            createEvent(auditEvent, entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classifications: " + AtlasType.toJson(new AtlasClassification()));
+            auditEvent.setClassificationDetail(AtlasJson.toV1Json(pClassifications));
+            createEvent(auditEvent, entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classifications: " + null);
         });
         for (EntityAuditRepository auditRepository : auditRepositories) {
             auditRepository.putEventsV2(events.toList());
         }
     }
-    private void getClassificationTextFromEntity(List<AtlasClassification> classifications, AtlasEntity entity, Map<AtlasEntity, List<AtlasClassification>> entityClassifications, Map<AtlasEntity, List<AtlasClassification>> propagatedClassifications) {
+    private void getClassificationTextFromEntity(List<AtlasClassification> classifications, AtlasEntity entity, Map<AtlasEntity, List<Map<String, Object>>> entityClassifications, Map<AtlasEntity, List<Map<String, Object>>> propagatedClassifications) {
         if (entityClassifications == null) {
             entityClassifications = new HashMap<>();
         }
@@ -861,30 +861,28 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
         for (AtlasClassification classification : classifications) {
             if (entity.getGuid().equals(classification.getEntityGuid())) {
-                entityClassifications.computeIfAbsent(entity, key -> new ArrayList<>()).add(new AtlasClassification(classification.getTypeName()));
+                entityClassifications.computeIfAbsent(entity, key -> new ArrayList<>()).add(getDeleteClassificationMap(classification.getTypeName()));
             } else {
-                propagatedClassifications.computeIfAbsent(entity, key -> new ArrayList<>()).add(new AtlasClassification(classification.getTypeName()));
+                propagatedClassifications.computeIfAbsent(entity, key -> new ArrayList<>()).add(getDeleteClassificationMap(classification.getTypeName()));
             }
         }
     }
 
-    private void getClassificationsTextFromEntities(List<AtlasClassification> classifications, List<AtlasEntity> entities, Map<AtlasEntity, List<AtlasClassification>> entityClassifications, Map<AtlasEntity, List<AtlasClassification>> propagatedClassifications) {
+    private void getClassificationsTextFromEntities(List<AtlasClassification> classifications, List<AtlasEntity> entities, Map<AtlasEntity, List<Map<String, Object>>> entityClassifications, Map<AtlasEntity, List<Map<String, Object>>> propagatedClassifications) {
         for (AtlasEntity entity : entities) {
             getClassificationTextFromEntity(classifications, entity, entityClassifications, propagatedClassifications);
         }
     }
-
-    private void emitDeleteClassificationEvent(FixedBufferList<EntityAuditEventV2> events, Map<AtlasEntity, List<AtlasClassification>> entityClassifications, Map<AtlasEntity, List<AtlasClassification>> propagatedClassifications) throws AtlasBaseException {
+    private void emitDeleteClassificationEvent(FixedBufferList<EntityAuditEventV2> events, Map<AtlasEntity, List<Map<String, Object>>> entityClassifications, Map<AtlasEntity, List<Map<String, Object>>> propagatedClassifications) throws AtlasBaseException {
         entityClassifications.forEach((entity, eClassifications) -> {
             EntityAuditEventV2 auditEvent = events.next();
-            auditEvent.setClassificationDetails(eClassifications);
-            createEvent(events.next(), entity, CLASSIFICATION_DELETE, "Deleted classifications: " + AtlasType.toJson(new ArrayList<>()));
+            auditEvent.setClassificationDetail(AtlasJson.toV1Json(eClassifications));
+            createEvent(auditEvent, entity, CLASSIFICATION_DELETE, "Deleted classifications: " + null);
         });
-
         propagatedClassifications.forEach((entity, pClassifications) -> {
             EntityAuditEventV2 auditEvent = events.next();
-            auditEvent.setClassificationDetails(pClassifications);
-            createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classifications: " + AtlasType.toJson(new ArrayList<>()));
+            auditEvent.setClassificationDetail(AtlasJson.toV1Json(pClassifications));
+            createEvent(auditEvent, entity, PROPAGATED_CLASSIFICATION_DELETE, "Deleted propagated classifications: " + null);
         });
 
         for (EntityAuditRepository auditRepository : auditRepositories) {
@@ -892,3 +890,4 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
     }
 }
+
