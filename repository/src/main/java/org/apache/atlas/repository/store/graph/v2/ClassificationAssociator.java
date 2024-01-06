@@ -193,42 +193,20 @@ public class ClassificationAssociator {
 
             AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("commitChanges.notify");
             Map<AtlasClassification, Collection<Object>> deleted = RequestContext.get().getDeletedClassificationAndVertices();
-            Set<AtlasVertex> allVertices = new HashSet<>();
-
             if (MapUtils.isNotEmpty(deleted)) {
-                for (AtlasClassification deletedClassification : deleted.keySet()) {
-                    Collection<Object> vertices = deleted.get(deletedClassification);
-                    List<AtlasEntity> propagatedEntities = new ArrayList<>();
-
-                    for (Object obj : vertices) {
-                        AtlasVertex vertex = (AtlasVertex) obj;
-                        AtlasEntity entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), IGNORE_REL);
-
-                        allVertices.add(vertex);
-                        propagatedEntities.add(entity);
-                    }
-                    entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(deletedClassification));
+                Map<AtlasEntity, List<AtlasClassification>> entityClassification = getEntityClassificationsMapping(deleted);
+                for (Map.Entry<AtlasEntity, List<AtlasClassification>> atlasEntityListEntry : entityClassification.entrySet()) {
+                    entityChangeNotifier.onClassificationDeletedFromEntity(atlasEntityListEntry.getKey(), atlasEntityListEntry.getValue());
                 }
             }
 
             Map<AtlasClassification, Collection<Object>> added = RequestContext.get().getAddedClassificationAndVertices();
             if (MapUtils.isNotEmpty(added)) {
-                for (AtlasClassification addedClassification : added.keySet()) {
-                    Collection<Object> vertices = added.get(addedClassification);
-                    List<AtlasEntity> propagatedEntities = new ArrayList<>();
-
-                    for (Object obj : vertices) {
-                        AtlasVertex vertex = (AtlasVertex) obj;
-                        AtlasEntity entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), IGNORE_REL);
-
-                        allVertices.add(vertex);
-                        propagatedEntities.add(entity);
-                    }
-                    entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(addedClassification), false);
+                Map<AtlasEntity, List<AtlasClassification>> entityClassification = getEntityClassificationsMapping(added);
+                for (Map.Entry<AtlasEntity, List<AtlasClassification>> atlasEntityListEntry : entityClassification.entrySet()) {
+                    entityChangeNotifier.onClassificationAddedToEntity(atlasEntityListEntry.getKey(), atlasEntityListEntry.getValue());
                 }
             }
-
-            entityGraphMapper.updateClassificationText(null, allVertices);
             transactionInterceptHelper.intercept();
             RequestContext.get().endMetricRecord(recorder);
             RequestContext.get().setDelayTagNotifications(false);
@@ -308,14 +286,12 @@ public class ClassificationAssociator {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
-
-            for (AtlasClassification c : list) {
-                try {
-                    entitiesStore.deleteClassification(entityGuid, c.getTypeName());
-                } catch (AtlasBaseException e) {
-                    LOG.error("Failed to remove classification association between {}, entity with guid {}", c.getTypeName(), c.getEntityGuid());
-                    throw e;
-                }
+            String classificationNames = getClassificationNames(list);
+            try {
+                entitiesStore.deleteClassifications(entityGuid, list);
+            } catch (AtlasBaseException e) {
+                LOG.error("Failed to remove classification association between {}, entity with guid {}", classificationNames, entityGuid);
+                throw e;
             }
         }
 
