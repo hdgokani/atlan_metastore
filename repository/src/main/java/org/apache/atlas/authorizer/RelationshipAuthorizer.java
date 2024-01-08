@@ -382,6 +382,7 @@ public class RelationshipAuthorizer {
             RestClient restClient = getLowLevelClient();
             AtlasElasticsearchQuery elasticsearchQuery = new AtlasElasticsearchQuery("janusgraph_vertex_index", restClient);
             Map<String, Object> elasticsearchResult = null;
+            LOG.info(dslString);
             elasticsearchResult = elasticsearchQuery.runQueryWithLowLevelClient(dslString);
             Integer count = null;
             if (elasticsearchResult!=null) {
