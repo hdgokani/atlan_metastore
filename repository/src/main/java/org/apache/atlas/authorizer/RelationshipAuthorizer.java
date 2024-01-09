@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.authorizer.AuthorizerCommon.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.AuthorizerCommon.arrayListContains;
 import static org.apache.atlas.authorizer.AuthorizerCommon.getMap;
+import static org.apache.atlas.authorizer.EntityAuthorizer.validateFilterCriteriaWithEntity;
 import static org.apache.atlas.authorizer.ListAuthorizer.getDSLForResources;
 import static org.apache.atlas.model.TypeCategory.ARRAY;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
@@ -247,7 +248,7 @@ public class RelationshipAuthorizer {
         return false;
     }
 
-    public static boolean validateFilterCriteriaWithEntity(JsonNode data, AtlasEntity entity) {
+    /*public static boolean validateFilterCriteriaWithEntity(JsonNode data, AtlasEntity entity) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("RelationshipAuthorizer.validateFilterCriteriaWithEntity");
 
         String condition = data.get("condition").asText();
@@ -365,7 +366,7 @@ public class RelationshipAuthorizer {
 
         RequestContext.get().endMetricRecord(recorder);
         return result;
-    }
+    }*/
 
     public static boolean isRelationshipAccessAllowed(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("RelationshipAuthorizer.isRelationshipAccessAllowed");
