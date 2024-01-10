@@ -346,8 +346,8 @@ public class EntityGraphMapper {
 
         MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributesAndClassifications");
 
-        EntityMutationResponse resp       = new EntityMutationResponse();
-        RequestContext         reqContext = RequestContext.get();
+        EntityMutationResponse resp = new EntityMutationResponse();
+        RequestContext reqContext = RequestContext.get();
 
         if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore())) {
             restoreHandlerV1.restoreEntities(context.getEntitiesToRestore());
@@ -356,6 +356,7 @@ public class EntityGraphMapper {
         Collection<AtlasEntity> createdEntities = context.getCreatedEntities();
         Collection<AtlasEntity> updatedEntities = context.getUpdatedEntities();
         Collection<AtlasEntity> appendEntities = context.getUpdatedEntitiesForAppendRelationshipAttribute();
+        Collection<AtlasEntity> removeEntities = context.getEntitiesUpdatedWithRemoveRelationshipAttribute();
 
         if (CollectionUtils.isNotEmpty(createdEntities)) {
             for (AtlasEntity createdEntity : createdEntities) {
@@ -371,7 +372,7 @@ public class EntityGraphMapper {
 
                     setCustomAttributes(vertex, createdEntity);
                     setSystemAttributesToEntity(vertex, createdEntity);
-                    resp.addEntity(CREATE, constructHeader(createdEntity, vertex,  entityType.getAllAttributes()));
+                    resp.addEntity(CREATE, constructHeader(createdEntity, vertex, entityType.getAllAttributes()));
                     addClassifications(context, guid, createdEntity.getClassifications());
 
                     if (MapUtils.isNotEmpty(createdEntity.getBusinessAttributes())) {
@@ -478,15 +479,26 @@ public class EntityGraphMapper {
                     throw baseException;
                 }
             }
-        } else if (CollectionUtils.isNotEmpty(appendEntities)) {
-            for (AtlasEntity entity : appendEntities) {
-                String guid = entity.getGuid();
-                AtlasVertex vertex = context.getVertex(guid);
-                AtlasEntityType entityType = context.getType(guid);
-                mapAppendRelationshipAttributes(entity, entityType, vertex, UPDATE, context);
+        } else {
+
+            if (CollectionUtils.isNotEmpty(appendEntities)) {
+                for (AtlasEntity entity : appendEntities) {
+                    String guid = entity.getGuid();
+                    AtlasVertex vertex = context.getVertex(guid);
+                    AtlasEntityType entityType = context.getType(guid);
+                    mapAppendRelationshipAttributes(entity, entityType, vertex, UPDATE, context);
+                }
+            }
+
+            if (CollectionUtils.isNotEmpty(removeEntities)) {
+                for (AtlasEntity entity : removeEntities) {
+                    String guid = entity.getGuid();
+                    AtlasVertex vertex = context.getVertex(guid);
+                    AtlasEntityType entityType = context.getType(guid);
+                    mapRemoveRelationshipAttributes(entity, entityType, vertex, UPDATE, context);
+                }
             }
         }
-
 
         if (CollectionUtils.isNotEmpty(context.getEntitiesToDelete())) {
             deleteDelegate.getHandler().deleteEntities(context.getEntitiesToDelete());
@@ -1074,11 +1086,11 @@ public class EntityGraphMapper {
     private void mapAppendRelationshipAttributes(AtlasEntity entity, AtlasEntityType entityType, AtlasVertex vertex, EntityOperation op,
                                            EntityMutationContext context) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> mapRelationshipAttributes({}, {})", op, entity.getTypeName());
+            LOG.debug("==> mapAppendRelationshipAttributes({}, {})", op, entity.getTypeName());
         }
 
         if (MapUtils.isNotEmpty(entity.getAppendRelationshipAttributes())) {
-            MetricRecorder metric = RequestContext.get().startMetricRecord("mapRelationshipAttributes");
+            MetricRecorder metric = RequestContext.get().startMetricRecord("mapAppendRelationshipAttributes");
 
             if (op.equals(CREATE)) {
                 for (String attrName : entityType.getRelationshipAttributes().keySet()) {
@@ -1097,7 +1109,7 @@ public class EntityGraphMapper {
                         String         relationType = AtlasEntityUtil.getRelationshipType(attrValue);
                         AtlasAttribute attribute    = entityType.getRelationshipAttribute(attrName, relationType);
 
-                        mapAppendRelationshipAttribute(attribute, attrValue, vertex, op, context);
+                        mapAttribute(attribute, attrValue, vertex, op, context, true, false);
                     }
                 }
             }
@@ -1108,10 +1120,55 @@ public class EntityGraphMapper {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== mapRelationshipAttributes({}, {})", op, entity.getTypeName());
+            LOG.debug("<== mapAppendRelationshipAttributes({}, {})", op, entity.getTypeName());
+        }
+    }
+
+    private void mapRemoveRelationshipAttributes(AtlasEntity entity, AtlasEntityType entityType, AtlasVertex vertex, EntityOperation op,
+                                                 EntityMutationContext context) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> mapRemoveRelationshipAttributes({}, {})", op, entity.getTypeName());
+        }
+
+        if (MapUtils.isNotEmpty(entity.getRemoveRelationshipAttributes())) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("mapRemoveRelationshipAttributes");
+
+            if (op.equals(CREATE)) {
+                for (String attrName : entityType.getRelationshipAttributes().keySet()) {
+                    Object         attrValue    = entity.getRemoveRelationshipAttribute(attrName);
+                    String         relationType = AtlasEntityUtil.getRelationshipType(attrValue);
+                    AtlasAttribute attribute    = entityType.getRelationshipAttribute(attrName, relationType);
+
+                    mapAttribute(attribute, attrValue, vertex, op, context);
+                }
+
+            } else if (op.equals(UPDATE) || op.equals(PARTIAL_UPDATE)) {
+                // relationship attributes mapping
+                for (String attrName : entityType.getRelationshipAttributes().keySet()) {
+                    if (entity.hasRemoveRelationshipAttribute(attrName)) {
+                        Object         attrValue    = entity.getRemoveRelationshipAttribute(attrName);
+                        String         relationType = AtlasEntityUtil.getRelationshipType(attrValue);
+                        AtlasAttribute attribute    = entityType.getRelationshipAttribute(attrName, relationType);
+
+                        mapAttribute(attribute, attrValue, vertex, op, context, false, true);
+                    }
+                }
+            }
+
+            updateModificationMetadata(vertex);
+
+            RequestContext.get().endMetricRecord(metric);
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== mapRemoveRelationshipAttributes({}, {})", op, entity.getTypeName());
         }
     }
     private void mapAttribute(AtlasAttribute attribute, Object attrValue, AtlasVertex vertex, EntityOperation op, EntityMutationContext context) throws AtlasBaseException {
+       mapAttribute(attribute, attrValue, vertex, op, context, false, false);
+    }
+
+    private void mapAttribute(AtlasAttribute attribute, Object attrValue, AtlasVertex vertex, EntityOperation op, EntityMutationContext context, boolean isAppendOp, boolean isRemoveOp) throws AtlasBaseException {
         boolean isDeletedEntity = context.isDeletedEntity(vertex);
         AtlasType         attrType     = attribute.getAttributeType();
         if (attrValue == null) {
@@ -1136,40 +1193,11 @@ public class EntityGraphMapper {
             mapPrimitiveValue(vertex, attribute, attrValue, isDeletedEntity);
         } else {
             AttributeMutationContext ctx = new AttributeMutationContext(op, vertex, attribute, attrValue);
-            mapToVertexByTypeCategory(ctx, context, false);
+            mapToVertexByTypeCategory(ctx, context, isAppendOp, isRemoveOp);
         }
     }
 
-    private void mapAppendRelationshipAttribute(AtlasAttribute attribute, Object attrValue, AtlasVertex vertex, EntityOperation op, EntityMutationContext context) throws AtlasBaseException {
-        boolean isDeletedEntity = context.isDeletedEntity(vertex);
-        AtlasType         attrType     = attribute.getAttributeType();
-        if (attrValue == null) {
-            AtlasAttributeDef attributeDef = attribute.getAttributeDef();
-
-            if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE) {
-                if (attributeDef.getDefaultValue() != null) {
-                    attrValue = attrType.createDefaultValue(attributeDef.getDefaultValue());
-                } else if (attributeDef.getIsDefaultValueNull() && ALLOWED_DATATYPES_FOR_DEFAULT_NULL.contains(attribute.getTypeName())) {
-                    attrValue = null;
-                } else {
-                    if (attribute.getAttributeDef().getIsOptional()) {
-                        attrValue = attrType.createOptionalDefaultValue();
-                    } else {
-                        attrValue = attrType.createDefaultValue();
-                    }
-                }
-            }
-        }
-
-        if (attrType.getTypeCategory() == TypeCategory.PRIMITIVE || attrType.getTypeCategory() == TypeCategory.ENUM) {
-            mapPrimitiveValue(vertex, attribute, attrValue, isDeletedEntity);
-        } else {
-            AttributeMutationContext ctx = new AttributeMutationContext(op, vertex, attribute, attrValue);
-            mapToVertexByTypeCategory(ctx, context, true);
-        }
-    }
-
-    private Object mapToVertexByTypeCategory(AttributeMutationContext ctx, EntityMutationContext context, boolean isAppendOperation) throws AtlasBaseException {
+    private Object mapToVertexByTypeCategory(AttributeMutationContext ctx, EntityMutationContext context, boolean isAppendOp, boolean isRemoveOp) throws AtlasBaseException {
         if (ctx.getOp() == CREATE && ctx.getValue() == null) {
             return null;
         }
@@ -1280,9 +1308,14 @@ public class EntityGraphMapper {
                 return mapMapValue(ctx, context);
 
             case ARRAY:
-                if (isAppendOperation){
+                if (isAppendOp){
                     return appendArrayValue(ctx, context);
                 }
+
+                if (isRemoveOp){
+                  return removeArrayValue(ctx, context);
+                }
+
                 return mapArrayValue(ctx, context);
 
             default:
@@ -2038,6 +2071,11 @@ public class EntityGraphMapper {
         }
 
         return newElementsCreated;
+    }
+
+    public List removeArrayValue(AttributeMutationContext ctx, EntityMutationContext context) throws AtlasBaseException {
+        return new ArrayList();
+
     }
 
     private void addEdgesToContext(String guid, List<Object> newElementsCreated, List<AtlasEdge> removedElements) {
