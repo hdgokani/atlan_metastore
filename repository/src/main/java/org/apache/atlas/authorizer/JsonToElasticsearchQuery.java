@@ -2,17 +2,24 @@ package org.apache.atlas.authorizer;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JsonToElasticsearchQuery {
+    private static final Logger LOG = LoggerFactory.getLogger(JsonToElasticsearchQuery.class);
 
-    public static JsonNode convertConditionToQuery(String condition, JsonNode criterion, ObjectMapper mapper) {
+    private static JsonNode convertConditionToQuery(String condition, JsonNode criterion, ObjectMapper mapper) {
         if (condition.equals("AND")) {
             return mapper.createObjectNode().set("bool", mapper.createObjectNode().set("filter", mapper.createArrayNode()));
         } else if (condition.equals("OR")) {
-            JsonNode node = mapper.createObjectNode().set("bool", mapper.createObjectNode());
-            return mapper.createObjectNode().set("bool", mapper.createObjectNode().set("should", mapper.createArrayNode()));
+            //JsonNode node = mapper.createObjectNode().set("bool", mapper.createObjectNode());
+            return mapper.createObjectNode()
+                    .set("bool", mapper.createObjectNode()
+                    .set("should", mapper.createArrayNode()));
         } else {
             throw new IllegalArgumentException("Unsupported condition: " + condition);
         }
@@ -38,26 +45,39 @@ public class JsonToElasticsearchQuery {
                 String attributeName = crit.get("attributeName").asText();
                 String attributeValue = crit.get("attributeValue").asText();
 
-                if (operator.equals("EQUALS")) {
-                    com.fasterxml.jackson.databind.node.ObjectNode termNode = ((com.fasterxml.jackson.databind.node.ArrayNode) query.get("bool").get(condition.equals("AND") ? "filter" : "should")).addObject();
-                    termNode.putObject("term").put(attributeName, attributeValue);
-                } else if (operator.equals("NOT_EQUALS")) {
-                    com.fasterxml.jackson.databind.node.ObjectNode termNode = ((com.fasterxml.jackson.databind.node.ArrayNode) query.get("bool").get(condition.equals("AND") ? "filter" : "should")).addObject();
-                    termNode.putObject("bool").putObject("must_not").putObject("term").put(attributeName, attributeValue);
-                } else if (operator.equals("STARTS_WITH")) {
-                    com.fasterxml.jackson.databind.node.ObjectNode wildcardNode = ((com.fasterxml.jackson.databind.node.ArrayNode) query.get("bool").get(condition.equals("AND") ? "filter" : "should")).addObject();
-                    wildcardNode.putObject("wildcard").put(attributeName, attributeValue + "*");
-                } else if (operator.equals("ENDS_WITH")) {
-                    com.fasterxml.jackson.databind.node.ObjectNode wildcardNode = ((com.fasterxml.jackson.databind.node.ArrayNode) query.get("bool").get(condition.equals("AND") ? "filter" : "should")).addObject();
-                    wildcardNode.putObject("wildcard").put(attributeName, "*" + attributeValue);
-                } else if (operator.equals("IN")) {
-                    com.fasterxml.jackson.databind.node.ObjectNode termsNode = ((com.fasterxml.jackson.databind.node.ArrayNode) query.get("bool").get(condition.equals("AND") ? "filter" : "should")).addObject();
-                    termsNode.putObject("terms").set(attributeName, crit.get("attributeValue"));
-                } else if (operator.equals("NOT_IN")) {
-                    com.fasterxml.jackson.databind.node.ObjectNode termsNode = ((com.fasterxml.jackson.databind.node.ArrayNode) query.get("bool").get(condition.equals("AND") ? "filter" : "should")).addObject();
-                    termsNode.putObject("bool").putObject("must_not").putObject("terms").put(attributeName, crit.get("attributeValue"));
-                }
+                switch (operator) {
+                    case "EQUALS":
+                        ObjectNode termNode = ((ArrayNode) query.get("bool").get(condition.equals("AND") ? "filter" : "should")).addObject();
+                        termNode.putObject("term").put(attributeName, attributeValue);
+                        break;
 
+                    case "NOT_EQUALS":
+                        termNode = ((ArrayNode) query.get("bool").get(condition.equals("AND") ? "filter" : "should")).addObject();
+                        termNode.putObject("bool").putObject("must_not").putObject("term").put(attributeName, attributeValue);
+                        break;
+
+                    case "STARTS_WITH":
+                        ObjectNode wildcardNode = ((ArrayNode) query.get("bool").get(condition.equals("AND") ? "filter" : "should")).addObject();
+                        wildcardNode.putObject("wildcard").put(attributeName, attributeValue + "*");
+                        break;
+
+                    case "ENDS_WITH":
+                        wildcardNode = ((ArrayNode) query.get("bool").get(condition.equals("AND") ? "filter" : "should")).addObject();
+                        wildcardNode.putObject("wildcard").put(attributeName, "*" + attributeValue);
+                        break;
+
+                    case "IN":
+                        ObjectNode termsNode = ((ArrayNode) query.get("bool").get(condition.equals("AND") ? "filter" : "should")).addObject();
+                        termsNode.putObject("terms").set(attributeName, crit.get("attributeValue"));
+                        break;
+
+                    case "NOT_IN":
+                        termsNode = ((ArrayNode) query.get("bool").get(condition.equals("AND") ? "filter" : "should")).addObject();
+                        termsNode.putObject("bool").putObject("must_not").putObject("terms").put(attributeName, crit.get("attributeValue"));
+                        break;
+
+                    default: LOG.warn("Found unknown operator {}", operator);
+                }
             }
         }
         RequestContext.get().endMetricRecord(convertJsonToQueryMetrics);

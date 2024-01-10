@@ -11,7 +11,9 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.plugin.model.RangerPolicy;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.*;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.elasticsearch.client.RestClient;
@@ -59,6 +61,10 @@ public class RelationshipAuthorizer {
             ObjectMapper mapper = new ObjectMapper();
             boolean ret = false;
             boolean eval;
+
+            AtlasVertex oneVertex = AtlasGraphUtilsV2.findByGuid(endOneEntity.getGuid());
+            AtlasVertex twoVertex = AtlasGraphUtilsV2.findByGuid(endTwoEntity.getGuid());
+
             for (String filterCriteria: filterCriteriaList) {
                 eval = false;
                 JsonNode filterCriteriaNode = null;
@@ -69,11 +75,11 @@ public class RelationshipAuthorizer {
                 }
                 if (filterCriteriaNode != null && filterCriteriaNode.get("endOneEntity") != null) {
                     JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("endOneEntity");
-                    eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, new AtlasEntity(endOneEntity));
+                    eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, new AtlasEntity(endOneEntity), oneVertex);
 
                     if (eval) {
                         entityFilterCriteriaNode = filterCriteriaNode.get("endTwoEntity");
-                        eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, new AtlasEntity(endTwoEntity));
+                        eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, new AtlasEntity(endTwoEntity), twoVertex);
                     }
                 }
                 ret = ret || eval;
