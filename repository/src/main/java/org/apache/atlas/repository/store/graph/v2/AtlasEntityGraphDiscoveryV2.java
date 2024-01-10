@@ -376,15 +376,28 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
                 visitAttribute(attribute.getAttributeType(), attrVal, entity.getGuid());
 
                 visitedAttributes.add(attrName);
-            } else if (entity.hasAppendRelationshipAttribute(attrName)) {
-                discoveryContext.setAppendRelationshipAttributeVisited(true);
-                Object         attrVal          = entity.getAppendRelationshipAttribute(attrName);
-                String         relationshipType = AtlasEntityUtil.getRelationshipType(attrVal);
-                AtlasAttribute attribute        = entityType.getRelationshipAttribute(attrName, relationshipType);
+            } else {
+                if (entity.hasAppendRelationshipAttribute(attrName)) {
+                    discoveryContext.setAppendRelationshipAttributeVisited(true);
+                    Object attrVal = entity.getAppendRelationshipAttribute(attrName);
+                    String relationshipType = AtlasEntityUtil.getRelationshipType(attrVal);
+                    AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, relationshipType);
 
-                visitAttribute(attribute.getAttributeType(), attrVal, entity.getGuid());
+                    visitAttribute(attribute.getAttributeType(), attrVal, entity.getGuid());
 
-                visitedAttributes.add(attrName);
+                    visitedAttributes.add(attrName);
+                }
+
+                if (entity.hasRemoveRelationshipAttribute(attrName)) {
+                    discoveryContext.setRemoveRelationshipAttributeVisited(true);
+                    Object attrVal = entity.getRemoveRelationshipAttribute(attrName);
+                    String relationshipType = AtlasEntityUtil.getRelationshipType(attrVal);
+                    AtlasAttribute attribute = entityType.getRelationshipAttribute(attrName, relationshipType);
+
+                    visitAttribute(attribute.getAttributeType(), attrVal, entity.getGuid());
+
+                    visitedAttributes.add(attrName);
+                }
             }
         }
     }
