@@ -31,6 +31,7 @@ public class EntityMutationContext {
     private final List<AtlasEntity> entitiesCreated = new ArrayList<>();
     private final List<AtlasEntity> entitiesUpdated = new ArrayList<>();
     private final List<AtlasEntity> entitiesUpdatedWithAppendRelationshipAttribute = new ArrayList<>();
+    private final List<AtlasEntity> entitiesUpdatedWithRemoveRelationshipAttribute = new ArrayList<>();
     private final Map<String, AtlasEntityType> entityVsType = new HashMap<>();
     private final Map<String, AtlasVertex> entityVsVertex = new HashMap<>();
     private final Map<String, String> guidAssignments = new HashMap<>();
@@ -60,6 +61,14 @@ public class EntityMutationContext {
 
     public void setUpdatedWithRelationshipAttributes(AtlasEntity entity){
         entitiesUpdatedWithAppendRelationshipAttribute.add(entity);
+    }
+
+    public void setUpdatedWithRemoveRelationshipAttributes(AtlasEntity entity){
+        entitiesUpdatedWithRemoveRelationshipAttribute.add(entity);
+    }
+
+    public Collection<AtlasEntity> getEntitiesUpdatedWithRemoveRelationshipAttribute() {
+        return entitiesUpdatedWithRemoveRelationshipAttribute;
     }
 
     public void addUpdated(String internalGuid, AtlasEntity entity, AtlasEntityType type, AtlasVertex atlasVertex) {

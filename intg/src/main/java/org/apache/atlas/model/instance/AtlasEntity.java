@@ -364,6 +364,12 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         return a != null ? a.get(name) : null;
     }
 
+    public Object getRemoveRelationshipAttribute(String name) {
+        Map<String, Object> a = this.removeRelationshipAttributes;
+
+        return a != null ? a.get(name) : null;
+    }
+
     public boolean hasRelationshipAttribute(String name) {
         Map<String, Object> r = this.relationshipAttributes;
 
@@ -404,7 +410,24 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         this.removeRelationshipAttributes = removeRelationshipAttributes;
     }
 
+    public boolean hasRemoveRelationshipAttribute(String name) {
+        Map<String, Object> r = this.removeRelationshipAttributes;
 
+        return r != null ? r.containsKey(name) : false;
+    }
+
+    public void setRemoveRelationshipAttribute(String name, Object value) {
+        Map<String, Object> r = this.removeRelationshipAttributes;
+
+        if (r != null) {
+            r.put(name, value);
+        } else {
+            r = new HashMap<>();
+            r.put(name, value);
+
+            this.removeRelationshipAttributes = r;
+        }
+    }
     public Map<String, String> getCustomAttributes() {
         return customAttributes;
     }
