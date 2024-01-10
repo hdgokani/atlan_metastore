@@ -411,7 +411,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     }
 
     public boolean hasRemoveRelationshipAttribute(String name) {
-        Map<String, Object> r = this.relationshipAttributes;
+        Map<String, Object> r = this.removeRelationshipAttributes;
 
         return r != null ? r.containsKey(name) : false;
     }
