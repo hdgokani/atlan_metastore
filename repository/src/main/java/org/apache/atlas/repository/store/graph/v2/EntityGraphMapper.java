@@ -126,7 +126,6 @@ import static org.apache.atlas.repository.graph.GraphHelper.getTraitLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeNames;
-import static org.apache.atlas.repository.graph.GraphHelper.isActive;
 import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled;
 import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
@@ -486,7 +485,7 @@ public class EntityGraphMapper {
                     String guid = entity.getGuid();
                     AtlasVertex vertex = context.getVertex(guid);
                     AtlasEntityType entityType = context.getType(guid);
-                    mapAppendRelationshipAttributes(entity, entityType, vertex, UPDATE, context);
+                    mapAppendRemoveRelationshipAttributes(entity, entityType, vertex, UPDATE, context, true, false);
                 }
             }
 
@@ -495,7 +494,7 @@ public class EntityGraphMapper {
                     String guid = entity.getGuid();
                     AtlasVertex vertex = context.getVertex(guid);
                     AtlasEntityType entityType = context.getType(guid);
-                    mapRemoveRelationshipAttributes(entity, entityType, vertex, UPDATE, context);
+                    mapAppendRemoveRelationshipAttributes(entity, entityType, vertex, UPDATE, context, false, true);
                 }
             }
         }
@@ -1083,87 +1082,51 @@ public class EntityGraphMapper {
         }
     }
 
-    private void mapAppendRelationshipAttributes(AtlasEntity entity, AtlasEntityType entityType, AtlasVertex vertex, EntityOperation op,
-                                           EntityMutationContext context) throws AtlasBaseException {
+    private void mapAppendRemoveRelationshipAttributes(AtlasEntity entity, AtlasEntityType entityType, AtlasVertex vertex, EntityOperation op,
+                                                       EntityMutationContext context, boolean isAppendOp, boolean isRemoveOp) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> mapAppendRelationshipAttributes({}, {})", op, entity.getTypeName());
+            LOG.debug("==> mapAppendRemoveRelationshipAttributes({}, {})", op, entity.getTypeName());
         }
 
-        if (MapUtils.isNotEmpty(entity.getAppendRelationshipAttributes())) {
-            MetricRecorder metric = RequestContext.get().startMetricRecord("mapAppendRelationshipAttributes");
+        MetricRecorder metric = RequestContext.get().startMetricRecord("mapAppendRemoveRelationshipAttributes");
 
-            if (op.equals(CREATE)) {
-                for (String attrName : entityType.getRelationshipAttributes().keySet()) {
-                    Object         attrValue    = entity.getAppendRelationshipAttribute(attrName);
-                    String         relationType = AtlasEntityUtil.getRelationshipType(attrValue);
-                    AtlasAttribute attribute    = entityType.getRelationshipAttribute(attrName, relationType);
-
-                    mapAttribute(attribute, attrValue, vertex, op, context);
-                }
-
-            } else if (op.equals(UPDATE) || op.equals(PARTIAL_UPDATE)) {
+        if (isAppendOp && MapUtils.isNotEmpty(entity.getAppendRelationshipAttributes())) {
+         if (op.equals(UPDATE) || op.equals(PARTIAL_UPDATE)) {
                 // relationship attributes mapping
                 for (String attrName : entityType.getRelationshipAttributes().keySet()) {
                     if (entity.hasAppendRelationshipAttribute(attrName)) {
                         Object         attrValue    = entity.getAppendRelationshipAttribute(attrName);
                         String         relationType = AtlasEntityUtil.getRelationshipType(attrValue);
                         AtlasAttribute attribute    = entityType.getRelationshipAttribute(attrName, relationType);
-
-                        mapAttribute(attribute, attrValue, vertex, op, context, true, false);
+                        mapAttribute(attribute, attrValue, vertex, op, context, true, isRemoveOp);
                     }
                 }
             }
-
-            updateModificationMetadata(vertex);
-
-            RequestContext.get().endMetricRecord(metric);
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== mapAppendRelationshipAttributes({}, {})", op, entity.getTypeName());
-        }
-    }
-
-    private void mapRemoveRelationshipAttributes(AtlasEntity entity, AtlasEntityType entityType, AtlasVertex vertex, EntityOperation op,
-                                                 EntityMutationContext context) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> mapRemoveRelationshipAttributes({}, {})", op, entity.getTypeName());
-        }
-
-        if (MapUtils.isNotEmpty(entity.getRemoveRelationshipAttributes())) {
-            MetricRecorder metric = RequestContext.get().startMetricRecord("mapRemoveRelationshipAttributes");
-
-            if (op.equals(CREATE)) {
-                for (String attrName : entityType.getRelationshipAttributes().keySet()) {
-                    Object         attrValue    = entity.getRemoveRelationshipAttribute(attrName);
-                    String         relationType = AtlasEntityUtil.getRelationshipType(attrValue);
-                    AtlasAttribute attribute    = entityType.getRelationshipAttribute(attrName, relationType);
-
-                    mapAttribute(attribute, attrValue, vertex, op, context);
-                }
-
-            } else if (op.equals(UPDATE) || op.equals(PARTIAL_UPDATE)) {
+        if (isRemoveOp && MapUtils.isNotEmpty(entity.getRemoveRelationshipAttributes())) {
+            if (op.equals(UPDATE) || op.equals(PARTIAL_UPDATE)) {
                 // relationship attributes mapping
                 for (String attrName : entityType.getRelationshipAttributes().keySet()) {
                     if (entity.hasRemoveRelationshipAttribute(attrName)) {
                         Object         attrValue    = entity.getRemoveRelationshipAttribute(attrName);
                         String         relationType = AtlasEntityUtil.getRelationshipType(attrValue);
                         AtlasAttribute attribute    = entityType.getRelationshipAttribute(attrName, relationType);
-
-                        mapAttribute(attribute, attrValue, vertex, op, context, false, true);
+                        mapAttribute(attribute, attrValue, vertex, op, context, isAppendOp, true);
                     }
                 }
             }
-
-            updateModificationMetadata(vertex);
-
-            RequestContext.get().endMetricRecord(metric);
         }
+
+        updateModificationMetadata(vertex);
+
+        RequestContext.get().endMetricRecord(metric);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== mapRemoveRelationshipAttributes({}, {})", op, entity.getTypeName());
+            LOG.debug("<== mapAppendRemoveRelationshipAttributes({}, {})", op, entity.getTypeName());
         }
     }
+
     private void mapAttribute(AtlasAttribute attribute, Object attrValue, AtlasVertex vertex, EntityOperation op, EntityMutationContext context) throws AtlasBaseException {
        mapAttribute(attribute, attrValue, vertex, op, context, false, false);
     }
