@@ -1732,6 +1732,7 @@ public class EntityGraphMapper {
             }
         }
 
+
         if (attributeVertex == null) {
             if(RequestContext.get().isImportInProgress()) {
                 return null;
@@ -1748,8 +1749,28 @@ public class EntityGraphMapper {
             String          attributeName = attribute.getName();
 
             if (entityType.hasRelationshipAttribute(attributeName)) {
-                if (ctx.getCurrentEdge() != null && getStatus(ctx.getCurrentEdge()) != DELETED) {
-                    ret = ctx.getCurrentEdge();
+                String      relationshipName = attribute.getRelationshipName();
+                AtlasVertex fromVertex;
+                AtlasVertex toVertex;
+
+
+                if (StringUtils.isEmpty(relationshipName)) {
+                    relationshipName = graphHelper.getRelationshipTypeName(entityVertex, entityType, attributeName);
+                }
+
+                if (attribute.getRelationshipEdgeDirection() == IN) {
+                    fromVertex = attributeVertex;
+                    toVertex   = entityVertex;
+
+                } else {
+                    fromVertex = entityVertex;
+                    toVertex   = attributeVertex;
+                }
+
+                AtlasEdge edge = relationshipStore.getRelationship(fromVertex, toVertex, new AtlasRelationship(relationshipName));
+
+                if (edge != null && getStatus(edge) != DELETED) {
+                    return edge;
                 }
             }
         }
