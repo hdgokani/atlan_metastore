@@ -1771,10 +1771,14 @@ public class EntityGraphMapper {
                 AtlasEdge edge = relationshipStore.getRelationship(fromVertex, toVertex, new AtlasRelationship(relationshipName));
 
                 if (edge != null && getStatus(edge) != DELETED) {
-                    return edge;
+                    ret = edge;
                 }
+
+                RequestContext requestContext = RequestContext.get();
+                requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(toVertex));
             }
         }
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== getEdgeUsingRelationship({})", ctx);
         }
@@ -2166,7 +2170,7 @@ public class EntityGraphMapper {
             LOG.debug("<== removeArrayValue({})", ctx);
         }
 
-        return new ArrayList<>();
+        return entityRelationsDeleted;
     }
 
     private void addEdgesToContext(String guid, List<Object> newElementsCreated, List<AtlasEdge> removedElements) {
