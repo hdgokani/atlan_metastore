@@ -1,10 +1,13 @@
-package org.apache.atlas.authorizer;
+package org.apache.atlas.authorizer.authorizers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorizer.JsonToElasticsearchQuery;
+import org.apache.atlas.authorizer.store.PoliciesStore;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -12,8 +15,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
-import static org.apache.atlas.authorizer.AuthorizerCommon.*;
+import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_ALLOW;
+import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_DENY;
+import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.*;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 
 public class ListAuthorizer {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizationUtils.class);
@@ -201,28 +208,26 @@ public class ListAuthorizer {
     }
 
     public static List<Map<String, Object>> getDSLForAbacPolicies(List<RangerPolicy> policies) {
-        List<String> filterCriteriaList = new ArrayList<>();
+        List<String> dslList = new ArrayList<>();
+        ObjectMapper mapper = new ObjectMapper();
+
         for (RangerPolicy policy : policies) {
             String filterCriteria = policy.getPolicyFilterCriteria();
             if (filterCriteria != null && !filterCriteria.isEmpty() ) {
-                filterCriteriaList.add(filterCriteria);
+                JsonNode filterCriteriaNode = null;
+                try {
+                    filterCriteriaNode = mapper.readTree(filterCriteria);
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
+                if (filterCriteriaNode != null && filterCriteriaNode.get("entity") != null) {
+                    JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("entity");
+                    JsonNode dsl = JsonToElasticsearchQuery.convertJsonToQuery(entityFilterCriteriaNode, mapper);
+                    dslList.add(dsl.toString());
+                }
             }
         }
-        List<String> dslList = new ArrayList<>();
-        ObjectMapper mapper = new ObjectMapper();
-        for (String filterCriteria: filterCriteriaList) {
-            JsonNode filterCriteriaNode = null;
-            try {
-                filterCriteriaNode = mapper.readTree(filterCriteria);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-            if (filterCriteriaNode != null && filterCriteriaNode.get("entity") != null) {
-                JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("entity");
-                JsonNode dsl = JsonToElasticsearchQuery.convertJsonToQuery(entityFilterCriteriaNode, mapper);
-                dslList.add(dsl.toString());
-            }
-        }
+
         List<Map<String, Object>> clauses = new ArrayList<>();
         for (String dsl: dslList) {
             String policyDSLBase64 = Base64.getEncoder().encodeToString(dsl.getBytes());;

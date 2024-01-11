@@ -266,7 +266,9 @@ public class EntityREST {
      */
     @POST
     @Path("/accessors")
-    public List<AtlasAccessorResponse> getAccessors(List<AtlasAccessorRequest> atlasAccessorRequestList) throws AtlasBaseException {
+    public List<AtlasAccessorResponse> getAccessors(List<AtlasAccessorRequest> atlasAccessorRequestList,
+                                                    @QueryParam("v2") @DefaultValue("true") boolean v2Enabled) throws AtlasBaseException {
+        //TODO remove temporary QueryParam v2Enabled
         AtlasPerfTracer perf = null;
         List<AtlasAccessorResponse> ret;
 
@@ -277,7 +279,7 @@ public class EntityREST {
         try {
             validateAccessorRequest(atlasAccessorRequestList);
 
-            ret = entitiesStore.getAccessors(atlasAccessorRequestList);
+            ret = entitiesStore.getAccessors(atlasAccessorRequestList, v2Enabled);
 
         } finally {
             AtlasPerfTracer.log(perf);

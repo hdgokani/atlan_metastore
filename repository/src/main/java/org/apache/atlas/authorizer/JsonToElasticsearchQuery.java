@@ -36,9 +36,9 @@ public class JsonToElasticsearchQuery {
             if (crit.has("condition")) {
                 JsonNode nestedQuery = convertJsonToQuery(crit, mapper);
                 if (condition.equals("AND")) {
-                    ((com.fasterxml.jackson.databind.node.ArrayNode) query.get("bool").get("filter")).add(nestedQuery);
+                    ((ArrayNode) query.get("bool").get("filter")).add(nestedQuery);
                 } else {
-                    ((com.fasterxml.jackson.databind.node.ArrayNode) query.get("bool").get("should")).add(nestedQuery);
+                    ((ArrayNode) query.get("bool").get("should")).add(nestedQuery);
                 }
             } else {
                 String operator = crit.get("operator").asText();

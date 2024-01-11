@@ -19,8 +19,8 @@
 
 package org.apache.atlas.plugin.service;
 
-import org.apache.atlas.authorizer.PoliciesStore;
-import org.apache.atlas.authorizer.UsersStore;
+import org.apache.atlas.authorizer.store.PoliciesStore;
+import org.apache.atlas.authorizer.store.UsersStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
