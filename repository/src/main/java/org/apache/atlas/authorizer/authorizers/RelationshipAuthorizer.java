@@ -1,20 +1,18 @@
-package org.apache.atlas.authorizer;
+package org.apache.atlas.authorizer.authorizers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorizer.JsonToElasticsearchQuery;
+import org.apache.atlas.authorizer.store.PoliciesStore;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
-import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.atlas.type.*;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
@@ -23,12 +21,12 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.authorizer.AuthorizerCommon.POLICY_TYPE_ALLOW;
-import static org.apache.atlas.authorizer.AuthorizerCommon.arrayListContains;
-import static org.apache.atlas.authorizer.AuthorizerCommon.getMap;
-import static org.apache.atlas.authorizer.EntityAuthorizer.validateFilterCriteriaWithEntity;
-import static org.apache.atlas.authorizer.ListAuthorizer.getDSLForResources;
-import static org.apache.atlas.model.TypeCategory.ARRAY;
+import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_ALLOW;
+import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_DENY;
+import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.arrayListContains;
+import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.getMap;
+import static org.apache.atlas.authorizer.authorizers.EntityAuthorizer.validateFilterCriteriaWithEntity;
+import static org.apache.atlas.authorizer.authorizers.ListAuthorizer.getDSLForResources;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
 
@@ -37,7 +35,7 @@ public class RelationshipAuthorizer {
     private static final Logger LOG = LoggerFactory.getLogger(RelationshipAuthorizer.class);
 
     public static boolean isAccessAllowedInMemory(String action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
-        boolean deny = checkRelationshipAccessAllowedInMemory(action, relationshipType, endOneEntity, endTwoEntity, AuthorizerCommon.POLICY_TYPE_DENY);
+        boolean deny = checkRelationshipAccessAllowedInMemory(action, relationshipType, endOneEntity, endTwoEntity, POLICY_TYPE_DENY);
         if (deny) {
             return false;
         }
@@ -54,7 +52,7 @@ public class RelationshipAuthorizer {
             List<String> filterCriteriaList = new ArrayList<>();
             for (RangerPolicy policy : policies) {
                 String filterCriteria = policy.getPolicyFilterCriteria();
-                if (filterCriteria != null && !filterCriteria.isEmpty() ) {
+                if (filterCriteria != null && !filterCriteria.isEmpty()) {
                     filterCriteriaList.add(filterCriteria);
                 }
             }
@@ -89,12 +87,10 @@ public class RelationshipAuthorizer {
             }
 
             if (!ret) {
-                List<RangerPolicy> tagPolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas_tag", Collections.singletonList(action), policyType);
-                List<RangerPolicy> resourcePolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas", Collections.singletonList(action), policyType);
+                List<RangerPolicy> rangerPolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas_tag", Collections.singletonList(action), policyType);
+                rangerPolicies.addAll(PoliciesStore.getRelevantPolicies(null, null, "atlas", Collections.singletonList(action), policyType));
 
-                tagPolicies.addAll(resourcePolicies);
-
-                ret = validateResourcesForCreateRelationship(tagPolicies, relationshipType, endOneEntity, endTwoEntity);
+                ret = evaluateRangerPoliciesInMemory(rangerPolicies, relationshipType, endOneEntity, endTwoEntity);
             }
 
             return ret;
@@ -105,155 +101,164 @@ public class RelationshipAuthorizer {
         }
     }
 
-    private static boolean validateResourcesForCreateRelationship(List<RangerPolicy> resourcePolicies, String relationshipType,
-                                                                  AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("validateResourcesForCreateRelationship");
-
-        RangerPolicy matchedPolicy = null;
+    public static boolean evaluateRangerPoliciesInMemory(List<RangerPolicy> rangerPolicies, String relationshipType,
+                                                         AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("ListAuthorizer.evaluateRangerPoliciesInMemory");
+        boolean evaluation = false;
 
         Set<String> endOneEntityTypes = AuthorizerCommon.getTypeAndSupertypesList(endOneEntity.getTypeName());
         Set<String> endTwoEntityTypes = AuthorizerCommon.getTypeAndSupertypesList(endTwoEntity.getTypeName());
 
-        for (RangerPolicy rangerPolicy : resourcePolicies) {
-            Map<String, RangerPolicy.RangerPolicyResource> resources = rangerPolicy.getResources();
+        for (RangerPolicy rangerPolicy : rangerPolicies) {
+            evaluation = evaluateRangerPolicyInMemory(rangerPolicy, relationshipType, endOneEntity, endTwoEntity, endOneEntityTypes, endTwoEntityTypes);
 
-            boolean allStar = true;
-
-            for (String resource : resources.keySet()) {
-                if (!resources.get(resource).getValues().contains("*")){
-                    allStar = false;
-                    break;
-                }
-            }
-
-            if (allStar) {
-                matchedPolicy = rangerPolicy;
-                LOG.info("Matched with policy: {}:{}", matchedPolicy.getName(), matchedPolicy.getGuid());
+            if (evaluation) {
                 return true;
-
-            } else {
-                boolean resourcesMatched = true;
-
-                for (String resource : resources.keySet()) {
-                    List<String> values = resources.get(resource).getValues();
-
-                    if ("relationship-type".equals(resource)) {
-                        if (!values.contains(("*"))) {
-                            Optional<String> match = values.stream().filter(x -> relationshipType.matches(x
-                                            .replace("*", ".*")))
-                                    .findFirst();
-
-                            if (!match.isPresent()) {
-                                resourcesMatched = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if ("end-one-entity-type".equals(resource)) {
-                        if (!values.contains(("*"))) {
-                            boolean match = endOneEntityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
-
-                            if (!match) {
-                                resourcesMatched = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if ("end-two-entity-type".equals(resource)) {
-                        if (!values.contains(("*"))) {
-                            boolean match = endTwoEntityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
-
-                            if (!match) {
-                                resourcesMatched = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if ("end-one-entity".equals(resource)) {
-                        if (!values.contains(("*"))) {
-                            String assetQualifiedName = (String) endOneEntity.getAttribute(QUALIFIED_NAME);
-                            Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
-                                            .replace("{USER}", AuthorizerCommon.getCurrentUserName())
-                                            .replace("*", ".*")))
-                                    .findFirst();
-
-                            if (!match.isPresent()) {
-                                resourcesMatched = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if ("end-two-entity".equals(resource)) {
-                        if (!values.contains(("*"))) {
-                            String assetQualifiedName = (String) endTwoEntity.getAttribute(QUALIFIED_NAME);
-                            Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
-                                            .replace("{USER}", AuthorizerCommon.getCurrentUserName())
-                                            .replace("*", ".*")))
-                                    .findFirst();
-
-                            if (!match.isPresent()) {
-                                resourcesMatched = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    //for tag based policy
-                    if ("end-one-entity-classification".equals(resource)) {
-                        if (!values.contains(("*"))) {
-                            if (endOneEntity.getClassifications() == null || endOneEntity.getClassifications().isEmpty()) {
-                                //since entity does not have tags at all, it should not pass this evaluation
-                                resourcesMatched = false;
-                                break;
-                            }
-
-                            List<String> assetTags = endOneEntity.getClassifications().stream().map(x -> x.getTypeName()).collect(Collectors.toList());
-
-                            boolean match = assetTags.stream().anyMatch(assetTag -> values.stream().anyMatch(policyAssetType -> assetTag.matches(policyAssetType.replace("*", ".*"))));
-
-                            if (!match) {
-                                resourcesMatched = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if ("end-two-entity-classification".equals(resource)) {
-                        if (!values.contains(("*"))) {
-                            if (endTwoEntity.getClassifications() == null || endTwoEntity.getClassifications().isEmpty()) {
-                                //since entity does not have tags at all, it should not pass this evaluation
-                                resourcesMatched = false;
-                                break;
-                            }
-
-                            List<String> assetTags = endTwoEntity.getClassifications().stream().map(x -> x.getTypeName()).collect(Collectors.toList());
-
-                            boolean match = assetTags.stream().anyMatch(assetTag -> values.stream().anyMatch(policyAssetType -> assetTag.matches(policyAssetType.replace("*", ".*"))));
-
-                            if (!match) {
-                                resourcesMatched = false;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (resourcesMatched) {
-                    matchedPolicy = rangerPolicy;
-                    LOG.info("Matched with policy: {}:{}", matchedPolicy.getName(), matchedPolicy.getGuid());
-                    return true;
-                }
             }
         }
 
         RequestContext.get().endMetricRecord(recorder);
-        return false;
+        return evaluation;
     }
 
+    public static boolean evaluateRangerPolicyInMemory(RangerPolicy rangerPolicy, String relationshipType,
+                                                       AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity,
+                                                       Set<String> endOneEntityTypes, Set<String> endTwoEntityTypes) {
+
+        Map<String, RangerPolicy.RangerPolicyResource> resources = rangerPolicy.getResources();
+
+        boolean allStar = true;
+
+        for (String resource : resources.keySet()) {
+            if (!resources.get(resource).getValues().contains("*")){
+                allStar = false;
+                break;
+            }
+        }
+
+        if (allStar) {
+            LOG.info("Matched with policy: {}:{}", rangerPolicy.getName(), rangerPolicy.getGuid());
+            return true;
+
+        } else {
+            boolean resourcesMatched = true;
+
+            for (String resource : resources.keySet()) {
+                List<String> values = resources.get(resource).getValues();
+
+                if ("relationship-type".equals(resource)) {
+                    if (!values.contains(("*"))) {
+                        Optional<String> match = values.stream().filter(x -> relationshipType.matches(x
+                                        .replace("*", ".*")))
+                                .findFirst();
+
+                        if (!match.isPresent()) {
+                            resourcesMatched = false;
+                            break;
+                        }
+                    }
+                }
+
+                if ("end-one-entity-type".equals(resource)) {
+                    if (!values.contains(("*"))) {
+                        boolean match = endOneEntityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
+
+                        if (!match) {
+                            resourcesMatched = false;
+                            break;
+                        }
+                    }
+                }
+
+                if ("end-two-entity-type".equals(resource)) {
+                    if (!values.contains(("*"))) {
+                        boolean match = endTwoEntityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
+
+                        if (!match) {
+                            resourcesMatched = false;
+                            break;
+                        }
+                    }
+                }
+
+                if ("end-one-entity".equals(resource)) {
+                    if (!values.contains(("*"))) {
+                        String assetQualifiedName = (String) endOneEntity.getAttribute(QUALIFIED_NAME);
+                        Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
+                                        .replace("{USER}", AuthorizerCommon.getCurrentUserName())
+                                        .replace("*", ".*")))
+                                .findFirst();
+
+                        if (!match.isPresent()) {
+                            resourcesMatched = false;
+                            break;
+                        }
+                    }
+                }
+
+                if ("end-two-entity".equals(resource)) {
+                    if (!values.contains(("*"))) {
+                        String assetQualifiedName = (String) endTwoEntity.getAttribute(QUALIFIED_NAME);
+                        Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
+                                        .replace("{USER}", AuthorizerCommon.getCurrentUserName())
+                                        .replace("*", ".*")))
+                                .findFirst();
+
+                        if (!match.isPresent()) {
+                            resourcesMatched = false;
+                            break;
+                        }
+                    }
+                }
+
+                //for tag based policy
+                if ("end-one-entity-classification".equals(resource)) {
+                    if (!values.contains(("*"))) {
+                        if (endOneEntity.getClassifications() == null || endOneEntity.getClassifications().isEmpty()) {
+                            //since entity does not have tags at all, it should not pass this evaluation
+                            resourcesMatched = false;
+                            break;
+                        }
+
+                        List<String> assetTags = endOneEntity.getClassifications().stream().map(x -> x.getTypeName()).collect(Collectors.toList());
+
+                        boolean match = assetTags.stream().anyMatch(assetTag -> values.stream().anyMatch(policyAssetType -> assetTag.matches(policyAssetType.replace("*", ".*"))));
+
+                        if (!match) {
+                            resourcesMatched = false;
+                            break;
+                        }
+                    }
+                }
+
+                if ("end-two-entity-classification".equals(resource)) {
+                    if (!values.contains(("*"))) {
+                        if (endTwoEntity.getClassifications() == null || endTwoEntity.getClassifications().isEmpty()) {
+                            //since entity does not have tags at all, it should not pass this evaluation
+                            resourcesMatched = false;
+                            break;
+                        }
+
+                        List<String> assetTags = endTwoEntity.getClassifications().stream().map(x -> x.getTypeName()).collect(Collectors.toList());
+
+                        boolean match = assetTags.stream().anyMatch(assetTag -> values.stream().anyMatch(policyAssetType -> assetTag.matches(policyAssetType.replace("*", ".*"))));
+
+                        if (!match) {
+                            resourcesMatched = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (resourcesMatched) {
+                LOG.info("Matched with policy: {}:{}", rangerPolicy.getName(), rangerPolicy.getGuid());
+                return true;
+            }
+        }
+
+        return false;
+    }
     /*public static boolean validateFilterCriteriaWithEntity(JsonNode data, AtlasEntity entity) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("RelationshipAuthorizer.validateFilterCriteriaWithEntity");
 

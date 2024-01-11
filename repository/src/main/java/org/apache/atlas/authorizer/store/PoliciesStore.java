@@ -1,16 +1,21 @@
-package org.apache.atlas.authorizer;
+package org.apache.atlas.authorizer.store;
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorizer.authorizers.AuthorizerCommon;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_ALLOW;
+import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_DENY;
 
 public class PoliciesStore {
 
@@ -56,6 +61,10 @@ public class PoliciesStore {
     }
 
     public static List<RangerPolicy> getRelevantPolicies(String persona, String purpose, String serviceName, List<String> actions, String policyType) {
+        return getRelevantPolicies(null, null, serviceName, actions, policyType, false);
+    }
+
+    public static List<RangerPolicy> getRelevantPolicies(String persona, String purpose, String serviceName, List<String> actions, String policyType, boolean ignoreUser) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getRelevantPolicies");
         String policyQualifiedNamePrefix = null;
         if (persona != null && !persona.isEmpty()) {
@@ -63,16 +72,6 @@ public class PoliciesStore {
         } else if (purpose != null && !purpose.isEmpty()) {
             policyQualifiedNamePrefix = purpose;
         }
-
-        String user = AuthorizerCommon.getCurrentUserName();
-        LOG.info("Getting relevant policies for user: {}", user);
-
-        RangerUserStore userStore = UsersStore.getUserStore();
-        List<String> groups = UsersStore.getGroupsForUser(user, userStore);
-
-        RangerRoles allRoles = UsersStore.getAllRoles();
-        List<String> roles = UsersStore.getRolesForUser(user, allRoles);
-        roles.addAll(UsersStore.getNestedRolesForUser(roles, allRoles));
 
         List<RangerPolicy> policies = new ArrayList<>();
         if ("atlas".equals(serviceName)) {
@@ -83,10 +82,24 @@ public class PoliciesStore {
             policies = getAbacPolicies();
         }
 
+
         if (CollectionUtils.isNotEmpty(policies)) {
             policies = getFilteredPoliciesForQualifiedName(policies, policyQualifiedNamePrefix);
-            policies = getFilteredPoliciesForUser(policies, user, groups, roles, policyType);
             policies = getFilteredPoliciesForActions(policies, actions, policyType);
+
+            if (!ignoreUser) {
+                String user = AuthorizerCommon.getCurrentUserName();
+                LOG.info("Getting relevant policies for user: {}", user);
+
+                RangerUserStore userStore = UsersStore.getUserStore();
+                List<String> groups = UsersStore.getGroupsForUser(user, userStore);
+
+                RangerRoles allRoles = UsersStore.getAllRoles();
+                List<String> roles = UsersStore.getRolesForUser(user, allRoles);
+                roles.addAll(UsersStore.getNestedRolesForUser(roles, allRoles));
+
+                policies = getFilteredPoliciesForUser(policies, user, groups, roles, policyType);
+            }
         }
 
         RequestContext.get().endMetricRecord(recorder);
@@ -112,13 +125,25 @@ public class PoliciesStore {
     private static List<RangerPolicy> getFilteredPoliciesForActions(List<RangerPolicy> policies, List<String> actions, String type) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getFilteredPoliciesForActions");
         List<RangerPolicy> filteredPolicies = new ArrayList<>();
+
+
         for(RangerPolicy policy : policies) {
             RangerPolicy.RangerPolicyItem policyItem = null;
-            if (AuthorizerCommon.POLICY_TYPE_ALLOW.equals(type) && !policy.getPolicyItems().isEmpty()) {
-                policyItem = policy.getPolicyItems().get(0);
-            } else if (AuthorizerCommon.POLICY_TYPE_DENY.equals(type) && !policy.getDenyPolicyItems().isEmpty()) {
-                policyItem = policy.getDenyPolicyItems().get(0);
+
+            if (StringUtils.isNotEmpty(type)) {
+                if (POLICY_TYPE_ALLOW.equals(type) && !policy.getPolicyItems().isEmpty()) {
+                    policyItem = policy.getPolicyItems().get(0);
+                } else if (POLICY_TYPE_DENY.equals(type) && !policy.getDenyPolicyItems().isEmpty()) {
+                    policyItem = policy.getDenyPolicyItems().get(0);
+                }
+            } else {
+                if (!policy.getPolicyItems().isEmpty()) {
+                    policyItem = policy.getPolicyItems().get(0);
+                } else if (!policy.getDenyPolicyItems().isEmpty()) {
+                    policyItem = policy.getDenyPolicyItems().get(0);
+                }
             }
+
             if (policyItem != null) {
                 List<String> policyActions = new ArrayList<>();
                 if (!policyItem.getAccesses().isEmpty()) {
@@ -142,9 +167,9 @@ public class PoliciesStore {
         List<RangerPolicy> filterPolicies = new ArrayList<>();
         for(RangerPolicy policy : policies) {
             RangerPolicy.RangerPolicyItem policyItem = null;
-            if (AuthorizerCommon.POLICY_TYPE_ALLOW.equals(type) && !policy.getPolicyItems().isEmpty()) {
+            if (POLICY_TYPE_ALLOW.equals(type) && !policy.getPolicyItems().isEmpty()) {
                 policyItem = policy.getPolicyItems().get(0);
-            } else if (AuthorizerCommon.POLICY_TYPE_DENY.equals(type) && !policy.getDenyPolicyItems().isEmpty()) {
+            } else if (POLICY_TYPE_DENY.equals(type) && !policy.getDenyPolicyItems().isEmpty()) {
                 policyItem = policy.getDenyPolicyItems().get(0);
             }
             if (policyItem != null) {

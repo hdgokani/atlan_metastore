@@ -1,5 +1,6 @@
-package org.apache.atlas.authorizer;
+package org.apache.atlas.authorizer.store;
 
+import org.apache.atlas.authorizer.authorizers.AuthorizerCommon;
 import org.apache.atlas.plugin.model.RangerRole;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;

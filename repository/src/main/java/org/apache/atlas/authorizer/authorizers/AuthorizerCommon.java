@@ -1,5 +1,9 @@
-package org.apache.atlas.authorizer;
+package org.apache.atlas.authorizer.authorizers;
 
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.springframework.security.core.Authentication;
@@ -13,13 +17,15 @@ import java.util.Set;
 
 public class AuthorizerCommon {
 
-    public static final String POLICY_TYPE_ALLOW = "allow";
-    public static final String POLICY_TYPE_DENY = "deny";
-
     private static AtlasTypeRegistry typeRegistry;
+    private static EntityGraphRetriever entityRetriever;
 
     public static void setTypeRegistry(AtlasTypeRegistry typeRegistry) {
         AuthorizerCommon.typeRegistry = typeRegistry;
+    }
+
+    public static void setEntityRetriever(EntityGraphRetriever entityRetriever) {
+        AuthorizerCommon.entityRetriever = entityRetriever;
     }
 
     public static String getCurrentUserName() {
@@ -82,5 +88,15 @@ public class AuthorizerCommon {
 
     public static AtlasEntityType getEntityTypeByName(String typeName) {
         return typeRegistry.getEntityTypeByName(typeName);
+    }
+
+    public static AtlasEntity toAtlasEntityHeaderWithClassifications(String guid) throws AtlasBaseException {
+        //return new AtlasEntity(entityRetriever.toAtlasEntityHeaderWithClassifications(guid));
+        return new AtlasEntity(entityRetriever.toAtlasEntity(guid));
+    }
+
+    public static AtlasEntity toAtlasEntityHeaderWithClassifications(AtlasVertex vertex) throws AtlasBaseException {
+        //return new AtlasEntity(entityRetriever.toAtlasEntityHeaderWithClassifications(vertex));
+        return new AtlasEntity(entityRetriever.toAtlasEntity(vertex));
     }
 }

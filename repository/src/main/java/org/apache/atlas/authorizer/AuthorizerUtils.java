@@ -2,13 +2,17 @@ package org.apache.atlas.authorizer;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAccessorRequest;
+import org.apache.atlas.authorize.AtlasAccessorResponse;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.discovery.AtlasAuthorization;
-import org.apache.atlas.discovery.EntityDiscoveryService;
+import org.apache.atlas.authorizer.authorizers.AuthorizerCommon;
+import org.apache.atlas.authorizer.authorizers.EntityAuthorizer;
+import org.apache.atlas.authorizer.authorizers.ListAuthorizer;
+import org.apache.atlas.authorizer.authorizers.RelationshipAuthorizer;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -25,7 +29,8 @@ public class AuthorizerUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuthorizerUtils.class);
 
-    private static AuthorizerUtils  authorizerUtils;
+    public static final String POLICY_TYPE_ALLOW = "allow";
+    public static final String POLICY_TYPE_DENY = "deny";
 
     public static void verifyUpdateEntityAccess(AtlasEntityHeader entityHeader) throws AtlasBaseException {
         if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
@@ -133,6 +138,16 @@ public class AuthorizerUtils {
             }
         } catch (AtlasBaseException e) {
             throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    public static AtlasAccessorResponse getAccessors(AtlasAccessorRequest request) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AuthorizerUtils.getAccessors");
+
+        try {
+            return AccessorsExtractor.getAccessors(request);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }

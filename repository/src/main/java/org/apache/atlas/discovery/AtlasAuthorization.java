@@ -1,45 +1,17 @@
 package org.apache.atlas.discovery;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.RequestContext;
-import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.authorizer.AuthorizerCommon;
-import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.authorizer.authorizers.AuthorizerCommon;
 //import org.apache.atlas.model.audit.AuditSearchParams;
 //import org.apache.atlas.model.audit.EntityAuditSearchResult;
-import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.plugin.model.RangerPolicy;
-import org.apache.atlas.plugin.model.RangerRole;
-import org.apache.atlas.plugin.util.RangerRoles;
-import org.apache.atlas.plugin.util.RangerUserStore;
-import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
-import org.apache.atlas.type.*;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.utils.AtlasPerfMetrics;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
-
-import static org.apache.atlas.model.TypeCategory.ARRAY;
-import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
-import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 
@@ -48,12 +20,13 @@ public class AtlasAuthorization {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorization.class);
 
-    private EntityDiscoveryService discoveryService;
+    //private EntityDiscoveryService discoveryService;
 
     private static AtlasTypeRegistry typeRegistry;
+    private static EntityGraphRetriever entityRetriever;
 
-    private static AtlasAuthorization  atlasAuthorization;
-    private static UsersGroupsRolesStore  usersGroupsRolesStore;
+    //private static AtlasAuthorization  atlasAuthorization;
+    //private static UsersGroupsRolesStore  usersGroupsRolesStore;
     private List<String> serviceNames = new ArrayList<>();
     private static Map<String, String> esEntityAttributeMap = new HashMap<>();
     private static final String POLICY_TYPE_ALLOW = "allow";
@@ -76,14 +49,17 @@ public class AtlasAuthorization {
     }*/
 
     @Inject
-    public AtlasAuthorization (EntityDiscoveryService discoveryService, AtlasTypeRegistry typeRegistry) {
+    //public AtlasAuthorization (EntityDiscoveryService discoveryService, AtlasTypeRegistry typeRegistry) {
+    public AtlasAuthorization (AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
         try {
-            this.discoveryService = discoveryService;
+            //this.discoveryService = discoveryService;
 
             this.typeRegistry = typeRegistry;
+            this.entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true);
 
-            AtlasAuthorization.usersGroupsRolesStore = UsersGroupsRolesStore.getInstance();
+            //AtlasAuthorization.usersGroupsRolesStore = UsersGroupsRolesStore.getInstance();
             AuthorizerCommon.setTypeRegistry(typeRegistry);
+            AuthorizerCommon.setEntityRetriever(entityRetriever);
 
             serviceNames.add("atlas");
             serviceNames.add("atlas_tag");
