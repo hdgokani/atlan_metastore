@@ -1708,6 +1708,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     context.setUpdatedWithRelationshipAttributes(entity);
                 }
 
+                if (discoveryContext.isRemoveRelationshipAttributeVisited() && MapUtils.isNotEmpty(entity.getRemoveRelationshipAttributes())) {
+                    context.setUpdatedWithRemoveRelationshipAttributes(entity);
+                }
+
                 if (isRestoreRequested) {
                     Status currStatus = AtlasGraphUtilsV2.getState(vertex);
                     if (currStatus == Status.DELETED) {
