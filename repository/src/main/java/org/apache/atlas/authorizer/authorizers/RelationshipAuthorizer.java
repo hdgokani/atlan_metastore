@@ -35,37 +35,37 @@ public class RelationshipAuthorizer {
 
     private static final Logger LOG = LoggerFactory.getLogger(RelationshipAuthorizer.class);
 
-    public static boolean isAccessAllowedInMemory(String action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
-        boolean deny = checkRelationshipAccessAllowedInMemory(action, relationshipType, endOneEntity, endTwoEntity, POLICY_TYPE_DENY);
-        if (deny) {
-            return false;
+    public static AccessResult isAccessAllowedInMemory(String action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
+        AccessResult result;
+
+        result = checkRelationshipAccessAllowedInMemory(action, relationshipType, endOneEntity, endTwoEntity, POLICY_TYPE_DENY);
+        if (result.isAllowed()) {
+            result.setAllowed(false);
+            return result;
         }
+
         return checkRelationshipAccessAllowedInMemory(action, relationshipType, endOneEntity, endTwoEntity, POLICY_TYPE_ALLOW);
     }
 
-    public static boolean checkRelationshipAccessAllowedInMemory(String action, String relationshipType, AtlasEntityHeader endOneEntity,
+    public static AccessResult checkRelationshipAccessAllowedInMemory(String action, String relationshipType, AtlasEntityHeader endOneEntity,
                                                          AtlasEntityHeader endTwoEntity, String policyType) throws AtlasBaseException {
         //Relationship add, update, remove access check in memory
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("checkRelationshipAccessAllowedInMemory."+policyType);
+        AccessResult result = new AccessResult();
 
         try {
             List<RangerPolicy> policies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
-            List<String> filterCriteriaList = new ArrayList<>();
-            for (RangerPolicy policy : policies) {
-                String filterCriteria = policy.getPolicyFilterCriteria();
-                if (filterCriteria != null && !filterCriteria.isEmpty()) {
-                    filterCriteriaList.add(filterCriteria);
-                }
-            }
             ObjectMapper mapper = new ObjectMapper();
-            boolean ret = false;
-            boolean eval;
-
             AtlasVertex oneVertex = AtlasGraphUtilsV2.findByGuid(endOneEntity.getGuid());
             AtlasVertex twoVertex = AtlasGraphUtilsV2.findByGuid(endTwoEntity.getGuid());
 
-            for (String filterCriteria: filterCriteriaList) {
-                eval = false;
+            //boolean ret = false;
+            //boolean eval;
+
+            for (RangerPolicy policy : policies) {
+                String filterCriteria = policy.getPolicyFilterCriteria();
+
+                boolean eval = false;
                 JsonNode filterCriteriaNode = null;
                 try {
                     filterCriteriaNode = mapper.readTree(filterCriteria);
@@ -81,45 +81,47 @@ public class RelationshipAuthorizer {
                         eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, new AtlasEntity(endTwoEntity), twoVertex);
                     }
                 }
-                ret = ret || eval;
-                if (ret) {
+                //ret = ret || eval;
+                if (eval) {
+                    result.setAllowed(true);
+                    result.setPolicyId(policy.getGuid());
                     break;
                 }
             }
 
-            if (!ret) {
+            if (!result.isAllowed()) {
                 List<RangerPolicy> rangerPolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas_tag", Collections.singletonList(action), policyType);
                 rangerPolicies.addAll(PoliciesStore.getRelevantPolicies(null, null, "atlas", Collections.singletonList(action), policyType));
 
-                ret = evaluateRangerPoliciesInMemory(rangerPolicies, relationshipType, endOneEntity, endTwoEntity);
+                result = evaluateRangerPoliciesInMemory(rangerPolicies, relationshipType, endOneEntity, endTwoEntity);
             }
 
-            return ret;
-        } catch (NullPointerException e) {
-            return false;
+            return result;
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
     }
 
-    public static boolean evaluateRangerPoliciesInMemory(List<RangerPolicy> rangerPolicies, String relationshipType,
+    public static AccessResult evaluateRangerPoliciesInMemory(List<RangerPolicy> rangerPolicies, String relationshipType,
                                                          AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("ListAuthorizer.evaluateRangerPoliciesInMemory");
-        boolean evaluation = false;
+        AccessResult result = new AccessResult();
 
         Set<String> endOneEntityTypes = AuthorizerCommon.getTypeAndSupertypesList(endOneEntity.getTypeName());
         Set<String> endTwoEntityTypes = AuthorizerCommon.getTypeAndSupertypesList(endTwoEntity.getTypeName());
 
         for (RangerPolicy rangerPolicy : rangerPolicies) {
-            evaluation = evaluateRangerPolicyInMemory(rangerPolicy, relationshipType, endOneEntity, endTwoEntity, endOneEntityTypes, endTwoEntityTypes);
+            boolean evaluation = evaluateRangerPolicyInMemory(rangerPolicy, relationshipType, endOneEntity, endTwoEntity, endOneEntityTypes, endTwoEntityTypes);
 
             if (evaluation) {
-                return true;
+                result.setAllowed(true);
+                result.setPolicyId(rangerPolicy.getGuid());
+                return result;
             }
         }
 
         RequestContext.get().endMetricRecord(recorder);
-        return evaluation;
+        return result;
     }
 
     public static boolean evaluateRangerPolicyInMemory(RangerPolicy rangerPolicy, String relationshipType,

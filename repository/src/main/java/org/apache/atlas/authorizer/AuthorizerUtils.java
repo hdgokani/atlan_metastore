@@ -55,40 +55,21 @@ public class AuthorizerUtils {
     @Inject
     public AuthorizerUtils(AtlasGraph graph, AtlasTypeRegistry typeRegistry) throws IOException {
         this.typeRegistry = typeRegistry;
-        this.entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true);
-
-        //String path = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY) + File.separator +  "atlas-atlas-audit.xml";
-        //FileInputStream fis = new FileInputStream(path);
-
-       /* Properties properties = new Properties();
-        //properties.load(fis);
-        properties.put(AUDIT_IS_ENABLED_PROP, true);
-        properties.put(AUDIT_LOG4J_IS_ENABLED_PROP, true);
-        properties.put("xasecure.audit.destination.log4j", true);
-        properties.put("xasecure.audit.destination.log4j.logger", true);
-*/
-
-
-        //AsyncAuditProvider asyncAuditProvider = new AsyncAuditProvider();
+        //this.entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true);
 
         SERVICE_DEF_ATLAS = getResourceAsObject("/service-defs/atlas-servicedef-atlas.json", RangerServiceDef.class);
         //SERVICE_DEF_ATLAS_TAG = getResourceAsObject("/service-defs/atlas-servicedef-atlas_tag.json", RangerServiceDef.class);
     }
 
-    public  <T> T getResourceAsObject(String resourceName, Class<T> clazz) throws IOException {
-        InputStream stream = getClass().getResourceAsStream(resourceName);
-        return AtlasType.fromJson(stream, clazz);
-    }
-
     public static void verifyUpdateEntityAccess(AtlasEntityHeader entityHeader) throws AtlasBaseException {
         if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
-            verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_UPDATE);
+            verifyAccess(entityHeader, AtlasPrivilege.ENTITY_UPDATE);
         }
     }
 
     public static void verifyDeleteEntityAccess(AtlasEntityHeader entityHeader) throws AtlasBaseException {
         if (!SKIP_DELETE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
-            verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_DELETE);
+            verifyAccess(entityHeader, AtlasPrivilege.ENTITY_DELETE);
         }
     }
 
@@ -100,45 +81,20 @@ public class AuthorizerUtils {
             return;
         }
 
+        AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, action, new AtlasEntityHeader(entity));
+        NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
+
         try {
             if (AtlasPrivilege.ENTITY_CREATE == action) {
-                if (!EntityAuthorizer.isAccessAllowedInMemory(entity, action.getType())){
+                AccessResult result = EntityAuthorizer.isAccessAllowedInMemory(entity, action.getType());
+                result.setAtlasAccessRequest(request);
+                auditHandler.processResult(result);
+
+                if (!result.isAllowed()){
                     String message = action.getType() + ":" + entity.getTypeName() + ":" + entity.getAttributes().get(QUALIFIED_NAME);
                     throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, message);
                 }
             }
-        } catch (AtlasBaseException e) {
-            throw e;
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-    }
-
-    public static void verifyAccess(String guid, AtlasPrivilege action) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccess");
-        String userName = AuthorizerCommon.getCurrentUserName();
-
-        if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
-            return;
-        }
-
-        AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(guid);
-
-        AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, action, entity);
-
-        NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
-
-
-
-        try {
-            AccessResult result = EntityAuthorizer.isAccessAllowed(guid, action.getType());
-            result.setAtlasAccessRequest(request);
-
-            if (!result.isAllowed()) {
-                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, action + ":" + guid);
-            }
-            auditHandler.processResult(result);
-
         } catch (AtlasBaseException e) {
             throw e;
         } finally {
@@ -147,7 +103,7 @@ public class AuthorizerUtils {
         }
     }
 
-    public static void verifyAccessForEvaluator(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {
+    public static void verifyAccess(AtlasEntityHeader entityHeader, AtlasPrivilege action) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccess");
         String userName = AuthorizerCommon.getCurrentUserName();
 
@@ -155,13 +111,50 @@ public class AuthorizerUtils {
             return;
         }
 
+        AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, action, entityHeader);
+        NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
+
         try {
-            if (!EntityAuthorizer.isAccessAllowedEvaluator(entityTypeName, entityQualifiedName, action)) {
-                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, action + ":" + entityTypeName + ":" + entityQualifiedName);
+            AccessResult result = EntityAuthorizer.isAccessAllowed(entityHeader.getGuid(), action.getType());
+            result.setAtlasAccessRequest(request);
+            auditHandler.processResult(result);
+
+            if (!result.isAllowed()) {
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, action + ":" + entityHeader.getGuid());
             }
         } catch (AtlasBaseException e) {
             throw e;
         } finally {
+            auditHandler.flushAudit();
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    public static void verifyAccessForEvaluator(AtlasEntityHeader entityHeader, AtlasPrivilege action) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccess");
+        String userName = AuthorizerCommon.getCurrentUserName();
+
+        if (StringUtils.isEmpty(userName) || RequestContext.get().isImportInProgress()) {
+            return;
+        }
+
+        AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, action, entityHeader);
+        NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
+
+        try {
+            String entityQNAme = (String) entityHeader.getAttribute(QUALIFIED_NAME);
+
+            AccessResult result = EntityAuthorizer.isAccessAllowedEvaluator(entityHeader.getTypeName(), entityQNAme, action.getType());
+            result.setAtlasAccessRequest(request);
+            auditHandler.processResult(result);
+
+            if (!result.isAllowed()) {
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, action + ":" + entityHeader.getTypeName() + ":" + entityQNAme);
+            }
+        } catch (AtlasBaseException e) {
+            throw e;
+        } finally {
+            auditHandler.flushAudit();
             RequestContext.get().endMetricRecord(recorder);
         }
     }
@@ -174,7 +167,6 @@ public class AuthorizerUtils {
             return;
         }
 
-
         AtlasRelationshipAccessRequest request = new AtlasRelationshipAccessRequest(typeRegistry,
                 action,
                 relationShipType,
@@ -186,11 +178,11 @@ public class AuthorizerUtils {
         try {
             AccessResult result = RelationshipAuthorizer.isRelationshipAccessAllowed(action.getType(), endOneEntity, endTwoEntity);
             result.setAtlasAccessRequest(request);
+            auditHandler.processResult(result);
 
             if (!result.isAllowed()) {
                 throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), action + "|" + endOneEntity.getGuid() + "|" + endTwoEntity.getGuid());
             }
-            auditHandler.processResult(result);
         } catch (AtlasBaseException e) {
             throw e;
         } finally {
@@ -199,7 +191,7 @@ public class AuthorizerUtils {
         }
     }
 
-    public static void verifyRelationshipCreateAccess(String action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
+    public static void verifyRelationshipCreateAccess(AtlasPrivilege action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccess");
         String userName = AuthorizerCommon.getCurrentUserName();
 
@@ -207,14 +199,26 @@ public class AuthorizerUtils {
             return;
         }
 
+        AtlasRelationshipAccessRequest request = new AtlasRelationshipAccessRequest(typeRegistry,
+                action,
+                relationshipType,
+                endOneEntity,
+                endTwoEntity);
+        NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
+
         try {
-            if (!RelationshipAuthorizer.isAccessAllowedInMemory(action, relationshipType, endOneEntity, endTwoEntity)) {
+            AccessResult result = RelationshipAuthorizer.isAccessAllowedInMemory(action.getType(), relationshipType, endOneEntity, endTwoEntity);
+            result.setAtlasAccessRequest(request);
+            auditHandler.processResult(result);
+
+            if (!result.isAllowed()) {
                 throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(),
                         action + ":" + endOneEntity.getTypeName() + "|" + endTwoEntity.getTypeName());
             }
         } catch (AtlasBaseException e) {
             throw e;
         } finally {
+            auditHandler.flushAudit();
             RequestContext.get().endMetricRecord(recorder);
         }
     }
@@ -231,5 +235,10 @@ public class AuthorizerUtils {
 
     public static Map<String, Object>  getPreFilterDsl(String persona, String purpose, List<String> actions) {
         return ListAuthorizer.getElasticsearchDSL(persona, purpose, actions);
+    }
+
+    private   <T> T getResourceAsObject(String resourceName, Class<T> clazz) throws IOException {
+        InputStream stream = getClass().getResourceAsStream(resourceName);
+        return AtlasType.fromJson(stream, clazz);
     }
 }

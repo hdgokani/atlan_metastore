@@ -169,7 +169,6 @@ class NewAtlasAuditHandler {
         }
     }
 
-
     public void flushAudit() {
         if (auditEvents != null) {
             for (AuthzAuditEvent auditEvent : auditEvents.values()) {
@@ -228,31 +227,20 @@ class NewAtlasAuditHandler {
         AtlasAccessRequest request = result != null ? result.getAtlasAccessRequest() : null;
 
         if(request != null) {
-            //RangerServiceDef     serviceDef   = result.getServiceDef();
-            //RangerAccessResource resource     = request.getResource();
-            //String               resourceType = resource == null ? null : resource.getLeafName();
-
-
             ret = new AuthzAuditEvent();
 
             ret.setRepositoryName("atlas");
-            //ret.setResourceType(resourceType);
-            //ret.setResourcePath(resourceType);
             ret.setEventTime(request.getAccessTime() != null ? request.getAccessTime() : new Date());
-            ret.setUser(request.getUser());
             ret.setAction(request.getAction().getType());
             ret.setAccessResult((short) (result.isAllowed() ? 1 : 0));
             ret.setPolicyId("yet_to_support");
             ret.setAccessType(request.getAction().getType());
             ret.setClientIP(request.getClientIPAddress());
-            //ret.setAclEnforcer(moduleName);
             /*Set<String> tags = getTags(request);
             if (tags != null) {
                 ret.setTags(tags);
             }*/
-
             ret.setAgentHostname(MiscUtil.getHostname());
-
 
             populateDefaults(ret);
 

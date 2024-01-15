@@ -646,7 +646,7 @@ public class EntityGraphMapper {
             requestBuilder.setBusinessMetadata(bmName);
 
 //            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add/update business-metadata: guid=", guid, ", business-metadata-name=", bmName);
-            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA);
+            AuthorizerUtils.verifyAccess(entityHeader, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA);
         }
 
         if (isOverwrite) {
@@ -834,7 +834,7 @@ public class EntityGraphMapper {
             requestBuilder.setBusinessMetadata(bmName);
 
 //            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "remove business-metadata: guid=", entityHeader.getGuid(), ", business-metadata=", bmName);
-            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA);
+            AuthorizerUtils.verifyAccess(entityHeader, AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA);
         }
 
         Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessAttributes = entityType.getBusinessAttributes();
