@@ -33,47 +33,56 @@ public class EntityAuthorizer {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizationUtils.class);
 
-    public static boolean isAccessAllowedInMemory(AtlasEntity entity, String action) {
-        boolean deny = isAccessAllowedInMemory(entity, action, POLICY_TYPE_DENY);
-        if (deny) {
-            return false;
+    public static AccessResult isAccessAllowedInMemory(AtlasEntity entity, String action) {
+        AccessResult result;
+
+        result = isAccessAllowedInMemory(entity, action, POLICY_TYPE_DENY);
+        if (result.isAllowed()) {
+            result.setAllowed(false);
+            return result;
         }
+
         return isAccessAllowedInMemory(entity, action, POLICY_TYPE_ALLOW);
     }
 
-    public static boolean isAccessAllowedInMemory(AtlasEntity entity, String action, String policyType) {
+    public static AccessResult isAccessAllowedInMemory(AtlasEntity entity, String action, String policyType) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("isAccessAllowedInMemory."+policyType);
-        List<RangerPolicy> policies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
-        boolean ret = evaluateABACPoliciesInMemory(policies, entity);
+        AccessResult result;
 
-        if (!ret) {
+        List<RangerPolicy> policies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
+        result = evaluateABACPoliciesInMemory(policies, entity);
+
+        if (!result.isAllowed()) {
             List<RangerPolicy> tagPolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas_tag", Collections.singletonList(action), policyType);
             List<RangerPolicy> resourcePolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas", Collections.singletonList(action), policyType);
 
             tagPolicies.addAll(resourcePolicies);
 
-            ret = evaluateRangerPoliciesInMemory(tagPolicies, entity);
+            result = evaluateRangerPoliciesInMemory(tagPolicies, entity);
         }
 
         RequestContext.get().endMetricRecord(recorder);
-        return ret;
+        return result;
     }
 
-    public static boolean evaluateRangerPoliciesInMemory(List<RangerPolicy> resourcePolicies, AtlasEntity entity) {
+    public static AccessResult evaluateRangerPoliciesInMemory(List<RangerPolicy> resourcePolicies, AtlasEntity entity) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("validateResourcesForCreateEntityInMemory");
-        boolean evaluation = false;
+        AccessResult result = new AccessResult();
+
         Set<String> entityTypes = AuthorizerCommon.getTypeAndSupertypesList(entity.getTypeName());
 
         for (RangerPolicy rangerPolicy : resourcePolicies) {
-            evaluation = evaluateRangerPolicyInMemory(rangerPolicy, entity, entityTypes);
+            boolean evaluation = evaluateRangerPolicyInMemory(rangerPolicy, entity, entityTypes);
 
             if (evaluation) {
-                return true;
+                result.setAllowed(true);
+                result.setPolicyId(rangerPolicy.getGuid());
+                return result;
             }
         }
 
         RequestContext.get().endMetricRecord(recorder);
-        return evaluation;
+        return result;
     }
 
     public static boolean evaluateRangerPolicyInMemory(RangerPolicy rangerPolicy, AtlasEntity entity, Set<String> entityTypes) {
@@ -168,19 +177,15 @@ public class EntityAuthorizer {
         return false;
     }
 
-    public static boolean evaluateABACPoliciesInMemory(List<RangerPolicy> abacPolicies, AtlasEntity entity) {
-        List<String> filterCriteriaList = new ArrayList<>();
-        for (RangerPolicy policy : abacPolicies) {
-            String filterCriteria = policy.getPolicyFilterCriteria();
-            if (filterCriteria != null && !filterCriteria.isEmpty() ) {
-                filterCriteriaList.add(filterCriteria);
-            }
-        }
-        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
+    public static AccessResult evaluateABACPoliciesInMemory(List<RangerPolicy> abacPolicies, AtlasEntity entity) {
+        AccessResult result = new AccessResult();
 
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
         ObjectMapper mapper = new ObjectMapper();
 
-        for (String filterCriteria: filterCriteriaList) {
+        for (RangerPolicy policy : abacPolicies) {
+            String filterCriteria = policy.getPolicyFilterCriteria();
+
             boolean matched = false;
             JsonNode filterCriteriaNode = null;
             try {
@@ -193,11 +198,13 @@ public class EntityAuthorizer {
                 matched = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, entity, vertex);
             }
             if (matched) {
-                LOG.info("Matched with criteria {}", filterCriteria);
-                return true;
+                LOG.info("Matched with policy {}", policy.getGuid());
+                result.setAllowed(true);
+                result.setPolicyId(policy.getGuid());
+                return result;
             }
         }
-        return false;
+        return result;
     }
 
     public static boolean validateFilterCriteriaWithEntity(JsonNode data, AtlasEntity entity, AtlasVertex vertex) {
@@ -364,7 +371,9 @@ public class EntityAuthorizer {
         return result;
     }
 
-    public static boolean isAccessAllowedEvaluator(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {
+    public static AccessResult isAccessAllowedEvaluator(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {
+        AccessResult result = new AccessResult();
+
         List<Map<String, Object>> filterClauseList = new ArrayList<>();
         Map<String, Object> policiesDSL = getElasticsearchDSL(null, null, Arrays.asList(action));
         filterClauseList.add(policiesDSL);
@@ -383,9 +392,10 @@ public class EntityAuthorizer {
             e.printStackTrace();
         }
         if (count != null && count > 0) {
-            return true;
+            result.setAllowed(true);
+            return result;
         }
-        return false;
+        return result;
     }
 
     public static Map<String, Object> getElasticsearchDSL(String persona, String purpose, List<String> actions) {

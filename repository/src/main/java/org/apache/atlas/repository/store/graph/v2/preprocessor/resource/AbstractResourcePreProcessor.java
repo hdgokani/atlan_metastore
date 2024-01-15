@@ -135,6 +135,6 @@ public abstract class AbstractResourcePreProcessor implements PreProcessor {
     private void verifyAccess(AtlasEntityHeader entityHeader, AtlasPrivilege privilege) throws AtlasBaseException {
         String errorMessage = privilege.name() + " entity: " + entityHeader.getTypeName();
         //AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, privilege, entityHeader), errorMessage);
-        AuthorizerUtils.verifyAccess(entityHeader.getGuid(), privilege);
+        AuthorizerUtils.verifyAccess(entityHeader, privilege);
     }
 }

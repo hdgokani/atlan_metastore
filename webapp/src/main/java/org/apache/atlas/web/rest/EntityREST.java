@@ -188,9 +188,10 @@ public class EntityREST {
                             AuthorizerUtils.verifyEntityCreateAccess(new AtlasEntity(entityHeader), ENTITY_CREATE);
                         } else {
                             if (StringUtils.isNotEmpty(entityHeader.getGuid())) {
-                                AuthorizerUtils.verifyAccess(entityHeader.getGuid(), privilege);
+                                AuthorizerUtils.verifyAccess(entityHeader, privilege);
                             } else {
-                                AuthorizerUtils.verifyAccessForEvaluator(entity.getTypeName(), entity.getEntityId(), privilege.getType());
+                                //AuthorizerUtils.verifyAccessForEvaluator(entity.getTypeName(), entity.getEntityId(), privilege.getType());
+                                AuthorizerUtils.verifyAccessForEvaluator(entityHeader, privilege);
                             }
                         }
 
@@ -212,9 +213,9 @@ public class EntityREST {
 //                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entityHeader, new AtlasClassification(entity.getClassification())));
                         AtlasPrivilege privilege = AtlasPrivilege.valueOf(action);
                         if (StringUtils.isNotEmpty(entityHeader.getGuid())) {
-                            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), privilege);
+                            AuthorizerUtils.verifyAccess(entityHeader, privilege);
                         } else {
-                            AuthorizerUtils.verifyAccessForEvaluator(entity.getTypeName(), entity.getEntityId(), privilege.getType());
+                            AuthorizerUtils.verifyAccessForEvaluator(entityHeader, privilege);
                         }
 
                         response.add(new AtlasEvaluatePolicyResponse(entity.getTypeName(), entity.getEntityGuid(), action, entity.getEntityId(), entity.getClassification(), true, null));
@@ -240,7 +241,7 @@ public class EntityREST {
 
                         AtlasPrivilege priv = AtlasPrivilege.valueOf(action);
                         if (priv == RELATIONSHIP_ADD) {
-                            AuthorizerUtils.verifyRelationshipCreateAccess(priv.getType(), entity.getRelationShipTypeName(),
+                            AuthorizerUtils.verifyRelationshipCreateAccess(priv, entity.getRelationShipTypeName(),
                                     end1Entity, end2Entity);
                         } else {
                             AuthorizerUtils.verifyRelationshipAccess(priv, entity.getRelationShipTypeName(), end1Entity, end2Entity);
@@ -1183,7 +1184,7 @@ public class EntityREST {
                     AtlasEntityHeader entityHeader = getEntityHeaderFromPurgedAudit(guid);
 
 //                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, ENTITY_READ, entityHeader), "read entity audit: guid=", guid);
-                    AuthorizerUtils.verifyAccess(entityHeader.getGuid(), ENTITY_READ);
+                    AuthorizerUtils.verifyAccess(entityHeader, ENTITY_READ);
                 } else {
                     throw e;
                 }

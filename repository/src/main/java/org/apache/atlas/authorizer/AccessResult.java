@@ -1,11 +1,10 @@
 package org.apache.atlas.authorizer;
 
 import org.apache.atlas.authorize.AtlasAccessRequest;
-import org.apache.atlas.plugin.model.RangerPolicy;
 
 public class AccessResult {
     private boolean isAllowed = false;
-    private RangerPolicy rangerPolicy;
+    private String policyId;
     protected AtlasAccessRequest atlasAccessRequest;
 
     public boolean isAllowed() {
@@ -16,12 +15,12 @@ public class AccessResult {
         this.isAllowed = allowed;
     }
 
-    public RangerPolicy getRangerPolicy() {
-        return rangerPolicy;
+    public String getPolicyId() {
+        return policyId;
     }
 
-    public void setRangerPolicy(RangerPolicy rangerPolicy) {
-        this.rangerPolicy = rangerPolicy;
+    public void setPolicyId(String policyId) {
+        this.policyId = policyId;
     }
 
     public AtlasAccessRequest getAtlasAccessRequest() {
