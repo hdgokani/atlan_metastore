@@ -22,11 +22,8 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.authorizer.AuthorizerUtils;
-import org.apache.atlas.discovery.AtlasAuthorization;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -48,7 +45,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.JanusUtils;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
-import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -523,7 +519,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasEntityHeader     end2Entity   = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
 
 //        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_UPDATE, relationship.getTypeName(), end1Entity, end2Entity));
-        AuthorizerUtils.verifyRelationshipAccess(AtlasPrivilege.RELATIONSHIP_UPDATE.getType(), end1Entity.getGuid(), end2Entity.getGuid());
+        AuthorizerUtils.verifyRelationshipAccess(AtlasPrivilege.RELATIONSHIP_UPDATE, relationship.getTypeName(), end1Entity, end2Entity);
 
         updateTagPropagations(relationshipEdge, relationship);
 

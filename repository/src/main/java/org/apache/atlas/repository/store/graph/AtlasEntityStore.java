@@ -67,6 +67,7 @@ public interface AtlasEntityStore {
      * @return AtlasEntity
      */
     AtlasEntityWithExtInfo getById(String guid, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException;
+    AtlasEntityWithExtInfo getById(String guid, boolean v2Enabled) throws AtlasBaseException;
 
 
     /**

@@ -26,7 +26,6 @@ import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.*;
 import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.bulkimport.BulkImportResponse;
-import org.apache.atlas.discovery.AtlasAuthorization;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.audit.AuditSearchParams;
@@ -129,7 +128,9 @@ public class EntityREST {
     @GET
     @Path("/guid/{guid}")
     @Timed
-    public AtlasEntityWithExtInfo getById(@PathParam("guid") String guid, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo, @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships) throws AtlasBaseException {
+    public AtlasEntityWithExtInfo getById(@PathParam("guid") String guid,
+                                          @QueryParam("minExtInfo") @DefaultValue("true") boolean minExtInfo,
+                                          @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
         AtlasPerfTracer perf = null;
@@ -139,7 +140,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getById(" + guid + ", " + minExtInfo + " )");
             }
 
-            return entitiesStore.getById(guid, minExtInfo, ignoreRelationships);
+            return entitiesStore.getById(guid, minExtInfo);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -187,7 +188,7 @@ public class EntityREST {
                             AuthorizerUtils.verifyEntityCreateAccess(new AtlasEntity(entityHeader), ENTITY_CREATE);
                         } else {
                             if (StringUtils.isNotEmpty(entityHeader.getGuid())) {
-                                AuthorizerUtils.verifyAccess(entityHeader.getGuid(), privilege.getType());
+                                AuthorizerUtils.verifyAccess(entityHeader.getGuid(), privilege);
                             } else {
                                 AuthorizerUtils.verifyAccessForEvaluator(entity.getTypeName(), entity.getEntityId(), privilege.getType());
                             }
@@ -211,7 +212,7 @@ public class EntityREST {
 //                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entityHeader, new AtlasClassification(entity.getClassification())));
                         AtlasPrivilege privilege = AtlasPrivilege.valueOf(action);
                         if (StringUtils.isNotEmpty(entityHeader.getGuid())) {
-                            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), privilege.getType());
+                            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), privilege);
                         } else {
                             AuthorizerUtils.verifyAccessForEvaluator(entity.getTypeName(), entity.getEntityId(), privilege.getType());
                         }
@@ -242,7 +243,7 @@ public class EntityREST {
                             AuthorizerUtils.verifyRelationshipCreateAccess(priv.getType(), entity.getRelationShipTypeName(),
                                     end1Entity, end2Entity);
                         } else {
-                            AuthorizerUtils.verifyRelationshipAccess(priv.getType(), end1Entity.getGuid(), end2Entity.getGuid());
+                            AuthorizerUtils.verifyRelationshipAccess(priv, entity.getRelationShipTypeName(), end1Entity, end2Entity);
                         }
 
                         response.add(new AtlasEvaluatePolicyResponse(action, entity.getRelationShipTypeName(), entity.getEntityTypeEnd1(), entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd2(), entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), true, null));
@@ -1182,7 +1183,7 @@ public class EntityREST {
                     AtlasEntityHeader entityHeader = getEntityHeaderFromPurgedAudit(guid);
 
 //                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, ENTITY_READ, entityHeader), "read entity audit: guid=", guid);
-                    AuthorizerUtils.verifyAccess(entityHeader.getGuid(), ENTITY_READ.getType());
+                    AuthorizerUtils.verifyAccess(entityHeader.getGuid(), ENTITY_READ);
                 } else {
                     throw e;
                 }

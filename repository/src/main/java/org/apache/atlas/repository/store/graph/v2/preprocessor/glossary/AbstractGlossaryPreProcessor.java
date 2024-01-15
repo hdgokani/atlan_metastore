@@ -21,11 +21,8 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
-import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorizer.AuthorizerUtils;
-import org.apache.atlas.discovery.AtlasAuthorization;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
@@ -240,8 +237,8 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
 
         //verifyAccess(new AtlasEntity(sourceGlossary), AtlasPrivilege.ENTITY_CREATE, "create on source Glossary: " +  sourceGlossary.getAttribute(NAME));
         AuthorizerUtils.verifyEntityCreateAccess(new AtlasEntity(sourceGlossary), AtlasPrivilege.ENTITY_CREATE);
-        AuthorizerUtils.verifyAccess(sourceGlossary.getGuid(), AtlasPrivilege.ENTITY_UPDATE.getType());
-        AuthorizerUtils.verifyAccess(sourceGlossary.getGuid(), AtlasPrivilege.ENTITY_DELETE.getType());
+        AuthorizerUtils.verifyAccess(sourceGlossary.getGuid(), AtlasPrivilege.ENTITY_UPDATE);
+        AuthorizerUtils.verifyAccess(sourceGlossary.getGuid(), AtlasPrivilege.ENTITY_DELETE);
 
 
         // target -> CREATE + UPDATE + DELETE
@@ -256,8 +253,8 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
 
         //verifyAccess(new AtlasEntity(targetGlossary), AtlasPrivilege.ENTITY_CREATE, "create on source Glossary: " + targetGlossary.getAttribute(NAME));
         AuthorizerUtils.verifyEntityCreateAccess(new AtlasEntity(targetGlossary), AtlasPrivilege.ENTITY_CREATE);
-        AuthorizerUtils.verifyAccess(targetGlossary.getGuid(), AtlasPrivilege.ENTITY_UPDATE.getType());
-        AuthorizerUtils.verifyAccess(targetGlossary.getGuid(), AtlasPrivilege.ENTITY_DELETE.getType());
+        AuthorizerUtils.verifyAccess(targetGlossary.getGuid(), AtlasPrivilege.ENTITY_UPDATE);
+        AuthorizerUtils.verifyAccess(targetGlossary.getGuid(), AtlasPrivilege.ENTITY_DELETE);
     }
 
     /**

@@ -1,4 +1,4 @@
-package org.apache.atlas.discovery;
+package org.apache.atlas.authorizer;
 
 import org.apache.atlas.authorizer.authorizers.AuthorizerCommon;
 //import org.apache.atlas.model.audit.AuditSearchParams;
@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
+@Deprecated
 @Component
 public class AtlasAuthorization {
 
@@ -58,8 +59,9 @@ public class AtlasAuthorization {
             this.entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true);
 
             //AtlasAuthorization.usersGroupsRolesStore = UsersGroupsRolesStore.getInstance();
-            AuthorizerCommon.setTypeRegistry(typeRegistry);
-            AuthorizerCommon.setEntityRetriever(entityRetriever);
+
+            //AuthorizerCommon.setTypeRegistry(typeRegistry);
+            //AuthorizerCommon.setEntityRetriever(entityRetriever);
 
             serviceNames.add("atlas");
             serviceNames.add("atlas_tag");

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorizer.AccessResult;
 import org.apache.atlas.authorizer.JsonToElasticsearchQuery;
 import org.apache.atlas.authorizer.store.PoliciesStore;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -379,16 +380,17 @@ public class RelationshipAuthorizer {
         return result;
     }*/
 
-    public static boolean isRelationshipAccessAllowed(String action, String endOneGuid, String endTwoGuid) throws AtlasBaseException {
+    public static AccessResult isRelationshipAccessAllowed(String action, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("RelationshipAuthorizer.isRelationshipAccessAllowed");
+        AccessResult result = new AccessResult();
 
         //Relationship update, remove access check with ES query
-        if (endOneGuid == null || endTwoGuid == null) {
-            return false;
+        if (endOneEntity == null || endTwoEntity == null || endOneEntity.getGuid() == null || endTwoEntity.getGuid() == null ) {
+            return result;
         }
 
         try {
-            Map<String, Object> dsl = getElasticsearchDSLForRelationshipActions(Arrays.asList(action), endOneGuid, endTwoGuid);
+            Map<String, Object> dsl = getElasticsearchDSLForRelationshipActions(Arrays.asList(action), endOneEntity.getGuid(), endTwoEntity.getGuid());
             ObjectMapper mapper = new ObjectMapper();
             String dslString = mapper.writeValueAsString(dsl);
             RestClient restClient = getLowLevelClient();
@@ -409,7 +411,7 @@ public class RelationshipAuthorizer {
                     if (matched_queries != null && !matched_queries.isEmpty()) {
                         Map<String, Object> source = (Map<String, Object>) doc.get("_source");
                         String guid = (String) source.get("__guid");
-                        if (endOneGuid.equals(guid)) {
+                        if (endOneEntity.getGuid().equals(guid)) {
                             for (String matched_query : matched_queries) {
                                 if (matched_query.equals("tag-clause")) {
                                     matchedClausesEndOne.add("tag-clause");
@@ -429,16 +431,17 @@ public class RelationshipAuthorizer {
                     }
                 }
                 if (arrayListContains(matchedClausesEndOne, matchedClausesEndTwo)) {
-                    return true;
+                    result.setAllowed(true);
+                    return result;
                 }
             }
             LOG.info(dslString);
         } catch (JsonProcessingException e) {
-            return false;
+            return result;
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
-        return false;
+        return result;
     }
 
     public static Map<String, Object> getElasticsearchDSLForRelationshipActions(List<String> actions, String endOneGuid, String endTwoGuid) throws JsonProcessingException {
