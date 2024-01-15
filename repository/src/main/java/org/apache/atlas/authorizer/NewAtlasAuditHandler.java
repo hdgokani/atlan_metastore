@@ -241,7 +241,7 @@ class NewAtlasAuditHandler {
             ret.setAction(request.getAction().getType());
             ret.setAccessResult((short) (result.isAllowed() ? 1 : 0));
             ret.setAccessType(request.getAction().getType());
-            ret.setClientIP(request.getClientIPAddress());
+            ret.setClientIP(RequestContext.get().getClientIPAddress());
             /*Set<String> tags = getTags(request);
             if (tags != null) {
                 ret.setTags(tags);
