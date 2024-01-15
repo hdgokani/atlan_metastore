@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorizer.AccessResult;
 import org.apache.atlas.authorizer.store.PoliciesStore;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -14,6 +15,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,9 +26,6 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_DENY;
 import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.getMap;
-import static org.apache.atlas.authorizer.authorizers.ListAuthorizer.getDSLForAbacPolicies;
-import static org.apache.atlas.authorizer.authorizers.ListAuthorizer.getDSLForResourcePolicies;
-import static org.apache.atlas.authorizer.authorizers.ListAuthorizer.getDSLForTagPolicies;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
 
@@ -257,7 +256,7 @@ public class EntityAuthorizer {
                 List<AtlasClassification> tags = entity.getClassifications();
                 if (tags != null) {
                     for (AtlasClassification tag: tags) {
-                        if (tag.getEntityGuid().isEmpty() || tag.getEntityGuid().equals(entity.getGuid())) {
+                        if (StringUtils.isEmpty(tag.getEntityGuid()) || tag.getEntityGuid().equals(entity.getGuid())) {
                             entityAttributeValues.add(tag.getTypeName());
                         }
                     }
@@ -268,7 +267,7 @@ public class EntityAuthorizer {
                 tags = entity.getClassifications();
                 if (tags != null) {
                     for (AtlasClassification tag: tags) {
-                        if (!tag.getEntityGuid().isEmpty() && !tag.getEntityGuid().equals(entity.getGuid())) {
+                        if (StringUtils.isNotEmpty(tag.getEntityGuid()) && !tag.getEntityGuid().equals(entity.getGuid())) {
                             entityAttributeValues.add(tag.getTypeName());
                         }
                     }
@@ -334,10 +333,12 @@ public class EntityAuthorizer {
         return false;
     }
 
-    public static boolean isAccessAllowed(String guid, String action) throws AtlasBaseException {
+    public static AccessResult isAccessAllowed(String guid, String action) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("EntityAuthorizer.isAccessAllowed");
+        AccessResult result = new AccessResult();
+
         if (guid == null) {
-            return false;
+            return result;
         }
         List<Map<String, Object>> filterClauseList = new ArrayList<>();
         Map<String, Object> policiesDSL = getElasticsearchDSL(null, null, Arrays.asList(action));
@@ -355,11 +356,12 @@ public class EntityAuthorizer {
             e.printStackTrace();
         }
         if (count != null && count > 0) {
-            return true;
+            result.setAllowed(true);
+            return result;
         }
 
         RequestContext.get().endMetricRecord(recorder);
-        return false;
+        return result;
     }
 
     public static boolean isAccessAllowedEvaluator(String entityTypeName, String entityQualifiedName, String action) throws AtlasBaseException {

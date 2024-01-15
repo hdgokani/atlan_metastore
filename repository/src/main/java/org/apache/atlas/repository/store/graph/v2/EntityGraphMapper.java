@@ -21,11 +21,9 @@ package org.apache.atlas.repository.store.graph.v2;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorizer.AuthorizerUtils;
-import org.apache.atlas.discovery.AtlasAuthorization;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.TimeBoundary;
@@ -128,7 +126,6 @@ import static org.apache.atlas.repository.graph.GraphHelper.getTraitLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeNames;
-import static org.apache.atlas.repository.graph.GraphHelper.isActive;
 import static org.apache.atlas.repository.graph.GraphHelper.isPropagationEnabled;
 import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
@@ -649,7 +646,7 @@ public class EntityGraphMapper {
             requestBuilder.setBusinessMetadata(bmName);
 
 //            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "add/update business-metadata: guid=", guid, ", business-metadata-name=", bmName);
-            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.getType());
+            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA);
         }
 
         if (isOverwrite) {
@@ -837,7 +834,7 @@ public class EntityGraphMapper {
             requestBuilder.setBusinessMetadata(bmName);
 
 //            AtlasAuthorizationUtils.verifyAccess(requestBuilder.build(), "remove business-metadata: guid=", entityHeader.getGuid(), ", business-metadata=", bmName);
-            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.getType());
+            AuthorizerUtils.verifyAccess(entityHeader.getGuid(), AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA);
         }
 
         Map<String, Map<String, AtlasBusinessAttribute>> entityTypeBusinessAttributes = entityType.getBusinessAttributes();

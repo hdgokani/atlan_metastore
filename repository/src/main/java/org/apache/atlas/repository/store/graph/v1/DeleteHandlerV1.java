@@ -21,11 +21,8 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.authorizer.AuthorizerUtils;
-import org.apache.atlas.discovery.AtlasAuthorization;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -522,7 +519,7 @@ public abstract class DeleteHandlerV1 {
         end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
 
 //        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
-        AuthorizerUtils.verifyRelationshipAccess(AtlasPrivilege.RELATIONSHIP_REMOVE.getType(), end1Entity.getGuid(), end2Entity.getGuid());
+        AuthorizerUtils.verifyRelationshipAccess(AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity);
 
         RequestContext.get().endMetricRecord(metric);
     }

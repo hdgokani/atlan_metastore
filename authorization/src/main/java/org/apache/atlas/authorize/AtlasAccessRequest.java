@@ -47,7 +47,6 @@ public class AtlasAccessRequest {
     private       List<String>   forwardedAddresses;
     private       String         remoteIPAddress;
 
-
     protected AtlasAccessRequest(AtlasPrivilege action) {
         this(action, null, null, new Date(), null);
     }
