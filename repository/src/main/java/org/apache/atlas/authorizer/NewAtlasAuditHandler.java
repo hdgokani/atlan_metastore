@@ -13,6 +13,7 @@ import org.apache.atlas.authorizer.authorizers.AuthorizerCommon;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.plugin.model.NewAccessResourceImpl;
 import org.apache.atlas.plugin.model.RangerServiceDef;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,6 +166,12 @@ class NewAtlasAuditHandler {
                 auditEvent.setResourceType(resourceType);
             }
 
+            if (StringUtils.isNotEmpty(result.getPolicyId())) {
+                auditEvent.setPolicyId(result.getPolicyId());
+            } else {
+                auditEvent.setPolicyId("yet_to_support");
+            }
+
             auditEvents.put(auditEvent.getPolicyId() + auditEvent.getAccessType(), auditEvent);
         }
     }
@@ -233,7 +240,6 @@ class NewAtlasAuditHandler {
             ret.setEventTime(request.getAccessTime() != null ? request.getAccessTime() : new Date());
             ret.setAction(request.getAction().getType());
             ret.setAccessResult((short) (result.isAllowed() ? 1 : 0));
-            ret.setPolicyId("yet_to_support");
             ret.setAccessType(request.getAction().getType());
             ret.setClientIP(request.getClientIPAddress());
             /*Set<String> tags = getTags(request);
