@@ -15,6 +15,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -432,10 +433,17 @@ public class RelationshipAuthorizer {
                         }
                     }
                 }
-                if (arrayListContains(matchedClausesEndOne, matchedClausesEndTwo)) {
+                List<String> common = (List<String>) CollectionUtils.intersection(matchedClausesEndOne, matchedClausesEndTwo);
+                if (!common.isEmpty()) {
                     result.setAllowed(true);
+                    result.setPolicyId(common.get(0));
                     return result;
                 }
+
+                /*if (arrayListContains(matchedClausesEndOne, matchedClausesEndTwo)) {
+                    result.setAllowed(true);
+                    return result;
+                }*/
             }
             LOG.info(dslString);
         } catch (JsonProcessingException e) {
