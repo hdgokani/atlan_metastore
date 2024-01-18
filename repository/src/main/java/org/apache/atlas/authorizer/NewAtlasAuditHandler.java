@@ -168,8 +168,6 @@ class NewAtlasAuditHandler {
 
             if (StringUtils.isNotEmpty(result.getPolicyId())) {
                 auditEvent.setPolicyId(result.getPolicyId());
-            } else {
-                auditEvent.setPolicyId("yet_to_support");
             }
 
             auditEvents.put(auditEvent.getPolicyId() + auditEvent.getAccessType(), auditEvent);

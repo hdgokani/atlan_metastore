@@ -351,23 +351,37 @@ public class EntityAuthorizer {
             return result;
         }
         List<Map<String, Object>> filterClauseList = new ArrayList<>();
-        Map<String, Object> policiesDSL = getElasticsearchDSL(null, null, Arrays.asList(action));
+        Map<String, Object> policiesDSL = getElasticsearchDSL(null, null, true, Arrays.asList(action));
         filterClauseList.add(policiesDSL);
         filterClauseList.add(getMap("term", getMap("__guid", guid)));
         Map<String, Object> dsl = getMap("query", getMap("bool", getMap("filter", filterClauseList)));
         ObjectMapper mapper = new ObjectMapper();
-        String dslString = null;
-        Integer count = null;
+        Map<String, Object> response  = null;
         try {
-            dslString = mapper.writeValueAsString(dsl);
-            count = getCountFromElasticsearch(dslString);
+            String dslString = mapper.writeValueAsString(dsl);
+            response = runElasticsearchQuery(dslString);
             LOG.info(dslString);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        if (count != null && count > 0) {
-            result.setAllowed(true);
-            return result;
+
+        if (response != null) {
+            Integer count = (Integer) response.get("total");
+            if (count != null && count > 0) {
+                String policyId = null;
+                List<Map<String, Object>> docs = (List<Map<String, Object>>) response.get("data");
+
+                for (Map<String, Object> doc : docs) {
+                    List<String> matched_queries = (List<String>) doc.get("matched_queries");
+                    if (CollectionUtils.isNotEmpty(matched_queries)) {
+                        policyId = matched_queries.get(0);
+                    }
+                }
+
+                result.setAllowed(true);
+                result.setPolicyId(policyId);
+                return result;
+            }
         }
 
         RequestContext.get().endMetricRecord(recorder);
@@ -378,7 +392,7 @@ public class EntityAuthorizer {
         AccessResult result = new AccessResult();
 
         List<Map<String, Object>> filterClauseList = new ArrayList<>();
-        Map<String, Object> policiesDSL = getElasticsearchDSL(null, null, Arrays.asList(action));
+        Map<String, Object> policiesDSL = getElasticsearchDSL(null, null, true, Arrays.asList(action));
         filterClauseList.add(policiesDSL);
         filterClauseList.add(getMap("wildcard", getMap("__typeName.keyword", entityTypeName)));
         if (entityQualifiedName != null)
@@ -386,25 +400,42 @@ public class EntityAuthorizer {
         Map<String, Object> dsl = getMap("query", getMap("bool", getMap("filter", filterClauseList)));
         ObjectMapper mapper = new ObjectMapper();
         String dslString = null;
-        Integer count = null;
+        Map<String, Object> response  = null;
         try {
             dslString = mapper.writeValueAsString(dsl);
-            count = getCountFromElasticsearch(dslString);
+            response = runElasticsearchQuery(dslString);
             LOG.info(dslString);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        if (count != null && count > 0) {
-            result.setAllowed(true);
-            return result;
+
+        if (response != null) {
+            Integer count = (Integer) response.get("total");
+            if (count != null && count > 0) {
+                String policyId = null;
+                List<Map<String, Object>> docs = (List<Map<String, Object>>) response.get("data");
+
+                for (Map<String, Object> doc : docs) {
+                    List<String> matched_queries = (List<String>) doc.get("matched_queries");
+                    if (CollectionUtils.isNotEmpty(matched_queries)) {
+                        policyId = matched_queries.get(0);
+                    }
+                }
+
+                result.setAllowed(true);
+                result.setPolicyId(policyId);
+                return result;
+            }
         }
+
         return result;
     }
 
-    public static Map<String, Object> getElasticsearchDSL(String persona, String purpose, List<String> actions) {
+    public static Map<String, Object> getElasticsearchDSL(String persona, String purpose,
+                                                          boolean requestMatchedPolicyId, List<String> actions) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("EntityAuthorizer.getElasticsearchDSL");
-        Map<String, Object> allowDsl = ListAuthorizer.getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_ALLOW);
-        Map<String, Object> denyDsl = ListAuthorizer.getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_DENY);
+        Map<String, Object> allowDsl = ListAuthorizer.getElasticsearchDSLForPolicyType(persona, purpose, actions, requestMatchedPolicyId, POLICY_TYPE_ALLOW);
+        Map<String, Object> denyDsl = ListAuthorizer.getElasticsearchDSLForPolicyType(persona, purpose, actions, requestMatchedPolicyId, POLICY_TYPE_DENY);
         Map<String, Object> finaDsl = new HashMap<>();
         if (allowDsl != null) {
             finaDsl.put("filter", allowDsl);
@@ -418,10 +449,8 @@ public class EntityAuthorizer {
 
     private static Integer getCountFromElasticsearch(String query) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("EntityAuthorizer.getCountFromElasticsearch");
-        RestClient restClient = getLowLevelClient();
-        AtlasElasticsearchQuery elasticsearchQuery = new AtlasElasticsearchQuery("janusgraph_vertex_index", restClient);
-        Map<String, Object> elasticsearchResult = null;
-        elasticsearchResult = elasticsearchQuery.runQueryWithLowLevelClient(query);
+
+        Map<String, Object> elasticsearchResult = runElasticsearchQuery(query);
         Integer count = null;
         if (elasticsearchResult!=null) {
             count = (Integer) elasticsearchResult.get("total");
@@ -430,50 +459,13 @@ public class EntityAuthorizer {
         return count;
     }
 
-    /*public static Map<String, Object> getElasticsearchDSLForPolicyType(String persona, String purpose, List<String> actions, String policyType) {
-        List<RangerPolicy> resourcePolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas", actions, policyType);
-        List<Map<String, Object>> resourcePoliciesClauses = ListAuthorizer.getDSLForResourcePolicies(resourcePolicies);
-
-        List<RangerPolicy> tagPolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas_tag", actions, policyType);
-        Map<String, Object> tagPoliciesClause = ListAuthorizer.getDSLForTagPolicies(tagPolicies);
-
-        List<RangerPolicy> abacPolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas_abac", actions, policyType);
-        List<Map<String, Object>> abacPoliciesClauses = ListAuthorizer.getDSLForAbacPolicies(abacPolicies);
-
-        List<Map<String, Object>> shouldClauses = new ArrayList<>();
-        shouldClauses.addAll(resourcePoliciesClauses);
-        if (tagPoliciesClause != null) {
-            shouldClauses.add(tagPoliciesClause);
-        }
-        shouldClauses.addAll(abacPoliciesClauses);
-
-        Map<String, Object> boolClause = new HashMap<>();
-        if (shouldClauses.isEmpty()) {
-            if (POLICY_TYPE_ALLOW.equals(policyType)) {
-                boolClause.put("must_not", getMap("match_all", new HashMap<>()));
-            } else {
-                return null;
-            }
-
-        } else {
-            //boolClause.put("should", shouldClauses);
-            if (shouldClauses.size() > MAX_CLAUSE_LIMIT) {
-                List<Map<String, Object>> splittedShould = new ArrayList<>();
-                List<List<Map<String, Object>>> partitionedShouldClause = Lists.partition(shouldClauses, MAX_CLAUSE_LIMIT);
-
-                for (List<Map<String, Object>> chunk : partitionedShouldClause) {
-                    splittedShould.add(getMap("bool", getMap("should", chunk)));
-                }
-                boolClause.put("should", splittedShould);
-
-            } else {
-                boolClause.put("should", shouldClauses);
-            }
-
-            boolClause.put("minimum_should_match", 1);
-        }
-
-        return getMap("bool", boolClause);
-
-    }*/
+    private static Map<String, Object> runElasticsearchQuery(String query) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("EntityAuthorizer.runElasticsearchQuery");
+        RestClient restClient = getLowLevelClient();
+        AtlasElasticsearchQuery elasticsearchQuery = new AtlasElasticsearchQuery("janusgraph_vertex_index", restClient);
+        Map<String, Object> elasticsearchResult = null;
+        elasticsearchResult = elasticsearchQuery.runQueryWithLowLevelClient(query);
+        RequestContext.get().endMetricRecord(recorder);
+        return elasticsearchResult;
+    }
 }

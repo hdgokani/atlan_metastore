@@ -4,7 +4,7 @@ import org.apache.atlas.authorize.AtlasAccessRequest;
 
 public class AccessResult {
     private boolean isAllowed = false;
-    private String policyId;
+    private String policyId = "-1";
     protected AtlasAccessRequest atlasAccessRequest;
 
     public boolean isAllowed() {
