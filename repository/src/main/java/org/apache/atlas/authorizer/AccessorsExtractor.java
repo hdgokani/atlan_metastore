@@ -64,24 +64,7 @@ public class AccessorsExtractor {
 
     public static AtlasAccessorResponse getAccessors(AtlasAccessorRequest request) throws AtlasBaseException {
         return getAccessorsInMemory(request);
-        //return getAccessorsES(request);
     }
-
-    public static AtlasAccessorResponse getAccessorsES(AtlasAccessorRequest request) throws AtlasBaseException {
-        AtlasAccessorResponse response = new AtlasAccessorResponse();
-
-        String action = AtlasPrivilege.valueOf(request.getAction()).getType();
-
-        List<RangerPolicy> resourcePolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas", Arrays.asList(action), POLICY_TYPE_ALLOW, true);
-        resourcePolicies.addAll(PoliciesStore.getRelevantPolicies(null, null, "atlas_tag", Arrays.asList(action), POLICY_TYPE_ALLOW, true));
-
-
-        List<RangerPolicy> abacPolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), POLICY_TYPE_ALLOW, true);
-
-
-        return response;
-    }
-
 
     private static void collectSubjects(AtlasAccessorResponse response, List<RangerPolicy> matchedPolicies) {
         for (RangerPolicy policy: matchedPolicies) {

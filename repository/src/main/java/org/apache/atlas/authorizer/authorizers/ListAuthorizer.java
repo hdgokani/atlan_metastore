@@ -3,6 +3,7 @@ package org.apache.atlas.authorizer.authorizers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorizer.JsonToElasticsearchQuery;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.authorizer.AuthorizerUtils.MAX_CLAUSE_LIMIT;
 import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_DENY;
 import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.*;
@@ -70,7 +72,20 @@ public class ListAuthorizer {
             }
 
         } else {
-            boolClause.put("should", shouldClauses);
+            //boolClause.put("should", shouldClauses);
+            if (shouldClauses.size() > MAX_CLAUSE_LIMIT) {
+                List<Map<String, Object>> splittedShould = new ArrayList<>();
+                List<List<Map<String, Object>>> partitionedShouldClause = Lists.partition(shouldClauses, MAX_CLAUSE_LIMIT);
+
+                for (List<Map<String, Object>> chunk : partitionedShouldClause) {
+                    splittedShould.add(getMap("bool", getMap("should", chunk)));
+                }
+                boolClause.put("should", splittedShould);
+
+            } else {
+                boolClause.put("should", shouldClauses);
+            }
+
             boolClause.put("minimum_should_match", 1);
         }
 
