@@ -42,6 +42,7 @@ public class AuthorizerUtils {
 
     public static final String POLICY_TYPE_ALLOW = "allow";
     public static final String POLICY_TYPE_DENY = "deny";
+    public static final int MAX_CLAUSE_LIMIT = 1024;
 
     private static AtlasTypeRegistry typeRegistry;
     private static EntityGraphRetriever entityRetriever;
@@ -237,7 +238,7 @@ public class AuthorizerUtils {
         return ListAuthorizer.getElasticsearchDSL(persona, purpose, actions);
     }
 
-    private   <T> T getResourceAsObject(String resourceName, Class<T> clazz) throws IOException {
+    private <T> T getResourceAsObject(String resourceName, Class<T> clazz) throws IOException {
         InputStream stream = getClass().getResourceAsStream(resourceName);
         return AtlasType.fromJson(stream, clazz);
     }

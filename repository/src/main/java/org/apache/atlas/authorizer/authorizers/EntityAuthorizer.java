@@ -3,6 +3,7 @@ package org.apache.atlas.authorizer.authorizers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorizer.AccessResult;
@@ -15,6 +16,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
@@ -23,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.authorizer.AuthorizerUtils.MAX_CLAUSE_LIMIT;
 import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_DENY;
 import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.getMap;
@@ -400,8 +403,8 @@ public class EntityAuthorizer {
 
     public static Map<String, Object> getElasticsearchDSL(String persona, String purpose, List<String> actions) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("EntityAuthorizer.getElasticsearchDSL");
-        Map<String, Object> allowDsl = getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_ALLOW);
-        Map<String, Object> denyDsl = getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_DENY);
+        Map<String, Object> allowDsl = ListAuthorizer.getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_ALLOW);
+        Map<String, Object> denyDsl = ListAuthorizer.getElasticsearchDSLForPolicyType(persona, purpose, actions, POLICY_TYPE_DENY);
         Map<String, Object> finaDsl = new HashMap<>();
         if (allowDsl != null) {
             finaDsl.put("filter", allowDsl);
@@ -427,7 +430,7 @@ public class EntityAuthorizer {
         return count;
     }
 
-    public static Map<String, Object> getElasticsearchDSLForPolicyType(String persona, String purpose, List<String> actions, String policyType) {
+    /*public static Map<String, Object> getElasticsearchDSLForPolicyType(String persona, String purpose, List<String> actions, String policyType) {
         List<RangerPolicy> resourcePolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas", actions, policyType);
         List<Map<String, Object>> resourcePoliciesClauses = ListAuthorizer.getDSLForResourcePolicies(resourcePolicies);
 
@@ -453,11 +456,24 @@ public class EntityAuthorizer {
             }
 
         } else {
-            boolClause.put("should", shouldClauses);
+            //boolClause.put("should", shouldClauses);
+            if (shouldClauses.size() > MAX_CLAUSE_LIMIT) {
+                List<Map<String, Object>> splittedShould = new ArrayList<>();
+                List<List<Map<String, Object>>> partitionedShouldClause = Lists.partition(shouldClauses, MAX_CLAUSE_LIMIT);
+
+                for (List<Map<String, Object>> chunk : partitionedShouldClause) {
+                    splittedShould.add(getMap("bool", getMap("should", chunk)));
+                }
+                boolClause.put("should", splittedShould);
+
+            } else {
+                boolClause.put("should", shouldClauses);
+            }
+
             boolClause.put("minimum_should_match", 1);
         }
 
         return getMap("bool", boolClause);
 
-    }
+    }*/
 }
