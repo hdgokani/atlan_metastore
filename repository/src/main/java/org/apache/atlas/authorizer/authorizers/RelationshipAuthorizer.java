@@ -484,7 +484,7 @@ public class RelationshipAuthorizer {
                 List<Map<String, Object>> splittedShould = new ArrayList<>();
                 List<List<Map<String, Object>>> partitionedShouldClause = Lists.partition(policiesClauses, MAX_CLAUSE_LIMIT);
 
-                for (List<Map<String, Object>>   chunk : partitionedShouldClause) {
+                for (List<Map<String, Object>> chunk : partitionedShouldClause) {
                     splittedShould.add(getMap("bool", getMap("should", chunk)));
                 }
                 policiesBoolClause.put("should", splittedShould);

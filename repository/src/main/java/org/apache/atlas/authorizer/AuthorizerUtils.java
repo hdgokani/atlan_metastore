@@ -234,7 +234,7 @@ public class AuthorizerUtils {
         }
     }
 
-    public static Map<String, Object>  getPreFilterDsl(String persona, String purpose, List<String> actions) {
+    public static Map<String, Object> getPreFilterDsl(String persona, String purpose, List<String> actions) {
         return ListAuthorizer.getElasticsearchDSL(persona, purpose, actions);
     }
 
