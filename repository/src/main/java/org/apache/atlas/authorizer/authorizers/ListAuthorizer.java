@@ -12,6 +12,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,14 +58,9 @@ public class ListAuthorizer {
 
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         if (requestMatchedPolicyId) {
-            String suffix = "";
-            if (POLICY_TYPE_DENY.equals(policyType)) {
-                suffix = DENY_POLICY_NAME_SUFFIX;
-            }
-
-            shouldClauses.addAll(getDSLForResourcePoliciesPerPolicy(resourcePolicies, suffix));
-            shouldClauses.addAll(getDSLForTagPoliciesPerPolicy(tagPolicies, suffix));
-            shouldClauses.addAll(getDSLForAbacPoliciesPerPolicy(abacPolicies, suffix));
+            shouldClauses.addAll(getDSLForResourcePoliciesPerPolicy(resourcePolicies));
+            shouldClauses.addAll(getDSLForTagPoliciesPerPolicy(tagPolicies));
+            shouldClauses.addAll(getDSLForAbacPoliciesPerPolicy(abacPolicies));
         } else {
             shouldClauses.addAll(getDSLForResourcePolicies(resourcePolicies));
             Map<String, Object> tagDsl = getDSLForTagPolicies(tagPolicies);
@@ -251,7 +247,7 @@ public class ListAuthorizer {
         return clauses;
     }
 
-    public static List<Map<String, Object>> getDSLForResourcePoliciesPerPolicy(List<RangerPolicy> policies, String nameSuffix) {
+    public static List<Map<String, Object>> getDSLForResourcePoliciesPerPolicy(List<RangerPolicy> policies) {
 
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
 
@@ -266,14 +262,22 @@ public class ListAuthorizer {
                     break;
                 }
 
-                Map<String, Object> dslForPolicyResources = getDSLForResources(entities, new HashSet<>(entityTypesRaw), null, policy.getGuid()+nameSuffix);
+                Map<String, Object> dslForPolicyResources = getDSLForResources(entities, new HashSet<>(entityTypesRaw), null,
+                        policy.getGuid() + getPolicySuffix(policy));
                 shouldClauses.add(dslForPolicyResources);
             }
         }
         return shouldClauses;
     }
 
-    public static List<Map<String, Object>> getDSLForTagPoliciesPerPolicy(List<RangerPolicy> policies, String nameSuffix) {
+    public static String getPolicySuffix(RangerPolicy policy) {
+        if (CollectionUtils.isNotEmpty(policy.getDenyPolicyItems())) {
+            return DENY_POLICY_NAME_SUFFIX;
+        }
+        return "";
+    }
+
+    public static List<Map<String, Object>> getDSLForTagPoliciesPerPolicy(List<RangerPolicy> policies) {
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
 
         LOG.info("Found {} tag policies", policies.size());
@@ -290,7 +294,7 @@ public class ListAuthorizer {
 
                     Map<String, Object> shouldMap = getMap("should", tagsClauses);
                     shouldMap.put("minimum_should_match", 1);
-                    shouldMap.put("_name", policy.getGuid() + nameSuffix);
+                    shouldMap.put("_name", policy.getGuid() + getPolicySuffix(policy));
 
                     Map<String, Object> boolClause = getMap("bool", shouldMap);
                     shouldClauses.add(boolClause);
@@ -301,7 +305,7 @@ public class ListAuthorizer {
         return shouldClauses;
     }
 
-    public static List<Map<String, Object>> getDSLForAbacPoliciesPerPolicy(List<RangerPolicy> policies, String nameSuffix) {
+    public static List<Map<String, Object>> getDSLForAbacPoliciesPerPolicy(List<RangerPolicy> policies) {
         ObjectMapper mapper = new ObjectMapper();
         List<Map<String, Object>> clauses = new ArrayList<>();
 
@@ -321,7 +325,7 @@ public class ListAuthorizer {
                     String policyDSLBase64 = Base64.getEncoder().encodeToString(dsl.toString().getBytes());
 
                     Map<String, Object> shouldMap = getMap("should", getMap("wrapper", getMap("query", policyDSLBase64)));
-                    shouldMap.put("_name", policy.getGuid() + nameSuffix);
+                    shouldMap.put("_name", policy.getGuid() + getPolicySuffix(policy));
 
                     Map<String, Object> boolMap = getMap("bool", shouldMap);
                     clauses.add(boolMap);

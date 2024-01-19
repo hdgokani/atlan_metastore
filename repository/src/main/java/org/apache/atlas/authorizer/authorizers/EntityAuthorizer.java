@@ -427,21 +427,15 @@ public class EntityAuthorizer {
     public static Map<String, Object> getElasticsearchDSL(String persona, String purpose,
                                                           boolean requestMatchedPolicyId, List<String> actions) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("EntityAuthorizer.getElasticsearchDSL");
-        Map<String, Object> allowDsl = ListAuthorizer.getElasticsearchDSLForPolicyType(persona, purpose, actions, requestMatchedPolicyId, POLICY_TYPE_ALLOW);
-        Map<String, Object> denyDsl = ListAuthorizer.getElasticsearchDSLForPolicyType(persona, purpose, actions, requestMatchedPolicyId, POLICY_TYPE_DENY);
-        //List<Map<String, Object>> finaDsl = new ArrayList<>();
+        Map<String, Object> dsl = ListAuthorizer.getElasticsearchDSLForPolicyType(persona, purpose, actions, requestMatchedPolicyId, null);
 
-        List<Map<String, Object>> combinedShouldClauses = new ArrayList<>();
-        if (allowDsl != null) {
-            combinedShouldClauses.addAll((List) ((Map) allowDsl.get("bool")).get("should") );
-            //finaDsl.add(allowDsl);
+        List<Map<String, Object>> finaDsl = new ArrayList<>();
+        if (dsl != null) {
+            finaDsl.add(dsl);
         }
-        if (denyDsl != null) {
-            combinedShouldClauses.addAll((List) ((Map) denyDsl.get("bool")).get("should") );
-            //finaDsl.put("must_not", denyDsl);
-        }
+
         RequestContext.get().endMetricRecord(recorder);
-        return getMap("bool", getMap("filter", getMap("bool", getMap("should", combinedShouldClauses))));
+        return getMap("bool", getMap("filter", getMap("bool", getMap("should", finaDsl))));
     }
 
     private static Integer getCountFromElasticsearch(String query) throws AtlasBaseException {

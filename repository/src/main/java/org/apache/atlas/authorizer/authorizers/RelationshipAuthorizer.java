@@ -31,6 +31,7 @@ import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_DENY;
 import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.getMap;
 import static org.apache.atlas.authorizer.authorizers.EntityAuthorizer.validateFilterCriteriaWithEntity;
 import static org.apache.atlas.authorizer.authorizers.ListAuthorizer.getDSLForResources;
+import static org.apache.atlas.authorizer.authorizers.ListAuthorizer.getPolicySuffix;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
 
@@ -466,7 +467,6 @@ public class RelationshipAuthorizer {
     private static List<Map<String, Object>> getDSLForRelationshipAbacPolicies(List<RangerPolicy> policies) throws JsonProcessingException {
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         for (RangerPolicy policy : policies) {
-            boolean deny = CollectionUtils.isNotEmpty(policy.getDenyPolicyItems());
             if ("RELATIONSHIP".equals(policy.getPolicyResourceCategory())) {
                 String filterCriteria = policy.getPolicyFilterCriteria();
                 ObjectMapper mapper = new ObjectMapper();
@@ -476,13 +476,14 @@ public class RelationshipAuthorizer {
                 relationshipEnds.add("end-one");
                 relationshipEnds.add("end-two");
 
+                String suffix = getPolicySuffix(policy);
                 for (String relationshipEnd : relationshipEnds) {
                     JsonNode endFilterCriteriaNode = filterCriteriaNode.get(relationshipEnd.equals("end-one")  ? "endOneEntity" : "endTwoEntity");
                     JsonNode Dsl = JsonToElasticsearchQuery.convertJsonToQuery(endFilterCriteriaNode, mapper);
                     String DslBase64 = Base64.getEncoder().encodeToString(Dsl.toString().getBytes());
                     String clauseName = relationshipEnd + "-" + policy.getGuid();
                     Map<String, Object> boolMap = new HashMap<>();
-                    boolMap.put("_name", (deny) ? clauseName + DENY_POLICY_NAME_SUFFIX : clauseName);
+                    boolMap.put("_name", clauseName + suffix);
                     boolMap.put("filter", getMap("wrapper", getMap("query", DslBase64)));
 
                     shouldClauses.add(getMap("bool", boolMap));
