@@ -55,7 +55,6 @@ public class ServicePolicies implements java.io.Serializable {
 	private RangerServiceDef   serviceDef;
 	private String             auditMode = RangerPolicyEngine.AUDIT_DEFAULT;
 	private TagPolicies        tagPolicies;
-	private AbacPolicies       abacPolicies;
 	private Map<String, SecurityZoneInfo> securityZones;
 	private List<RangerPolicyDelta> policyDeltas;
 	private Map<String, String> serviceConfig;
@@ -159,19 +158,6 @@ public class ServicePolicies implements java.io.Serializable {
 	 */
 	public void setTagPolicies(TagPolicies tagPolicies) {
 		this.tagPolicies = tagPolicies;
-	}
-
-	/**
-	 * @return the abacPolicies
-	 */
-	public AbacPolicies getAbacPolicies() {
-		return abacPolicies;
-	}
-	/**
-	 * @param abacPolicies the tagPolicies to set
-	 */
-	public void setAbacPolicies(AbacPolicies abacPolicies) {
-		this.abacPolicies = abacPolicies;
 	}
 
 	public Map<String, SecurityZoneInfo> getSecurityZones() { return securityZones; }
