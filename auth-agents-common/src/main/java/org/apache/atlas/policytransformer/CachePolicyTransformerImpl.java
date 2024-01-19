@@ -533,7 +533,7 @@ public class CachePolicyTransformerImpl {
         policy.setCreatedBy(atlasPolicy.getCreatedBy());
         policy.setCreateTime(atlasPolicy.getCreateTime());
         policy.setIsEnabled(getIsPolicyEnabled(atlasPolicy));
-        policy.setPolicyResourceCategory(getPolicyResourceCategory(atlasPolicy));
+        //policy.setPolicyResourceCategory(getPolicyResourceCategory(atlasPolicy));
 
         policy.setConditions(getPolicyConditions(atlasPolicy));
         policy.setValiditySchedules(getPolicyValiditySchedule(atlasPolicy));
@@ -544,7 +544,7 @@ public class CachePolicyTransformerImpl {
 
         if (POLICY_SERVICE_NAME_ABAC.equals(atlasPolicy.getAttribute(ATTR_POLICY_SERVICE_NAME))) {
             String policyFilterCriteria = getPolicyFilterCriteria(atlasPolicy);
-            policy.setPolicyFilterCriteria(policyFilterCriteria);
+            //policy.setPolicyFilterCriteria(policyFilterCriteria);
         }
 
         return policy;
