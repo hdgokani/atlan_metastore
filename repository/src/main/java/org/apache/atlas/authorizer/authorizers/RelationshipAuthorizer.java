@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.authorizer.AuthorizerUtils.MAX_CLAUSE_LIMIT;
 import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_DENY;
-import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.arrayListContains;
 import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.getMap;
 import static org.apache.atlas.authorizer.authorizers.EntityAuthorizer.validateFilterCriteriaWithEntity;
 import static org.apache.atlas.authorizer.authorizers.ListAuthorizer.getDSLForResources;
@@ -265,125 +264,6 @@ public class RelationshipAuthorizer {
 
         return false;
     }
-    /*public static boolean validateFilterCriteriaWithEntity(JsonNode data, AtlasEntity entity) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("RelationshipAuthorizer.validateFilterCriteriaWithEntity");
-
-        String condition = data.get("condition").asText();
-        JsonNode criterion = data.get("criterion");
-
-        Set<String> assetTypes = AuthorizerCommon.getTypeAndSupertypesList(entity.getTypeName());
-
-        boolean result = true;
-        boolean evaluation;
-
-        if (criterion.size() == 0) {
-            return false;
-        }
-
-        for (JsonNode crit : criterion) {
-
-            evaluation = false;
-
-            if (crit.has("condition")) {
-                evaluation = validateFilterCriteriaWithEntity(crit, entity);
-
-            } else {
-                String operator = crit.get("operator").asText();
-                String attributeName = crit.get("attributeName").asText();
-                String attributeValue = crit.get("attributeValue").asText();
-
-//                List<String> attributeValues = new ArrayList<>();
-//                if (operator.equals("IN") || operator.equals("NOT_IN")) {
-//                    for (JsonNode valueNode : crit.get("attributeValue")) {
-//                        ObjectMapper mapper = new ObjectMapper();
-//                        String value = null;
-//                        try {
-//                            value = mapper.treeToValue(valueNode, String.class);
-//                        } catch (JsonProcessingException e) {
-//                            e.printStackTrace();
-//                        }
-//                        attributeValues.add(value);
-//                    }
-//                }
-
-
-                if (attributeName.endsWith(".text")) {
-                    attributeName = attributeName.replace(".text", "");
-                } else if (attributeName.endsWith(".keyword")) {
-                    attributeName = attributeName.replace(".keyword", "");
-                }
-
-                List<String> entityAttributeValues = new ArrayList<>();
-
-                if (attributeName.equals("__superTypeNames")) {
-                    entityAttributeValues.addAll(assetTypes);
-
-                } if (attributeName.equals("__typeName")) {
-                    entityAttributeValues.add(entity.getTypeName());
-
-                } if (attributeName.equals("__guid")) {
-                    entityAttributeValues.add(entity.getGuid());
-
-                } else if (attributeName.equals("__traitNames")) {
-                    List<AtlasClassification> atlasClassifications = entity.getClassifications();
-                    if (atlasClassifications != null && !atlasClassifications.isEmpty()) {
-                        for (AtlasClassification atlasClassification : atlasClassifications) {
-                            entityAttributeValues.add(atlasClassification.getTypeName());
-                        }
-                    }
-                } else if (attributeName.equals("__meaningNames")) {
-                    List<AtlasTermAssignmentHeader> atlasMeanings = entity.getMeanings();
-                    for (AtlasTermAssignmentHeader atlasMeaning : atlasMeanings) {
-                        entityAttributeValues.add(atlasMeaning.getDisplayText());
-                    }
-                } else {
-                    String typeName = entity.getTypeName();
-                    boolean isArrayOfPrimitiveType = false;
-                    boolean isArrayOfEnum = false;
-                    AtlasEntityType entityType = AuthorizerCommon.getEntityTypeByName(typeName);
-                    AtlasStructType.AtlasAttribute atlasAttribute = entityType.getAttribute(attributeName);
-                    if (atlasAttribute.getAttributeType().getTypeCategory().equals(ARRAY)) {
-                        AtlasArrayType attributeType = (AtlasArrayType) atlasAttribute.getAttributeType();
-                        AtlasType elementType = attributeType.getElementType();
-                        isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
-                        isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
-                    }
-
-                    if (entity.getAttribute(attributeName) != null) {
-                        if (isArrayOfEnum || isArrayOfPrimitiveType) {
-                            entityAttributeValues.addAll((Collection<? extends String>) entity.getAttribute(attributeName));
-                        } else {
-                            entityAttributeValues.add((String) entity.getAttribute(attributeName));
-                        }
-                    }
-                }
-
-                if (operator.equals("EQUALS") && entityAttributeValues.contains(attributeValue)) {
-                    evaluation = true;
-                }
-                if ((operator.equals("STARTS_WITH") && AuthorizerCommon.listStartsWith(attributeValue, entityAttributeValues))) {
-                    evaluation = true;
-                }
-                if ((operator.equals("ENDS_WITH") && AuthorizerCommon.listEndsWith(attributeValue, entityAttributeValues))) {
-                    evaluation = true;
-                }
-                if ((operator.equals("NOT_EQUALS") && !entityAttributeValues.contains(attributeValue))) {
-                    evaluation = true;
-                }
-            }
-
-
-
-            if (condition.equals("AND")) {
-                result = result && evaluation;
-            } else {
-                result = result || evaluation;
-            }
-        }
-
-        RequestContext.get().endMetricRecord(recorder);
-        return result;
-    }*/
 
     public static AccessResult isRelationshipAccessAllowed(String action, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("RelationshipAuthorizer.isRelationshipAccessAllowed");
@@ -400,9 +280,8 @@ public class RelationshipAuthorizer {
             String dslString = mapper.writeValueAsString(dsl);
             RestClient restClient = getLowLevelClient();
             AtlasElasticsearchQuery elasticsearchQuery = new AtlasElasticsearchQuery("janusgraph_vertex_index", restClient);
-            Map<String, Object> elasticsearchResult = null;
+            Map<String, Object> elasticsearchResult = elasticsearchQuery.runQueryWithLowLevelClient(dslString);
             LOG.info(dslString);
-            elasticsearchResult = elasticsearchQuery.runQueryWithLowLevelClient(dslString);
             Integer count = null;
             if (elasticsearchResult!=null) {
                 count = (Integer) elasticsearchResult.get("total");
