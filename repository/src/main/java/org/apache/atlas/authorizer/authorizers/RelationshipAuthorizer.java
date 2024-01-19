@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.authorizer.AuthorizerUtils.DENY_POLICY_NAME_SUFFIX;
 import static org.apache.atlas.authorizer.AuthorizerUtils.MAX_CLAUSE_LIMIT;
 import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_DENY;
@@ -316,9 +317,14 @@ public class RelationshipAuthorizer {
                 }
                 List<String> common = (List<String>) CollectionUtils.intersection(matchedClausesEndOne, matchedClausesEndTwo);
                 if (!common.isEmpty()) {
-                    result.setAllowed(true);
-                    result.setPolicyId(common.get(0));
-                    return result;
+                    Optional<String> denied = common.stream().filter(x -> x.endsWith(DENY_POLICY_NAME_SUFFIX)).findFirst();
+
+                    if (denied.isPresent()) {
+                        result.setPolicyId(denied.get().split("_")[0]);
+                    } else {
+                        result.setAllowed(true);
+                        result.setPolicyId(common.get(0));
+                    }
                 }
 
                 /*if (arrayListContains(matchedClausesEndOne, matchedClausesEndTwo)) {
@@ -345,7 +351,7 @@ public class RelationshipAuthorizer {
         List<RangerPolicy> tagPolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas_tag", actions, POLICY_TYPE_ALLOW);
         List<Map<String, Object>> tagPoliciesClauses = getDSLForRelationshipTagPolicies(tagPolicies);
 
-        List<RangerPolicy> abacPolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", actions, POLICY_TYPE_ALLOW);
+        List<RangerPolicy> abacPolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", actions, null);
         List<Map<String, Object>> abacPoliciesClauses = getDSLForRelationshipAbacPolicies(abacPolicies);
 
         policiesClauses.addAll(resourcePoliciesClauses);
@@ -460,6 +466,7 @@ public class RelationshipAuthorizer {
     private static List<Map<String, Object>> getDSLForRelationshipAbacPolicies(List<RangerPolicy> policies) throws JsonProcessingException {
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         for (RangerPolicy policy : policies) {
+            boolean deny = CollectionUtils.isNotEmpty(policy.getDenyPolicyItems());
             if ("RELATIONSHIP".equals(policy.getPolicyResourceCategory())) {
                 String filterCriteria = policy.getPolicyFilterCriteria();
                 ObjectMapper mapper = new ObjectMapper();
@@ -475,7 +482,7 @@ public class RelationshipAuthorizer {
                     String DslBase64 = Base64.getEncoder().encodeToString(Dsl.toString().getBytes());
                     String clauseName = relationshipEnd + "-" + policy.getGuid();
                     Map<String, Object> boolMap = new HashMap<>();
-                    boolMap.put("_name", clauseName);
+                    boolMap.put("_name", (deny) ? clauseName + DENY_POLICY_NAME_SUFFIX : clauseName);
                     boolMap.put("filter", getMap("wrapper", getMap("query", DslBase64)));
 
                     shouldClauses.add(getMap("bool", boolMap));
