@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_DENY;
@@ -147,9 +148,7 @@ public class PoliciesStore {
             if (policyItem != null) {
                 List<String> policyActions = new ArrayList<>();
                 if (!policyItem.getAccesses().isEmpty()) {
-                    for (RangerPolicy.RangerPolicyItemAccess access : policyItem.getAccesses()) {
-                        policyActions.add(access.getType());
-                    }
+                    policyActions = policyItem.getAccesses().stream().map(x -> x.getType()).collect(Collectors.toList());
                 }
                 if (AuthorizerCommon.arrayListContains(policyActions, actions)) {
                     filteredPolicies.add(policy);
@@ -167,11 +166,21 @@ public class PoliciesStore {
         List<RangerPolicy> filterPolicies = new ArrayList<>();
         for(RangerPolicy policy : policies) {
             RangerPolicy.RangerPolicyItem policyItem = null;
-            if (POLICY_TYPE_ALLOW.equals(type) && !policy.getPolicyItems().isEmpty()) {
-                policyItem = policy.getPolicyItems().get(0);
-            } else if (POLICY_TYPE_DENY.equals(type) && !policy.getDenyPolicyItems().isEmpty()) {
-                policyItem = policy.getDenyPolicyItems().get(0);
+
+            if (StringUtils.isNotEmpty(type)) {
+                if (POLICY_TYPE_ALLOW.equals(type) && !policy.getPolicyItems().isEmpty()) {
+                    policyItem = policy.getPolicyItems().get(0);
+                } else if (POLICY_TYPE_DENY.equals(type) && !policy.getDenyPolicyItems().isEmpty()) {
+                    policyItem = policy.getDenyPolicyItems().get(0);
+                }
+            } else {
+                if (!policy.getPolicyItems().isEmpty()) {
+                    policyItem = policy.getPolicyItems().get(0);
+                } else if (!policy.getDenyPolicyItems().isEmpty()) {
+                    policyItem = policy.getDenyPolicyItems().get(0);
+                }
             }
+
             if (policyItem != null) {
                 List<String> policyUsers = policyItem.getUsers();
                 List<String> policyGroups = policyItem.getGroups();
