@@ -44,6 +44,8 @@ public class AuthorizerUtils {
     public static final String POLICY_TYPE_DENY = "deny";
     public static final int MAX_CLAUSE_LIMIT = 1024;
 
+    public static final String DENY_POLICY_NAME_SUFFIX = "_deny";
+
     private static AtlasTypeRegistry typeRegistry;
     private static EntityGraphRetriever entityRetriever;
     private static AuditHandler auditProvider;
