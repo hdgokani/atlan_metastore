@@ -90,8 +90,7 @@ public class AuthorizerUtils {
         try {
             if (AtlasPrivilege.ENTITY_CREATE == action) {
                 AccessResult result = EntityAuthorizer.isAccessAllowedInMemory(entity, action.getType());
-                result.setAtlasAccessRequest(request);
-                auditHandler.processResult(result);
+                auditHandler.processResult(result, request);
 
                 if (!result.isAllowed()){
                     String message = action.getType() + ":" + entity.getTypeName() + ":" + entity.getAttributes().get(QUALIFIED_NAME);
@@ -119,8 +118,7 @@ public class AuthorizerUtils {
 
         try {
             AccessResult result = EntityAuthorizer.isAccessAllowed(entityHeader.getGuid(), action.getType());
-            result.setAtlasAccessRequest(request);
-            auditHandler.processResult(result);
+            auditHandler.processResult(result, request);
 
             if (!result.isAllowed()) {
                 throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, action + ":" + entityHeader.getGuid());
@@ -148,8 +146,7 @@ public class AuthorizerUtils {
             String entityQNAme = (String) entityHeader.getAttribute(QUALIFIED_NAME);
 
             AccessResult result = EntityAuthorizer.isAccessAllowedEvaluator(entityHeader.getTypeName(), entityQNAme, action.getType());
-            result.setAtlasAccessRequest(request);
-            auditHandler.processResult(result);
+            auditHandler.processResult(result, request);
 
             if (!result.isAllowed()) {
                 throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, userName, action + ":" + entityHeader.getTypeName() + ":" + entityQNAme);
@@ -180,8 +177,7 @@ public class AuthorizerUtils {
 
         try {
             AccessResult result = RelationshipAuthorizer.isRelationshipAccessAllowed(action.getType(), endOneEntity, endTwoEntity);
-            result.setAtlasAccessRequest(request);
-            auditHandler.processResult(result);
+            auditHandler.processResult(result, request);
 
             if (!result.isAllowed()) {
                 throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), action + "|" + endOneEntity.getGuid() + "|" + endTwoEntity.getGuid());
@@ -211,8 +207,7 @@ public class AuthorizerUtils {
 
         try {
             AccessResult result = RelationshipAuthorizer.isAccessAllowedInMemory(action.getType(), relationshipType, endOneEntity, endTwoEntity);
-            result.setAtlasAccessRequest(request);
-            auditHandler.processResult(result);
+            auditHandler.processResult(result, request);
 
             if (!result.isAllowed()) {
                 throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(),

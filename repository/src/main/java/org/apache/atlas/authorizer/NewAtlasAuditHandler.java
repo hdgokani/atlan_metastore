@@ -84,7 +84,6 @@ class NewAtlasAuditHandler {
     private final String                       resourcePath;
     private final String                       resourceType;
     private         long                       sequenceNumber = 0;
-    private         AtomicInteger              counter =  new AtomicInteger(0);
 
     public NewAtlasAuditHandler(AtlasEntityAccessRequest request, RangerServiceDef serviceDef) {
         Collection<AtlasClassification> classifications    = request.getEntityClassifications();
@@ -152,9 +151,9 @@ class NewAtlasAuditHandler {
         resourcePath = rangerResource.getAsString();
     }
 
-    public void processResult(AccessResult result) {
+    public void processResult(AccessResult result, AtlasAccessRequest request) {
 
-        AuthzAuditEvent auditEvent = getAuthzEvents(result);
+        AuthzAuditEvent auditEvent = getAuthzEvents(result, request);
 
         if (auditEvent != null) {
             // audit event might have list of entity-types and classification-types; overwrite with the values in original request
@@ -218,18 +217,14 @@ class NewAtlasAuditHandler {
     private String generateNextAuditEventId() {
         final String ret;
 
-        int nextId = counter.getAndIncrement();
-
-        ret = RequestContext.get().getTraceId() + "-" + nextId;
+        ret = RequestContext.get().getTraceId() + "-" + System.currentTimeMillis();
 
 
         return ret;
     }
 
-    public AuthzAuditEvent getAuthzEvents(AccessResult result) {
+    public AuthzAuditEvent getAuthzEvents(AccessResult result, AtlasAccessRequest request) {
         AuthzAuditEvent ret = null;
-
-        AtlasAccessRequest request = result != null ? result.getAtlasAccessRequest() : null;
 
         if(request != null) {
             ret = new AuthzAuditEvent();
