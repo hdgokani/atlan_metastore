@@ -55,7 +55,7 @@ public class ServicePolicies implements java.io.Serializable {
 	private RangerServiceDef   serviceDef;
 	private String             auditMode = RangerPolicyEngine.AUDIT_DEFAULT;
 	private TagPolicies        tagPolicies;
-	private AbacPolicies       abacPolicies;
+	//private AbacPolicies       abacPolicies;
 	private Map<String, SecurityZoneInfo> securityZones;
 	private List<RangerPolicyDelta> policyDeltas;
 	private Map<String, String> serviceConfig;
@@ -164,15 +164,15 @@ public class ServicePolicies implements java.io.Serializable {
 	/**
 	 * @return the abacPolicies
 	 */
-	public AbacPolicies getAbacPolicies() {
+	/*public AbacPolicies getAbacPolicies() {
 		return abacPolicies;
 	}
-	/**
+	*//**
 	 * @param abacPolicies the tagPolicies to set
-	 */
+	 *//*
 	public void setAbacPolicies(AbacPolicies abacPolicies) {
 		this.abacPolicies = abacPolicies;
-	}
+	}*/
 
 	public Map<String, SecurityZoneInfo> getSecurityZones() { return securityZones; }
 
@@ -315,6 +315,7 @@ public class ServicePolicies implements java.io.Serializable {
 					;
 		}
 	}
+/*
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@XmlRootElement
@@ -331,75 +332,99 @@ public class ServicePolicies implements java.io.Serializable {
 		private String             auditMode = RangerPolicyEngine.AUDIT_DEFAULT;
 		private Map<String, String> serviceConfig;
 
-		/**
+		*/
+/**
 		 * @return the serviceName
-		 */
+		 *//*
+
 		public String getServiceName() {
 			return serviceName;
 		}
-		/**
+		*/
+/**
 		 * @param serviceName the serviceName to set
-		 */
+		 *//*
+
 		public void setServiceName(String serviceName) {
 			this.serviceName = serviceName;
 		}
-		/**
+		*/
+/**
 		 * @return the serviceId
-		 */
+		 *//*
+
 		public String getServiceId() {
 			return serviceId;
 		}
-		/**
+		*/
+/**
 		 * @param serviceId the serviceId to set
-		 */
+		 *//*
+
 		public void setServiceId(String serviceId) {
 			this.serviceId = serviceId;
 		}
-		/**
+		*/
+/**
 		 * @return the policyVersion
-		 */
+		 *//*
+
 		public Long getPolicyVersion() {
 			return policyVersion;
 		}
-		/**
+		*/
+/**
 		 * @param policyVersion the policyVersion to set
-		 */
+		 *//*
+
 		public void setPolicyVersion(Long policyVersion) {
 			this.policyVersion = policyVersion;
 		}
-		/**
+		*/
+/**
 		 * @return the policyUpdateTime
-		 */
+		 *//*
+
 		public Date getPolicyUpdateTime() {
 			return policyUpdateTime;
 		}
-		/**
+		*/
+/**
 		 * @param policyUpdateTime the policyUpdateTime to set
-		 */
+		 *//*
+
 		public void setPolicyUpdateTime(Date policyUpdateTime) {
 			this.policyUpdateTime = policyUpdateTime;
 		}
-		/**
+		*/
+/**
 		 * @return the policies
-		 */
+		 *//*
+
 		public List<RangerPolicy> getPolicies() {
 			return policies;
 		}
-		/**
+		*/
+/**
 		 * @param policies the policies to set
-		 */
+		 *//*
+
 		public void setPolicies(List<RangerPolicy> policies) {
 			this.policies = policies;
 		}
-		/**
+		*/
+/**
 		 * @return the serviceDef
-		 */
+		 *//*
+
 		public RangerServiceDef getServiceDef() {
 			return serviceDef;
 		}
-		/**
+		*/
+/**
 		 * @param serviceDef the serviceDef to set
-		 */
+		 *//*
+
 		public void setServiceDef(RangerServiceDef serviceDef) {
 			this.serviceDef = serviceDef;
 		}
@@ -433,6 +458,7 @@ public class ServicePolicies implements java.io.Serializable {
 					;
 		}
 	}
+*/
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@XmlRootElement
