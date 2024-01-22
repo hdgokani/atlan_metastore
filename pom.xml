@@ -798,6 +798,7 @@
         <module>dashboardv2</module>
         <module>dashboardv3</module>
 
+        <module>auth-common</module>
         <module>auth-agents-cred</module>
         <module>auth-agents-common</module>
         <module>auth-audits</module>
@@ -826,7 +827,6 @@
 
         <module>distro</module>
         <module>atlas-examples</module>
-        <module>auth-agents-common-temp</module>
     </modules>
 
     <repositories>
