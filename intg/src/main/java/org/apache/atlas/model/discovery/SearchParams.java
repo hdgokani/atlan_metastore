@@ -21,6 +21,7 @@ public class SearchParams {
     boolean useAccessControlv2;
 
     RequestMetadata requestMetadata = new RequestMetadata();
+    boolean showHighlights;
 
     public boolean getUseAccessControlv2() {
         return useAccessControlv2;
@@ -126,6 +127,10 @@ public class SearchParams {
         return this.requestMetadata.getSearchInput();
     }
 
+    public boolean isShowHighlights() {
+        return showHighlights;
+    }
+
     static class RequestMetadata {
         private String searchInput;
         private Set<String> utmTags;
@@ -155,4 +160,6 @@ public class SearchParams {
             this.saveSearchLog = saveSearchLog;
         }
     }
+
+
 }
