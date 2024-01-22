@@ -171,7 +171,7 @@ public class CachePolicyTransformerImpl {
                 }
 
                 //Process abac based policies
-                String abacServiceName = (String) service.getAttribute(ATTR_SERVICE_ABAC_SERVICE);
+                /*String abacServiceName = (String) service.getAttribute(ATTR_SERVICE_ABAC_SERVICE);
                 if (StringUtils.isNotEmpty(abacServiceName)) {
                     AtlasEntityHeader abacService = getServiceEntity(abacServiceName);
 
@@ -190,25 +190,25 @@ public class CachePolicyTransformerImpl {
 
                         servicePolicies.setAbacPolicies(abacPolicies);
                     }
-                }
+                }*/
 
                 AtlasPerfMetrics.MetricRecorder recorderFilterPolicies = RequestContext.get().startMetricRecord("filterPolicies");
                 //filter out policies based on serviceName
 
                 List<RangerPolicy> policiesA = new ArrayList<>();
                 List<RangerPolicy> policiesB = new ArrayList<>();
-                List<RangerPolicy> policiesC = new ArrayList<>();
+                //List<RangerPolicy> policiesC = new ArrayList<>();
 
                 try {
                     policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
                     policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
-                    policiesC = allPolicies.stream().filter(x -> abacServiceName.equals(x.getService())).collect(Collectors.toList());
+                    //policiesC = allPolicies.stream().filter(x -> abacServiceName.equals(x.getService())).collect(Collectors.toList());
                 }
                 catch (NullPointerException exception) {}
 
                 servicePolicies.setPolicies(policiesA);
                 servicePolicies.getTagPolicies().setPolicies(policiesB);
-                servicePolicies.getAbacPolicies().setPolicies(policiesC);
+                //servicePolicies.getAbacPolicies().setPolicies(policiesC);
 
                 RequestContext.get().endMetricRecord(recorderFilterPolicies);
 
