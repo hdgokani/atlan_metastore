@@ -106,7 +106,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
                             <minimizeJar>true</minimizeJar>
                             <filters>
                                 <filter>
@@ -116,12 +116,14 @@
                                         <exclude>**/*.txt</exclude>
                                         <exclude>**/*.yml</exclude>
                                         <exclude>**/*.properties</exclude>
+                                        <exclude>META-INF/maven/**</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
                             <artifactSet>
                                 <excludes>
                                     <exclude>org.slf4j:*</exclude>
+                                    <exclude>org.apache.logging.log4j:*</exclude>
                                     <exclude>com.google.api.grpc:*</exclude>
                                     <exclude>org.janusgraph:*</exclude>
                                     <exclude>com.google.protobuf:*</exclude>
@@ -131,6 +133,16 @@
                                     <exclude>com.datastax.oss:*</exclude>
                                     <exclude>org.apache.tinkerpop</exclude>
                                     <exclude>org.keycloak:*</exclude>
+                                    <exclude>org.apache.cassandra:*</exclude>
+                                    <exclude>org.elasticsearch:*</exclude>
+                                    <exclude>org.elasticsearch.client:*</exclude>
+                                    <exclude>org.apache.hadoop:hadoop-hdfs-client</exclude>
+                                    <exclude>org.apache.kerby:*</exclude>
+                                    <exclude>com.fasterxml.jackson.core:*</exclude>
+                                    <exclude>org.redisson:*</exclude>
+                                    <exclude>org.codehaus:*</exclude>
+                                    <exclude>io.netty:*</exclude>
+                                    <exclude>io.netty.netty-all:*</exclude>
                                 </excludes>
                             </artifactSet>
                         </configuration>
