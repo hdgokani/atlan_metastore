@@ -20,6 +20,7 @@
 package org.apache.atlas.plugin.model;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.htrace.shaded.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.apache.htrace.shaded.fasterxml.jackson.annotation.JsonInclude;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -31,7 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
