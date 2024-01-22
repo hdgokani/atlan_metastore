@@ -237,6 +237,7 @@ public enum AtlasErrorCode {
 
     CATEGORY_PARENT_FROM_OTHER_GLOSSARY(409, "ATLAS-400-00-0015", "Parent category from another Anchor(glossary) not supported"),
     CLASSIFICATION_TYPE_HAS_REFERENCES(409, "ATLAS-400-00-0016", "Given classification {0} [{1}] has references"),
+    RELATIONSHIP_DOES_NOT_EXIST(409, "ATLAS-409-00-0017", "relationship {0} does not exist between entities {1} and {2}"),
 
     // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),

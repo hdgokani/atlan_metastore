@@ -2120,9 +2120,15 @@ public class EntityGraphMapper {
                     ctx.getVertexProperty(), elementType, null);
 
             Object deleteEntry =  getEdgeUsingRelationship(arrCtx, context, false);
-            if(deleteEntry != null) {
-                entityRelationsDeleted.add(deleteEntry);
+
+            // throw error if relation does not exist but requested to remove
+            if (deleteEntry == null) {
+                AtlasVertex attributeVertex = context.getDiscoveryContext().getResolvedEntityVertex(getGuid(ctx.getValue()));
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_DOES_NOT_EXIST, attribute.getRelationshipName(),
+                        AtlasGraphUtilsV2.getIdFromVertex(attributeVertex), AtlasGraphUtilsV2.getIdFromVertex(ctx.getReferringVertex()));
             }
+
+            entityRelationsDeleted.add(deleteEntry);
         }
 
         removedElements = removeArrayEntries(attribute, (List)entityRelationsDeleted, ctx);
