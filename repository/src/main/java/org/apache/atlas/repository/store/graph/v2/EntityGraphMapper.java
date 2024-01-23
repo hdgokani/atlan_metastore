@@ -1116,8 +1116,6 @@ public class EntityGraphMapper {
             }
         }
 
-        updateModificationMetadata(vertex);
-
         RequestContext.get().endMetricRecord(metric);
 
         if (LOG.isDebugEnabled()) {
