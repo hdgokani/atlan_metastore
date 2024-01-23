@@ -1072,8 +1072,6 @@ public class EntityGraphMapper {
                 }
             }
 
-            updateModificationMetadata(vertex);
-
             RequestContext.get().endMetricRecord(metric);
         }
 
@@ -2045,7 +2043,7 @@ public class EntityGraphMapper {
 
         for (int index = 0; index < newElements.size(); index++) {
             AttributeMutationContext arrCtx      = new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), ctx.getAttribute(), newElements.get(index),
-                    ctx.getVertexProperty(), elementType, null);
+                    ctx.getVertexProperty(), elementType);
 
 
             Object newEntry = getEdgeUsingRelationship(arrCtx, context, true);
@@ -2072,23 +2070,23 @@ public class EntityGraphMapper {
         }
 
         if (isNewElementsNull) {
-            setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), null, null, cardinality);
+            setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(),  new ArrayList<>(0),  new ArrayList<>(0), cardinality);
         } else {
-            setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), newElements, null, cardinality);
+            setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), newElements,  new ArrayList<>(0), cardinality);
         }
 
         switch (ctx.getAttribute().getRelationshipEdgeLabel()) {
-            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, newElementsCreated, new ArrayList<>());
+            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, newElementsCreated, new ArrayList<>(0));
                 break;
 
-            case CATEGORY_TERMS_EDGE_LABEL: addCategoriesToTermEntity(ctx, newElementsCreated, new ArrayList<>());
+            case CATEGORY_TERMS_EDGE_LABEL: addCategoriesToTermEntity(ctx, newElementsCreated, new ArrayList<>(0));
                 break;
 
-            case CATEGORY_PARENT_EDGE_LABEL: addCatParentAttr(ctx, newElementsCreated, new ArrayList<>());
+            case CATEGORY_PARENT_EDGE_LABEL: addCatParentAttr(ctx, newElementsCreated, new ArrayList<>(0));
                 break;
 
             case PROCESS_INPUTS:
-            case PROCESS_OUTPUTS: addEdgesToContext(GraphHelper.getGuid(ctx.referringVertex), newElementsCreated,  new ArrayList<>());
+            case PROCESS_OUTPUTS: addEdgesToContext(GraphHelper.getGuid(ctx.referringVertex), newElementsCreated,  new ArrayList<>(0));
                 break;
         }
 
@@ -2127,7 +2125,7 @@ public class EntityGraphMapper {
 
         for (int index = 0; index < elementsDeleted.size(); index++) {
             AttributeMutationContext arrCtx      = new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), ctx.getAttribute(), elementsDeleted.get(index),
-                    ctx.getVertexProperty(), elementType, null);
+                    ctx.getVertexProperty(), elementType);
 
             Object deleteEntry =  getEdgeUsingRelationship(arrCtx, context, false);
 
@@ -2145,17 +2143,17 @@ public class EntityGraphMapper {
 
 
         switch (ctx.getAttribute().getRelationshipEdgeLabel()) {
-            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, new ArrayList<>() , removedElements);
+            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, new ArrayList<>(0) , removedElements);
                 break;
 
-            case CATEGORY_TERMS_EDGE_LABEL: addCategoriesToTermEntity(ctx, new ArrayList<>(), removedElements);
+            case CATEGORY_TERMS_EDGE_LABEL: addCategoriesToTermEntity(ctx, new ArrayList<>(0), removedElements);
                 break;
 
-            case CATEGORY_PARENT_EDGE_LABEL: addCatParentAttr(ctx, new ArrayList<>(), removedElements);
+            case CATEGORY_PARENT_EDGE_LABEL: addCatParentAttr(ctx, new ArrayList<>(0), removedElements);
                 break;
 
             case PROCESS_INPUTS:
-            case PROCESS_OUTPUTS: addEdgesToContext(GraphHelper.getGuid(ctx.referringVertex), new ArrayList<>(),  removedElements);
+            case PROCESS_OUTPUTS: addEdgesToContext(GraphHelper.getGuid(ctx.referringVertex), new ArrayList<>(0),  removedElements);
                 break;
         }
 
