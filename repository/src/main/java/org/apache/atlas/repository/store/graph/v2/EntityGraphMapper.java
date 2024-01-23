@@ -2886,37 +2886,6 @@ public class EntityGraphMapper {
                             continue;
                         }
 
-                        boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
-                                true, attribute.getRelationshipEdgeDirection(), entityVertex);
-
-                        if (!deleted) {
-                            additionalElements.add(edge);
-                        }
-                    }
-
-                    return additionalElements;
-                }
-            }
-        }
-
-        return Collections.emptyList();
-    }
-
-    private List<AtlasEdge> removeArrayEntries(AtlasAttribute attribute, List<AtlasEdge> tobeDeletedEntries, AttributeMutationContext ctx) throws AtlasBaseException {
-        if (CollectionUtils.isNotEmpty(tobeDeletedEntries)) {
-            AtlasType entryType = ((AtlasArrayType) attribute.getAttributeType()).getElementType();
-            AtlasVertex entityVertex = ctx.getReferringVertex();
-
-            if (isReference(entryType)) {
-
-                if (CollectionUtils.isNotEmpty(tobeDeletedEntries)) {
-                    List<AtlasEdge> additionalElements = new ArrayList<>();
-
-                    for (AtlasEdge edge : tobeDeletedEntries) {
-                        if (getStatus(edge) == DELETED ) {
-                            continue;
-                        }
-
                         // update both sides of relationship wen edge is deleted
                         recordEntityUpdateForNonRelationsipAttribute(edge.getInVertex());
                         recordEntityUpdateForNonRelationsipAttribute(edge.getOutVertex());
