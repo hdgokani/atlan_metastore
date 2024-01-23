@@ -67,6 +67,7 @@ public interface AtlasEntityStore {
      * @return AtlasEntity
      */
     AtlasEntityWithExtInfo getById(String guid, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException;
+    AtlasEntityWithExtInfo getById(String guid, boolean v2Enabled) throws AtlasBaseException;
 
 
     /**
@@ -351,7 +352,7 @@ public interface AtlasEntityStore {
     BulkImportResponse bulkCreateOrUpdateBusinessAttributes(InputStream inputStream, String fileName) throws AtlasBaseException;
 
 
-    List<AtlasAccessorResponse> getAccessors(List<AtlasAccessorRequest> request) throws AtlasBaseException;
+    List<AtlasAccessorResponse> getAccessors(List<AtlasAccessorRequest> request, boolean v2Enabled) throws AtlasBaseException;
 
     void repairIndex() throws AtlasBaseException;
 

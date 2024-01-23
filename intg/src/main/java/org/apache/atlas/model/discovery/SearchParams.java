@@ -18,6 +18,7 @@ public class SearchParams {
     boolean suppressLogs;
     boolean excludeMeanings;
     boolean excludeClassifications;
+    boolean useAccessControlv2;
 
     RequestMetadata requestMetadata = new RequestMetadata();
     boolean showHighlights;
@@ -26,8 +27,16 @@ public class SearchParams {
         return getQuery();
     }
 
+    public boolean getUseAccessControlv2() {
+        return useAccessControlv2;
+    }
+
     public Set<String> getAttributes() {
         return attributes;
+    }
+
+    public void setQuery(String query) {
+        setQuery(query);
     }
 
     public void setAttributes(Set<String> attributes) {

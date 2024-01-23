@@ -641,6 +641,17 @@
           "includeInNotification": true
         },
         {
+          "name": "abacService",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
           "name": "authServiceIsEnabled",
           "typeName": "boolean",
           "cardinality": "SINGLE",
@@ -681,9 +692,19 @@
         "Asset"
       ],
       "serviceType": "atlan",
-      "typeVersion": "1.1",
+      "typeVersion": "1.2",
       "attributeDefs":
       [
+        {
+          "name": "policyFilterCriteria",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
         {
           "name": "policyType",
           "typeName": "AuthPolicyType",
