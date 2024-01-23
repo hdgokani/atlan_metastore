@@ -186,6 +186,7 @@ public enum AtlasErrorCode {
     FORBIDDEN_TYPENAME(400,"ATLAS-400-00-107", "Forbidden type: Can not pass builtin type {0}"),
     README_FAILED(400,"ATLAS-400-00-108", "Readme creation failed for {0}: Asset is required"),
     README_ALREADY_PRESENT(400,"ATLAS-400-00-109", "Readme of guid {0} already exists for the entity"),
+    ATTRIBUTE_ALREADY_EXISTS_IN_RELATIONSHIP_ATTRIBUTE(400, "ATLAS-400-00-108", "{0}: attribute already exists in relationshipAttributes"),
 
     // All Not found enums go here
     TYPE_NAME_NOT_FOUND(404, "ATLAS-404-00-001", "Given typename {0} was invalid"),
@@ -215,6 +216,7 @@ public enum AtlasErrorCode {
     TASK_NOT_FOUND(404, "ATLAS-404-00-018", "Given task guid {0} is invalid/not found"),
     RESOURCE_NOT_FOUND(404, "ATLAS-404-00-019", "{0} not found"),
     INDEX_NOT_FOUND(404, "ATLAS-404-00-020", "ES index {0} not found"),
+    RELATIONSHIP_DOES_NOT_EXIST(404, "ATLAS-409-00-0021", "relationship {0} does not exist between entities {1} and {2}"),
 
     METHOD_NOT_ALLOWED(405, "ATLAS-405-00-001", "Error 405 - The request method {0} is inappropriate for the URL: {1}"),
     DELETE_TAG_PROPAGATION_NOT_ALLOWED(406, "ATLAS-406-00-001", "Classification delete is not allowed; Add/Update classification propagation is in queue for classification: {0} and entity: {1}. Please try again"),
@@ -239,7 +241,6 @@ public enum AtlasErrorCode {
 
     CATEGORY_PARENT_FROM_OTHER_GLOSSARY(409, "ATLAS-400-00-0015", "Parent category from another Anchor(glossary) not supported"),
     CLASSIFICATION_TYPE_HAS_REFERENCES(409, "ATLAS-400-00-0016", "Given classification {0} [{1}] has references"),
-
     // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),
     INDEX_CREATION_FAILED(500, "ATLAS-500-00-002", "Index creation failed for {0}"),
