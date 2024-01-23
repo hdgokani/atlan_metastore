@@ -1072,6 +1072,7 @@ public class EntityGraphMapper {
                     }
                 }
             }
+            updateModificationMetadata(vertex);
 
             RequestContext.get().endMetricRecord(metric);
         }
