@@ -80,6 +80,18 @@ public class EntityMutationContext {
         return entitiesUpdatedWithRemoveRelationshipAttribute;
     }
 
+    public void setUpdatedWithRelationshipAttributes(AtlasEntity entity){
+        entitiesUpdatedWithAppendRelationshipAttribute.add(entity);
+    }
+
+    public void setUpdatedWithRemoveRelationshipAttributes(AtlasEntity entity){
+        entitiesUpdatedWithRemoveRelationshipAttribute.add(entity);
+    }
+
+    public Collection<AtlasEntity> getEntitiesUpdatedWithRemoveRelationshipAttribute() {
+        return entitiesUpdatedWithRemoveRelationshipAttribute;
+    }
+
     public void addUpdated(String internalGuid, AtlasEntity entity, AtlasEntityType type, AtlasVertex atlasVertex) {
         if (!entityVsVertex.containsKey(internalGuid)) { // if the entity was already created/updated
             entitiesUpdated.add(entity);
