@@ -48,6 +48,11 @@ public class RelationshipAuthorizer {
 
     private static final Logger LOG = LoggerFactory.getLogger(RelationshipAuthorizer.class);
 
+    private static List<String> RELATIONSHIP_ENDS = new ArrayList<String>() {{
+        add("end-one");
+        add("end-two");
+    }};
+
     public static AccessResult isAccessAllowedInMemory(String action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
         AccessResult result;
 
@@ -355,11 +360,12 @@ public class RelationshipAuthorizer {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("RelationshipAuthorizer.getElasticsearchDSLForRelationshipActions");
 
         List<Map<String, Object>> policiesClauses = new ArrayList<>();
-        List<RangerPolicy> resourcePolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas", actions, POLICY_TYPE_ALLOW);
+        List<RangerPolicy> resourcePolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas", actions, null);
         List<Map<String, Object>> resourcePoliciesClauses = getDSLForRelationshipResourcePolicies(resourcePolicies);
 
-        List<RangerPolicy> tagPolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas_tag", actions, POLICY_TYPE_ALLOW);
-        List<Map<String, Object>> tagPoliciesClauses = getDSLForRelationshipTagPolicies(tagPolicies);
+        List<RangerPolicy> tagPolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas_tag", actions, null);
+        //List<Map<String, Object>> tagPoliciesClauses = getDSLForRelationshipTagPolicies(tagPolicies);
+        List<Map<String, Object>> tagPoliciesClauses = getDSLForRelationshipTagPoliciesPerPolicy(tagPolicies);
 
         List<RangerPolicy> abacPolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", actions, null);
         List<Map<String, Object>> abacPoliciesClauses = getDSLForRelationshipAbacPolicies(abacPolicies);
@@ -414,21 +420,16 @@ public class RelationshipAuthorizer {
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         for (RangerPolicy policy : policies) {
             if (!policy.getResources().isEmpty() && "RELATIONSHIP".equals(policy.getPolicyResourceCategory())) {
-                List<String> relationshipEnds = new ArrayList<>();
-                relationshipEnds.add("end-one");
-                relationshipEnds.add("end-two");
 
-                for (String relationshipEnd : relationshipEnds) {
-                    String clauseName = relationshipEnd + "-" + policy.getGuid();
+                String suffix = getPolicySuffix(policy);
+                for (String relationshipEnd : RELATIONSHIP_ENDS) {
+                    String clauseName = relationshipEnd + "-" + policy.getGuid() + suffix;
                     String entityParamName = relationshipEnd + "-entity";
                     String entityTypeParamName = relationshipEnd + "-entity-type";
                     String entityClassificationParamName = relationshipEnd + "-entity-classification";
 
                     List<String> entities = policy.getResources().get(entityParamName).getValues();
                     List<String> entityTypesRaw = policy.getResources().get(entityTypeParamName).getValues();
-
-                    //Set<String> entityTypes = new HashSet<>();
-                    //entityTypesRaw.forEach(x -> entityTypes.addAll(getTypeAndSupertypesList(x)));
 
                     List<String> entityClassifications = policy.getResources().get(entityClassificationParamName).getValues();
                     if (entities.contains("*") && entityTypesRaw.contains("*") && entityClassifications.contains("*")) {
@@ -473,6 +474,36 @@ public class RelationshipAuthorizer {
         return clauses;
     }
 
+    private static List<Map<String, Object>> getDSLForRelationshipTagPoliciesPerPolicy(List<RangerPolicy> policies) {
+
+        List<Map<String, Object>> shouldClauses = new ArrayList<>();
+        for (RangerPolicy policy : policies) {
+            if (!policy.getResources().isEmpty()) {
+                List<String> tags = policy.getResources().get("tag").getValues();
+                if (!tags.isEmpty()) {
+
+                    String suffix = getPolicySuffix(policy);
+                    for (String relationshipEnd : RELATIONSHIP_ENDS) {
+                        String clauseName = relationshipEnd + "-" + policy.getGuid() + suffix;
+
+                        List<Map<String, Object>> tagsClauses = new ArrayList<>();
+                        tagsClauses.add(getMap("terms", getMap("__traitNames", tags)));
+                        tagsClauses.add(getMap("terms", getMap("__propagatedTraitNames", tags)));
+
+                        Map<String, Object> shouldMap = getMap("should", tagsClauses);
+                        shouldMap.put("minimum_should_match", 1);
+                        shouldMap.put("_name", clauseName);
+
+                        Map<String, Object> boolClause = getMap("bool", shouldMap);
+                        shouldClauses.add(boolClause);
+                    }
+                }
+            }
+        }
+
+        return shouldClauses;
+    }
+
     private static List<Map<String, Object>> getDSLForRelationshipAbacPolicies(List<RangerPolicy> policies) throws JsonProcessingException {
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         for (RangerPolicy policy : policies) {
@@ -481,18 +512,14 @@ public class RelationshipAuthorizer {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode filterCriteriaNode = mapper.readTree(filterCriteria);
 
-                List<String> relationshipEnds = new ArrayList<>();
-                relationshipEnds.add("end-one");
-                relationshipEnds.add("end-two");
-
                 String suffix = getPolicySuffix(policy);
-                for (String relationshipEnd : relationshipEnds) {
+                for (String relationshipEnd : RELATIONSHIP_ENDS) {
                     JsonNode endFilterCriteriaNode = filterCriteriaNode.get(relationshipEnd.equals("end-one")  ? "endOneEntity" : "endTwoEntity");
-                    JsonNode Dsl = JsonToElasticsearchQuery.convertJsonToQuery(endFilterCriteriaNode, mapper);
-                    String DslBase64 = Base64.getEncoder().encodeToString(Dsl.toString().getBytes());
-                    String clauseName = relationshipEnd + "-" + policy.getGuid();
+                    JsonNode dsl = JsonToElasticsearchQuery.convertJsonToQuery(endFilterCriteriaNode, mapper);
+                    String DslBase64 = Base64.getEncoder().encodeToString(dsl.toString().getBytes());
+                    String clauseName = relationshipEnd + "-" + policy.getGuid() + suffix;
                     Map<String, Object> boolMap = new HashMap<>();
-                    boolMap.put("_name", clauseName + suffix);
+                    boolMap.put("_name", clauseName);
                     boolMap.put("filter", getMap("wrapper", getMap("query", DslBase64)));
 
                     shouldClauses.add(getMap("bool", boolMap));
