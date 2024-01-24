@@ -260,7 +260,7 @@ public class ListAuthorizer {
 
                 if (entities.contains("*") && entityTypesRaw.contains("*")) {
                     shouldClauses.clear();
-                    shouldClauses.add(getMap("match_all", getMap("_name", policy.getGuid())));
+                    shouldClauses.add(getMap("match_all", getMap("_name", policy.getGuid() + getPolicySuffix(policy))));
                     break;
                 }
 
