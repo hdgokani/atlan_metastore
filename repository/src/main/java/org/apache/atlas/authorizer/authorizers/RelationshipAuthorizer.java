@@ -73,39 +73,39 @@ public class RelationshipAuthorizer {
 
         try {
             List<RangerPolicy> policies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
-            ObjectMapper mapper = new ObjectMapper();
-            AtlasVertex oneVertex = AtlasGraphUtilsV2.findByGuid(endOneEntity.getGuid());
-            AtlasVertex twoVertex = AtlasGraphUtilsV2.findByGuid(endTwoEntity.getGuid());
+            if (!policies.isEmpty()) {
+                ObjectMapper mapper = new ObjectMapper();
+                AtlasVertex oneVertex = AtlasGraphUtilsV2.findByGuid(endOneEntity.getGuid());
+                AtlasVertex twoVertex = AtlasGraphUtilsV2.findByGuid(endTwoEntity.getGuid());
 
-            //boolean ret = false;
-            //boolean eval;
+                for (RangerPolicy policy : policies) {
+                    String filterCriteria = policy.getPolicyFilterCriteria();
 
-            for (RangerPolicy policy : policies) {
-                String filterCriteria = policy.getPolicyFilterCriteria();
+                    boolean eval = false;
+                    JsonNode filterCriteriaNode = null;
+                    try {
+                        filterCriteriaNode = mapper.readTree(filterCriteria);
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
+                    }
+                    if (filterCriteriaNode != null && filterCriteriaNode.get("endOneEntity") != null) {
+                        JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("endOneEntity");
+                        eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, new AtlasEntity(endOneEntity), oneVertex);
 
-                boolean eval = false;
-                JsonNode filterCriteriaNode = null;
-                try {
-                    filterCriteriaNode = mapper.readTree(filterCriteria);
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
-                }
-                if (filterCriteriaNode != null && filterCriteriaNode.get("endOneEntity") != null) {
-                    JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("endOneEntity");
-                    eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, new AtlasEntity(endOneEntity), oneVertex);
-
+                        if (eval) {
+                            entityFilterCriteriaNode = filterCriteriaNode.get("endTwoEntity");
+                            eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, new AtlasEntity(endTwoEntity), twoVertex);
+                        }
+                    }
+                    //ret = ret || eval;
                     if (eval) {
-                        entityFilterCriteriaNode = filterCriteriaNode.get("endTwoEntity");
-                        eval = validateFilterCriteriaWithEntity(entityFilterCriteriaNode, new AtlasEntity(endTwoEntity), twoVertex);
+                        result.setAllowed(true);
+                        result.setPolicyId(policy.getGuid());
+                        break;
                     }
                 }
-                //ret = ret || eval;
-                if (eval) {
-                    result.setAllowed(true);
-                    result.setPolicyId(policy.getGuid());
-                    break;
-                }
             }
+
 
             if (!result.isAllowed()) {
                 List<RangerPolicy> rangerPolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas_tag", Collections.singletonList(action), policyType);
