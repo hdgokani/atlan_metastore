@@ -79,8 +79,6 @@ public class PoliciesStore {
             policies = getResourcePolicies();
         } else if ("atlas_tag".equals(serviceName)) {
             policies = getTagPolicies();
-            LOG.info("getTagPolicies {}", policies.size());
-            LOG.info("getTagPolicies {}", policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
         } else if ("atlas_abac".equals(serviceName)) {
             policies = getAbacPolicies();
         }
@@ -90,7 +88,6 @@ public class PoliciesStore {
             filteredPolicies = new ArrayList<>(policies);
             filteredPolicies = getFilteredPoliciesForQualifiedName(filteredPolicies, policyQualifiedNamePrefix);
             filteredPolicies = getFilteredPoliciesForActions(filteredPolicies, actions, policyType);
-            LOG.info("getFilteredPoliciesForActions {}", filteredPolicies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 
             if (!ignoreUser) {
                 String user = AuthorizerCommon.getCurrentUserName();
@@ -104,14 +101,12 @@ public class PoliciesStore {
                 roles.addAll(UsersStore.getNestedRolesForUser(roles, allRoles));
 
                 filteredPolicies = getFilteredPoliciesForUser(filteredPolicies, user, groups, roles, policyType);
-                LOG.info("getFilteredPoliciesForUser {}", filteredPolicies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
             }
         } else {
             filteredPolicies = new ArrayList<>(0);
         }
 
         RequestContext.get().endMetricRecord(recorder);
-        LOG.info("final filtered policies {}: {}", serviceName, filteredPolicies.size());
         return filteredPolicies;
     }
 
