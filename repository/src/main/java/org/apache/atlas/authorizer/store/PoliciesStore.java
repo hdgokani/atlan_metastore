@@ -108,6 +108,7 @@ public class PoliciesStore {
         }
 
         RequestContext.get().endMetricRecord(recorder);
+        LOG.info("final filtered policies {}: {}", serviceName, policies.size());
         return policies;
     }
 
