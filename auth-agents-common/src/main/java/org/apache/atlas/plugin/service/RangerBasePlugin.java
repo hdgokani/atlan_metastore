@@ -65,6 +65,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 public class RangerBasePlugin {
@@ -306,6 +307,8 @@ public class RangerBasePlugin {
 			List<RangerPolicy> abacPolicies = policies.getAbacPolicies().getPolicies();
 
 			PoliciesStore.getInstance().setResourcePolicies(resourcePolicies);
+			LOG.info("Setting tag policies : "+ tagPolicies.size());
+			LOG.info("Setting tag policies : "+ tagPolicies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 			PoliciesStore.getInstance().setTagPolicies(tagPolicies);
 			PoliciesStore.getInstance().setAbacPolicies(abacPolicies);
 		}
