@@ -85,11 +85,12 @@ public class PoliciesStore {
             policies = getAbacPolicies();
         }
 
-
+        List<RangerPolicy> filteredPolicies = null;
         if (CollectionUtils.isNotEmpty(policies)) {
-            policies = getFilteredPoliciesForQualifiedName(policies, policyQualifiedNamePrefix);
-            policies = getFilteredPoliciesForActions(policies, actions, policyType);
-            LOG.info("getFilteredPoliciesForActions {}", policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+            filteredPolicies = new ArrayList<>(policies);
+            filteredPolicies = getFilteredPoliciesForQualifiedName(filteredPolicies, policyQualifiedNamePrefix);
+            filteredPolicies = getFilteredPoliciesForActions(filteredPolicies, actions, policyType);
+            LOG.info("getFilteredPoliciesForActions {}", filteredPolicies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 
             if (!ignoreUser) {
                 String user = AuthorizerCommon.getCurrentUserName();
@@ -102,14 +103,16 @@ public class PoliciesStore {
                 List<String> roles = UsersStore.getRolesForUser(user, allRoles);
                 roles.addAll(UsersStore.getNestedRolesForUser(roles, allRoles));
 
-                policies = getFilteredPoliciesForUser(policies, user, groups, roles, policyType);
-                LOG.info("getFilteredPoliciesForUser {}", policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
+                filteredPolicies = getFilteredPoliciesForUser(filteredPolicies, user, groups, roles, policyType);
+                LOG.info("getFilteredPoliciesForUser {}", filteredPolicies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
             }
+        } else {
+            filteredPolicies = new ArrayList<>(0);
         }
 
         RequestContext.get().endMetricRecord(recorder);
-        LOG.info("final filtered policies {}: {}", serviceName, policies.size());
-        return policies;
+        LOG.info("final filtered policies {}: {}", serviceName, filteredPolicies.size());
+        return filteredPolicies;
     }
 
     static List<RangerPolicy> getFilteredPoliciesForQualifiedName(List<RangerPolicy> policies, String qualifiedNamePrefix) {
