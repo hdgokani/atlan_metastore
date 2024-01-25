@@ -438,7 +438,7 @@ public class CachePolicyTransformerImpl {
     }
 
     private List<AtlasEntityHeader> getAtlasPolicies(String serviceName) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+service+".getAtlasPolicies");
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+serviceName+".getAtlasPolicies");
 
         List<AtlasEntityHeader> ret = new ArrayList<>();
         try {

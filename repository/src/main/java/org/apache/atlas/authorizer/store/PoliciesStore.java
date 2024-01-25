@@ -79,6 +79,8 @@ public class PoliciesStore {
             policies = getResourcePolicies();
         } else if ("atlas_tag".equals(serviceName)) {
             policies = getTagPolicies();
+            LOG.info("getTagPolicies {}", policies.size());
+            LOG.info("getTagPolicies {}", policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
         } else if ("atlas_abac".equals(serviceName)) {
             policies = getAbacPolicies();
         }
@@ -87,6 +89,7 @@ public class PoliciesStore {
         if (CollectionUtils.isNotEmpty(policies)) {
             policies = getFilteredPoliciesForQualifiedName(policies, policyQualifiedNamePrefix);
             policies = getFilteredPoliciesForActions(policies, actions, policyType);
+            LOG.info("getFilteredPoliciesForActions {}", policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
 
             if (!ignoreUser) {
                 String user = AuthorizerCommon.getCurrentUserName();
@@ -100,6 +103,7 @@ public class PoliciesStore {
                 roles.addAll(UsersStore.getNestedRolesForUser(roles, allRoles));
 
                 policies = getFilteredPoliciesForUser(policies, user, groups, roles, policyType);
+                LOG.info("getFilteredPoliciesForUser {}", policies.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
             }
         }
 
