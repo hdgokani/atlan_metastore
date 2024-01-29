@@ -24,7 +24,7 @@ public class StartupTimeLoggerBeanPostProcessor implements BeanPostProcessor {
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) {
         // Record the start time
-        startTimeMap.put(beanName, System.currentTimeMillis());
+        startTimeMap.put(bean.getClass().getName(), System.currentTimeMillis());
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "Beans.create(" +  beanName + ")");
         }
@@ -35,10 +35,10 @@ public class StartupTimeLoggerBeanPostProcessor implements BeanPostProcessor {
     public Object postProcessAfterInitialization(Object bean, String beanName) {
         AtlasPerfTracer.log(perf);
         // Calculate and log the startup time
-        long startTime = startTimeMap.getOrDefault(beanName, -1L);
+        long startTime = startTimeMap.getOrDefault(bean.getClass().getName(), -1L);
         long endTime = System.currentTimeMillis();
         if (startTime != -1L) {
-            durationTimeMap.put(beanName, endTime-startTime);
+            durationTimeMap.put(bean.getClass().getName(), endTime-startTime);
         }
         return bean;
     }
