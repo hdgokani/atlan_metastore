@@ -15,8 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_ALLOW;
-import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_DENY;
+import static org.apache.atlas.authorizer.NewAuthorizerUtils.POLICY_TYPE_ALLOW;
+import static org.apache.atlas.authorizer.NewAuthorizerUtils.POLICY_TYPE_DENY;
 
 public class PoliciesStore {
 

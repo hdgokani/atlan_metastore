@@ -26,6 +26,7 @@ import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
 import org.apache.atlas.authorizer.AuthorizerUtils;
+import org.apache.atlas.authorizer.NewAuthorizerUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
@@ -1174,7 +1175,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             List<String> actions = new ArrayList<>();
             actions.add("entity-read");
 
-            Map<String, Object> allPreFiltersBoolClause = AuthorizerUtils.getPreFilterDsl(persona, purpose, actions);
+            Map<String, Object> allPreFiltersBoolClause = NewAuthorizerUtils.getPreFilterDsl(persona, purpose, actions);
             mustClauseList.add(allPreFiltersBoolClause);
 
             String dslString = searchParams.getQuery();

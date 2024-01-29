@@ -465,9 +465,9 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             AtlasEntityHeader end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
             AtlasEntityHeader end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
 
-//            AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD,
+            //AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD,
 //                                                                                        relationship.getTypeName(), end1Entity, end2Entity));
-            AuthorizerUtils.verifyRelationshipCreateAccess(AtlasPrivilege.RELATIONSHIP_ADD, relationship.getTypeName(), end1Entity, end2Entity);
+            AuthorizerUtils.verifyRelationshipAccess(AtlasPrivilege.RELATIONSHIP_ADD, relationship.getTypeName(), end1Entity, end2Entity);
 
 
             if (existingRelationshipCheck) {

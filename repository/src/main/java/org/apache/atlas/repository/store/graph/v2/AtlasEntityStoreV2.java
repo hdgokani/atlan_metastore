@@ -31,6 +31,7 @@ import org.apache.atlas.authorize.*;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorizer.AuthorizerUtils;
+import org.apache.atlas.authorizer.NewAuthorizerUtils;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
@@ -103,6 +104,7 @@ import java.util.stream.Collectors;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
+import static org.apache.atlas.authorizer.AuthorizerUtils.useAbacAuthorizer;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
@@ -1523,7 +1525,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         /*AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
                                 "create entity: type=", entity.getTypeName());*/
                         //AuthorizerUtils.verifyEntityCreateAccess(entity, context.getVertex(entity.getGuid()), AtlasPrivilege.ENTITY_CREATE);
-                        AuthorizerUtils.verifyEntityCreateAccess(entity, AtlasPrivilege.ENTITY_CREATE);
+                        AuthorizerUtils.verifyAccess(new AtlasEntityHeader(entity), AtlasPrivilege.ENTITY_CREATE);
                     }
                 }
             }
@@ -2207,7 +2209,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     @Override
-    public List<AtlasAccessorResponse> getAccessors(List<AtlasAccessorRequest> atlasAccessorRequestList, boolean v2Enabled) throws AtlasBaseException {
+    public List<AtlasAccessorResponse> getAccessors(List<AtlasAccessorRequest> atlasAccessorRequestList) throws AtlasBaseException {
         List<AtlasAccessorResponse> ret = new ArrayList<>();
 
         for (AtlasAccessorRequest accessorRequest : atlasAccessorRequestList) {
@@ -2220,11 +2222,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     case ENTITY_CREATE:
                     case ENTITY_UPDATE:
                     case ENTITY_DELETE:
-                        if (!v2Enabled) {
+                        if (!useAbacAuthorizer) {
                             AtlasEntityAccessRequestBuilder entityAccessRequestBuilder = getEntityAccessRequest(accessorRequest, action);
                             result = AtlasAuthorizationUtils.getAccessors(entityAccessRequestBuilder.build());
                         } else {
-                            result = AuthorizerUtils.getAccessors(accessorRequest);
+                            result = NewAuthorizerUtils.getAccessors(accessorRequest);
                         }
                         break;
 
@@ -2232,33 +2234,33 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     case ENTITY_ADD_CLASSIFICATION:
                     case ENTITY_UPDATE_CLASSIFICATION:
                     case ENTITY_REMOVE_CLASSIFICATION:
-                        if (!v2Enabled) {
+                        if (!useAbacAuthorizer) {
                             AtlasEntityAccessRequestBuilder entityAccessRequestBuilder = getEntityAccessRequest(accessorRequest, action);
                             entityAccessRequestBuilder.setClassification(new AtlasClassification(accessorRequest.getClassification()));
                             result = AtlasAuthorizationUtils.getAccessors(entityAccessRequestBuilder.build());
                         } else {
-                            result = AuthorizerUtils.getAccessors(accessorRequest);
+                            result = NewAuthorizerUtils.getAccessors(accessorRequest);
                         }
                         break;
 
                     case ENTITY_ADD_LABEL:
                     case ENTITY_REMOVE_LABEL:
-                        if (!v2Enabled) {
+                        if (!useAbacAuthorizer) {
                             AtlasEntityAccessRequestBuilder entityAccessRequestBuilder = getEntityAccessRequest(accessorRequest, action);
                             entityAccessRequestBuilder.setLabel(accessorRequest.getLabel());
                             result = AtlasAuthorizationUtils.getAccessors(entityAccessRequestBuilder.build());
                         } else {
-                            result = AuthorizerUtils.getAccessors(accessorRequest);
+                            result = NewAuthorizerUtils.getAccessors(accessorRequest);
                         }
                         break;
 
                     case ENTITY_UPDATE_BUSINESS_METADATA:
-                        if (!v2Enabled) {
+                        if (!useAbacAuthorizer) {
                             AtlasEntityAccessRequestBuilder entityAccessRequestBuilder = getEntityAccessRequest(accessorRequest, action);
                             entityAccessRequestBuilder.setBusinessMetadata(accessorRequest.getBusinessMetadata());
                             result = AtlasAuthorizationUtils.getAccessors(entityAccessRequestBuilder.build());
                         } else {
-                            result = AuthorizerUtils.getAccessors(accessorRequest);
+                            result = NewAuthorizerUtils.getAccessors(accessorRequest);
                         }
                         break;
 
@@ -2269,13 +2271,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         AtlasEntityHeader end1EntityHeader = extractEntityHeader(accessorRequest.getEntityGuidEnd1(), accessorRequest.getEntityQualifiedNameEnd1(), accessorRequest.getEntityTypeEnd1());
                         AtlasEntityHeader end2EntityHeader = extractEntityHeader(accessorRequest.getEntityGuidEnd2(), accessorRequest.getEntityQualifiedNameEnd2(), accessorRequest.getEntityTypeEnd2());
 
-                        if (!v2Enabled) {
+                        if (!useAbacAuthorizer) {
                             AtlasRelationshipAccessRequest relAccessRequest = new AtlasRelationshipAccessRequest(typeRegistry,
                                     action, accessorRequest.getRelationshipTypeName(), end1EntityHeader, end2EntityHeader);
 
                             result = AtlasAuthorizationUtils.getAccessors(relAccessRequest);
                         } else {
-                            result = AuthorizerUtils.getAccessors(accessorRequest);
+                            result = NewAuthorizerUtils.getAccessors(accessorRequest);
                         }
                         break;
 
