@@ -88,6 +88,7 @@ public class Services {
                 durationMap.putIfAbsent(svc.getClass().getName(),Duration.between(start, end).toMillis());
             }
 
+            LOG.info("Capturing Service startup time");
             printHashMapInTableFormatDescendingOrder(durationMap, "startupTime");
 
         } catch (Exception e) {
