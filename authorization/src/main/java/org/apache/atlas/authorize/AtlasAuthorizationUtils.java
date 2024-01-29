@@ -59,7 +59,7 @@ public class AtlasAuthorizationUtils {
         }
     }
 
-    public static void verifyUpdateEntityAccess(AtlasTypeRegistry typeRegistry, AtlasEntityHeader entityHeader, String message) throws AtlasBaseException {
+ /*   public static void verifyUpdateEntityAccess(AtlasTypeRegistry typeRegistry, AtlasEntityHeader entityHeader, String message) throws AtlasBaseException {
         if (!SKIP_UPDATE_AUTH_CHECK_TYPES.contains(entityHeader.getTypeName())) {
             AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeader);
             verifyAccess(request, message);
@@ -71,7 +71,7 @@ public class AtlasAuthorizationUtils {
             AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, entityHeader);
             verifyAccess(request, message);
         }
-    }
+    }*/
 
     public static void verifyAccess(AtlasEntityAccessRequest request, Object... errorMsgParams) throws AtlasBaseException {
         if (! isAccessAllowed(request)) {
