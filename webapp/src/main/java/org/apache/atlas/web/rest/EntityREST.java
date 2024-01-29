@@ -128,9 +128,7 @@ public class EntityREST {
     @GET
     @Path("/guid/{guid}")
     @Timed
-    public AtlasEntityWithExtInfo getById(@PathParam("guid") String guid,
-                                          @QueryParam("minExtInfo") @DefaultValue("true") boolean minExtInfo,
-                                          @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships) throws AtlasBaseException {
+    public AtlasEntityWithExtInfo getById(@PathParam("guid") String guid, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo, @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
         AtlasPerfTracer perf = null;
@@ -140,7 +138,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getById(" + guid + ", " + minExtInfo + " )");
             }
 
-            return entitiesStore.getById(guid, minExtInfo);
+            return entitiesStore.getById(guid, minExtInfo, ignoreRelationships);
         } finally {
             AtlasPerfTracer.log(perf);
         }
