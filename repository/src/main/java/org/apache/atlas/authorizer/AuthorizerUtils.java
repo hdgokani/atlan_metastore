@@ -53,8 +53,7 @@ public class AuthorizerUtils {
     public AuthorizerUtils(AtlasGraph graph, AtlasTypeRegistry typeRegistry) throws IOException {
         this.typeRegistry = typeRegistry;
         try {
-            String authzr = ApplicationProperties.get().getString("atlas.authorizer.impl");
-            useAbacAuthorizer = authzr.equals("abac");
+            useAbacAuthorizer = ApplicationProperties.get().getBoolean("atlas.authorizer.enable.abac", false);
 
             if (useAbacAuthorizer) {
                 LOG.info("Using abac authorizer");
