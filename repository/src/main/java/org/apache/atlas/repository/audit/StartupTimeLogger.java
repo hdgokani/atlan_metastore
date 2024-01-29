@@ -43,12 +43,12 @@ public class StartupTimeLogger implements ApplicationListener<ContextRefreshedEv
         String rowFormat = "| %-" + maxKeyLength + "s | %-1s |\n";
 
         // Print table header
-        System.out.printf(rowFormat, "Key", value);
-        System.out.println(new String(new char[maxKeyLength + 1]).replace('\0', '-'));
+        LOG.info(System.out.printf(rowFormat, "Key", value).toString());
+        LOG.info(new String(new char[maxKeyLength + 1]).replace('\0', '-'));
 
         // Print each sorted entry
         for (Map.Entry<String, Long> entry : list) {
-            System.out.printf(rowFormat, entry.getKey(), entry.getValue());
+            LOG.info(System.out.printf(rowFormat, entry.getKey(), entry.getValue()).toString());
         }
     }
 }

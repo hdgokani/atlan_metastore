@@ -21,6 +21,7 @@ import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -154,12 +155,12 @@ public class Services {
         String rowFormat = "| %-" + maxKeyLength + "s | %-10s |\n";
 
         // Print table header
-        System.out.printf(rowFormat, "Key", value);
-        System.out.println(new String(new char[maxKeyLength + 15]).replace('\0', '-'));
+        LOG.info(System.out.printf(rowFormat, "Key", value).toString());
+        LOG.info(new String(new char[maxKeyLength + 15]).replace('\0', '-'));
 
         // Print each sorted entry
         for (Map.Entry<String, Long> entry : list) {
-            System.out.printf(rowFormat, entry.getKey(), entry.getValue());
+            LOG.info(System.out.printf(rowFormat, entry.getKey(), entry.getValue()).toString());
         }
     }
 }
