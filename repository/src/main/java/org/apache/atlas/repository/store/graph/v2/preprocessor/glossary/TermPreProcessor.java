@@ -102,7 +102,7 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
 //        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
 //                "create entity: type=", entity.getTypeName());
         //verifyAccess(entity.getTypeName(), (String) entity.getAttribute(QUALIFIED_NAME), AtlasPrivilege.ENTITY_CREATE.getType());
-        AuthorizerUtils.verifyEntityCreateAccess(entity, AtlasPrivilege.ENTITY_CREATE);
+        AuthorizerUtils.verifyAccess(new AtlasEntityHeader(entity), AtlasPrivilege.ENTITY_CREATE);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }

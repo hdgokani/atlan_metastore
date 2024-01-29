@@ -31,9 +31,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.authorizer.AuthorizerUtils.DENY_POLICY_NAME_SUFFIX;
-import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_ALLOW;
-import static org.apache.atlas.authorizer.AuthorizerUtils.POLICY_TYPE_DENY;
+import static org.apache.atlas.authorizer.NewAuthorizerUtils.DENY_POLICY_NAME_SUFFIX;
+import static org.apache.atlas.authorizer.NewAuthorizerUtils.POLICY_TYPE_ALLOW;
+import static org.apache.atlas.authorizer.NewAuthorizerUtils.POLICY_TYPE_DENY;
 import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.getMap;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;

@@ -173,25 +173,8 @@ public class EntityREST {
                     try {
                         AtlasEntityHeader entityHeader = getAtlasEntityHeader(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
 
-                        AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.valueOf(action), entityHeader);
-                        if (entity.getBusinessMetadata() != null) {
-                            requestBuilder.setBusinessMetadata(entity.getBusinessMetadata());
-                        }
-
-                        //AtlasEntityAccessRequest entityAccessRequest = requestBuilder.build();
-                        //AtlasAuthorizationUtils.verifyAccess(entityAccessRequest, action + "guid=" + entity.getEntityGuid());
-
                         AtlasPrivilege privilege = AtlasPrivilege.valueOf(action);
-                        if (privilege == ENTITY_CREATE) {
-                            AuthorizerUtils.verifyEntityCreateAccess(new AtlasEntity(entityHeader), ENTITY_CREATE);
-                        } else {
-                            if (StringUtils.isNotEmpty(entityHeader.getGuid())) {
-                                AuthorizerUtils.verifyAccess(entityHeader, privilege);
-                            } else {
-                                //AuthorizerUtils.verifyAccessForEvaluator(entity.getTypeName(), entity.getEntityId(), privilege.getType());
-                                AuthorizerUtils.verifyAccessForEvaluator(entityHeader, privilege);
-                            }
-                        }
+                        AuthorizerUtils.verifyAccess(entityHeader, privilege);
 
                         response.add(new AtlasEvaluatePolicyResponse(entity.getTypeName(), entity.getEntityGuid(), action, entity.getEntityId(), true, null, entity.getBusinessMetadata()));
                     } catch (AtlasBaseException e) {
@@ -207,14 +190,10 @@ public class EntityREST {
                     }
                     try {
                         AtlasEntityHeader entityHeader = getAtlasEntityHeader(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
+                        entityHeader.setClassifications(Collections.singletonList(new AtlasClassification(entity.getClassification())));
 
-//                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entityHeader, new AtlasClassification(entity.getClassification())));
                         AtlasPrivilege privilege = AtlasPrivilege.valueOf(action);
-                        if (StringUtils.isNotEmpty(entityHeader.getGuid())) {
-                            AuthorizerUtils.verifyAccess(entityHeader, privilege);
-                        } else {
-                            AuthorizerUtils.verifyAccessForEvaluator(entityHeader, privilege);
-                        }
+                        AuthorizerUtils.verifyAccessForEvaluator(entityHeader, privilege);
 
                         response.add(new AtlasEvaluatePolicyResponse(entity.getTypeName(), entity.getEntityGuid(), action, entity.getEntityId(), entity.getClassification(), true, null));
 
@@ -238,12 +217,7 @@ public class EntityREST {
 //                        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entity.getRelationShipTypeName(), end1Entity, end2Entity));
 
                         AtlasPrivilege priv = AtlasPrivilege.valueOf(action);
-                        if (priv == RELATIONSHIP_ADD) {
-                            AuthorizerUtils.verifyRelationshipCreateAccess(priv, entity.getRelationShipTypeName(),
-                                    end1Entity, end2Entity);
-                        } else {
-                            AuthorizerUtils.verifyRelationshipAccess(priv, entity.getRelationShipTypeName(), end1Entity, end2Entity);
-                        }
+                        AuthorizerUtils.verifyRelationshipAccess(priv, entity.getRelationShipTypeName(), end1Entity, end2Entity);
 
                         response.add(new AtlasEvaluatePolicyResponse(action, entity.getRelationShipTypeName(), entity.getEntityTypeEnd1(), entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd2(), entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), true, null));
                     } catch (AtlasBaseException e) {
@@ -266,9 +240,7 @@ public class EntityREST {
      */
     @POST
     @Path("/accessors")
-    public List<AtlasAccessorResponse> getAccessors(List<AtlasAccessorRequest> atlasAccessorRequestList,
-                                                    @QueryParam("v2") @DefaultValue("true") boolean v2Enabled) throws AtlasBaseException {
-        //TODO remove temporary QueryParam v2Enabled
+    public List<AtlasAccessorResponse> getAccessors(List<AtlasAccessorRequest> atlasAccessorRequestList) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         List<AtlasAccessorResponse> ret;
 
@@ -279,7 +251,7 @@ public class EntityREST {
         try {
             validateAccessorRequest(atlasAccessorRequestList);
 
-            ret = entitiesStore.getAccessors(atlasAccessorRequestList, v2Enabled);
+            ret = entitiesStore.getAccessors(atlasAccessorRequestList);
 
         } finally {
             AtlasPerfTracer.log(perf);

@@ -236,7 +236,7 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
 //                "delete on source Glossary: ", sourceGlossary.getAttribute(NAME));
 
         //verifyAccess(new AtlasEntity(sourceGlossary), AtlasPrivilege.ENTITY_CREATE, "create on source Glossary: " +  sourceGlossary.getAttribute(NAME));
-        AuthorizerUtils.verifyEntityCreateAccess(new AtlasEntity(sourceGlossary), AtlasPrivilege.ENTITY_CREATE);
+        AuthorizerUtils.verifyAccess(sourceGlossary, AtlasPrivilege.ENTITY_CREATE);
         AuthorizerUtils.verifyAccess(sourceGlossary, AtlasPrivilege.ENTITY_UPDATE);
         AuthorizerUtils.verifyAccess(sourceGlossary, AtlasPrivilege.ENTITY_DELETE);
 
@@ -252,7 +252,7 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
 //                "delete on source Glossary: ", targetGlossary.getAttribute(NAME));
 
         //verifyAccess(new AtlasEntity(targetGlossary), AtlasPrivilege.ENTITY_CREATE, "create on source Glossary: " + targetGlossary.getAttribute(NAME));
-        AuthorizerUtils.verifyEntityCreateAccess(new AtlasEntity(targetGlossary), AtlasPrivilege.ENTITY_CREATE);
+        AuthorizerUtils.verifyAccess(targetGlossary, AtlasPrivilege.ENTITY_CREATE);
         AuthorizerUtils.verifyAccess(targetGlossary, AtlasPrivilege.ENTITY_UPDATE);
         AuthorizerUtils.verifyAccess(targetGlossary, AtlasPrivilege.ENTITY_DELETE);
     }
