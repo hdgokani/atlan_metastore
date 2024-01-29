@@ -18,6 +18,7 @@
 package org.apache.atlas.service;
 
 import org.apache.atlas.annotation.AtlasService;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -89,7 +90,6 @@ public class Services {
                 durationMap.putIfAbsent(svc.getClass().getName(),Duration.between(start, end).toMillis());
             }
 
-            LOG.info("Capturing Service startup time");
             printHashMapInTableFormatDescendingOrder(durationMap, "startupTime");
 
         } catch (Exception e) {
@@ -158,9 +158,6 @@ public class Services {
         LOG.info(System.out.printf(rowFormat, "Key", value).toString());
         LOG.info(new String(new char[maxKeyLength + 15]).replace('\0', '-'));
 
-        // Print each sorted entry
-        for (Map.Entry<String, Long> entry : list) {
-            LOG.info(System.out.printf(rowFormat, entry.getKey(), entry.getValue()).toString());
-        }
+        LOG.info("Capturing Service startup time {}", AtlasType.toJson(list));
     }
 }

@@ -1,6 +1,8 @@
 package org.apache.atlas.repository.audit;
 
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.apache.commons.logging.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -24,8 +26,6 @@ public class StartupTimeLogger implements ApplicationListener<ContextRefreshedEv
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         // Print the startup times after all beans are loaded
-
-        LOG.info("Capturing Bean creation time");
       printHashMapInTableFormatDescendingOrder(beanPostProcessor.getDurationTimeMap(), "creationTime");
     }
 
@@ -46,9 +46,6 @@ public class StartupTimeLogger implements ApplicationListener<ContextRefreshedEv
         LOG.info(System.out.printf(rowFormat, "Key", value).toString());
         LOG.info(new String(new char[maxKeyLength + 1]).replace('\0', '-'));
 
-        // Print each sorted entry
-        for (Map.Entry<String, Long> entry : list) {
-            LOG.info(System.out.printf(rowFormat, entry.getKey(), entry.getValue()).toString());
-        }
+        LOG.info("Capturing Bean creation time {}", AtlasType.toJson(list));
     }
 }
