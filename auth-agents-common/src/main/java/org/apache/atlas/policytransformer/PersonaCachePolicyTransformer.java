@@ -34,10 +34,9 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.*;
+import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_NAME;
+import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_ACTIONS;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 
 public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PersonaCachePolicyTransformer.class);

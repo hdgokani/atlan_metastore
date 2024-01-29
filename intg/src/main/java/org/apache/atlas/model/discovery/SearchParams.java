@@ -23,20 +23,20 @@ public class SearchParams {
     RequestMetadata requestMetadata = new RequestMetadata();
     boolean showHighlights;
 
-    public boolean getUseAccessControlv2() {
-        return useAccessControlv2;
-    }
-
     public String getQuery() {
         return getQuery();
     }
 
-    public void setQuery(String query) {
-        setQuery(query);
+    public boolean getUseAccessControlv2() {
+        return useAccessControlv2;
     }
 
     public Set<String> getAttributes() {
         return attributes;
+    }
+
+    public void setQuery(String query) {
+        setQuery(query);
     }
 
     public void setAttributes(Set<String> attributes) {

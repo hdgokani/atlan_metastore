@@ -78,8 +78,8 @@ public final class AccessControlUtils {
     public static final String ATTR_POLICY_ROLES  = "policyRoles";
     public static final String ATTR_POLICY_ACTIONS  = "policyActions";
     public static final String ATTR_POLICY_CATEGORY  = "policyCategory";
-    public static final String ATTR_POLICY_FILTER_CRITERIA  = "policyFilterCriteria";
     public static final String ATTR_POLICY_SUB_CATEGORY  = "policySubCategory";
+    public static final String ATTR_POLICY_FILTER_CRITERIA = "policyFilterCriteria";
     public static final String ATTR_POLICY_RESOURCES  = "policyResources";
     public static final String ATTR_POLICY_IS_ENABLED  = "isPolicyEnabled";
     public static final String ATTR_POLICY_CONNECTION_QN  = "connectionQualifiedName";
@@ -99,9 +99,8 @@ public final class AccessControlUtils {
     public static final String ACCESS_READ_PERSONA_DOMAIN = "persona-domain-read";
     public static final String ACCESS_READ_PERSONA_SUB_DOMAIN = "persona-domain-sub-domain-read";
     public static final String ACCESS_READ_PERSONA_PRODUCT = "persona-domain-product-read";
-
     public static final String ACCESS_READ_DOMAIN = "domain-entity-read";
-
+    
     public static final String POLICY_CATEGORY_PERSONA  = "persona";
     public static final String POLICY_CATEGORY_PURPOSE  = "purpose";
     public static final String POLICY_CATEGORY_BOOTSTRAP  = "bootstrap";

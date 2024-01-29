@@ -62,10 +62,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.repository.Constants.NAME;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.Constants.SERVICE_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SERVICE_NAME_ABAC;
 
 @Component
 public class CachePolicyTransformerImpl {
@@ -170,20 +169,43 @@ public class CachePolicyTransformerImpl {
                     }
                 }
 
+                //Process abac based policies
+                String abacServiceName = (String) service.getAttribute(ATTR_SERVICE_ABAC_SERVICE);
+
+                if (StringUtils.isNotEmpty(abacServiceName)) {
+                    AtlasEntityHeader abacService = getServiceEntity(abacServiceName);
+
+                    if (abacService != null) {
+                        allPolicies.addAll(getServicePolicies(abacService));
+                        ServicePolicies.AbacPolicies abacPolicies = new ServicePolicies.AbacPolicies();
+                        abacPolicies.setServiceName(abacServiceName);
+                        abacPolicies.setPolicyUpdateTime(new Date());
+                        abacPolicies.setServiceId(abacService.getGuid());
+                        abacPolicies.setPolicyVersion(-1L);
+                        String abacServiceDefName =  String.format(RESOURCE_SERVICE_DEF_PATTERN, abacService.getAttribute(NAME));
+                        abacPolicies.setServiceDef(getResourceAsObject(abacServiceDefName, RangerServiceDef.class));
+
+                        servicePolicies.setAbacPolicies(abacPolicies);
+                    }
+                }
+
                 AtlasPerfMetrics.MetricRecorder recorderFilterPolicies = RequestContext.get().startMetricRecord("filterPolicies");
                 //filter out policies based on serviceName
-
                 List<RangerPolicy> policiesA = new ArrayList<>();
                 List<RangerPolicy> policiesB = new ArrayList<>();
+                List<RangerPolicy> policiesC = new ArrayList<>();
 
                 try {
                     policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
                     policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
+                    policiesC = allPolicies.stream().filter(x -> abacServiceName.equals(x.getService())).collect(Collectors.toList());
+                } catch (NullPointerException exception) {
+
                 }
-                catch (NullPointerException exception) {}
 
                 servicePolicies.setPolicies(policiesA);
                 servicePolicies.getTagPolicies().setPolicies(policiesB);
+                servicePolicies.getAbacPolicies().setPolicies(policiesC);
 
                 RequestContext.get().endMetricRecord(recorderFilterPolicies);
 
@@ -417,7 +439,7 @@ public class CachePolicyTransformerImpl {
     }
 
     private List<AtlasEntityHeader> getAtlasPolicies(String serviceName) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+service+".getAtlasPolicies");
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+serviceName+".getAtlasPolicies");
 
         List<AtlasEntityHeader> ret = new ArrayList<>();
         try {

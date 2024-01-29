@@ -68,7 +68,6 @@ public interface AtlasEntityStore {
      */
     AtlasEntityWithExtInfo getById(String guid, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException;
 
-
     /**
      * Get entity header for the given GUID
      * @param guid
@@ -355,7 +354,7 @@ public interface AtlasEntityStore {
     BulkImportResponse bulkCreateOrUpdateBusinessAttributes(InputStream inputStream, String fileName) throws AtlasBaseException;
 
 
-    List<AtlasAccessorResponse> getAccessors(List<AtlasAccessorRequest> request) throws AtlasBaseException;
+    List<AtlasAccessorResponse> getAccessors(List<AtlasAccessorRequest> request, boolean v2Enabled) throws AtlasBaseException;
 
     void repairIndex() throws AtlasBaseException;
 
