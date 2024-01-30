@@ -36,16 +36,6 @@ public class StartupTimeLogger implements ApplicationListener<ContextRefreshedEv
         // Sort the list by values in descending order
         list.sort((entry1, entry2) -> entry2.getValue().compareTo(entry1.getValue()));
 
-        // Find the longest key to determine column width
-        int maxKeyLength = list.stream().map(entry -> entry.getKey().length()).max(Integer::compare).orElse(0);
-
-        // Create format string for printing each row
-        String rowFormat = "| %-" + maxKeyLength + "s | %-1s |\n";
-
-        // Print table header
-        LOG.info(System.out.printf(rowFormat, "Key", value).toString());
-        LOG.info(new String(new char[maxKeyLength + 1]).replace('\0', '-'));
-
         LOG.info("Capturing Bean creation time {}", AtlasType.toJson(list));
     }
 }
