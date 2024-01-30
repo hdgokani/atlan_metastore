@@ -26,7 +26,6 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizerFactory;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.TypeCategory;
@@ -147,7 +146,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             AtlasPatchRegistry patchRegistry     = new AtlasPatchRegistry(graph);
 
             if (modelsDirContents != null && modelsDirContents.length > 0) {
-	            Arrays.sort(modelsDirContents);
+	            // Arrays.sort(modelsDirContents);
 
 	            for (File folder : modelsDirContents) {
 	                    if (folder.isFile()) {
@@ -181,7 +180,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             LOG.info("Types directory {} does not exist or not readable or has no typedef files", typesDirName );
         } else {
             // sort the files by filename
-            Arrays.sort(typeDefFiles);
+          //  Arrays.sort(typeDefFiles);
 
             for (File typeDefFile : typeDefFiles) {
                 if (typeDefFile.isFile()) {
