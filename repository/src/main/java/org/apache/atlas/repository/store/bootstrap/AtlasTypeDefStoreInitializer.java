@@ -75,6 +75,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -178,21 +179,26 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         File[] typeDefFiles = typesDir.exists() ? typesDir.listFiles() : null;
 
         if (typeDefFiles == null || typeDefFiles.length == 0) {
-            LOG.info("Types directory {} does not exist or not readable or has no typedef files", typesDirName );
+            LOG.info("Types directory {} does not exist or not readable or has no typedef files", typesDirName);
         } else {
             // sort the files by filename
             Arrays.sort(typeDefFiles);
 
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
+
             for (File typeDefFile : typeDefFiles) {
-                if (typeDefFile.isFile()) {
+                if (!typeDefFile.isFile()) {
+                    continue;
+                }
+
+                CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                     try {
-                        String        jsonStr  = new String(Files.readAllBytes(typeDefFile.toPath()), StandardCharsets.UTF_8);
+                        String jsonStr = new String(Files.readAllBytes(typeDefFile.toPath()), StandardCharsets.UTF_8);
                         AtlasTypesDef typesDef = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
 
                         if (typesDef == null || typesDef.isEmpty()) {
                             LOG.info("No type in file {}", typeDefFile.getAbsolutePath());
-
-                            continue;
+                            return;
                         }
 
                         AtlasTypesDef typesToCreate = getTypesToCreate(typesDef, typeRegistry);
@@ -200,18 +206,19 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
                         if (!typesToCreate.isEmpty() || !typesToUpdate.isEmpty()) {
                             typeDefStore.createUpdateTypesDef(typesToCreate, typesToUpdate);
-
                             LOG.info("Created/Updated types defined in file {}", typeDefFile.getAbsolutePath());
                         } else {
                             LOG.info("No new type in file {}", typeDefFile.getAbsolutePath());
                         }
-
                     } catch (Throwable t) {
                         LOG.error("error while registering types in file {}", typeDefFile.getAbsolutePath(), t);
                     }
-                }
-            }
+                });
 
+                futures.add(future);
+            }
+            // Wait for all futures to complete
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
             applyTypePatches(typesDir.getPath(), patchRegistry);
         }
         LOG.info("<== AtlasTypeDefStoreInitializer({})", typesDir);
@@ -462,7 +469,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     new AddMandatoryAttributePatchHandler(typeDefStore, typeRegistry)
             };
 
-            Map<String, PatchHandler> patchHandlerRegistry = new HashMap<>();
+            Map<String, PatchHandler> patchHandlerRegistry = new ConcurrentHashMap<>();
 
             for (PatchHandler patchHandler : patchHandlers) {
                 for (String supportedAction : patchHandler.getSupportedActions()) {
