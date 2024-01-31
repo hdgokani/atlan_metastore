@@ -10,6 +10,7 @@ import org.apache.atlas.authorizer.store.PoliciesStore;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
@@ -35,6 +36,8 @@ import static org.apache.atlas.authorizer.NewAuthorizerUtils.DENY_POLICY_NAME_SU
 import static org.apache.atlas.authorizer.NewAuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.NewAuthorizerUtils.POLICY_TYPE_DENY;
 import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.getMap;
+import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.isResourceMatch;
+import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.isTagResourceMatch;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
 
@@ -54,7 +57,7 @@ public class EntityAuthorizer {
         return isAccessAllowedInMemory(entity, action, POLICY_TYPE_ALLOW);
     }
 
-    public static AccessResult isAccessAllowedInMemory(AtlasEntity entity, String action, String policyType) {
+    private static AccessResult isAccessAllowedInMemory(AtlasEntity entity, String action, String policyType) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("isAccessAllowedInMemory."+policyType);
         AccessResult result;
 
@@ -74,7 +77,7 @@ public class EntityAuthorizer {
         return result;
     }
 
-    public static AccessResult evaluateRangerPoliciesInMemory(List<RangerPolicy> resourcePolicies, AtlasEntity entity) {
+    private static AccessResult evaluateRangerPoliciesInMemory(List<RangerPolicy> resourcePolicies, AtlasEntity entity) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("validateResourcesForCreateEntityInMemory");
         AccessResult result = new AccessResult();
 
@@ -116,16 +119,28 @@ public class EntityAuthorizer {
                 List<String> values = resources.get(resource).getValues();
 
                 if ("entity-type".equals(resource)) {
-                    boolean match = entityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
+                    if (!isResourceMatch(values, entityTypes)) {
+                        resourcesMatched = false;
+                        break;
+                    }
+
+                    /*boolean match = entityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
 
                     if (!match) {
                         resourcesMatched = false;
                         break;
-                    }
+                    }*/
                 }
 
                 if ("entity".equals(resource)) {
-                    if (!values.contains(("*"))) {
+                    String assetQualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
+
+                    if (!isResourceMatch(values, assetQualifiedName, true)) {
+                        resourcesMatched = false;
+                        break;
+                    }
+
+                    /*if (!values.contains(("*"))) {
                         String assetQualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
                         Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
                                         .replace("{USER}", AuthorizerCommon.getCurrentUserName())
@@ -136,27 +151,17 @@ public class EntityAuthorizer {
                             resourcesMatched = false;
                             break;
                         }
-                    }
-                }
-
-                if ("entity-business-metadata".equals(resource)) {
-                    if (!values.contains(("*"))) {
-                        String assetQualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
-                        Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
-                                        .replace("{USER}", AuthorizerCommon.getCurrentUserName())
-                                        .replace("*", ".*")))
-                                .findFirst();
-
-                        if (!match.isPresent()) {
-                            resourcesMatched = false;
-                            break;
-                        }
-                    }
+                    }*/
                 }
 
                 //for tag based policy
                 if ("tag".equals(resource)) {
-                    if (!values.contains(("*"))) {
+                    if (!isTagResourceMatch(values, new AtlasEntityHeader(entity))) {
+                        resourcesMatched = false;
+                        break;
+                    }
+
+                    /*if (!values.contains(("*"))) {
                         if (entity.getClassifications() == null || entity.getClassifications().isEmpty()) {
                             //since entity does not have tags at all, it should not pass this evaluation
                             resourcesMatched = false;
@@ -173,7 +178,7 @@ public class EntityAuthorizer {
                                 break;
                             }
                         }
-                    }
+                    }*/
                 }
             }
 
@@ -186,7 +191,7 @@ public class EntityAuthorizer {
         return false;
     }
 
-    public static AccessResult evaluateABACPoliciesInMemory(List<RangerPolicy> abacPolicies, AtlasEntity entity) {
+    private static AccessResult evaluateABACPoliciesInMemory(List<RangerPolicy> abacPolicies, AtlasEntity entity) {
         AccessResult result = new AccessResult();
 
         AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
@@ -432,7 +437,7 @@ public class EntityAuthorizer {
         return result;
     }
 
-    public static Map<String, Object> getElasticsearchDSL(String persona, String purpose,
+    private static Map<String, Object> getElasticsearchDSL(String persona, String purpose,
                                                           boolean requestMatchedPolicyId, List<String> actions) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("EntityAuthorizer.getElasticsearchDSL");
         Map<String, Object> dsl = ListAuthorizer.getElasticsearchDSLForPolicyType(persona, purpose, actions, requestMatchedPolicyId, null);

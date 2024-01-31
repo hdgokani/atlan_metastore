@@ -103,7 +103,7 @@ public class ListAuthorizer {
         return getMap("bool", boolClause);
     }
 
-    public static List<Map<String, Object>> getDSLForResourcePolicies(List<RangerPolicy> policies) {
+    private static List<Map<String, Object>> getDSLForResourcePolicies(List<RangerPolicy> policies) {
 
         // To reduce the number of clauses
         List<String> combinedEntities = new ArrayList<>();
