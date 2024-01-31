@@ -416,6 +416,7 @@ public class EntityAuthorizer {
                                 result.setAllowed(true);
                                 result.setPolicyId(matched_queries.get(0));
                             }
+                            return result;
                         } else {
                             throw new AtlasBaseException("Failed to extract matched policy guid");
                         }

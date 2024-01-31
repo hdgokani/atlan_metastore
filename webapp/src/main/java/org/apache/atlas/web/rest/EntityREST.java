@@ -174,7 +174,7 @@ public class EntityREST {
                         AtlasEntityHeader entityHeader = getAtlasEntityHeader(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
 
                         AtlasPrivilege privilege = AtlasPrivilege.valueOf(action);
-                        AuthorizerUtils.verifyAccess(entityHeader, privilege);
+                        AuthorizerUtils.verifyAccessForEvaluator(entityHeader, privilege);
 
                         response.add(new AtlasEvaluatePolicyResponse(entity.getTypeName(), entity.getEntityGuid(), action, entity.getEntityId(), true, null, entity.getBusinessMetadata()));
                     } catch (AtlasBaseException e) {
