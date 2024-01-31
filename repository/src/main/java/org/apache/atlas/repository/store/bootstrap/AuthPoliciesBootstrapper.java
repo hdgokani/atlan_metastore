@@ -42,7 +42,11 @@ import javax.inject.Inject;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Component
 @Order(9)
@@ -101,6 +105,8 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
 
         String policiesDirName = folder.getName();
         File[] policyFiles = folder.exists() ? folder.listFiles() : null;
+        List<File> fileList= new ArrayList<>(0);
+
 
         if (ArrayUtils.isNotEmpty(policyFiles)) {
             Arrays.sort(policyFiles);
@@ -109,9 +115,17 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
                 if (!item.isFile()) {
                     loadPoliciesInFolder(item);
                 } else {
-                    loadPoliciesInFile(item);
+                    //loadPoliciesInFile(item);
+                    fileList.add(item);
                 }
             }
+
+            // loadPoliciesInFile in async
+            List<CompletableFuture<Void>> futures = fileList.stream()
+                    .map(file -> CompletableFuture.runAsync(() -> loadPoliciesInFile(file)))
+                    .collect(Collectors.toList());
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         } else {
             LOG.warn("No policies for Bootstrapping in directory {}..", policiesDirName);
         }
