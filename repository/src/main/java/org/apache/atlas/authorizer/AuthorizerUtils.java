@@ -106,7 +106,11 @@ public class AuthorizerUtils {
         if (!useAbacAuthorizer) {
             AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, action, relationShipType, endOneEntity, endTwoEntity));
         } else {
-            if (action == AtlasPrivilege.RELATIONSHIP_ADD) {
+            NewAuthorizerUtils.verifyRelationshipAccessInMem(action,
+                    relationShipType,
+                    endOneEntity,
+                    endTwoEntity);
+            /*if (action == AtlasPrivilege.RELATIONSHIP_ADD) {
                 NewAuthorizerUtils.verifyRelationshipCreateAccess(AtlasPrivilege.RELATIONSHIP_ADD,
                         relationShipType,
                         endOneEntity,
@@ -116,7 +120,7 @@ public class AuthorizerUtils {
                         relationShipType,
                         endOneEntity,
                         endTwoEntity);
-            }
+            }*/
         }
     }
 }

@@ -38,6 +38,8 @@ import static org.apache.atlas.authorizer.NewAuthorizerUtils.MAX_CLAUSE_LIMIT;
 import static org.apache.atlas.authorizer.NewAuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.NewAuthorizerUtils.POLICY_TYPE_DENY;
 import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.getMap;
+import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.isResourceMatch;
+import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.isTagResourceMatch;
 import static org.apache.atlas.authorizer.authorizers.EntityAuthorizer.validateFilterCriteriaWithEntity;
 import static org.apache.atlas.authorizer.authorizers.ListAuthorizer.getDSLForResources;
 import static org.apache.atlas.authorizer.authorizers.ListAuthorizer.getPolicySuffix;
@@ -65,7 +67,7 @@ public class RelationshipAuthorizer {
         return checkRelationshipAccessAllowedInMemory(action, relationshipType, endOneEntity, endTwoEntity, POLICY_TYPE_ALLOW);
     }
 
-    public static AccessResult checkRelationshipAccessAllowedInMemory(String action, String relationshipType, AtlasEntityHeader endOneEntity,
+    private static AccessResult checkRelationshipAccessAllowedInMemory(String action, String relationshipType, AtlasEntityHeader endOneEntity,
                                                          AtlasEntityHeader endTwoEntity, String policyType) throws AtlasBaseException {
         //Relationship add, update, remove access check in memory
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("checkRelationshipAccessAllowedInMemory."+policyType);
@@ -120,7 +122,7 @@ public class RelationshipAuthorizer {
         }
     }
 
-    public static AccessResult evaluateRangerPoliciesInMemory(List<RangerPolicy> rangerPolicies, String relationshipType,
+    private static AccessResult evaluateRangerPoliciesInMemory(List<RangerPolicy> rangerPolicies, String relationshipType,
                                                          AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("ListAuthorizer.evaluateRangerPoliciesInMemory");
         AccessResult result = new AccessResult();
@@ -181,29 +183,43 @@ public class RelationshipAuthorizer {
                 }
 
                 if ("end-one-entity-type".equals(resource)) {
-                    if (!values.contains(("*"))) {
+                    if (!isResourceMatch(values, endOneEntityTypes)) {
+                        resourcesMatched = false;
+                        break;
+                    }
+                    /*if (!values.contains(("*"))) {
                         boolean match = endOneEntityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
 
                         if (!match) {
                             resourcesMatched = false;
                             break;
                         }
-                    }
+                    }*/
                 }
 
                 if ("end-two-entity-type".equals(resource)) {
-                    if (!values.contains(("*"))) {
+                    if (!isResourceMatch(values, endTwoEntityTypes)) {
+                        resourcesMatched = false;
+                        break;
+                    }
+                    /*if (!values.contains(("*"))) {
                         boolean match = endTwoEntityTypes.stream().anyMatch(assetType -> values.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
 
                         if (!match) {
                             resourcesMatched = false;
                             break;
                         }
-                    }
+                    }*/
                 }
 
                 if ("end-one-entity".equals(resource)) {
-                    if (!values.contains(("*"))) {
+                    String assetQualifiedName = (String) endOneEntity.getAttribute(QUALIFIED_NAME);
+
+                    if (!isResourceMatch(values, assetQualifiedName, true)) {
+                        resourcesMatched = false;
+                        break;
+                    }
+                    /*if (!values.contains(("*"))) {
                         String assetQualifiedName = (String) endOneEntity.getAttribute(QUALIFIED_NAME);
                         Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
                                         .replace("{USER}", AuthorizerCommon.getCurrentUserName())
@@ -214,11 +230,17 @@ public class RelationshipAuthorizer {
                             resourcesMatched = false;
                             break;
                         }
-                    }
+                    }*/
                 }
 
                 if ("end-two-entity".equals(resource)) {
-                    if (!values.contains(("*"))) {
+                    String assetQualifiedName = (String) endTwoEntity.getAttribute(QUALIFIED_NAME);
+
+                    if (!isResourceMatch(values, assetQualifiedName, true)) {
+                        resourcesMatched = false;
+                        break;
+                    }
+                    /*if (!values.contains(("*"))) {
                         String assetQualifiedName = (String) endTwoEntity.getAttribute(QUALIFIED_NAME);
                         Optional<String> match = values.stream().filter(x -> assetQualifiedName.matches(x
                                         .replace("{USER}", AuthorizerCommon.getCurrentUserName())
@@ -229,12 +251,16 @@ public class RelationshipAuthorizer {
                             resourcesMatched = false;
                             break;
                         }
-                    }
+                    }*/
                 }
 
-                //for tag based policy
                 if ("end-one-entity-classification".equals(resource)) {
-                    if (!values.contains(("*"))) {
+                    if (!isTagResourceMatch(values, endOneEntity)) {
+                        resourcesMatched = false;
+                        break;
+                    }
+
+                    /*if (!values.contains(("*"))) {
                         if (endOneEntity.getClassifications() == null || endOneEntity.getClassifications().isEmpty()) {
                             //since entity does not have tags at all, it should not pass this evaluation
                             resourcesMatched = false;
@@ -249,11 +275,16 @@ public class RelationshipAuthorizer {
                             resourcesMatched = false;
                             break;
                         }
-                    }
+                    }*/
                 }
 
                 if ("end-two-entity-classification".equals(resource)) {
-                    if (!values.contains(("*"))) {
+                    if (!isTagResourceMatch(values, endTwoEntity)) {
+                        resourcesMatched = false;
+                        break;
+                    }
+
+                    /*if (!values.contains(("*"))) {
                         if (endTwoEntity.getClassifications() == null || endTwoEntity.getClassifications().isEmpty()) {
                             //since entity does not have tags at all, it should not pass this evaluation
                             resourcesMatched = false;
@@ -268,7 +299,7 @@ public class RelationshipAuthorizer {
                             resourcesMatched = false;
                             break;
                         }
-                    }
+                    }*/
                 }
             }
 
@@ -286,12 +317,12 @@ public class RelationshipAuthorizer {
         AccessResult result = new AccessResult();
 
         //Relationship update, remove access check with ES query
-        if (endOneEntity == null || endTwoEntity == null || endOneEntity.getGuid() == null || endTwoEntity.getGuid() == null ) {
+        if (endOneEntity == null || endTwoEntity == null) {
             return result;
         }
 
         try {
-            Map<String, Object> dsl = getElasticsearchDSLForRelationshipActions(Arrays.asList(action), endOneEntity.getGuid(), endTwoEntity.getGuid());
+            Map<String, Object> dsl = getElasticsearchDSLForRelationshipActions(Arrays.asList(action), endOneEntity, endTwoEntity);
             ObjectMapper mapper = new ObjectMapper();
             String dslString = mapper.writeValueAsString(dsl);
             RestClient restClient = getLowLevelClient();
@@ -356,7 +387,8 @@ public class RelationshipAuthorizer {
         return result;
     }
 
-    public static Map<String, Object> getElasticsearchDSLForRelationshipActions(List<String> actions, String endOneGuid, String endTwoGuid) throws JsonProcessingException {
+    private static Map<String, Object> getElasticsearchDSLForRelationshipActions(List<String> actions, AtlasEntityHeader endOneEntity,
+                                                                                AtlasEntityHeader endTwoEntity) throws JsonProcessingException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("RelationshipAuthorizer.getElasticsearchDSLForRelationshipActions");
 
         List<Map<String, Object>> policiesClauses = new ArrayList<>();
@@ -400,8 +432,25 @@ public class RelationshipAuthorizer {
 
         Map<String, Object> entitiesBoolClause = new HashMap<>();
         List<Map<String, Object>> entityClauses = new ArrayList<>();
-        entityClauses.add(getMap("term", getMap("__guid", endOneGuid)));
-        entityClauses.add(getMap("term", getMap("__guid", endTwoGuid)));
+
+        if (endOneEntity.getGuid() != null && endTwoEntity.getGuid() != null) {
+            entityClauses.add(getMap("term", getMap("__guid", endOneEntity.getGuid())));
+            entityClauses.add(getMap("term", getMap("__guid", endTwoEntity.getGuid())));
+        } else {
+            //In case of evaluator API, qualifiedName can be * leading to not finding entity in store hence null GUIDs
+            //Use typeName & qualifiedName to form entity clauses
+            List<Map<String, Object>> entityOneClauses = new ArrayList<>();
+            entityOneClauses.add(getMap("wildcard", getMap("__typeName.keyword", endOneEntity.getTypeName())));
+            entityOneClauses.add(getMap("wildcard", getMap("qualifiedName", endOneEntity.getAttribute(QUALIFIED_NAME))));
+
+            List<Map<String, Object>> entityTwoClauses = new ArrayList<>();
+            entityTwoClauses.add(getMap("wildcard", getMap("__typeName.keyword", endTwoEntity.getTypeName())));
+            entityTwoClauses.add(getMap("wildcard", getMap("qualifiedName", endTwoEntity.getAttribute(QUALIFIED_NAME))));
+
+            entityClauses.add(getMap("bool", getMap("must", entityOneClauses)));
+            entityClauses.add(getMap("bool", getMap("must", entityTwoClauses)));
+        }
+
         entitiesBoolClause.put("should", entityClauses);
         entitiesBoolClause.put("minimum_should_match", 1);
         clauses.add(getMap("bool", entitiesBoolClause));

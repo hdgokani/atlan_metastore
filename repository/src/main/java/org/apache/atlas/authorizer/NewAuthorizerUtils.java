@@ -186,7 +186,7 @@ public class NewAuthorizerUtils {
         }
     }
 
-    public static void verifyRelationshipCreateAccess(AtlasPrivilege action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
+    public static void verifyRelationshipAccessInMem(AtlasPrivilege action, String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccess");
         String userName = AuthorizerCommon.getCurrentUserName();
 

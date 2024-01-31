@@ -2,6 +2,7 @@ package org.apache.atlas.authorizer.authorizers;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class AuthorizerCommon {
@@ -103,5 +105,43 @@ public class AuthorizerCommon {
     public static AtlasEntity toAtlasEntityHeaderWithClassifications(AtlasVertex vertex) throws AtlasBaseException {
         //return new AtlasEntity(entityRetriever.toAtlasEntityHeaderWithClassifications(vertex));
         return new AtlasEntity(entityRetriever.toAtlasEntity(vertex));
+    }
+
+    public static boolean isResourceMatch(List<String> policyValues, String actualValue) {
+        return isResourceMatch(policyValues, actualValue, false);
+    }
+
+    public static boolean isResourceMatch(List<String> policyValues, String actualValue, boolean replaceUser) {
+        if (!policyValues.contains("*")) {
+            if (replaceUser) {
+                return policyValues.stream().anyMatch(x -> actualValue.matches(x
+                        .replace("{USER}", AuthorizerCommon.getCurrentUserName())
+                        .replace("*", ".*")));
+            } else {
+                return policyValues.stream().anyMatch(x -> actualValue.matches(x.replace("*", ".*")));
+            }
+        }
+        return true;
+    }
+
+    public static boolean isResourceMatch(List<String> policyValues, Set<String> entityValues) {
+        if (!policyValues.contains("*")) {
+            return entityValues.stream().anyMatch(assetType -> policyValues.stream().anyMatch(policyAssetType -> assetType.matches(policyAssetType.replace("*", ".*"))));
+        }
+        return true;
+    }
+
+    public static boolean isTagResourceMatch(List<String> policyValues, AtlasEntityHeader entityHeader) {
+        if (!policyValues.contains(("*"))) {
+            if (entityHeader.getClassifications() == null || entityHeader.getClassifications().isEmpty()) {
+                //since entity does not have tags at all, it should not pass this evaluation
+                return false;
+            }
+
+            List<String> assetTags = entityHeader.getClassifications().stream().map(x -> x.getTypeName()).collect(Collectors.toList());
+
+            return assetTags.stream().anyMatch(assetTag -> policyValues.stream().anyMatch(policyAssetType -> assetTag.matches(policyAssetType.replace("*", ".*"))));
+        }
+        return true;
     }
 }
