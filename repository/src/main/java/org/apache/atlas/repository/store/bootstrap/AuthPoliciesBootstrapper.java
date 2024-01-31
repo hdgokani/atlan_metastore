@@ -105,7 +105,7 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
 
         String policiesDirName = folder.getName();
         File[] policyFiles = folder.exists() ? folder.listFiles() : null;
-        List<File> fileList= new ArrayList<>(0);
+       // List<File> fileList= new ArrayList<>(0);
 
 
         if (ArrayUtils.isNotEmpty(policyFiles)) {
@@ -115,17 +115,17 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
                 if (!item.isFile()) {
                     loadPoliciesInFolder(item);
                 } else {
-                    //loadPoliciesInFile(item);
-                    fileList.add(item);
+                    loadPoliciesInFile(item);
+                    //fileList.add(item);
                 }
             }
 
             // loadPoliciesInFile in async
-            List<CompletableFuture<Void>> futures = fileList.stream()
-                    .map(file -> CompletableFuture.runAsync(() -> loadPoliciesInFile(file)))
-                    .collect(Collectors.toList());
-
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+//            List<CompletableFuture<Void>> futures = fileList.stream()
+//                    .map(file -> CompletableFuture.runAsync(() -> loadPoliciesInFile(file)))
+//                    .collect(Collectors.toList());
+//
+//            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         } else {
             LOG.warn("No policies for Bootstrapping in directory {}..", policiesDirName);
         }
