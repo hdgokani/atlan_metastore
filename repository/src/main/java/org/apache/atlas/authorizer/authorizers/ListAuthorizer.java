@@ -254,19 +254,24 @@ public class ListAuthorizer {
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
 
         for (RangerPolicy policy : policies) {
-            if (!policy.getResources().isEmpty() && "ENTITY".equals(policy.getPolicyResourceCategory())) {
-                List<String> entities = policy.getResources().get("entity").getValues();
-                List<String> entityTypesRaw = policy.getResources().get("entity-type").getValues();
+            if (!policy.getResources().isEmpty()) {
+                RangerPolicy.RangerPolicyResource resourceEntity = policy.getResources().get("entity");
+                RangerPolicy.RangerPolicyResource resourceTypes = policy.getResources().get("entity-type");
 
-                if (entities.contains("*") && entityTypesRaw.contains("*")) {
-                    shouldClauses.clear();
-                    shouldClauses.add(getMap("match_all", getMap("_name", policy.getGuid() + getPolicySuffix(policy))));
-                    break;
+                if (resourceEntity != null && resourceTypes != null) {
+                    List<String> entities = policy.getResources().get("entity").getValues();
+                    List<String> entityTypesRaw = policy.getResources().get("entity-type").getValues();
+
+                    if (entities.contains("*") && entityTypesRaw.contains("*")) {
+                        shouldClauses.clear();
+                        shouldClauses.add(getMap("match_all", getMap("_name", policy.getGuid() + getPolicySuffix(policy))));
+                        break;
+                    }
+
+                    Map<String, Object> dslForPolicyResources = getDSLForResources(entities, new HashSet<>(entityTypesRaw), null,
+                            policy.getGuid() + getPolicySuffix(policy));
+                    shouldClauses.add(dslForPolicyResources);
                 }
-
-                Map<String, Object> dslForPolicyResources = getDSLForResources(entities, new HashSet<>(entityTypesRaw), null,
-                        policy.getGuid() + getPolicySuffix(policy));
-                shouldClauses.add(dslForPolicyResources);
             }
         }
         return shouldClauses;
