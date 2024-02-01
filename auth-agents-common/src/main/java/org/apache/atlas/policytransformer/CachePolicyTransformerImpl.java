@@ -459,7 +459,7 @@ public class CachePolicyTransformerImpl {
             indexSearchParams.setAttributes(attributes);
 
             int from = 0;
-            int size = 100;
+            int size = 250;
             boolean found = true;
 
             do {
