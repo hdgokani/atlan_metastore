@@ -60,6 +60,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.NAME;
@@ -148,7 +149,7 @@ public class CachePolicyTransformerImpl {
             servicePolicies.setPolicyUpdateTime(new Date());
 
             if (service != null) {
-                List<RangerPolicy> allPolicies = getServicePolicies(service);
+                List<RangerPolicy> allPolicies = getServicePolicies(service, 250);
                 servicePolicies.setServiceName(serviceName);
                 servicePolicies.setServiceId(service.getGuid());
 
@@ -162,7 +163,7 @@ public class CachePolicyTransformerImpl {
                     AtlasEntityHeader tagService = getServiceEntity(tagServiceName);
 
                     if (tagService != null) {
-                        allPolicies.addAll(getServicePolicies(tagService));
+                        allPolicies.addAll(getServicePolicies(tagService, 0));
 
                         TagPolicies tagPolicies = new TagPolicies();
 
@@ -200,13 +201,13 @@ public class CachePolicyTransformerImpl {
         return servicePolicies;
     }
 
-    private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service) throws AtlasBaseException, IOException {
+    private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service, int batchSize) throws AtlasBaseException, IOException {
 
         List<RangerPolicy> servicePolicies = new ArrayList<>();
 
         String serviceName = (String) service.getAttribute("name");
         String serviceType = (String) service.getAttribute("authServiceType");
-        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName);
+        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName,0);
 
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
             //transform policies
@@ -417,7 +418,7 @@ public class CachePolicyTransformerImpl {
         return ret;
     }
 
-    private List<AtlasEntityHeader> getAtlasPolicies(String serviceName) throws AtlasBaseException {
+    private List<AtlasEntityHeader> getAtlasPolicies(String serviceName, int batchSize) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+service+".getAtlasPolicies");
 
         List<AtlasEntityHeader> ret = new ArrayList<>();
@@ -459,8 +460,12 @@ public class CachePolicyTransformerImpl {
             indexSearchParams.setAttributes(attributes);
 
             int from = 0;
-            int size = 250;
+            int size = 100;
             boolean found = true;
+
+            if (batchSize > 0) {
+                size = batchSize;
+            }
 
             do {
                 dsl.put("from", from);
@@ -484,6 +489,7 @@ public class CachePolicyTransformerImpl {
 
         return ret;
     }
+
 
     private AtlasEntityHeader getServiceEntity(String serviceName) throws AtlasBaseException {
         IndexSearchParams indexSearchParams = new IndexSearchParams();
