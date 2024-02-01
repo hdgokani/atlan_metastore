@@ -93,14 +93,17 @@ public class AuthorizerUtils {
 
     public static void verifyAccessForEvaluator(AtlasEntityHeader entityHeader, AtlasPrivilege action) throws AtlasBaseException {
         if (!useAbacAuthorizer) {
-            //AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, action, entityHeader, new AtlasClassification(entityHeader.getClassifications().get(0))));
             AtlasClassification classification = CollectionUtils.isNotEmpty(entityHeader.getClassifications()) ? entityHeader.getClassifications().get(0) : null;
             AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, action, entityHeader, classification));
         } else {
-            if (StringUtils.isNotEmpty(entityHeader.getGuid())) {
-                NewAuthorizerUtils.verifyAccess(entityHeader, action);
+            if (action == ENTITY_CREATE) {
+                AuthorizerUtils.verifyAccess(entityHeader, ENTITY_CREATE);
             } else {
-                NewAuthorizerUtils.verifyAccessForEvaluator(entityHeader, action);
+                if (StringUtils.isNotEmpty(entityHeader.getGuid())) {
+                    NewAuthorizerUtils.verifyAccess(entityHeader, action);
+                } else {
+                    NewAuthorizerUtils.verifyAccessForEvaluator(entityHeader, action);
+                }
             }
         }
     }
