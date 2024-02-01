@@ -209,7 +209,7 @@ public class CachePolicyTransformerImpl {
 
         String serviceName = (String) service.getAttribute("name");
         String serviceType = (String) service.getAttribute("authServiceType");
-        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName,0);
+        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName, batchSize);
 
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
             //transform policies
