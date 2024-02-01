@@ -25,6 +25,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,7 +93,9 @@ public class AuthorizerUtils {
 
     public static void verifyAccessForEvaluator(AtlasEntityHeader entityHeader, AtlasPrivilege action) throws AtlasBaseException {
         if (!useAbacAuthorizer) {
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, action, entityHeader, new AtlasClassification(entityHeader.getClassifications().get(0))));
+            //AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, action, entityHeader, new AtlasClassification(entityHeader.getClassifications().get(0))));
+            AtlasClassification classification = CollectionUtils.isNotEmpty(entityHeader.getClassifications()) ? entityHeader.getClassifications().get(0) : null;
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, action, entityHeader, classification));
         } else {
             if (StringUtils.isNotEmpty(entityHeader.getGuid())) {
                 NewAuthorizerUtils.verifyAccess(entityHeader, action);
