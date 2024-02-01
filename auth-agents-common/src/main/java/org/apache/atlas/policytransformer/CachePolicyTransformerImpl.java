@@ -60,6 +60,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.*;
@@ -139,7 +142,7 @@ public class CachePolicyTransformerImpl {
             servicePolicies.setPolicyUpdateTime(new Date());
 
             if (service != null) {
-                List<RangerPolicy> allPolicies = getServicePolicies(service);
+                List<RangerPolicy> allPolicies = getServicePolicies(service, 250);
                 servicePolicies.setServiceName(serviceName);
                 servicePolicies.setServiceId(service.getGuid());
 
@@ -153,7 +156,7 @@ public class CachePolicyTransformerImpl {
                     AtlasEntityHeader tagService = getServiceEntity(tagServiceName);
 
                     if (tagService != null) {
-                        allPolicies.addAll(getServicePolicies(tagService));
+                        allPolicies.addAll(getServicePolicies(tagService, 0));
 
                         TagPolicies tagPolicies = new TagPolicies();
 
@@ -221,13 +224,13 @@ public class CachePolicyTransformerImpl {
         return servicePolicies;
     }
 
-    private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service) throws AtlasBaseException, IOException {
+    private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service, int batchSize) throws AtlasBaseException, IOException {
 
         List<RangerPolicy> servicePolicies = new ArrayList<>();
 
         String serviceName = (String) service.getAttribute("name");
         String serviceType = (String) service.getAttribute("authServiceType");
-        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName);
+        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName, batchSize);
 
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
             //transform policies
