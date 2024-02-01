@@ -152,7 +152,7 @@ public class ListAuthorizer {
         List<String> termsQualifiedNames = new ArrayList<>();
         for (String entity: entities) {
             if (!entity.equals("*")) {
-                if (entity.contains("*")) {
+                if (entity.contains("*") || entity.contains("?")) {
                     shouldClauses.add(getMap("wildcard", getMap("qualifiedName", entity)));
                 } else {
                     termsQualifiedNames.add(entity);
