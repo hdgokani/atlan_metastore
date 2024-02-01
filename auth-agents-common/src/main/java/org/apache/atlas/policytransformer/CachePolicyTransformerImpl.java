@@ -61,6 +61,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.NAME;
@@ -418,10 +420,81 @@ public class CachePolicyTransformerImpl {
         return ret;
     }
 
-    private List<AtlasEntityHeader> getAtlasPolicies(String serviceName, int batchSize) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+service+".getAtlasPolicies");
+  //  private List<AtlasEntityHeader> getAtlasPolicies(String serviceName, int batchSize) throws AtlasBaseException {//      AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+service+".getAtlasPolicies");
+//
+//        List<AtlasEntityHeader> ret = new ArrayList<>();
+//        try {
+//            IndexSearchParams indexSearchParams = new IndexSearchParams();
+//            Set<String> attributes = new HashSet<>();
+//            attributes.add(NAME);
+//            attributes.add(ATTR_POLICY_CATEGORY);
+//            attributes.add(ATTR_POLICY_SUB_CATEGORY);
+//            attributes.add(ATTR_POLICY_TYPE);
+//            attributes.add(ATTR_POLICY_SERVICE_NAME);
+//            attributes.add(ATTR_POLICY_USERS);
+//            attributes.add(ATTR_POLICY_GROUPS);
+//            attributes.add(ATTR_POLICY_ROLES);
+//            attributes.add(ATTR_POLICY_ACTIONS);
+//            attributes.add(ATTR_POLICY_RESOURCES);
+//            attributes.add(ATTR_POLICY_RESOURCES_CATEGORY);
+//            attributes.add(ATTR_POLICY_MASK_TYPE);
+//            attributes.add(ATTR_POLICY_PRIORITY);
+//            attributes.add(ATTR_POLICY_VALIDITY);
+//            attributes.add(ATTR_POLICY_CONDITIONS);
+//            attributes.add(ATTR_POLICY_IS_ENABLED);
+//            attributes.add(ATTR_POLICY_CONNECTION_QN);
+//
+//            Map<String, Object> dsl = getMap("size", 0);
+//
+//            List<Map<String, Object>> mustClauseList = new ArrayList<>();
+//            mustClauseList.add(getMap("term", getMap(ATTR_POLICY_SERVICE_NAME, serviceName)));
+//            mustClauseList.add(getMap("match", getMap("__state", Id.EntityState.ACTIVE)));
+//
+//            dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
+//
+//            List<Map> sortList = new ArrayList<>(0);
+//            sortList.add(getMap("__timestamp", getMap("order", "asc")));
+//            sortList.add(getMap("__guid", getMap("order", "asc")));
+//            dsl.put("sort", sortList);
+//
+//            indexSearchParams.setDsl(dsl);
+//            indexSearchParams.setAttributes(attributes);
+//
+//            int from = 0;
+//            int size = 100;
+//            boolean found = true;
+//
+//            if (batchSize > 0) {
+//                size = batchSize;
+//            }
+//
+//            do {
+//                dsl.put("from", from);
+//                dsl.put("size", size);
+//                indexSearchParams.setDsl(dsl);
+//
+//                List<AtlasEntityHeader> headers = discoveryService.directIndexSearch(indexSearchParams).getEntities();
+//                if (headers != null) {
+//                    ret.addAll(headers);
+//                } else {
+//                    found = false;
+//                }
+//
+//                from += size;
+//
+//            } while (found && ret.size() % size == 0);
+//
+//        } finally {
+//            RequestContext.get().endMetricRecord(recorder);
+//        }
+//
+//        return ret;
+//    }
 
-        List<AtlasEntityHeader> ret = new ArrayList<>();
+    private List<AtlasEntityHeader> getAtlasPolicies(String serviceName, int batchSize) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl." + serviceName + ".getAtlasPolicies");
+
+        AtomicReference<CompletableFuture<List<AtlasEntityHeader>>> futureResultRef = new AtomicReference<>(CompletableFuture.completedFuture(new ArrayList<>()));
         try {
             IndexSearchParams indexSearchParams = new IndexSearchParams();
             Set<String> attributes = new HashSet<>();
@@ -459,37 +532,51 @@ public class CachePolicyTransformerImpl {
             indexSearchParams.setDsl(dsl);
             indexSearchParams.setAttributes(attributes);
 
-            int from = 0;
-            int size = 100;
-            boolean found = true;
+            final int size = batchSize > 0 ? batchSize : 100;
 
-            if (batchSize > 0) {
-                size = batchSize;
-            }
+            CompletableFuture<Void> loopFuture = CompletableFuture.completedFuture(null);
 
-            do {
-                dsl.put("from", from);
-                dsl.put("size", size);
-                indexSearchParams.setDsl(dsl);
+            loopFuture = loopFuture.thenCompose(v -> CompletableFuture.runAsync(() -> {
+                boolean found = true;
+                int currentFrom = 0;
+                while (found) {
+                    final int finalFrom = currentFrom; // Capture the current 'from' value
+                    Map<String, Object> currentDsl = new HashMap<>(dsl); // Clone the dsl for the current iteration
+                    currentDsl.put("from", finalFrom);
+                    currentDsl.put("size", size);
+                    indexSearchParams.setDsl(currentDsl);
 
-                List<AtlasEntityHeader> headers = discoveryService.directIndexSearch(indexSearchParams).getEntities();
-                if (headers != null) {
-                    ret.addAll(headers);
-                } else {
-                    found = false;
+                    CompletableFuture<List<AtlasEntityHeader>> headersFuture = CompletableFuture.supplyAsync(() -> {
+                        try {
+                            return discoveryService.directIndexSearch(indexSearchParams).getEntities();
+                        } catch (AtlasBaseException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+
+                    futureResultRef.set(futureResultRef.get().thenCombine(headersFuture, (ret, headers) -> {
+                        if (headers != null) {
+                            ret.addAll(headers);
+                        }
+                        return ret;
+                    }));
+
+                    currentFrom += size;
+                    found = !headersFuture.join().isEmpty() && futureResultRef.get().join().size() % size == 0;
                 }
+            }));
 
-                from += size;
-
-            } while (found && ret.size() % size == 0);
-
+            loopFuture.join(); // Wait for the loop to complete
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
 
-        return ret;
+        try {
+            return futureResultRef.get().get(); // Wait for the result to be ready and return it
+        } catch (InterruptedException | ExecutionException e) {
+            throw new AtlasBaseException(e);
+        }
     }
-
 
     private AtlasEntityHeader getServiceEntity(String serviceName) throws AtlasBaseException {
         IndexSearchParams indexSearchParams = new IndexSearchParams();
