@@ -494,7 +494,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                         }
 
                         typeRegistry.addIndexFieldName(attribute.getVertexPropertyName(), indexFieldName);
-                        if (LOG.isDebugEnabled()){
+
+                        if (LOG.isDebugEnabled()) {
                             LOG.debug("Property {} is mapped to index field name {}", attribute.getQualifiedName(), attribute.getIndexFieldName());
                         }
                     } else {
