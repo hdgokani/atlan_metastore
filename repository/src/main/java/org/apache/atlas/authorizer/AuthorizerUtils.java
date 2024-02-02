@@ -1,30 +1,17 @@
 package org.apache.atlas.authorizer;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContext;
-import org.apache.atlas.audit.provider.AuditHandler;
-import org.apache.atlas.authorize.AtlasAccessorRequest;
-import org.apache.atlas.authorize.AtlasAccessorResponse;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
-import org.apache.atlas.authorizer.authorizers.AuthorizerCommon;
-import org.apache.atlas.authorizer.authorizers.EntityAuthorizer;
-import org.apache.atlas.authorizer.authorizers.ListAuthorizer;
-import org.apache.atlas.authorizer.authorizers.RelationshipAuthorizer;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.plugin.model.RangerServiceDef;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -33,12 +20,8 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
 
 import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_CREATE;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.SKIP_DELETE_AUTH_CHECK_TYPES;
 import static org.apache.atlas.repository.Constants.SKIP_UPDATE_AUTH_CHECK_TYPES;
 
@@ -48,11 +31,9 @@ public class AuthorizerUtils {
 
     private static AtlasTypeRegistry typeRegistry;
 
-    public static boolean useAbacAuthorizer = false;
+    private static boolean useAbacAuthorizer = false;
 
-    @Inject
-    public AuthorizerUtils(AtlasGraph graph, AtlasTypeRegistry typeRegistry) throws IOException {
-        this.typeRegistry = typeRegistry;
+    static {
         try {
             useAbacAuthorizer = ApplicationProperties.get().getBoolean("atlas.authorizer.enable.abac", false);
 
@@ -62,6 +43,15 @@ public class AuthorizerUtils {
         } catch (AtlasException e) {
             LOG.warn("Failed to read conf `atlas.authorizer.impl`, falling back to use Atlas authorizer instead of abac");
         }
+    }
+
+    @Inject
+    public AuthorizerUtils(AtlasGraph graph, AtlasTypeRegistry typeRegistry) throws IOException {
+        this.typeRegistry = typeRegistry;
+    }
+
+    public static boolean isUseAbacAuthorizer() {
+        return useAbacAuthorizer;
     }
 
     public static void verifyUpdateEntityAccess(AtlasEntityHeader entityHeader) throws AtlasBaseException {

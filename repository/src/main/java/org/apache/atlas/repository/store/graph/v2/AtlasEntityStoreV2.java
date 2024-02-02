@@ -104,7 +104,7 @@ import java.util.stream.Collectors;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
-import static org.apache.atlas.authorizer.AuthorizerUtils.useAbacAuthorizer;
+import static org.apache.atlas.authorizer.AuthorizerUtils.isUseAbacAuthorizer;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
@@ -2222,7 +2222,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     case ENTITY_CREATE:
                     case ENTITY_UPDATE:
                     case ENTITY_DELETE:
-                        if (!useAbacAuthorizer) {
+                        if (!isUseAbacAuthorizer()) {
                             AtlasEntityAccessRequestBuilder entityAccessRequestBuilder = getEntityAccessRequest(accessorRequest, action);
                             result = AtlasAuthorizationUtils.getAccessors(entityAccessRequestBuilder.build());
                         } else {
@@ -2234,7 +2234,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     case ENTITY_ADD_CLASSIFICATION:
                     case ENTITY_UPDATE_CLASSIFICATION:
                     case ENTITY_REMOVE_CLASSIFICATION:
-                        if (!useAbacAuthorizer) {
+                        if (!isUseAbacAuthorizer()) {
                             AtlasEntityAccessRequestBuilder entityAccessRequestBuilder = getEntityAccessRequest(accessorRequest, action);
                             entityAccessRequestBuilder.setClassification(new AtlasClassification(accessorRequest.getClassification()));
                             result = AtlasAuthorizationUtils.getAccessors(entityAccessRequestBuilder.build());
@@ -2245,7 +2245,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                     case ENTITY_ADD_LABEL:
                     case ENTITY_REMOVE_LABEL:
-                        if (!useAbacAuthorizer) {
+                        if (!isUseAbacAuthorizer()) {
                             AtlasEntityAccessRequestBuilder entityAccessRequestBuilder = getEntityAccessRequest(accessorRequest, action);
                             entityAccessRequestBuilder.setLabel(accessorRequest.getLabel());
                             result = AtlasAuthorizationUtils.getAccessors(entityAccessRequestBuilder.build());
@@ -2255,7 +2255,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         break;
 
                     case ENTITY_UPDATE_BUSINESS_METADATA:
-                        if (!useAbacAuthorizer) {
+                        if (!isUseAbacAuthorizer()) {
                             AtlasEntityAccessRequestBuilder entityAccessRequestBuilder = getEntityAccessRequest(accessorRequest, action);
                             entityAccessRequestBuilder.setBusinessMetadata(accessorRequest.getBusinessMetadata());
                             result = AtlasAuthorizationUtils.getAccessors(entityAccessRequestBuilder.build());
@@ -2271,7 +2271,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         AtlasEntityHeader end1EntityHeader = extractEntityHeader(accessorRequest.getEntityGuidEnd1(), accessorRequest.getEntityQualifiedNameEnd1(), accessorRequest.getEntityTypeEnd1());
                         AtlasEntityHeader end2EntityHeader = extractEntityHeader(accessorRequest.getEntityGuidEnd2(), accessorRequest.getEntityQualifiedNameEnd2(), accessorRequest.getEntityTypeEnd2());
 
-                        if (!useAbacAuthorizer) {
+                        if (!isUseAbacAuthorizer()) {
                             AtlasRelationshipAccessRequest relAccessRequest = new AtlasRelationshipAccessRequest(typeRegistry,
                                     action, accessorRequest.getRelationshipTypeName(), end1EntityHeader, end2EntityHeader);
 
