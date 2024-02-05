@@ -38,7 +38,7 @@ public class GraphTransactionAdvisor extends AbstractPointcutAdvisor {
         public boolean matches(Method method, Class<?> targetClass) {
             boolean annotationPresent = method.isAnnotationPresent(GraphTransaction.class);
             if (annotationPresent) {
-                if (LOG.isDebugEnabled()){
+                if (LOG.isDebugEnabled()) {
                     LOG.debug("GraphTransaction intercept for {}.{}", targetClass.getName(), method.getName());
                 }
             }
