@@ -1002,7 +1002,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             String indexName = getIndexName(params);
 
             indexQuery = graph.elasticsearchQuery(indexName);
-            if (searchParams.getUseAccessControlv2()) {
+            if (AuthorizerUtils.isUseAbacAuthorizer() && searchParams.getUseAccessControlv2()) {
                 addPreFiltersToSearchQuery(searchParams);
             }
             LOG.info(searchParams.getQuery());
