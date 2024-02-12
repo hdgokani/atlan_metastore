@@ -83,6 +83,7 @@ public class IndexSearchParams extends SearchParams {
                 ", persona='" + persona + '\'' +
                 ", queryString='" + queryString + '\'' +
                 ", allowDeletedRelations=" + allowDeletedRelations +
+                ", utmTags="+ getUtmTags() +
                 '}';
     }
 }

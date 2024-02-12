@@ -68,7 +68,25 @@ public class MetricsRegistryServiceImpl implements MetricsRegistry {
         try {
             for(AtlasPerfMetrics.Metric metric : applicationMetrics){
                 Timer.builder(APPLICATION_LEVEL_METRICS_SUMMARY)
-                        .publishPercentileHistogram()
+                        .serviceLevelObjectives(
+                                Duration.ofMillis(500),
+                                Duration.ofMillis(750),
+                                Duration.ofMillis(1000),
+                                Duration.ofMillis(1200),
+                                Duration.ofMillis(1500),
+                                Duration.ofSeconds(2),
+                                Duration.ofSeconds(3),
+                                Duration.ofSeconds(4),
+                                Duration.ofSeconds(5),
+                                Duration.ofSeconds(7),
+                                Duration.ofSeconds(10),
+                                Duration.ofSeconds(15),
+                                Duration.ofSeconds(20),
+                                Duration.ofSeconds(25),
+                                Duration.ofSeconds(30),
+                                Duration.ofSeconds(40),
+                                Duration.ofSeconds(60)
+                        )
                         .publishPercentiles(PERCENTILES)
                         .tags(convertToMicrometerTags(metric.getTags()))
                         .register(getMeterRegistry()).record(metric.getTotalTimeMSecs(), TimeUnit.MILLISECONDS);
