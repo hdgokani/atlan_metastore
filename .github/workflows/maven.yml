@@ -27,7 +27,7 @@ on:
       - master
       - staging
       - lineageondemand
-      - featPolicyManagerAuthPolicies
+      - arpitpmauth
 
 jobs:
   build:
