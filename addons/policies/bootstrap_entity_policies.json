@@ -2862,18 +2862,15 @@
         },
         {
             "typeName": "AuthPolicy",
-            "customAttributes": {
-                "internalId": 121
-            },
             "attributes":
             {
-                "name": "CREATE_BUSINESS_POLICY",
-                "qualifiedName": "CREATE_BUSINESS_POLICY",
+                "name": "CUD_BUSINESS_POLICY",
+                "qualifiedName": "CUD_BUSINESS_POLICY",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -2892,15 +2889,14 @@
                 ],
                 "policyActions":
                 [
-                    "entity-create"
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
                 ]
             }
         },
         {
             "typeName": "AuthPolicy",
-            "customAttributes": {
-                "internalId": 121
-            },
             "attributes":
             {
                 "name": "READ_BUSINESS_POLICY",
@@ -2909,7 +2905,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -2917,6 +2913,8 @@
                 "policyRoles":
                 [
                     "$admin",
+                    "$guest",
+                    "$member",
                     "$api-token-default-access"
                 ],
                 "policyResourceCategory": "ENTITY",
@@ -2934,234 +2932,15 @@
         },
         {
             "typeName": "AuthPolicy",
-            "customAttributes": {
-                "internalId": 121
-            },
             "attributes":
             {
-                "name": "UPDATE_BUSINESS_POLICY",
-                "qualifiedName": "UPDATE_BUSINESS_POLICY",
+                "name": "CUD_BUSINESS_POLICY_EXCEPTION",
+                "qualifiedName": "CUD_BUSINESS_POLICY_EXCEPTION",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
-                "policyUsers":
-                [],
-                "policyGroups":
-                [],
-                "policyRoles":
-                [
-                    "$admin",
-                    "$api-token-default-access"
-                ],
-                "policyResourceCategory": "ENTITY",
-                "policyResources":
-                [
-                    "entity-type:BusinessPolicy",
-                    "entity-classification:*",
-                    "entity:*"
-                ],
-                "policyActions":
-                [
-                    "entity-update"
-                ]
-            }
-        },
-        {
-            "typeName": "AuthPolicy",
-            "customAttributes": {
-                "internalId": 121
-            },
-            "attributes":
-            {
-                "name": "DELETE_BUSINESS_POLICY",
-                "qualifiedName": "DELETE_BUSINESS_POLICY",
-                "policyCategory": "bootstrap",
-                "policySubCategory": "default",
-                "policyServiceName": "atlas",
-                "policyType": "allow",
-                "policyPriority": 1,
-                "policyUsers":
-                [],
-                "policyGroups":
-                [],
-                "policyRoles":
-                [
-                    "$admin",
-                    "$api-token-default-access"
-                ],
-                "policyResourceCategory": "ENTITY",
-                "policyResources":
-                [
-                    "entity-type:BusinessPolicy",
-                    "entity-classification:*",
-                    "entity:*"
-                ],
-                "policyActions":
-                [
-                    "entity-delete"
-                ]
-            }
-        },
-        {
-            "typeName": "AuthPolicy",
-            "customAttributes": {
-                "internalId": 122
-            },
-            "attributes":
-            {
-                "name": "CREATE_BUSINESS_POLICY_INCIDENT",
-                "qualifiedName": "CREATE_BUSINESS_POLICY_INCIDENT",
-                "policyCategory": "bootstrap",
-                "policySubCategory": "default",
-                "policyServiceName": "atlas",
-                "policyType": "allow",
-                "policyPriority": 1,
-                "policyUsers":
-                [],
-                "policyGroups":
-                [],
-                "policyRoles":
-                [
-                    "$admin",
-                    "$api-token-default-access"
-                ],
-                "policyResourceCategory": "ENTITY",
-                "policyResources":
-                [
-                    "entity-type:BusinessPolicyIncident",
-                    "entity-classification:*",
-                    "entity:*"
-                ],
-                "policyActions":
-                [
-                    "entity-create"
-                ]
-            }
-        },
-        {
-            "typeName": "AuthPolicy",
-            "customAttributes": {
-                "internalId": 122
-            },
-            "attributes":
-            {
-                "name": "READ_BUSINESS_POLICY_INCIDENT",
-                "qualifiedName": "READ_BUSINESS_POLICY_INCIDENT",
-                "policyCategory": "bootstrap",
-                "policySubCategory": "default",
-                "policyServiceName": "atlas",
-                "policyType": "allow",
-                "policyPriority": 1,
-                "policyUsers":
-                [],
-                "policyGroups":
-                [],
-                "policyRoles":
-                [
-                    "$admin",
-                    "$api-token-default-access"
-                ],
-                "policyResourceCategory": "ENTITY",
-                "policyResources":
-                [
-                    "entity-type:BusinessPolicyIncident",
-                    "entity-classification:*",
-                    "entity:*"
-                ],
-                "policyActions":
-                [
-                    "entity-read"
-                ]
-            }
-        },
-        {
-            "typeName": "AuthPolicy",
-            "customAttributes": {
-                "internalId": 122
-            },
-            "attributes":
-            {
-                "name": "UPDATE_BUSINESS_POLICY_INCIDENT",
-                "qualifiedName": "UPDATE_BUSINESS_POLICY_INCIDENT",
-                "policyCategory": "bootstrap",
-                "policySubCategory": "default",
-                "policyServiceName": "atlas",
-                "policyType": "allow",
-                "policyPriority": 1,
-                "policyUsers":
-                [],
-                "policyGroups":
-                [],
-                "policyRoles":
-                [
-                    "$admin",
-                    "$api-token-default-access"
-                ],
-                "policyResourceCategory": "ENTITY",
-                "policyResources":
-                [
-                    "entity-type:BusinessPolicyIncident",
-                    "entity-classification:*",
-                    "entity:*"
-                ],
-                "policyActions":
-                [
-                    "entity-update"
-                ]
-            }
-        },
-        {
-            "typeName": "AuthPolicy",
-            "customAttributes": {
-                "internalId": 122
-            },
-            "attributes":
-            {
-                "name": "DELETE_BUSINESS_POLICY_INCIDENT",
-                "qualifiedName": "DELETE_BUSINESS_POLICY_INCIDENT",
-                "policyCategory": "bootstrap",
-                "policySubCategory": "default",
-                "policyServiceName": "atlas",
-                "policyType": "allow",
-                "policyPriority": 1,
-                "policyUsers":
-                [],
-                "policyGroups":
-                [],
-                "policyRoles":
-                [
-                    "$admin",
-                    "$api-token-default-access"
-                ],
-                "policyResourceCategory": "ENTITY",
-                "policyResources":
-                [
-                    "entity-type:BusinessPolicyIncident",
-                    "entity-classification:*",
-                    "entity:*"
-                ],
-                "policyActions":
-                [
-                    "entity-delete"
-                ]
-            }
-        },
-        {
-            "typeName": "AuthPolicy",
-            "customAttributes": {
-                "internalId": 123
-            },
-            "attributes":
-            {
-                "name": "CREATE_BUSINESS_POLICY_EXCEPTION",
-                "qualifiedName": "CREATE_BUSINESS_POLICY_EXCEPTION",
-                "policyCategory": "bootstrap",
-                "policySubCategory": "default",
-                "policyServiceName": "atlas",
-                "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -3180,15 +2959,14 @@
                 ],
                 "policyActions":
                 [
-                    "entity-create"
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
                 ]
             }
         },
         {
             "typeName": "AuthPolicy",
-            "customAttributes": {
-                "internalId": 123
-            },
             "attributes":
             {
                 "name": "READ_BUSINESS_POLICY_EXCEPTION",
@@ -3197,7 +2975,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -3205,6 +2983,8 @@
                 "policyRoles":
                 [
                     "$admin",
+                    "$guest",
+                    "$member",
                     "$api-token-default-access"
                 ],
                 "policyResourceCategory": "ENTITY",
@@ -3222,18 +3002,15 @@
         },
         {
             "typeName": "AuthPolicy",
-            "customAttributes": {
-                "internalId": 123
-            },
             "attributes":
             {
-                "name": "UPDATE_BUSINESS_POLICY_EXCEPTION",
-                "qualifiedName": "UPDATE_BUSINESS_POLICY_EXCEPTION",
+                "name": "CUD_BUSINESS_POLICY_INCIDENT",
+                "qualifiedName": "CUD_BUSINESS_POLICY_INCIDENT",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -3246,30 +3023,27 @@
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
                 [
-                    "entity-type:BusinessPolicyException",
+                    "entity-type:BusinessPolicyIncident",
                     "entity-classification:*",
                     "entity:*"
                 ],
                 "policyActions":
                 [
-                    "entity-update"
+                    "entity-create"
                 ]
             }
         },
         {
             "typeName": "AuthPolicy",
-            "customAttributes": {
-                "internalId": 123
-            },
             "attributes":
             {
-                "name": "DELETE_BUSINESS_POLICY_EXCEPTION",
-                "qualifiedName": "DELETE_BUSINESS_POLICY_EXCEPTION",
+                "name": "READ_BUSINESS_POLICY_INCIDENT",
+                "qualifiedName": "READ_BUSINESS_POLICY_INCIDENT",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -3277,18 +3051,20 @@
                 "policyRoles":
                 [
                     "$admin",
+                    "$guest",
+                    "$member",
                     "$api-token-default-access"
                 ],
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
                 [
-                    "entity-type:BusinessPolicyException",
+                    "entity-type:BusinessPolicyIncident",
                     "entity-classification:*",
                     "entity:*"
                 ],
                 "policyActions":
                 [
-                    "entity-delete"
+                    "entity-read"
                 ]
             }
         }
