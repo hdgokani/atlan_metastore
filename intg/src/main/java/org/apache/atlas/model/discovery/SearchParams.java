@@ -19,7 +19,6 @@ public class SearchParams {
     boolean excludeMeanings;
     boolean excludeClassifications;
     boolean enableFullRestriction;
-    boolean returnQueryInResponse;
 
     RequestMetadata requestMetadata = new RequestMetadata();
     boolean showHighlights;
@@ -39,15 +38,7 @@ public class SearchParams {
     public void setQuery(String query) {
         setQuery(query);
     }
-
-    public boolean isReturnQueryInResponse() {
-        return returnQueryInResponse;
-    }
-
-    public void setReturnQueryInResponse(boolean returnQueryInResponse) {
-        this.returnQueryInResponse = returnQueryInResponse;
-    }
-
+    
     public void setAttributes(Set<String> attributes) {
         this.attributes = attributes;
     }
