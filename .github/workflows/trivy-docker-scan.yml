@@ -1,38 +1,42 @@
-name: build
+name: 'wiz-cli'
 on:
   push:
     branches:
-      - alpha
-      - beta
-      - development
-      - master
-      - lineageondemand
+      - wiz-image-ci
   
-
 jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-20.04
+  wiz-cli-image-scan:
+    name: 'Wiz-cli Image Scan'
+    runs-on: ubuntu-latest
+    env:
+      SCAN_PATH: "." # Set the relative path in the repo to build the image from
+      TAG: "docker-tag" # Set the tag to use for the image
+      POLICY: "Default vulnerabilities policy" # Set the desired Wiz CLI policy to use
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    # Checkout the repository to the GitHub Actions runner
+    - name: Check out repository
+      uses: actions/checkout@v2
 
-      - name: Run Trivy vulnerability scanner in IaC mode
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'config'
-          scan-ref: './Dockerfile'
-          hide-progress: false
-          template: '@/contrib/gitlab.tpl'
-          format: 'sarif'
-          #output: ''
-          output: 'trivy-results-docker.sarif'
-          exit-code: '1'
-          #ignore-unfixed: true
-          severity: 'CRITICAL,HIGH,MEDIUM'
+    # It's possible to skip this step if this job is scheduled after an image-build job.
+    # If that's the case, also set "Run wiz CLI docker image scan" step accordingly
+    - name: Build the Docker image
+      run: cd $SCAN_PATH && docker build . --tag $TAG # Configure to fit the params you use to build your image
 
-      - name: Upload Trivy Docker Scan Results To GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: 'trivy-results-docker.sarif'
+    - name: Download Wiz CLI
+      run: curl -o wizcli https://wizcli.app.wiz.io/latest/wizcli && chmod +x wizcli
+
+    - name: Authenticate to Wiz
+      run: ./wizcli auth --id "$WIZ_CLIENT_ID" --secret "$WIZ_CLIENT_SECRET"
+      env:
+        WIZ_CLIENT_ID: ${{ secrets.WIZ_CLIENT_ID }}
+        WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}
+
+    - name: Run wiz-cli docker image scan
+      run: ./wizcli docker scan --image $TAG --policy "$POLICY"
   
