@@ -644,22 +644,27 @@
         },
         {
             "typeName": "AuthPolicy",
-            "attributes": {
+            "attributes":
+            {
                 "name": "LINK_MESH_DATA_PRODUCT_TO_DATA_CONTRACT",
                 "qualifiedName": "LINK_MESH_DATA_PRODUCT_TO_DATA_CONTRACT",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
-                "policyUsers": [],
-                "policyGroups": [],
-                "policyRoles": [
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
                     "$admin",
                     "$api-token-default-access"
                 ],
                 "policyResourceCategory": "RELATIONSHIP",
-                "policyResources": [
+                "policyResources":
+                [
                     "end-one-entity-classification:*",
                     "end-two-entity-classification:*",
                     "end-one-entity:*",
@@ -668,7 +673,8 @@
                     "end-two-entity-type:DataContract",
                     "relationship-type:*"
                 ],
-                "policyActions": [
+                "policyActions":
+                [
                     "add-relationship",
                     "update-relationship",
                     "remove-relationship"
@@ -677,22 +683,27 @@
         },
         {
             "typeName": "AuthPolicy",
-            "attributes": {
+            "attributes":
+            {
                 "name": "LINK_MESH_DATA_DOMAIN_TO_DATA_PRODUCT",
                 "qualifiedName": "LINK_MESH_DATA_PRODUCT_DATA_CONTRACT",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
-                "policyUsers": [],
-                "policyGroups": [],
-                "policyRoles": [
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
                     "$admin",
                     "$api-token-default-access"
                 ],
                 "policyResourceCategory": "RELATIONSHIP",
-                "policyResources": [
+                "policyResources":
+                [
                     "end-one-entity-classification:*",
                     "end-two-entity-classification:*",
                     "end-one-entity:*",
@@ -701,7 +712,8 @@
                     "end-two-entity-type:DataProduct",
                     "relationship-type:*"
                 ],
-                "policyActions": [
+                "policyActions":
+                [
                     "add-relationship",
                     "update-relationship",
                     "remove-relationship"
@@ -710,22 +722,27 @@
         },
         {
             "typeName": "AuthPolicy",
-            "attributes": {
+            "attributes":
+            {
                 "name": "LINK_MESH_DATA_DOMAIN_TO_DATA_DOMAIN",
                 "qualifiedName": "LINK_MESH_DATA_DOMAIN_TO_DATA_DOMAIN",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
-                "policyUsers": [],
-                "policyGroups": [],
-                "policyRoles": [
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
                     "$admin",
                     "$api-token-default-access"
                 ],
                 "policyResourceCategory": "RELATIONSHIP",
-                "policyResources": [
+                "policyResources":
+                [
                     "end-one-entity-classification:*",
                     "end-two-entity-classification:*",
                     "end-one-entity:*",
@@ -734,7 +751,8 @@
                     "end-two-entity-type:DataDomain",
                     "relationship-type:*"
                 ],
-                "policyActions": [
+                "policyActions":
+                [
                     "add-relationship",
                     "update-relationship",
                     "remove-relationship"
@@ -743,22 +761,27 @@
         },
         {
             "typeName": "AuthPolicy",
-            "attributes": {
+            "attributes":
+            {
                 "name": "LINK_RESOURCES_TO_DATA_MESH",
                 "qualifiedName": "LINK_RESOURCES_TO_DATA_MESH",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
-                "policyUsers": [],
-                "policyGroups": [],
-                "policyRoles": [
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
                     "$admin",
                     "$api-token-default-access"
                 ],
                 "policyResourceCategory": "RELATIONSHIP",
-                "policyResources": [
+                "policyResources":
+                [
                     "end-one-entity-classification:*",
                     "end-two-entity-classification:*",
                     "end-one-entity:*",
@@ -770,7 +793,8 @@
                     "end-two-entity-type:Link",
                     "relationship-type:*"
                 ],
-                "policyActions": [
+                "policyActions":
+                [
                     "add-relationship",
                     "update-relationship",
                     "remove-relationship"
