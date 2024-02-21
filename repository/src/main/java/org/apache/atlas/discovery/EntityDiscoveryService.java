@@ -1000,14 +1000,14 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             String indexName = getIndexName(params);
 
             indexQuery = graph.elasticsearchQuery(indexName);
-            if (searchParams.getEnableFullRestriction() && !VERTEX_INDEX_NAME.equals(indexName)) {
+            if (searchParams.getEnableFullRestriction() && VERTEX_INDEX_NAME.equals(indexName)) {
                 addPreFiltersToSearchQuery(searchParams);
             }
             //LOG.info(searchParams.getQuery());
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
             RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
-            prepareSearchResult(ret, indexQueryResult, resultAttributes, true);
+            prepareSearchResult(ret, indexQueryResult, resultAttributes, true, indexName);
 
             ret.setAggregations(indexQueryResult.getAggregationMap());
             ret.setApproximateCount(indexQuery.vertexTotals());
@@ -1044,7 +1044,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
     }
 
-    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
+    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes,
+                                     boolean fetchCollapsedResults, String indexName) throws AtlasBaseException {
         SearchParams searchParams = ret.getSearchParameters();
         try {
             if(LOG.isDebugEnabled()){
@@ -1091,7 +1092,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
                         DirectIndexQueryResult indexQueryCollapsedResult = result.getCollapseVertices(collapseKey);
                         collapseRet.setApproximateCount(indexQueryCollapsedResult.getApproximateCount());
-                        prepareSearchResult(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false);
+                        prepareSearchResult(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false, indexName);
 
                         collapseRet.setSearchParameters(null);
                         collapse.put(collapseKey, collapseRet);
@@ -1111,7 +1112,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 throw e;
         }
 
-        if (!searchParams.getEnableFullRestriction()) {
+        if (!searchParams.getEnableFullRestriction() || !VERTEX_INDEX_NAME.equals(indexName)) {
             scrubSearchResults(ret, searchParams.getSuppressLogs());
         }
     }
