@@ -1009,6 +1009,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             LOG.info(searchParams.getQuery());
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
+            if (indexQueryResult == null) {
+                return ret;
+            }
             RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
             prepareSearchResult(ret, indexQueryResult, resultAttributes, true);
 
@@ -1055,6 +1058,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
             Iterator<Result> iterator = indexQueryResult.getIterator();
             boolean showSearchScore = searchParams.getShowSearchScore();
+            if (iterator == null) {
+                return;
+            }
 
             while (iterator.hasNext()) {
                 Result result = iterator.next();
