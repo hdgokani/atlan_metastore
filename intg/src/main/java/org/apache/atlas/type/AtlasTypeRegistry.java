@@ -85,6 +85,10 @@ public class AtlasTypeRegistry {
             LOG.debug("==> AtlasTypeRegistry.getType({})", typeName);
         }
 
+        if (typeName == null) {
+            return null;
+        }
+
         AtlasType ret = registryData.allTypes.getTypeByName(typeName);
 
         if (ret == null) {

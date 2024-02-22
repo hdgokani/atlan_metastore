@@ -23,6 +23,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -54,6 +55,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
@@ -127,8 +129,9 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
         validateParent(glossaryQualifiedName);
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(vertex));
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
-                "create entity: type=", entity.getTypeName());
+//        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
+//                "create entity: type=", entity.getTypeName());
+        AuthorizerUtils.verifyAccess(new AtlasEntityHeader(entity), AtlasPrivilege.ENTITY_CREATE);
 
         validateChildren(entity, null);
 
@@ -273,6 +276,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
             //check duplicate term name
             termExists(termName, targetGlossaryQualifiedName);
+            ensureOnlyOneCategoryIsAssociated(termVertex);
 
             String currentTermQualifiedName = termVertex.getProperty(QUALIFIED_NAME, String.class);
             String updatedTermQualifiedName = currentTermQualifiedName.replace(sourceGlossaryQualifiedName, targetGlossaryQualifiedName);
@@ -306,6 +310,15 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             LOG.info("Moved child term {} to Glossary {}", termName, targetGlossaryQualifiedName);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    private void ensureOnlyOneCategoryIsAssociated(AtlasVertex vertex) throws AtlasBaseException {
+        final Integer numOfCategoryEdges = GraphHelper.getCountOfCategoryEdges(vertex);
+
+        if(numOfCategoryEdges>1) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot move term with multiple " +
+                        "categories associated to another glossary");
         }
     }
 

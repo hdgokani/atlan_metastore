@@ -21,6 +21,7 @@ package org.apache.atlas.repository.store.bootstrap;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -42,7 +43,11 @@ import javax.inject.Inject;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Component
 @Order(9)
@@ -68,6 +73,12 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
 
             if ("atlas".equalsIgnoreCase(authorizer)) {
                 loadBootstrapAuthPolicies();
+                if (AuthorizerUtils.isUseAbacAuthorizer()) {
+                    boolean overridePolicies = ApplicationProperties.get().getBoolean("atlas.authorizer.policy.override", false);
+                    if (overridePolicies) {
+                        overrideBootstrapAuthPolicies();
+                    }
+                }
             } else {
                 LOG.info("AuthPoliciesBootstrapper: startInternal: Skipping as not needed");
             }
@@ -94,6 +105,20 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
         }
 
         LOG.info("<== AuthPoliciesBootstrapper.loadBootstrapAuthPolicies()");
+    }
+
+    private void overrideBootstrapAuthPolicies() {
+        LOG.info("==> AuthPoliciesBootstrapper.overrideBootstrapAuthPolicies()");
+        RequestContext.get().setSkipAuthorizationCheck(true);
+        try {
+            String atlasHomeDir  = System.getProperty("atlas.home");
+            String policiesDirName = (StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "override-policies";
+            File topPoliciesDir  = new File(policiesDirName);
+            loadPoliciesInFolder(topPoliciesDir);
+        } finally {
+            RequestContext.get().setSkipAuthorizationCheck(false);
+        }
+        LOG.info("<== AuthPoliciesBootstrapper.overrideBootstrapAuthPolicies()");
     }
 
     private void loadPoliciesInFolder (File folder) {
