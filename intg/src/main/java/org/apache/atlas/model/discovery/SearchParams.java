@@ -21,6 +21,8 @@ public class SearchParams {
     boolean useAccessControlv2;
 
     RequestMetadata requestMetadata = new RequestMetadata();
+
+    Async async = new Async();
     boolean showHighlights;
 
     public String getQuery() {
@@ -123,6 +125,30 @@ public class SearchParams {
         this.requestMetadata = requestMetadata;
     }
 
+    public Async getAsync() {
+        return async;
+    }
+
+    public void setAsync(Async async) {
+        this.async = async;
+    }
+
+    public boolean isCallAsync() {
+        return async.getIsCallAsync();
+    }
+
+    public String getSearchContextId() {
+        return async.getSearchContextId();
+    }
+
+    public Integer getSearchContextSequenceNo() {
+        return async.getSearchContextSequenceNo();
+    }
+
+    public Long getRequestTimeoutInSecs() {
+        return async.getRequestTimeoutInSecs();
+    }
+
     public String getSearchInput() {
         return this.requestMetadata.getSearchInput();
     }
@@ -131,30 +157,11 @@ public class SearchParams {
         return showHighlights;
     }
 
-    public boolean isAsync() {
-        return this.requestMetadata.async;
-    }
 
-    public Long getAsyncRequestTimeoutInSecs() {
-        return this.requestMetadata.asyncRequestTimeoutInSecs;
-    }
-
-    public String getAsyncSearchContextId() {
-        return this.requestMetadata.asyncSearchContextId;
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown=true)
     static class RequestMetadata {
         private String searchInput;
         private Set<String> utmTags;
         private boolean saveSearchLog;
-
-        private boolean async;
-
-        private Long asyncRequestTimeoutInSecs;
-
-        private String asyncSearchContextId;
-
 
         public String getSearchInput() {
             return searchInput;
@@ -179,17 +186,32 @@ public class SearchParams {
         public void setSaveSearchLog(boolean saveSearchLog) {
             this.saveSearchLog = saveSearchLog;
         }
+    }
 
-        public boolean isAsync() {
-            return async;
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    static class Async {
+        private boolean isCallAsync;
+
+        private String searchContextId;
+
+        private Integer searchContextSequenceNo;
+
+        private Long requestTimeoutInSecs;
+
+        public boolean getIsCallAsync() {
+            return isCallAsync;
         }
 
-        public Long getAsyncRequestTimeoutInSecs() {
-            return asyncRequestTimeoutInSecs;
+        public String getSearchContextId() {
+            return searchContextId;
         }
 
-        public String getAsyncSearchContextId() {
-            return asyncSearchContextId;
+        public Integer getSearchContextSequenceNo() {
+            return searchContextSequenceNo;
+        }
+
+        public Long getRequestTimeoutInSecs() {
+            return requestTimeoutInSecs;
         }
     }
 
