@@ -18,7 +18,7 @@ public class SearchParams {
     boolean suppressLogs;
     boolean excludeMeanings;
     boolean excludeClassifications;
-    boolean useAccessControlv2;
+    boolean enableFullRestriction;
 
     RequestMetadata requestMetadata = new RequestMetadata();
 
@@ -29,8 +29,8 @@ public class SearchParams {
         return getQuery();
     }
 
-    public boolean getUseAccessControlv2() {
-        return useAccessControlv2;
+    public boolean getEnableFullRestriction() {
+        return enableFullRestriction;
     }
 
     public Set<String> getAttributes() {

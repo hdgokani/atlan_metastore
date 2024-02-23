@@ -178,7 +178,7 @@ public class RangerBasePlugin {
 
 	public void setRoles(RangerRoles roles) {
 		this.roles = roles;
-		UsersStore.getInstance().setAllRoles(roles);
+		UsersStore.setAllRoles(roles);
 
 		RangerPolicyEngine policyEngine = this.policyEngine;
 
@@ -195,7 +195,7 @@ public class RangerBasePlugin {
 
 	public void setUserStore(RangerUserStore userStore) {
 		this.userStore = userStore;
-		UsersStore.getInstance().setUserStore(userStore);
+		UsersStore.setUserStore(userStore);
 
 		// RangerPolicyEngine policyEngine = this.policyEngine;
 
@@ -305,9 +305,9 @@ public class RangerBasePlugin {
 			List<RangerPolicy> tagPolicies = policies.getTagPolicies().getPolicies();
 			List<RangerPolicy> abacPolicies = policies.getAbacPolicies().getPolicies();
 
-			PoliciesStore.getInstance().setResourcePolicies(resourcePolicies);
-			PoliciesStore.getInstance().setTagPolicies(tagPolicies);
-			PoliciesStore.getInstance().setAbacPolicies(abacPolicies);
+			PoliciesStore.setAbacPolicies(abacPolicies);
+			PoliciesStore.setResourcePolicies(resourcePolicies);
+			PoliciesStore.setTagPolicies(tagPolicies);
 		}
 
 		// guard against catastrophic failure during policy engine Initialization or

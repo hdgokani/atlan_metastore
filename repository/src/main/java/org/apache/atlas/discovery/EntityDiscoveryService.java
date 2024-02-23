@@ -25,7 +25,6 @@ import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
-import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.authorizer.NewAuthorizerUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
@@ -1003,10 +1002,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             String indexName = getIndexName(params);
 
             indexQuery = graph.elasticsearchQuery(indexName);
-            if (AuthorizerUtils.isUseAbacAuthorizer() && searchParams.getUseAccessControlv2()) {
+            if (searchParams.getEnableFullRestriction()) {
                 addPreFiltersToSearchQuery(searchParams);
             }
-            LOG.info(searchParams.getQuery());
+            //LOG.info(searchParams.getQuery());
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
             if (indexQueryResult == null) {
@@ -1120,7 +1119,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 throw e;
         }
 
-        if (!searchParams.getUseAccessControlv2()) {
+        if (!searchParams.getEnableFullRestriction()) {
             scrubSearchResults(ret, searchParams.getSuppressLogs());
         }
     }

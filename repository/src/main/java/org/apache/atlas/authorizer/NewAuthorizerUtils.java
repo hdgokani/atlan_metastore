@@ -1,13 +1,9 @@
 package org.apache.atlas.authorizer;
 
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.audit.provider.AuditHandler;
 import org.apache.atlas.authorize.AtlasAccessorRequest;
 import org.apache.atlas.authorize.AtlasAccessorResponse;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
@@ -20,7 +16,6 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.plugin.model.RangerServiceDef;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -55,7 +50,7 @@ public class NewAuthorizerUtils {
 
     @Inject
     public NewAuthorizerUtils(AtlasGraph graph, AtlasTypeRegistry typeRegistry) throws IOException {
-        this.typeRegistry = typeRegistry;
+        NewAuthorizerUtils.typeRegistry = typeRegistry;
 
         SERVICE_DEF_ATLAS = getResourceAsObject("/service-defs/atlas-servicedef-atlas.json", RangerServiceDef.class);
     }

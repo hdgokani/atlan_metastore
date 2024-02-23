@@ -84,6 +84,7 @@ public class IndexSearchParams extends SearchParams {
                 ", queryString='" + queryString + '\'' +
                 ", allowDeletedRelations=" + allowDeletedRelations +
                 ", utmTags="+ getUtmTags() +
+                ", enableFullRestriction="+ enableFullRestriction +
                 '}';
     }
 }
