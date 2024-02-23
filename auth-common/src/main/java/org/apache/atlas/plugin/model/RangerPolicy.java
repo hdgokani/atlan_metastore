@@ -85,6 +85,8 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
     private String                            zoneName;
     private Boolean                           isDenyAllElse;
     private Map<String, String> 			  attributes;
+    private String 			                  policyFilterCriteria;
+    private String 			                  policyResourceCategory;
 
     public RangerPolicy() {
         this(null, null, null, null, null, null, null, null, null, null, null);
@@ -138,6 +140,8 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
         setZoneName(zoneName);
         setConditions(conditions);
         setIsDenyAllElse(isDenyAllElse);
+        setPolicyFilterCriteria(null);
+        setPolicyResourceCategory(null);
 
     }
 
@@ -168,6 +172,8 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
         setPolicyLabels(other.getPolicyLabels());
         setZoneName(other.getZoneName());
         setIsDenyAllElse(other.getIsDenyAllElse());
+        setPolicyFilterCriteria(other.getPolicyFilterCriteria());
+        setPolicyResourceCategory(other.getPolicyResourceCategory());
     }
 
     public Map<String, String> getAttributes() {
@@ -534,6 +540,22 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
         this.isDenyAllElse = isDenyAllElse == null ? Boolean.FALSE : isDenyAllElse;
     }
 
+    public String getPolicyFilterCriteria() {
+        return policyFilterCriteria;
+    }
+
+    public void setPolicyFilterCriteria(String policyFilterCriteria) {
+        this.policyFilterCriteria = policyFilterCriteria;
+    }
+
+    public String getPolicyResourceCategory() {
+        return policyResourceCategory;
+    }
+
+    public void setPolicyResourceCategory(String policyResourceCategory) {
+        this.policyResourceCategory = policyResourceCategory;
+    }
+
     @Override
     public String toString( ) {
         StringBuilder sb = new StringBuilder();
@@ -666,6 +688,10 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
             }
         }
         sb.append(", zoneName=").append(zoneName);
+
+        sb.append(", policyFilterCriteria=").append(policyFilterCriteria);
+
+        sb.append(", policyResourceCategory=").append(policyResourceCategory);
 
         sb.append(", isDenyAllElse={").append(isDenyAllElse).append("} ");
 
