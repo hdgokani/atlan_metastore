@@ -26,35 +26,24 @@ public class PoliciesStore {
     private static List<RangerPolicy> tagPolicies;
     private static List<RangerPolicy> abacPolicies;
 
-    private static PoliciesStore policiesStore;
-
-    public static PoliciesStore getInstance() {
-        synchronized (PoliciesStore.class) {
-            if (policiesStore == null) {
-                policiesStore = new PoliciesStore();
-            }
-            return policiesStore;
-        }
-    }
-
-    public void setResourcePolicies(List<RangerPolicy> resourcePolicies) {
-        this.resourcePolicies = resourcePolicies;
+    public static void setResourcePolicies(List<RangerPolicy> resourcePolicies) {
+        PoliciesStore.resourcePolicies = resourcePolicies;
     }
 
     private static List<RangerPolicy> getResourcePolicies() {
         return resourcePolicies;
     }
 
-    public void setTagPolicies(List<RangerPolicy> tagPolicies) {
-        this.tagPolicies = tagPolicies;
+    public static void setTagPolicies(List<RangerPolicy> tagPolicies) {
+        PoliciesStore.tagPolicies = tagPolicies;
     }
 
     private static List<RangerPolicy> getTagPolicies() {
         return tagPolicies;
     }
 
-    public void setAbacPolicies(List<RangerPolicy> abacPolicies) {
-        this.abacPolicies = abacPolicies;
+    public static void setAbacPolicies(List<RangerPolicy> abacPolicies) {
+        PoliciesStore.abacPolicies = abacPolicies;
     }
 
     private static List<RangerPolicy> getAbacPolicies() {

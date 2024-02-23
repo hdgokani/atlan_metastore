@@ -72,7 +72,7 @@ public class ListAuthorizer {
             shouldClauses.addAll(getDSLForAbacPolicies(abacPolicies));
         }
 
-        LOG.info("Applicable policies to user {}", resourcePolicies.size() + tagPolicies.size() + abacPolicies.size());
+        //LOG.info("Applicable policies to user {}", resourcePolicies.size() + tagPolicies.size());
 
         Map<String, Object> boolClause = new HashMap<>();
         if (shouldClauses.isEmpty()) {
@@ -111,7 +111,7 @@ public class ListAuthorizer {
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
 
         for (RangerPolicy policy : policies) {
-            if (!policy.getResources().isEmpty() && "ENTITY".equals(policy.getPolicyResourceCategory())) {
+            if (!policy.getResources().isEmpty()) {
                 List<String> entities = policy.getResources().get("entity").getValues();
                 List<String> entityTypesRaw = policy.getResources().get("entity-type").getValues();
 
@@ -203,11 +203,11 @@ public class ListAuthorizer {
     public static Map<String, Object> getDSLForTagPolicies(List<RangerPolicy> policies) {
         // To reduce the number of clauses
         Set<String> allTags = new HashSet<>();
-        LOG.info("Found {} tag policies", policies.size());
+        //LOG.info("Found {} tag policies", policies.size());
 
         for (RangerPolicy policy : policies) {
             if (!policy.getResources().isEmpty()) {
-                LOG.info("policy {}", AtlasType.toJson(policy));
+                //LOG.info("policy {}", AtlasType.toJson(policy));
                 List<String> tags = policy.getResources().get("tag").getValues();
                 if (!tags.isEmpty()) {
                     allTags.addAll(tags);
@@ -286,12 +286,11 @@ public class ListAuthorizer {
 
     public static List<Map<String, Object>> getDSLForTagPoliciesPerPolicy(List<RangerPolicy> policies) {
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
-
-        LOG.info("Found {} tag policies", policies.size());
+        //LOG.info("Found {} tag policies", policies.size());
 
         for (RangerPolicy policy : policies) {
             if (!policy.getResources().isEmpty()) {
-                LOG.info("policy {}", AtlasType.toJson(policy));
+                //LOG.info("policy {}", AtlasType.toJson(policy));
                 List<String> tags = policy.getResources().get("tag").getValues();
                 if (!tags.isEmpty()) {
 

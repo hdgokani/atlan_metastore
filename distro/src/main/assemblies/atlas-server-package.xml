@@ -166,7 +166,7 @@
             <directory>../addons/override-policies</directory>
             <outputDirectory>override-policies</outputDirectory>
         </fileSet>
-
+        
     </fileSets>
 
     <files>

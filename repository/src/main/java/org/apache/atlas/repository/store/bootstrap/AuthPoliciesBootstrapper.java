@@ -73,11 +73,9 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
 
             if ("atlas".equalsIgnoreCase(authorizer)) {
                 loadBootstrapAuthPolicies();
-                if (AuthorizerUtils.isUseAbacAuthorizer()) {
-                    boolean overridePolicies = ApplicationProperties.get().getBoolean("atlas.authorizer.policy.override", false);
-                    if (overridePolicies) {
-                        overrideBootstrapAuthPolicies();
-                    }
+                boolean overridePolicies = ApplicationProperties.get().getBoolean("atlas.authorizer.policy.override", false);
+                if (overridePolicies) {
+                    overrideBootstrapAuthPolicies();
                 }
             } else {
                 LOG.info("AuthPoliciesBootstrapper: startInternal: Skipping as not needed");

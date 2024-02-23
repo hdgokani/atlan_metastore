@@ -14,29 +14,17 @@ public class UsersStore {
 
     private static RangerUserStore userStore;
     private static RangerRoles allRoles;
-    private static UsersStore usersStore;
 
-    public static UsersStore getInstance() {
-        synchronized (UsersStore.class) {
-            if (usersStore == null) {
-                usersStore = new UsersStore();
-            }
-            return usersStore;
-        }
-    }
-
-    public UsersStore() {}
-
-    public void setUserStore(RangerUserStore userStore) {
-        this.userStore = userStore;
+    public static void setUserStore(RangerUserStore userStore) {
+        UsersStore.userStore = userStore;
     }
 
     public static RangerUserStore getUserStore() {
         return userStore;
     }
 
-    public void setAllRoles(RangerRoles allRoles) {
-        this.allRoles = allRoles;
+    public static void setAllRoles(RangerRoles allRoles) {
+        UsersStore.allRoles = allRoles;
     }
 
     public static RangerRoles getAllRoles() {
