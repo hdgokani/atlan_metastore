@@ -3205,7 +3205,9 @@
                     "entity:*"
                 ],
                 "policyActions": [
-                    "entity-create"
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
                 ]
             }
         },
