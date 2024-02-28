@@ -2871,7 +2871,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -2886,7 +2886,6 @@
                 [
                     "entity-type:DataContract",
                     "entity-type:DataDomain",
-                    "entity-type:DataProduct",
                     "entity-classification:*",
                     "entity:*"
                 ],
@@ -2910,7 +2909,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -2948,7 +2947,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -2963,7 +2962,6 @@
                 [
                     "entity-type:DataContract",
                     "entity-type:DataDomain",
-                    "entity-type:DataProduct",
                     "entity-classification:*",
                     "entity:*"
                 ],
@@ -2977,16 +2975,18 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "DATA_MESH_TAG_DOMAIN_PRODUCT",
-                "qualifiedName": "DATA_MESH_TAG_DOMAIN_PRODUCT",
-                "description": "Allows user to add/update/remove tags on data mesh assets",
+                "name": "CUD_DATA_PRODUCT_ENTITY",
+                "qualifiedName": "CUD_DATA_PRODUCT_ENTITY",
+                "description": "Allows user to perform cud operation on DataProduct assets.",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
-                "policyUsers": [],
-                "policyGroups": [],
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
                 "policyRoles":
                 [
                     "$admin",
@@ -2995,18 +2995,14 @@
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
                 [
-                    "entity-type:DataDomain",
                     "entity-type:DataProduct",
-                    "entity-type:DataContract",
-                    "entity-classification:*",
-                    "entity:*",
-                    "classification:*"
+                    "entity:*"
                 ],
                 "policyActions":
                 [
-                    "entity-add-classification",
-                    "entity-update-classification",
-                    "entity-remove-classification"
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
                 ]
             }
         }

@@ -652,7 +652,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -686,12 +686,12 @@
             "attributes":
             {
                 "name": "LINK_MESH_DATA_DOMAIN_TO_DATA_PRODUCT",
-                "qualifiedName": "LINK_MESH_DATA_PRODUCT_DATA_CONTRACT",
+                "qualifiedName": "LINK_MESH_DATA_DOMAIN_TO_DATA_PRODUCT",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -730,7 +730,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -769,7 +769,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
