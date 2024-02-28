@@ -2977,7 +2977,7 @@
             {
                 "name": "CUD_DATA_PRODUCT_ENTITY",
                 "qualifiedName": "CUD_DATA_PRODUCT_ENTITY",
-                "description": "Allows user to perform cud operation on data mesh assets",
+                "description": "Allows user to perform cud operation on DataProduct assets.",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
