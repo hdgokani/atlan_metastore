@@ -498,5 +498,17 @@
 	],
 	"options": {
 		"enableDenyAndExceptionsInPolicies": "true"
-	}
+	},
+
+	"policyConditions":
+	[
+		{
+			"itemId":2,
+			"name":"expression",
+			"evaluator": "org.apache.atlas.plugin.conditionevaluator.RangerScriptConditionEvaluator",
+			"evaluatorOptions" : {"engineName":"JavaScript", "ui.isMultiline":"true"},
+			"label":"Enter boolean expression",
+			"description": "Boolean expression"
+		}
+	]
 }

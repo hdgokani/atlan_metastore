@@ -686,9 +686,12 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                 rangerResource.setValue(RESOURCE_CLASSIFICATION, request.getClassificationTypeAndAllSuperTypes(classification));
             }
 
+            Map<String, Object> contextOjb = rangerRequest.getContext();
+            contextOjb.put("entityAttributes", request.getEntity().getAttributes());
+
             if (CollectionUtils.isNotEmpty(request.getEntityClassifications())) {
                 Set<AtlasClassification> entityClassifications = request.getEntityClassifications();
-                Map<String, Object> contextOjb = rangerRequest.getContext();
+
 
                 Set<RangerTagForEval> rangerTagForEval = getRangerServiceTag(entityClassifications);
 

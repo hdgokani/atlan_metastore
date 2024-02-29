@@ -152,12 +152,14 @@ public class RangerScriptConditionEvaluator extends RangerAbstractConditionEvalu
 				RangerScriptExecutionContext context    = new RangerScriptExecutionContext(readOnlyRequest);
 				RangerTagForEval             currentTag = context.getCurrentTag();
 				Map<String, String>          tagAttribs = currentTag != null ? currentTag.getAttributes() : Collections.emptyMap();
+				Map<String, String>          attributes = (Map<String, String>) readOnlyRequest.getContext().get("entityAttributes");
 
 				Bindings bindings = scriptEngine.createBindings();
 
 				bindings.put("ctx", context);
 				bindings.put("tag", currentTag);
 				bindings.put("tagAttr", tagAttribs);
+				bindings.put("attributes", attributes);
 
 				if (enableJsonCtx) {
 					bindings.put(SCRIPT_VAR_CONTEXT_JSON, context.toJson());

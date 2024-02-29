@@ -1499,7 +1499,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         if (skipAuthBaseConditions && (skipAuthMeaningsUpdate || skipAuthStarredDetailsUpdate)) {
                             //do nothing, only diff is relationshipAttributes.meanings or starred, allow update
                         } else {
-                            AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, entityHeader,"update entity: type=" + entity.getTypeName());
+                            AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, new AtlasEntityHeader(entityRetriever.toAtlasEntity(entityHeader.getGuid())), "update entity: type=" + entity.getTypeName());
                         }
                     }
                 }
