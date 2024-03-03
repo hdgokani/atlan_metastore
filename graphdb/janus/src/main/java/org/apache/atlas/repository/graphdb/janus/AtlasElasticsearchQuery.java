@@ -387,6 +387,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
 
         Request request = new Request("GET", endPoint);
+        request.addParameter("request_cache", "true");
         request.setEntity(entity);
 
         Response response;
