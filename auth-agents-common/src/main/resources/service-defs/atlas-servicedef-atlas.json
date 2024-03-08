@@ -316,6 +316,26 @@
 				"entity-update-classification",
 				"entity-remove-classification"
 			]
+		},
+		{
+			"itemId": 17,
+			"name": "entityAttr",
+			"type": "string",
+			"level": 40,
+			"parent": "entity",
+			"mandatory": false,
+			"isValidLeaf": true,
+			"lookupSupported": true,
+			"recursiveSupported": true,
+			"excludesSupported": true,
+			"matcher": "org.apache.atlas.plugin.resourcematcher.RangerEntityResourceMatcher",
+			"matcherOptions": {
+				"wildCard": "true",
+				"ignoreCase": "false"
+			},
+			"label": "Entity",
+			"description": "Entity",
+			"accessTypeRestrictions": ["entity-read", "entity-create", "entity-update", "entity-delete"]
 		}
 	],
 	"accessTypes": [

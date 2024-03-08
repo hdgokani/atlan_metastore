@@ -402,7 +402,12 @@ public class RangerResourceTrie<T extends RangerPolicyResourceEvaluator> {
                     ret.addWildcardEvaluator(evaluator);
                 } else {
                     if (CollectionUtils.isNotEmpty(policyResource.getValues())) {
+                        boolean isEntityAttrs = resourceDef.getName().equals("entityAttr");
                         for (String resource : policyResource.getValues()) {
+                            if (isEntityAttrs && !resource.equals("*")) {
+                                resource = resource.split(":")[1];
+                            }
+
                             if (!isMultiThreaded) {
                                 insert(ret, resource, policyResource.getIsRecursive(), evaluator);
                             } else {

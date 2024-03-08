@@ -91,6 +91,9 @@ public class RangerDefaultPolicyResourceMatcher implements RangerPolicyResourceM
     @Override
     public void setPolicyResources(Map<String, RangerPolicyResource> policyResources, String policyType) {
         this.policyResources = policyResources;
+        if (this.policyResources.keySet().contains("entity-type") && !this.policyResources.keySet().contains("entityAttr")) {
+            this.policyResources.put("entityAttr", new RangerPolicyResource("*"));
+        }
         this.policyType = policyType;
     }
 

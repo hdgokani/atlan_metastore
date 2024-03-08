@@ -714,43 +714,45 @@ public class RangerPolicyRepository {
                 Set<RangerPolicyEvaluator> serviceResourceMatchersForResource = trie.getEvaluatorsForResource(resource.getValue(resourceName), request.getResourceMatchingScope());
                 Set<RangerPolicyEvaluator> inheritedResourceMatchers = trie.getInheritedEvaluators();
 
-                if (smallestList != null) {
-                    if (CollectionUtils.isEmpty(inheritedResourceMatchers) && CollectionUtils.isEmpty(serviceResourceMatchersForResource)) {
-                        smallestList = null;
-                    } else if (CollectionUtils.isEmpty(inheritedResourceMatchers)) {
-                        smallestList.retainAll(serviceResourceMatchersForResource);
-                    } else if (CollectionUtils.isEmpty(serviceResourceMatchersForResource)) {
-                        smallestList.retainAll(inheritedResourceMatchers);
-                    } else {
-                        Set<RangerPolicyEvaluator> smaller, bigger;
-                        if (serviceResourceMatchersForResource.size() < inheritedResourceMatchers.size()) {
-                            smaller = serviceResourceMatchersForResource;
-                            bigger = inheritedResourceMatchers;
+                if (serviceResourceMatchersForResource != null) {
+                    if (smallestList != null) {
+                        if (CollectionUtils.isEmpty(inheritedResourceMatchers) && CollectionUtils.isEmpty(serviceResourceMatchersForResource)) {
+                            smallestList = null;
+                        } else if (CollectionUtils.isEmpty(inheritedResourceMatchers)) {
+                            smallestList.retainAll(serviceResourceMatchersForResource);
+                        } else if (CollectionUtils.isEmpty(serviceResourceMatchersForResource)) {
+                            smallestList.retainAll(inheritedResourceMatchers);
                         } else {
-                            smaller = inheritedResourceMatchers;
-                            bigger = serviceResourceMatchersForResource;
-                        }
-                        Set<RangerPolicyEvaluator> tmp = new HashSet<>();
-                        if (smallestList.size() < smaller.size()) {
-                            smallestList.stream().filter(smaller::contains).forEach(tmp::add);
-                            smallestList.stream().filter(bigger::contains).forEach(tmp::add);
-                        } else {
-                            smaller.stream().filter(smallestList::contains).forEach(tmp::add);
-                            if (smallestList.size() < bigger.size()) {
+                            Set<RangerPolicyEvaluator> smaller, bigger;
+                            if (serviceResourceMatchersForResource.size() < inheritedResourceMatchers.size()) {
+                                smaller = serviceResourceMatchersForResource;
+                                bigger = inheritedResourceMatchers;
+                            } else {
+                                smaller = inheritedResourceMatchers;
+                                bigger = serviceResourceMatchersForResource;
+                            }
+                            Set<RangerPolicyEvaluator> tmp = new HashSet<>();
+                            if (smallestList.size() < smaller.size()) {
+                                smallestList.stream().filter(smaller::contains).forEach(tmp::add);
                                 smallestList.stream().filter(bigger::contains).forEach(tmp::add);
                             } else {
-                                bigger.stream().filter(smallestList::contains).forEach(tmp::add);
+                                smaller.stream().filter(smallestList::contains).forEach(tmp::add);
+                                if (smallestList.size() < bigger.size()) {
+                                    smallestList.stream().filter(bigger::contains).forEach(tmp::add);
+                                } else {
+                                    bigger.stream().filter(smallestList::contains).forEach(tmp::add);
+                                }
                             }
+                            smallestList = tmp;
                         }
-                        smallestList = tmp;
-                    }
-                } else {
-                    if (CollectionUtils.isEmpty(inheritedResourceMatchers) || CollectionUtils.isEmpty(serviceResourceMatchersForResource)) {
-                        Set<RangerPolicyEvaluator> tmp = CollectionUtils.isEmpty(inheritedResourceMatchers) ? serviceResourceMatchersForResource : inheritedResourceMatchers;
-                        smallestList = resourceKeys.size() == 1 || CollectionUtils.isEmpty(tmp) ? tmp : new HashSet<>(tmp);
                     } else {
-                        smallestList = new HashSet<>(serviceResourceMatchersForResource);
-                        smallestList.addAll(inheritedResourceMatchers);
+                        if (CollectionUtils.isEmpty(inheritedResourceMatchers) || CollectionUtils.isEmpty(serviceResourceMatchersForResource)) {
+                            Set<RangerPolicyEvaluator> tmp = CollectionUtils.isEmpty(inheritedResourceMatchers) ? serviceResourceMatchersForResource : inheritedResourceMatchers;
+                            smallestList = resourceKeys.size() == 1 || CollectionUtils.isEmpty(tmp) ? tmp : new HashSet<>(tmp);
+                        } else {
+                            smallestList = new HashSet<>(serviceResourceMatchersForResource);
+                            smallestList.addAll(inheritedResourceMatchers);
+                        }
                     }
                 }
 

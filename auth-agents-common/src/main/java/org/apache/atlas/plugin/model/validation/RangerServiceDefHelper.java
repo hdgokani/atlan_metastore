@@ -533,6 +533,10 @@ public class RangerServiceDefHelper {
                 }
             }
 
+			if (sinks.contains("entityAttr")) {
+				hierarchies.add(Lists.newArrayList("entityAttr"));
+			}
+
             return convertHierarchies(hierarchies, resourceMap);
         }
 		

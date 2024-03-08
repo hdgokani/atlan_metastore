@@ -61,6 +61,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.authorization.atlas.authorizer.RangerAtlasAuthorizerUtil.*;
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserGroups;
@@ -667,6 +668,15 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
 
             rangerResource.setValue(RESOURCE_ENTITY_TYPE, entityTypes);
             rangerResource.setValue(RESOURCE_ENTITY_ID, entityId);
+            //Set<String> attributes = request.getEntity().getAttributes().entrySet().stream().map(x -> x.getKey() + ":" + x.getValue()).collect(Collectors.toSet());
+            //rangerResource.setValue("entityAttr", attributes);
+
+            rangerResource.setValue("entityAttr", request.getEntity().getAttributes());
+
+            //rangerResource.setValue("certificateStatus",  request.getEntity().getAttribute("certificateStatus"));
+            //rangerResource.setValue("__typeName",  request.getEntity().getTypeName());
+            //rangerResource.setValue("adminUsers",  request.getEntity().getAttribute("adminUsers"));
+            //rangerResource.setValue("connectionQualifiedName", "connectionQualifiedName:" + (String) request.getEntity().getAttribute("connectionQualifiedName"));
             rangerResource.setOwnerUser(ownerUser);
             rangerRequest.setAccessType(action);
             rangerRequest.setAction(action);

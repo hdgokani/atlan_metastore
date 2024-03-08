@@ -33,6 +33,7 @@ abstract class ResourceMatcher {
     private static final Log LOG = LogFactory.getLog(ResourceMatcher.class);
 
     protected final String value;
+    protected String attrName;
     protected StringTokenReplacer tokenReplacer;
 
     static final int DYNAMIC_EVALUATION_PENALTY = 8;
