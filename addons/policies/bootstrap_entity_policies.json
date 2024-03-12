@@ -2884,7 +2884,7 @@
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
                 [
-                    "entity-type:DataContract",
+
                     "entity-type:DataDomain",
                     "entity-classification:*",
                     "entity:*"
@@ -2922,7 +2922,6 @@
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
                 [
-                    "entity-type:DataContract",
                     "entity-type:DataDomain",
                     "entity-type:DataProduct",
                     "entity-classification:*",
@@ -2960,7 +2959,7 @@
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
                 [
-                    "entity-type:DataContract",
+
                     "entity-type:DataDomain",
                     "entity-classification:*",
                     "entity:*"
