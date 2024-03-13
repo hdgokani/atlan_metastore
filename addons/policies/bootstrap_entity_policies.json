@@ -2925,7 +2925,8 @@
                     "entity-type:DataDomain",
                     "entity-type:DataProduct",
                     "entity-classification:*",
-                    "entity:*"
+                    "entity:*",
+                    "classification:*"
                 ],
                 "policyActions":
                 [
