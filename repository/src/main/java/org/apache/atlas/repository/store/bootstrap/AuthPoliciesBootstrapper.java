@@ -21,7 +21,6 @@ package org.apache.atlas.repository.store.bootstrap;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -43,11 +42,7 @@ import javax.inject.Inject;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @Component
 @Order(9)
@@ -73,6 +68,7 @@ public class AuthPoliciesBootstrapper implements ActiveStateChangeHandler, Servi
 
             if ("atlas".equalsIgnoreCase(authorizer)) {
                 loadBootstrapAuthPolicies();
+
                 boolean overridePolicies = ApplicationProperties.get().getBoolean("atlas.authorizer.policy.override", false);
                 if (overridePolicies) {
                     overrideBootstrapAuthPolicies();

@@ -62,9 +62,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.util.AccessControlUtils.*;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SERVICE_NAME_ABAC;
+import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.SERVICE_ENTITY_TYPE;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CONNECTION_QN;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_PRIORITY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SUB_CATEGORY;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
+import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
 
 @Component
 public class CachePolicyTransformerImpl {
@@ -81,7 +91,6 @@ public class CachePolicyTransformerImpl {
 
     public static final String ATTR_SERVICE_SERVICE_TYPE = "authServiceType";
     public static final String ATTR_SERVICE_TAG_SERVICE  = "tagService";
-    public static final String ATTR_SERVICE_ABAC_SERVICE = "abacService";
     public static final String ATTR_SERVICE_IS_ENABLED   = "authServiceIsEnabled";
     public static final String ATTR_SERVICE_LAST_SYNC    = "authServicePolicyLastSync";
 
@@ -169,43 +178,13 @@ public class CachePolicyTransformerImpl {
                     }
                 }
 
-                //Process abac based policies
-                String abacServiceName = (String) service.getAttribute(ATTR_SERVICE_ABAC_SERVICE);
-
-                if (StringUtils.isNotEmpty(abacServiceName)) {
-                    AtlasEntityHeader abacService = getServiceEntity(abacServiceName);
-
-                    if (abacService != null) {
-                        allPolicies.addAll(getServicePolicies(abacService,0));
-                        ServicePolicies.AbacPolicies abacPolicies = new ServicePolicies.AbacPolicies();
-                        abacPolicies.setServiceName(abacServiceName);
-                        abacPolicies.setPolicyUpdateTime(new Date());
-                        abacPolicies.setServiceId(abacService.getGuid());
-                        abacPolicies.setPolicyVersion(-1L);
-                        String abacServiceDefName =  String.format(RESOURCE_SERVICE_DEF_PATTERN, abacService.getAttribute(NAME));
-                        abacPolicies.setServiceDef(getResourceAsObject(abacServiceDefName, RangerServiceDef.class));
-
-                        servicePolicies.setAbacPolicies(abacPolicies);
-                    }
-                }
-
                 AtlasPerfMetrics.MetricRecorder recorderFilterPolicies = RequestContext.get().startMetricRecord("filterPolicies");
                 //filter out policies based on serviceName
-                List<RangerPolicy> policiesA = new ArrayList<>();
-                List<RangerPolicy> policiesB = new ArrayList<>();
-                List<RangerPolicy> policiesC = new ArrayList<>();
-
-                try {
-                    policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
-                    policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
-                    policiesC = allPolicies.stream().filter(x -> abacServiceName.equals(x.getService())).collect(Collectors.toList());
-                } catch (NullPointerException exception) {
-
-                }
+                List<RangerPolicy> policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
+                List<RangerPolicy> policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
 
                 servicePolicies.setPolicies(policiesA);
                 servicePolicies.getTagPolicies().setPolicies(policiesB);
-                servicePolicies.getAbacPolicies().setPolicies(policiesC);
 
                 RequestContext.get().endMetricRecord(recorderFilterPolicies);
 
@@ -447,7 +426,6 @@ public class CachePolicyTransformerImpl {
             Set<String> attributes = new HashSet<>();
             attributes.add(NAME);
             attributes.add(ATTR_POLICY_CATEGORY);
-            attributes.add(ATTR_POLICY_FILTER_CRITERIA);
             attributes.add(ATTR_POLICY_SUB_CATEGORY);
             attributes.add(ATTR_POLICY_TYPE);
             attributes.add(ATTR_POLICY_SERVICE_NAME);
@@ -518,7 +496,6 @@ public class CachePolicyTransformerImpl {
         attributes.add(NAME);
         attributes.add(ATTR_SERVICE_SERVICE_TYPE);
         attributes.add(ATTR_SERVICE_TAG_SERVICE);
-        attributes.add(ATTR_SERVICE_ABAC_SERVICE);
         attributes.add(ATTR_SERVICE_IS_ENABLED);
 
         Map<String, Object> dsl = getMap("size", 1);
@@ -559,18 +536,12 @@ public class CachePolicyTransformerImpl {
         policy.setCreatedBy(atlasPolicy.getCreatedBy());
         policy.setCreateTime(atlasPolicy.getCreateTime());
         policy.setIsEnabled(getIsPolicyEnabled(atlasPolicy));
-        policy.setPolicyResourceCategory(getPolicyResourceCategory(atlasPolicy));
 
         policy.setConditions(getPolicyConditions(atlasPolicy));
         policy.setValiditySchedules(getPolicyValiditySchedule(atlasPolicy));
 
         if (atlasPolicy.hasAttribute(ATTR_POLICY_PRIORITY)) {
             policy.setPolicyPriority((Integer) atlasPolicy.getAttribute(ATTR_POLICY_PRIORITY));
-        }
-
-        if (POLICY_SERVICE_NAME_ABAC.equals(atlasPolicy.getAttribute(ATTR_POLICY_SERVICE_NAME))) {
-            String policyFilterCriteria = getPolicyFilterCriteria(atlasPolicy);
-            policy.setPolicyFilterCriteria(policyFilterCriteria);
         }
 
         return policy;

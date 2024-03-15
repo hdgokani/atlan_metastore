@@ -25,7 +25,6 @@ import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
-import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -465,9 +464,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             AtlasEntityHeader end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
             AtlasEntityHeader end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
 
-            //AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD,
-//                                                                                        relationship.getTypeName(), end1Entity, end2Entity));
-            AuthorizerUtils.verifyRelationshipAccess(AtlasPrivilege.RELATIONSHIP_ADD, relationship.getTypeName(), end1Entity, end2Entity);
+            AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD,
+                                                                                        relationship.getTypeName(), end1Entity, end2Entity));
 
 
             if (existingRelationshipCheck) {
@@ -522,8 +520,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasEntityHeader     end1Entity   = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
         AtlasEntityHeader     end2Entity   = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
 
-//        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_UPDATE, relationship.getTypeName(), end1Entity, end2Entity));
-        AuthorizerUtils.verifyRelationshipAccess(AtlasPrivilege.RELATIONSHIP_UPDATE, relationship.getTypeName(), end1Entity, end2Entity);
+        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_UPDATE, relationship.getTypeName(), end1Entity, end2Entity));
 
         updateTagPropagations(relationshipEdge, relationship);
 

@@ -29,7 +29,6 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
-import org.apache.atlas.authorizer.AuthorizerUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -687,9 +686,8 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasEntityWithExtInfo entityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(guid);
         AtlasEntity entity = entityWithExtInfo.getEntity();
 
-        /*AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(entity)),
-                "read entity schema: guid=", guid);*/
-        AuthorizerUtils.verifyAccess(new AtlasEntityHeader(entity), AtlasPrivilege.ENTITY_READ);
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, new AtlasEntityHeader(entity)),
+                "read entity schema: guid=", guid);
 
         Map<String, AtlasEntity> referredEntities = entityWithExtInfo.getReferredEntities();
         List<String> columnIds = getColumnIds(entity);
