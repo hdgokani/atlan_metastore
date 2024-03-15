@@ -24,7 +24,6 @@ public class PoliciesStore {
 
     private static List<RangerPolicy> resourcePolicies;
     private static List<RangerPolicy> tagPolicies;
-    private static List<RangerPolicy> abacPolicies;
 
     public static void setResourcePolicies(List<RangerPolicy> resourcePolicies) {
         PoliciesStore.resourcePolicies = resourcePolicies;
@@ -40,14 +39,6 @@ public class PoliciesStore {
 
     private static List<RangerPolicy> getTagPolicies() {
         return tagPolicies;
-    }
-
-    public static void setAbacPolicies(List<RangerPolicy> abacPolicies) {
-        PoliciesStore.abacPolicies = abacPolicies;
-    }
-
-    private static List<RangerPolicy> getAbacPolicies() {
-        return abacPolicies;
     }
 
     public static List<RangerPolicy> getRelevantPolicies(String persona, String purpose, String serviceName, List<String> actions, String policyType) {
@@ -68,8 +59,6 @@ public class PoliciesStore {
             policies = getResourcePolicies();
         } else if ("atlas_tag".equals(serviceName)) {
             policies = getTagPolicies();
-        } else if ("atlas_abac".equals(serviceName)) {
-            policies = getAbacPolicies();
         }
 
         List<RangerPolicy> filteredPolicies = null;
