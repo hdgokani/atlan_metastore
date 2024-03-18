@@ -3185,6 +3185,36 @@
         {
             "typeName": "AuthPolicy",
             "attributes": {
+                "name": "CRUD_BusinessPolicyLog",
+                "qualifiedName": "CRUD_TASK",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources": [
+                    "entity-type:BusinessPolicyLog",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-create",
+                    "entity-read",
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
                 "name": "CUD_APPROVAL_WORKFLOW_REQUEST",
                 "qualifiedName": "CUD_APPROVAL_WORKFLOW_REQUEST",
                 "policyCategory": "bootstrap",
@@ -3270,5 +3300,6 @@
                 ]
             }
         }
+
     ]
 }
