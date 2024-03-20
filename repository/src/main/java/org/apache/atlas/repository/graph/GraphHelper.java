@@ -353,6 +353,18 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static boolean getRestrictPropagationThroughHierarchy(AtlasVertex classificationVertex) {
+        boolean ret = false;
+
+        if (classificationVertex != null) {
+            Boolean restrictPropagationThroughHierarchy = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY, Boolean.class);
+
+            ret = (restrictPropagationThroughHierarchy == null) ? false : restrictPropagationThroughHierarchy;
+        }
+
+        return ret;
+    }
+
     public static AtlasVertex getClassificationVertex(AtlasVertex entityVertex, String classificationName) {
         AtlasVertex ret   = null;
         Iterable    edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL)

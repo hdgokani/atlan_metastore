@@ -185,6 +185,8 @@ public class EntityGraphMapper {
     private static final boolean ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES = AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES.getBoolean();
     private static final boolean CLASSIFICATION_PROPAGATION_DEFAULT                  = AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean();
     private static final boolean RESTRICT_PROPAGATION_THROUGH_LINEAGE_DEFAULT        = false;
+
+    private static final boolean RESTRICT_PROPAGATION_THROUGH_HIERARCHY_DEFAULT        = false;
     private              boolean DEFERRED_ACTION_ENABLED                             = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
     private              boolean DIFFERENTIAL_AUDITS                                 = STORE_DIFFERENTIAL_AUDITS.getBoolean();
 
@@ -2995,6 +2997,7 @@ public class EntityGraphMapper {
                 Boolean             propagateTags       = classification.isPropagate();
                 Boolean             removePropagations  = classification.getRemovePropagationsOnEntityDelete();
                 Boolean restrictPropagationThroughLineage = classification.getRestrictPropagationThroughLineage();
+                Boolean restrictPropagationThroughHierarchy = classification.getRestrictPropagationThroughHierachy();
 
                 if (propagateTags != null && propagateTags &&
                         classification.getEntityGuid() != null &&
@@ -3022,6 +3025,10 @@ public class EntityGraphMapper {
 
                 if (restrictPropagationThroughLineage == null) {
                     classification.setRestrictPropagationThroughLineage(RESTRICT_PROPAGATION_THROUGH_LINEAGE_DEFAULT);
+                }
+
+                if (restrictPropagationThroughHierarchy == null) {
+                    classification.setRestrictPropagationThroughLineage(RESTRICT_PROPAGATION_THROUGH_HIERARCHY_DEFAULT);
                 }
 
                 // set associated entity id to classification
@@ -3067,11 +3074,10 @@ public class EntityGraphMapper {
                 if (propagateTags) {
                     // compute propagatedEntityVertices only once
                     if (entitiesToPropagateTo == null) {
-                        String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
-                        if (classification.getRestrictPropagationThroughLineage() != null && classification.getRestrictPropagationThroughLineage()) {
-                            propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
-                        }
-                        entitiesToPropagateTo = entityRetriever.getImpactedVerticesV2(entityVertex, CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode));
+                        String propagationMode;
+                        propagationMode = entityRetriever.determinePropagationMode(classification.getRestrictPropagationThroughLineage(),classification.getRestrictPropagationThroughHierachy());
+                        Boolean toExclude = propagationMode == CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE ? true : false;
+                        entitiesToPropagateTo = entityRetriever.getImpactedVerticesV2(entityVertex, CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode),toExclude);
                     }
 
                     if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
@@ -3122,7 +3128,8 @@ public class EntityGraphMapper {
         }
     }
 
-    public List<String> propagateClassification(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean previousRestrictPropagationThroughLineage) throws AtlasBaseException {
+
+    public List<String> propagateClassification(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean previousRestrictPropagationThroughLineage,Boolean previousRestrictPropagationThroughHierarchy) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(classificationVertexId)) {
                 LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): entityGuid and/or classification vertex id is empty", entityGuid, classificationVertexId);
@@ -3152,19 +3159,17 @@ public class EntityGraphMapper {
 
             Boolean currentRestrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
 
+            Boolean currentRestrictPropagationThroughHierarchy = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY, Boolean.class);
+//            TODO: Keep a check for deletion of hierarchy propogation
             if (previousRestrictPropagationThroughLineage != null && currentRestrictPropagationThroughLineage != null && !previousRestrictPropagationThroughLineage && currentRestrictPropagationThroughLineage) {
                 deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
             }
 
-            String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
+            String propagationMode = entityRetriever.determinePropagationMode(currentRestrictPropagationThroughLineage, currentRestrictPropagationThroughHierarchy);
 
-            if (currentRestrictPropagationThroughLineage != null && currentRestrictPropagationThroughLineage) {
-                propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
-            }
-
-            List<String> edgeLabelsToExclude = CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode);
-
-            List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV2(entityVertex, relationshipGuid, classificationVertexId, edgeLabelsToExclude);
+            List<String> edgeLabelsToCheck = CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode);
+            Boolean toExclude = propagationMode == CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE ? true:false;
+            List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV2(entityVertex, relationshipGuid, classificationVertexId, edgeLabelsToCheck,toExclude);
 
             if (CollectionUtils.isEmpty(impactedVertices)) {
                 LOG.debug("propagateClassification(entityGuid={}, classificationVertexId={}): found no entities to propagate the classification", entityGuid, classificationVertexId);
@@ -3570,6 +3575,8 @@ public class EntityGraphMapper {
             Boolean updatedTagPropagation = classification.isPropagate();
             Boolean currentRestrictPropagationThroughLineage = currentClassification.getRestrictPropagationThroughLineage();
             Boolean updatedRestrictPropagationThroughLineage = classification.getRestrictPropagationThroughLineage();
+            Boolean currentRestrictPropagationThroughHierarchy = currentClassification.getRestrictPropagationThroughHierachy();
+            Boolean updatedRestrictPropagationThroughHierarchy = classification.getRestrictPropagationThroughHierachy();
 
             if ((!Objects.equals(updatedRemovePropagations, currentRemovePropagations) ||
                     !Objects.equals(currentTagPropagation, updatedTagPropagation) ||
@@ -3581,7 +3588,7 @@ public class EntityGraphMapper {
                 {
                     propagationType = CLASSIFICATION_PROPAGATION_DELETE;
                 }
-                createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), currentRestrictPropagationThroughLineage);
+                createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), currentRestrictPropagationThroughLineage,currentRestrictPropagationThroughHierarchy);
             }
 
             // compute propagatedEntityVertices once and use it for subsequent iterations and notifications
@@ -3592,11 +3599,16 @@ public class EntityGraphMapper {
 
                     }
                     if (CollectionUtils.isEmpty(entitiesToPropagateTo)) {
-                        String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
-                        if (updatedRemovePropagations !=null && updatedRestrictPropagationThroughLineage) {
-                            propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
+                        String propagationMode;
+                        if (updatedRemovePropagations !=null) {
+                            propagationMode = entityRetriever.determinePropagationMode(updatedRestrictPropagationThroughLineage, currentRestrictPropagationThroughHierarchy);
                         }
-                        entitiesToPropagateTo = entityRetriever.getImpactedVerticesV2(entityVertex, null, classificationVertex.getIdForDisplay(), CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode));
+                        else{
+                            propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
+                        }
+                        Boolean toExclude = propagationMode == CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE ? true : false;
+                        entitiesToPropagateTo = entityRetriever.getImpactedVerticesV2(entityVertex, null, classificationVertex.getIdForDisplay(), CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode),toExclude);
+                        entitiesToPropagateTo = entityRetriever.getImpactedVerticesV2(entityVertex, null, classificationVertex.getIdForDisplay(), CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode),toExclude);
                     }
 
                     if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
@@ -3872,20 +3884,20 @@ public class EntityGraphMapper {
         AtlasVertex         sourceEntityVertex              = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityId);
         AtlasClassification classification                  = entityRetriever.toAtlasClassification(currentClassificationVertex);
 
-        String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
+        String propagationMode;
 
         Boolean restrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(currentClassificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
+        Boolean restrictPropagationThroughHierarchy = AtlasGraphUtilsV2.getProperty(currentClassificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY, Boolean.class);
 
-        if (restrictPropagationThroughLineage != null && restrictPropagationThroughLineage) {
-            propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
-        }
+        propagationMode = entityRetriever.determinePropagationMode(restrictPropagationThroughLineage,restrictPropagationThroughHierarchy);
+        Boolean toExclude = propagationMode == CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE ? true:false;
 
         List<String> propagatedVerticesIds = GraphHelper.getPropagatedVerticesIds(currentClassificationVertex);
         LOG.info("{} entity vertices have classification with id {} attached", propagatedVerticesIds.size(), classificationId);
 
         List<String> verticesIdsToAddClassification =  new ArrayList<>();
         List<String> propagatedVerticesIdWithoutEdge = entityRetriever.getImpactedVerticesIdsClassificationAttached(sourceEntityVertex , classificationId,
-                CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode), verticesIdsToAddClassification);
+                CLASSIFICATION_PROPAGATION_EXCLUSION_MAP.get(propagationMode),toExclude, verticesIdsToAddClassification);
 
         LOG.info("To add classification with id {} to {} vertices", classificationId, verticesIdsToAddClassification.size());
 
@@ -3926,7 +3938,7 @@ public class EntityGraphMapper {
         String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
 
         Boolean restrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(currentClassificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
-
+        // TODO: Add Determine Classification Method logic
         if (restrictPropagationThroughLineage != null && restrictPropagationThroughLineage) {
             propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
         }
@@ -4335,9 +4347,9 @@ public class EntityGraphMapper {
         attributes.put(bmAttribute.getName(), attrValue);
     }
 
-    private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, Boolean currentPropagateThroughLineage) throws AtlasBaseException{
+    private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, Boolean currentPropagateThroughLineage, Boolean currentRestrictPropagationThroughHierarchy) throws AtlasBaseException{
 
-        deleteDelegate.getHandler().createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, null, currentPropagateThroughLineage);
+        deleteDelegate.getHandler().createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, null, currentPropagateThroughLineage,currentRestrictPropagationThroughHierarchy);
     }
 
     private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId) throws AtlasBaseException {
