@@ -270,6 +270,8 @@ public final class Constants {
     public static final String CLASSIFICATION_VERTEX_PROPAGATE_KEY            = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "propagate");
     public static final String CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY  = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "removePropagations");
     public static final String CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE= encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "restrictPropagationThroughLineage");
+
+    public static final String CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "restrictPropagationThroughHierarchy");
     public static final String CLASSIFICATION_VERTEX_NAME_KEY                 = encodePropertyKey(TYPE_NAME_PROPERTY_KEY);
     public static final String CLASSIFICATION_EDGE_NAME_PROPERTY_KEY          = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "name");
     public static final String CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "isPropagated");
@@ -385,6 +387,9 @@ public final class Constants {
     public static final String CLASSIFICATION_PROPAGATION_MODE_DEFAULT  ="DEFAULT";
     public static final String CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE  ="RESTRICT_LINEAGE";
 
+    public static final String CLASSIFICATION_PROPAGATION_MODE_RESTRICT_HIERARCHY  ="RESTRICT_HIERARCHY";
+
+
     public static final HashMap<String, ArrayList<String>> CLASSIFICATION_PROPAGATION_EXCLUSION_MAP = new HashMap<String, ArrayList<String>>(){{
         put(CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE, new ArrayList<>(
                 Arrays.asList(CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL,
@@ -392,6 +397,11 @@ public final class Constants {
                 COLUMN_LINEAGE_RELATIONSHIP_LABEL
         )));
         put(CLASSIFICATION_PROPAGATION_MODE_DEFAULT, null);
+        put(CLASSIFICATION_PROPAGATION_MODE_RESTRICT_HIERARCHY, new ArrayList<>(
+                Arrays.asList(CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL,
+                        CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL,
+                        COLUMN_LINEAGE_RELATIONSHIP_LABEL
+                )));
     }};
 
     public static final String ATTR_ADMIN_USERS = "adminUsers";
