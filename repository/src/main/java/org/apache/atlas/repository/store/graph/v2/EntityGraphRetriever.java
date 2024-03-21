@@ -621,10 +621,10 @@ public class EntityGraphRetriever {
     }
 
 
-    public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToCheck) {
+    public List<String> getImpactedVerticesIds(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId, List<String> edgeLabelsToCheck,Boolean toExclude) {
         List<String> ret = new ArrayList<>();
 
-        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToCheck,null, null);
+        traverseImpactedVerticesByLevel(entityVertex, relationshipGuidToExclude, classificationId, ret, edgeLabelsToCheck,toExclude, null);
 
         return ret;
     }

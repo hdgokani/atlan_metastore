@@ -248,7 +248,7 @@ public class ClassificationAssociator {
             operationListMap.clear();
         }
 
-        private Map<String, List<AtlasClassification>> computeChanges(AtlasEntityHeader incomingEntityHeader, AtlasEntityHeader entityToBeUpdated) {
+        private Map<String, List<AtlasClassification>> computeChanges(AtlasEntityHeader incomingEntityHeader, AtlasEntityHeader entityToBeUpdated) throws AtlasBaseException {
             if (incomingEntityHeader == null || entityToBeUpdated == null) {
                 return null;
             }
@@ -256,6 +256,8 @@ public class ClassificationAssociator {
             ListOps<AtlasClassification> listOps = new ListOps<>();
             List<AtlasClassification> incomingClassifications = listOps.filter(incomingEntityHeader.getGuid(), incomingEntityHeader.getClassifications());
             List<AtlasClassification> entityClassifications = listOps.filter(entityToBeUpdated.getGuid(), entityToBeUpdated.getClassifications());
+
+            verifyClassificationsPropagationMode(incomingClassifications);
 
             if (CollectionUtils.isEmpty(incomingClassifications) && CollectionUtils.isEmpty(entityClassifications)) {
                 return null;
@@ -268,6 +270,16 @@ public class ClassificationAssociator {
             bucket(PROCESS_ADD, operationListMap, listOps.subtract(incomingClassifications, entityClassifications));
 
             return operationListMap;
+        }
+
+        /**
+         * Checks for if the AtlasClassification has valid config of restrict flags
+         * Both Restrict flags can't be true with propagate flag allowed
+         */
+        private void verifyClassificationsPropagationMode(List<AtlasClassification> incomingClassifications) throws AtlasBaseException {
+            for(AtlasClassification incomingClassification : incomingClassifications){
+                entityRetriever.determinePropagationMode(incomingClassification.getRestrictPropagationThroughLineage(),incomingClassification.getRestrictPropagationThroughHierachy());
+            }
         }
 
         private void bucket(String op, Map<String, List<AtlasClassification>> operationListMap, List<AtlasClassification> results) {
