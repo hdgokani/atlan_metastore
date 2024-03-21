@@ -1312,22 +1312,21 @@ public abstract class DeleteHandlerV1 {
         createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, relationshipGuid);
     }
 
-//    public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid, Boolean currentRestrictPropagationThroughLineage, Boolean currentRestrictPropagationThroughHierarchy) throws AtlasBaseException {
-//        if (!CLASSIFICATION_PROPAGATION_DELETE.equals(taskType) && skipClassificationTaskCreation(classificationVertexId)) {
-//            LOG.info("Task is already scheduled for classification id {}, no need to schedule task for vertex {}", classificationVertexId, entityVertex.getIdForDisplay());
-//            return;
-//        }
-//
-//        String              currentUser = RequestContext.getCurrentUser();
-//        String              entityGuid  = GraphHelper.getGuid(entityVertex);
-//        Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid, currentRestrictPropagationThroughLineage, currentRestrictPropagationThroughHierarchy);
-//        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams, classificationVertexId, entityGuid);
-//
-//        AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
-//
-//        RequestContext.get().queueTask(task);
-//    }
+    public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid, Boolean currentRestrictPropagationThroughLineage, Boolean currentRestrictPropagationThroughHierarchy) throws AtlasBaseException {
+        if (!CLASSIFICATION_PROPAGATION_DELETE.equals(taskType) && skipClassificationTaskCreation(classificationVertexId)) {
+            LOG.info("Task is already scheduled for classification id {}, no need to schedule task for vertex {}", classificationVertexId, entityVertex.getIdForDisplay());
+            return;
+        }
 
+        String              currentUser = RequestContext.getCurrentUser();
+        String              entityGuid  = GraphHelper.getGuid(entityVertex);
+        Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid, currentRestrictPropagationThroughLineage, currentRestrictPropagationThroughHierarchy);
+        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams, classificationVertexId, entityGuid);
+
+        AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
+
+        RequestContext.get().queueTask(task);
+    }
     public void createAndQueueTaskWithoutCheck(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid, Boolean currentRestrictPropagationThroughLineage,Boolean currentRestrictPropogationThroughHierarchy) throws AtlasBaseException {
         String              currentUser = RequestContext.getCurrentUser();
         String              entityGuid  = GraphHelper.getGuid(entityVertex);

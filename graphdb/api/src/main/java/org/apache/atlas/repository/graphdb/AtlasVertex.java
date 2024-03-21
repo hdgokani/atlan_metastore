@@ -30,7 +30,7 @@ public interface AtlasVertex<V, E> extends AtlasElement {
      * specified direction that have the specified edgeLabel.  If
      * the edgeLabel is null, it is ignored.
      *
-     * @param
+     * @param in
      * @return
      */
     Iterable<AtlasEdge<V, E>> getEdges(AtlasEdgeDirection out, String edgeLabel);
