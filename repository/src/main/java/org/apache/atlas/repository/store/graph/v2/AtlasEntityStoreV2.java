@@ -1632,7 +1632,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         for (Map.Entry<String, String> element : referencedGuids.entrySet()) {
             String guid = element.getKey();
             AtlasEntity entity = entityStream.getByGuid(guid);
-
+            entityRetriever.verifyClassificationsPropagationMode(entity.getClassifications());
             if (entity != null) { // entity would be null if guid is not in the stream but referenced by an entity in the stream
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 

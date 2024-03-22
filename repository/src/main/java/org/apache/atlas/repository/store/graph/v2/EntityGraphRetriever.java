@@ -546,6 +546,16 @@ public class EntityGraphRetriever {
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
     }
+    /**
+     * Checks for if the AtlasClassification has valid config of restrict flags
+     * Both Restrict flags can't be true with propagate flag allowed
+     */
+    public void verifyClassificationsPropagationMode(List<AtlasClassification> incomingClassifications) throws AtlasBaseException {
+        for(AtlasClassification incomingClassification : incomingClassifications){
+            if(Boolean.TRUE.equals(incomingClassification.isPropagate()))
+                determinePropagationMode(incomingClassification.getRestrictPropagationThroughLineage(),incomingClassification.getRestrictPropagationThroughHierachy());
+        }
+    }
 
     public String determinePropagationMode(Boolean currentRestrictPropagationThroughLineage, Boolean currentRestrictPropagationThroughHierarchy) throws AtlasBaseException {
         String propagationMode;
