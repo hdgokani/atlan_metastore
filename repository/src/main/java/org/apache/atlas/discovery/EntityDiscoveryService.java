@@ -1183,21 +1183,24 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             Map<String, Object> allPreFiltersBoolClause = NewAuthorizerUtils.getPreFilterDsl(persona, purpose, actions);
             mustClauseList.add(allPreFiltersBoolClause);
 
+            mustClauseList.add((Map<String, Object>) ((IndexSearchParams) searchParams).getDsl().get("query"));
+
             String dslString = searchParams.getQuery();
             JsonNode node = mapper.readTree(dslString);
-            JsonNode userQueryNode = node.get("query");
+            /*JsonNode userQueryNode = node.get("query");
             if (userQueryNode != null) {
 
                 String userQueryString = userQueryNode.toString();
 
                 String userQueryBase64 = Base64.getEncoder().encodeToString(userQueryString.getBytes());
                 mustClauseList.add(getMap("wrapper", getMap("query", userQueryBase64)));
-            }
+            }*/
 
             JsonNode updateQueryNode = mapper.valueToTree(getMap("bool", getMap("must", mustClauseList)));
 
             ((ObjectNode) node).set("query", updateQueryNode);
             searchParams.setQuery(node.toString());
+
             RequestContext.get().endMetricRecord(addPreFiltersToSearchQueryMetric);
 
         } catch (Exception e) {
