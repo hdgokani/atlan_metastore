@@ -341,28 +341,21 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static boolean getRestrictPropagationThroughLineage(AtlasVertex classificationVertex) {
-        boolean ret = false;
-
-        if (classificationVertex != null) {
-            Boolean restrictPropagationThroughLineage = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
-
-            ret = (restrictPropagationThroughLineage == null) ? false : restrictPropagationThroughLineage;
+    public static boolean getRestrictPropagation(AtlasVertex classificationVertex, String propertyName) {
+        if (classificationVertex == null) {
+            return false;
         }
+        Boolean restrictPropagation = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, propertyName, Boolean.class);
 
-        return ret;
+        return restrictPropagation != null && restrictPropagation;
+    }
+
+    public static boolean getRestrictPropagationThroughLineage(AtlasVertex classificationVertex) {
+        return getRestrictPropagation(classificationVertex,CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
     }
 
     public static boolean getRestrictPropagationThroughHierarchy(AtlasVertex classificationVertex) {
-        boolean ret = false;
-
-        if (classificationVertex != null) {
-            Boolean restrictPropagationThroughHierarchy = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY, Boolean.class);
-
-            ret = (restrictPropagationThroughHierarchy == null) ? false : restrictPropagationThroughHierarchy;
-        }
-
-        return ret;
+        return getRestrictPropagation(classificationVertex,CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
     }
 
     public static AtlasVertex getClassificationVertex(AtlasVertex entityVertex, String classificationName) {

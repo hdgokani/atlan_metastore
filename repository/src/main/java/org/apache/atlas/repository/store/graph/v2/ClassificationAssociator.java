@@ -257,8 +257,6 @@ public class ClassificationAssociator {
             List<AtlasClassification> incomingClassifications = listOps.filter(incomingEntityHeader.getGuid(), incomingEntityHeader.getClassifications());
             List<AtlasClassification> entityClassifications = listOps.filter(entityToBeUpdated.getGuid(), entityToBeUpdated.getClassifications());
 
-            entityRetriever.verifyClassificationsPropagationMode(incomingClassifications);
-
             if (CollectionUtils.isEmpty(incomingClassifications) && CollectionUtils.isEmpty(entityClassifications)) {
                 return null;
             }
@@ -286,7 +284,6 @@ public class ClassificationAssociator {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
-
             String classificationNames = getClassificationNames(list);
             try {
                 entitiesStore.addClassifications(entityGuid, list);
@@ -300,7 +297,6 @@ public class ClassificationAssociator {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
-
             String classificationNames = getClassificationNames(list);
             try {
                 entitiesStore.updateClassifications(entityGuid, list);
