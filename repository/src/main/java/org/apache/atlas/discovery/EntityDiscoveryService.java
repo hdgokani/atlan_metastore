@@ -1177,16 +1177,20 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         Map<String, Object> accessControlDsl = new HashMap<>();
 
         List<Map<String, Object>> mustClauses = new ArrayList<>();
-        mustClauses.add(getMap("must",dsl.get("query")));
+        Map<String, Object> clientQuery = (Map<String, Object>) dsl.get("query");
+
+        mustClauses.add(clientQuery);
 
         Map<String, Object> filterClause = getMap("filter", getMap("terms", getMap("_index", Collections.singletonList(aliasName))));
 
-        Map<String, Object> boolQuery = getMap("bool", getMap("must", mustClauses));
-        boolQuery.putAll(filterClause);
+
+        Map<String, Object> boolQuery = new HashMap<>();
+        boolQuery.put("must", mustClauses);
+        boolQuery.put("filter",filterClause);
 
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         shouldClauses.add(boolQuery);
-        shouldClauses.add(getStaticBoolQuery("PUBLIC", "PROTECTED"));
+        shouldClauses.add(getStaticBoolQuery());
 
         Map<String, Object> topBoolQuery = getMap("bool", getMap("should", shouldClauses));
 
@@ -1194,18 +1198,19 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return accessControlDsl;
     }
 
-    private Map<String, Object> getStaticBoolQuery(String publicVisibility, String protectedVisibility) {
+    private Map<String, Object> getStaticBoolQuery() {
         List<Map<String, Object>> mustClauses = new ArrayList<>();
         Map<String, Object> mustClause = getMap("bool", getMap("should", Arrays.asList(
-                getMap("term", getMap("daapVisibility", publicVisibility)),
-                getMap("term", getMap("daapVisibility", protectedVisibility))
+                getMap("term", getMap("daapVisibility", "Public")),
+                getMap("term", getMap("daapVisibility", "Protected"))
         )));
         mustClauses.add(mustClause);
 
         Map<String, Object> filterClause = getMap("filter", getMap("terms", getMap("_index", Collections.singletonList(VERTEX_INDEX_NAME))));
 
-        Map<String, Object> boolQuery = getMap("bool", getMap("must", mustClauses));
-        boolQuery.putAll(filterClause);
+        Map<String, Object> boolQuery = new HashMap<>();
+        boolQuery.put("must", mustClauses);
+        boolQuery.put("filter",filterClause);
 
         return boolQuery;
     }
