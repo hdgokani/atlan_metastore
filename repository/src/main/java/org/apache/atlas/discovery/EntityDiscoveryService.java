@@ -1150,8 +1150,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         if (StringUtils.isNotEmpty(aliasName)) {
             if(params.isAccessControlExclusive()) {
-                Map < String, Object > dsl = accessControlExclusiveDsl(params.getDsl());
                 aliasName = aliasName+","+VERTEX_INDEX_NAME;
+                Map < String, Object > dsl = accessControlExclusiveDsl(params.getDsl(), aliasName);
                 params.setDsl(dsl);
             }
             return aliasName;
@@ -1160,9 +1160,40 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
     }
 
-    private Map <String, Object> accessControlExclusiveDsl(Map dsl) {
+    private Map<String, Object> accessControlExclusiveDsl(Map dsl, String aliasName) {
         Map<String, Object> accessControlDsl = new HashMap<>();
-        accessControlDsl.put("bool", getMap("must", dsl));
+
+        List<Map<String, Object>> mustClauses = new ArrayList<>();
+        mustClauses.add(getMap("must",dsl.get("query")));
+
+        Map<String, Object> filterClause = getMap("filter", getMap("terms", getMap("_index", Collections.singletonList(aliasName))));
+
+        Map<String, Object> boolQuery = getMap("bool", getMap("must", mustClauses));
+        boolQuery.putAll(filterClause);
+
+        List<Map<String, Object>> shouldClauses = new ArrayList<>();
+        shouldClauses.add(boolQuery);
+        shouldClauses.add(getStaticBoolQuery("PUBLIC", "PROTECTED"));
+
+        Map<String, Object> topBoolQuery = getMap("bool", getMap("should", shouldClauses));
+
+        accessControlDsl.put("query", topBoolQuery);
         return accessControlDsl;
+    }
+
+    private Map<String, Object> getStaticBoolQuery(String publicVisibility, String protectedVisibility) {
+        List<Map<String, Object>> mustClauses = new ArrayList<>();
+        Map<String, Object> mustClause = getMap("bool", getMap("should", Arrays.asList(
+                getMap("term", getMap("daapVisibility", publicVisibility)),
+                getMap("term", getMap("daapVisibility", protectedVisibility))
+        )));
+        mustClauses.add(mustClause);
+
+        Map<String, Object> filterClause = getMap("filter", getMap("terms", getMap("_index", Collections.singletonList(VERTEX_INDEX_NAME))));
+
+        Map<String, Object> boolQuery = getMap("bool", getMap("must", mustClauses));
+        boolQuery.putAll(filterClause);
+
+        return boolQuery;
     }
 }
