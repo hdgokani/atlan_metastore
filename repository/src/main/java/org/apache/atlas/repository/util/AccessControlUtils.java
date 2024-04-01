@@ -101,6 +101,7 @@ public final class AccessControlUtils {
 
     public static final String POLICY_CATEGORY_PERSONA  = "persona";
     public static final String POLICY_CATEGORY_PURPOSE  = "purpose";
+    public static final String POLICY_CATEGORY_DATAMESH  = "datamesh";
     public static final String POLICY_CATEGORY_BOOTSTRAP  = "bootstrap";
 
     public static final String POLICY_SUB_CATEGORY_COLLECTION = "collection";
