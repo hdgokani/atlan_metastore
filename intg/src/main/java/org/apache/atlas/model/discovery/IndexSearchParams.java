@@ -51,6 +51,10 @@ public class IndexSearchParams extends SearchParams {
         return accessControlExclusive;
     }
 
+    public void setAccessControlExclusive(boolean accessControlExclusive) {
+        this.accessControlExclusive = accessControlExclusive;
+    }
+
     public void setAllowDeletedRelations(boolean allowDeletedRelations) {
         this.allowDeletedRelations = allowDeletedRelations;
     }

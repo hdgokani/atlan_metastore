@@ -1150,11 +1150,19 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         if (StringUtils.isNotEmpty(aliasName)) {
             if(params.isAccessControlExclusive()) {
+                Map < String, Object > dsl = accessControlExclusiveDsl(params.getDsl());
                 aliasName = aliasName+","+VERTEX_INDEX_NAME;
+                params.setDsl(dsl);
             }
             return aliasName;
         } else {
             throw new AtlasBaseException("ES alias not found for purpose/persona " + params.getPurpose());
         }
+    }
+
+    private Map <String, Object> accessControlExclusiveDsl(Map dsl) {
+        Map<String, Object> accessControlDsl = new HashMap<>();
+        accessControlDsl.put("bool", getMap("must", dsl));
+        return accessControlDsl;
     }
 }
