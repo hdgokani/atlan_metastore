@@ -29,7 +29,6 @@ public abstract class AbstractRedisService implements RedisService {
     private static final String ATLAS_REDIS_LOCK_WATCHDOG_TIMEOUT_MS = "atlas.redis.lock.watchdog_timeout.ms";
     private static final int DEFAULT_REDIS_WAIT_TIME_MS = 15_000;
     private static final int DEFAULT_REDIS_LOCK_WATCHDOG_TIMEOUT_MS = 600_000;
-    private static final String ATLAS_METASTORE_SERVICE = "atlas-metastore-service";
 
     RedissonClient redisClient;
     Map<String, RLock> keyLockMap;
@@ -97,14 +96,8 @@ public abstract class AbstractRedisService implements RedisService {
     Config getProdConfig() throws AtlasException {
         Config config = initAtlasConfig();
         config.useSentinelServers()
-                .setClientName(ATLAS_METASTORE_SERVICE)
                 .setReadMode(ReadMode.MASTER_SLAVE)
                 .setCheckSentinelsList(false)
-                .setKeepAlive(true)
-                .setMasterConnectionMinimumIdleSize(10)
-                .setMasterConnectionPoolSize(20)
-                .setSlaveConnectionMinimumIdleSize(10)
-                .setSlaveConnectionPoolSize(20)
                 .setMasterName(atlasConfig.getString(ATLAS_REDIS_MASTER_NAME))
                 .addSentinelAddress(formatUrls(atlasConfig.getStringArray(ATLAS_REDIS_SENTINEL_URLS)))
                 .setUsername(atlasConfig.getString(ATLAS_REDIS_USERNAME))

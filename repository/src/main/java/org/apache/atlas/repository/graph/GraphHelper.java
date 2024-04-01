@@ -21,6 +21,7 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Iterators;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -341,16 +342,21 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static boolean getRestrictPropagationThroughLineage(AtlasVertex classificationVertex) {
-        boolean ret = false;
-
-        if (classificationVertex != null) {
-            Boolean restrictPropagationThroughLineage = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
-
-            ret = (restrictPropagationThroughLineage == null) ? false : restrictPropagationThroughLineage;
+    public static boolean getRestrictPropagation(AtlasVertex classificationVertex, String propertyName) {
+        if (classificationVertex == null) {
+            return false;
         }
+        Boolean restrictPropagation = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, propertyName, Boolean.class);
 
-        return ret;
+        return restrictPropagation != null && restrictPropagation;
+    }
+
+    public static boolean getRestrictPropagationThroughLineage(AtlasVertex classificationVertex) {
+        return getRestrictPropagation(classificationVertex,CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
+    }
+
+    public static boolean getRestrictPropagationThroughHierarchy(AtlasVertex classificationVertex) {
+        return getRestrictPropagation(classificationVertex,CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
     }
 
     public static AtlasVertex getClassificationVertex(AtlasVertex entityVertex, String classificationName) {
@@ -387,6 +393,17 @@ public final class GraphHelper {
         }
 
         return ret;
+    }
+
+    public static Integer getCountOfCategoryEdges(AtlasVertex entityVertex) {
+
+        Iterator<AtlasEdge> edges = getOutGoingEdgesByLabel(entityVertex, CATEGORY_TERMS_EDGE_LABEL);
+
+        if (edges!=null) {
+            return Iterators.size(edges);
+        }
+
+        return 0;
     }
 
     public static boolean isClassificationAttached(AtlasVertex entityVertex, AtlasVertex classificationVertex) {

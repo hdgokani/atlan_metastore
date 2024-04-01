@@ -35,7 +35,6 @@ import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
-import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -533,7 +532,7 @@ public class GlossaryService {
             LOG.debug("==> GlossaryService.assignTermToEntities({}, {})", termGuid, relatedObjectIds);
         }
 
-        AtlasGlossaryTerm glossaryTerm = dataAccess.load(getAtlasGlossaryTermSkeleton(termGuid));
+        AtlasGlossaryTerm glossaryTerm = dataAccess.loadWithMinInfo(getAtlasGlossaryTermSkeleton(termGuid), true, true);
 
         glossaryTermUtils.processTermAssignments(glossaryTerm, relatedObjectIds);
 
