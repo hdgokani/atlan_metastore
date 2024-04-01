@@ -25,7 +25,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -390,7 +389,7 @@ public final class Constants {
     public static final String CLASSIFICATION_PROPAGATION_MODE_RESTRICT_HIERARCHY  ="RESTRICT_HIERARCHY";
 
 
-    public static final HashMap<String, ArrayList<String>> CLASSIFICATION_PROPAGATION_EXCLUSION_MAP = new HashMap<String, ArrayList<String>>(){{
+    public static final HashMap<String, ArrayList<String>> CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP = new HashMap<String, ArrayList<String>>(){{
         put(CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE, new ArrayList<>(
                 Arrays.asList(CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL,
                 CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL,
