@@ -8,6 +8,7 @@ on:
       - master
       - staging
       - beta
+      - staging
     types:
       - completed
 
@@ -25,13 +26,6 @@ jobs:
         id: extract_branch
         run: |
           echo "branch=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
-
-      - name: Extract Repository Name
-        id: extract_repo_name
-        run: |
-          repo_name=$(basename $GITHUB_REPOSITORY)
-          echo "repo_name=${repo_name}" >> $GITHUB_OUTPUT
-
       - name: Repository Dispatch
         uses: peter-evans/repository-dispatch@v2
         with:
@@ -41,7 +35,7 @@ jobs:
           client-payload: |-
             {
               "repo": {
-                "name": "${{ steps.extract_repo_name.outputs.repo_name }}",
+                "name": "${{ github.repository }}",
                 "branch": "${{ steps.extract_branch.outputs.branch }}"
               }
             }

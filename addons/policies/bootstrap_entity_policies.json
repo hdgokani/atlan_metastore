@@ -2884,6 +2884,7 @@
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
                 [
+
                     "entity-type:DataDomain",
                     "entity-classification:*",
                     "entity:*"
@@ -2959,6 +2960,7 @@
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
                 [
+
                     "entity-type:DataDomain",
                     "entity-classification:*",
                     "entity:*"
@@ -2991,6 +2993,7 @@
                     "$api-token-default-access"
                 ],
                 "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": false,
                 "policyResources":
                 [
                     "entity-type:DataProduct",
