@@ -1164,8 +1164,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         if (StringUtils.isNotEmpty(aliasName)) {
             if(params.isAccessControlExclusive()) {
                 aliasName = aliasName+","+VERTEX_INDEX_NAME;
-                Map < String, Object > dsl = accessControlExclusiveDsl(params.getDsl(), aliasName);
-                params.setDsl(dsl);
+                accessControlExclusiveDsl(params.getDsl(), aliasName);
             }
             return aliasName;
         } else {
@@ -1173,29 +1172,31 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
     }
 
-    private Map<String, Object> accessControlExclusiveDsl(Map dsl, String aliasName) {
-        Map<String, Object> accessControlDsl = new HashMap<>();
+    private void accessControlExclusiveDsl(Map dsl, String aliasName) {
 
         List<Map<String, Object>> mustClauses = new ArrayList<>();
         Map<String, Object> clientQuery = (Map<String, Object>) dsl.get("query");
 
         mustClauses.add(clientQuery);
 
-        Map<String, Object> filterClause = getMap("filter", getMap("terms", getMap("_index", Collections.singletonList(aliasName))));
-
+        List<Map<String, Object>>filterClauses = new ArrayList<>();
+        filterClauses.add(getMap("terms", getMap("_index", Collections.singletonList(aliasName))));
+        Map<String, Object> filterClause = getMap("filter", filterClauses);
+        LOG.info("Filter for dynamic dsl: {}", getMap("bool", filterClause));
 
         Map<String, Object> boolQuery = new HashMap<>();
         boolQuery.put("must", mustClauses);
         boolQuery.put("filter",filterClause);
 
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
-        shouldClauses.add(boolQuery);
+        shouldClauses.add(getMap("bool", boolQuery));
         shouldClauses.add(getStaticBoolQuery());
 
         Map<String, Object> topBoolQuery = getMap("bool", getMap("should", shouldClauses));
+        LOG.info("Top Bool query: {}", topBoolQuery);
 
-        accessControlDsl.put("query", topBoolQuery);
-        return accessControlDsl;
+        dsl.put("query", topBoolQuery);
+        LOG.info("Final DSL: {}", dsl);
     }
 
     private Map<String, Object> getStaticBoolQuery() {
@@ -1205,14 +1206,21 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 getMap("term", getMap("daapVisibility", "Protected"))
         )));
         mustClauses.add(mustClause);
+        LOG.info("MustClauses for static: {}", mustClauses);
 
-        Map<String, Object> filterClause = getMap("filter", getMap("terms", getMap("_index", Collections.singletonList(VERTEX_INDEX_NAME))));
+        List<Map<String, Object>>filterClauses = new ArrayList<>();
+        filterClauses.add(getMap("terms", getMap("_index", Collections.singletonList(VERTEX_INDEX_NAME))));
+
+        Map<String, Object> filterClause = getMap("filter", filterClauses);
+        LOG.info("filter for static: {}", filterClause);
 
         Map<String, Object> boolQuery = new HashMap<>();
         boolQuery.put("must", mustClauses);
         boolQuery.put("filter",filterClause);
 
-        return boolQuery;
+        LOG.info("bool query for public and protected entities: {}", getMap("bool", boolQuery));
+
+        return getMap("bool", boolQuery);
     }
 
     private void addPreFiltersToSearchQuery(SearchParams searchParams) {
