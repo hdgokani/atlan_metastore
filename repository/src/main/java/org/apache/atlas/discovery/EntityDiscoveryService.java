@@ -1149,6 +1149,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         String aliasName = parts[parts.length - 1];
 
         if (StringUtils.isNotEmpty(aliasName)) {
+            if(params.isAccessControlExclusive()) {
+                aliasName = aliasName+","+VERTEX_INDEX_NAME;
+            }
             return aliasName;
         } else {
             throw new AtlasBaseException("ES alias not found for purpose/persona " + params.getPurpose());
