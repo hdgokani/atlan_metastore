@@ -45,7 +45,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 
     private String typeName;
     private String entityGuid;
-    private String entityId;
+    private String entityId; //qualified name
     private String action;
 
     private String relationShipTypeName;
