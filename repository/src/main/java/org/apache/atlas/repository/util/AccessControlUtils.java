@@ -85,6 +85,7 @@ public final class AccessControlUtils {
     public static final String ATTR_POLICY_RESOURCES_CATEGORY  = "policyResourceCategory";
     public static final String ATTR_POLICY_SERVICE_NAME  = "policyServiceName";
     public static final String ATTR_POLICY_PRIORITY  = "policyPriority";
+    public static final String ATTR_POLICY_IS_ENTITY_RESOURCE_RECURSIVE  = "isEntityResourceRecursive";
 
     public static final String REL_ATTR_ACCESS_CONTROL = "accessControl";
     public static final String REL_ATTR_POLICIES       = "policies";
@@ -211,6 +212,11 @@ public final class AccessControlUtils {
         return getListAttribute(policyEntity, ATTR_POLICY_ROLES);
     }
 
+    public static boolean getIsEntityResourceRecursive(AtlasEntityHeader policyEntity) {
+        Object recursive = policyEntity.getAttribute(ATTR_POLICY_IS_ENTITY_RESOURCE_RECURSIVE);
+        // treat null as true for backward compatibility
+        return recursive == null || (boolean) recursive;
+    }
 
     public static boolean getIsAllowPolicy(AtlasEntity policyEntity) throws AtlasBaseException {
         String policyType = (String) policyEntity.getAttribute(ATTR_POLICY_TYPE);

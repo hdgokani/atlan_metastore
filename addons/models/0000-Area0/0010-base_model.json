@@ -681,7 +681,7 @@
         "Asset"
       ],
       "serviceType": "atlan",
-      "typeVersion": "1.1",
+      "typeVersion": "1.2",
       "attributeDefs":
       [
         {
@@ -867,6 +867,18 @@
           "isIndexable": false,
           "isOptional": true,
           "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "isEntityResourceRecursive",
+          "description": "Tells whether policy is applicable to children of the selected assets",
+          "typeName": "boolean",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "defaultValue": true,
           "skipScrubbing": true,
           "includeInNotification": false
         }

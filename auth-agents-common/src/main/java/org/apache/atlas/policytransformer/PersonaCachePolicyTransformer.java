@@ -42,6 +42,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_ENTI
 import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AccessControlUtils.getEntityByQualifiedName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getFilteredPolicyResources;
+import static org.apache.atlas.repository.util.AccessControlUtils.getIsEntityResourceRecursive;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyActions;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyConnectionQN;
@@ -70,6 +71,10 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
         List<String> entityResources = getFilteredPolicyResources(atlasResources, RESOURCES_ENTITY);
         List<String> typeResources = getFilteredPolicyResources(atlasResources, RESOURCES_ENTITY_TYPE);
 
+        String subCategory = getPolicySubCategory(atlasPolicy);
+        boolean isRecursive = getIsEntityResourceRecursive(atlasPolicy);
+
+
         int index = 0;
         for (String atlasAction : atlasActions) {
             List<PolicyTransformerTemplate.TemplatePolicy> currentTemplates = personaTemplate.getTemplate(atlasAction);
@@ -88,14 +93,16 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                 header.setAttribute(ATTR_POLICY_RESOURCES_CATEGORY, templatePolicy.getPolicyResourceCategory());
                 header.setAttribute(ATTR_POLICY_IS_ENABLED, getIsPolicyEnabled(atlasPolicy));
 
-                String subCategory = getPolicySubCategory(atlasPolicy);
-
                 List<String> finalResources = new ArrayList<>();
 
                 for (String templateResource : templatePolicy.getResources()) {
                     if (templateResource.contains(PLACEHOLDER_ENTITY)) {
                         for (String entityResource : entityResources) {
                             finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY, entityResource));
+
+                            if (isRecursive && POLICY_SUB_CATEGORY_METADATA.equals(subCategory)) {
+                                finalResources.add(templateResource.replace(PLACEHOLDER_ENTITY, entityResource + "/*"));
+                            }
                         }
 
                     } else if (templateResource.contains(PLACEHOLDER_ENTITY_TYPE)) {

@@ -5,7 +5,6 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
-        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*"
       ],
@@ -18,7 +17,6 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
-        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*"
       ],
@@ -33,7 +31,6 @@
         "end-one-entity-type:{entity-type}",
         "end-one-entity-classification:*",
         "end-one-entity:{entity}",
-        "end-one-entity:{entity}/*",
 
         "end-two-entity-type:Catalog",
         "end-two-entity-type:Connection",
@@ -61,8 +58,7 @@
 
         "end-two-entity-type:{entity-type}",
         "end-two-entity-classification:*",
-        "end-two-entity:{entity}",
-        "end-two-entity:{entity}/*"
+        "end-two-entity:{entity}"
       ],
       "actions": ["add-relationship", "remove-relationship"]
     }
@@ -73,7 +69,6 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
-        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*"
       ],
@@ -86,7 +81,6 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
-        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*"
       ],
@@ -99,7 +93,6 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
-        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*",
         "entity-business-metadata:*"
@@ -113,7 +106,6 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
-        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*",
         "classification:*"
@@ -130,7 +122,6 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
-        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*",
         "classification:*"
@@ -144,7 +135,6 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
-        "entity:{entity}/*",
         "entity-type:{entity-type}",
         "entity-classification:*",
         "classification:*"
@@ -168,8 +158,7 @@
 
         "end-two-entity-type:{entity-type}",
         "end-two-entity-classification:*",
-        "end-two-entity:{entity}",
-        "end-two-entity:{entity}/*"
+        "end-two-entity:{entity}"
       ],
       "actions": ["add-relationship"]
     }
@@ -187,8 +176,7 @@
 
         "end-two-entity-type:{entity-type}",
         "end-two-entity-classification:*",
-        "end-two-entity:{entity}",
-        "end-two-entity:{entity}/*"
+        "end-two-entity:{entity}"
       ],
       "actions": ["remove-relationship"]
     }
