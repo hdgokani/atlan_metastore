@@ -27,6 +27,7 @@ public class IndexSearchParams extends SearchParams {
     * (this will include related attributes which has relationshipStatus as DELETED along with ACTIVE ones)
     * */
     private boolean allowDeletedRelations;
+    private boolean accessControlExclusive;
 
     @Override
     public String getQuery() {
@@ -49,6 +50,14 @@ public class IndexSearchParams extends SearchParams {
 
     public boolean isAllowDeletedRelations() {
         return allowDeletedRelations;
+    }
+
+    public boolean isAccessControlExclusive() {
+        return accessControlExclusive;
+    }
+
+    public void setAccessControlExclusive(boolean accessControlExclusive) {
+        this.accessControlExclusive = accessControlExclusive;
     }
 
     public void setAllowDeletedRelations(boolean allowDeletedRelations) {
@@ -83,6 +92,7 @@ public class IndexSearchParams extends SearchParams {
                 ", persona='" + persona + '\'' +
                 ", queryString='" + queryString + '\'' +
                 ", allowDeletedRelations=" + allowDeletedRelations +
+                ", accessControlExclusive=" + accessControlExclusive +
                 ", utmTags="+ getUtmTags() +
                 ", enableFullRestriction="+ enableFullRestriction +
                 '}';
