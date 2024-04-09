@@ -88,6 +88,8 @@ public class RequestContext {
     private boolean     allowDeletedRelationsIndexsearch = false;
     private boolean     includeMeanings = true;
     private boolean     includeClassifications = true;
+
+    private boolean     includeClassificationNames = false;
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
@@ -708,6 +710,14 @@ public class RequestContext {
 
     public String getRequestUri() {
         return this.requestUri;
+    }
+
+    public boolean isIncludeClassificationNames() {
+        return includeClassificationNames;
+    }
+
+    public void setIncludeClassificationNames(boolean includeClassificationNames) {
+        this.includeClassificationNames = includeClassificationNames;
     }
 
     public class EntityGuidPair {
