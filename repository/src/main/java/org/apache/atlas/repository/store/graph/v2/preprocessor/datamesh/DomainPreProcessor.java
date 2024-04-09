@@ -64,7 +64,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
     public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context,
                                   EntityMutations.EntityOperation operation) throws AtlasBaseException {
         //Handle name & qualifiedName
-        if (operation == EntityMutations.EntityOperation.UPDATE && LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled()) {
             LOG.debug("DomainPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
@@ -76,10 +76,33 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
         setParent(entity, context);
 
-        if (operation == EntityMutations.EntityOperation.UPDATE) {
-            processUpdateDomain(entity, vertex);
-        } else {
-            LOG.error("DataProductPreProcessor.processAttributes: Operation not supported {}", operation);
+        switch (operation) {
+            case CREATE:
+                processCreateDomain(entity, vertex);
+                break;
+            case UPDATE:
+                processUpdateDomain(entity, vertex);
+                break;
+        }
+    }
+
+    private void processCreateDomain(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateDomain");
+        String domainName = (String) entity.getAttribute(NAME);
+        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
+
+        domainExists(domainName, parentDomainQualifiedName);
+        entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
+
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    public static String createQualifiedName(String parentDomainQualifiedName) {
+        if (StringUtils.isNotEmpty(parentDomainQualifiedName) && parentDomainQualifiedName !=null) {
+            return parentDomainQualifiedName + "/domain/" + getUUID();
+        } else{
+            String prefixQN = "default/domain";
+            return prefixQN + "/" + getUUID();
         }
     }
 
