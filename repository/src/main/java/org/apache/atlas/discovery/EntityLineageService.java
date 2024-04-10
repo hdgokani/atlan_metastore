@@ -632,9 +632,11 @@ public class EntityLineageService implements AtlasLineageService {
             outLineageInfo.setHasMoreOutputs(true);
             hasRelationsLimitReached = true;
 
-            List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(inVertex, PROCESS_INPUTS_EDGE, atlasLineageOnDemandContext, false);
-            inLineageInfo.setTotalInputRelationsCount(filteredEdges.size());
-            outLineageInfo.setTotalOutputRelationsCount(filteredEdges.size());
+            List<AtlasEdge> outFilteredEdges = getFilteredAtlasEdges(outVertex, PROCESS_OUTPUTS_EDGE, atlasLineageOnDemandContext, false);
+            List<AtlasEdge> inFilteredEdges = getFilteredAtlasEdges(inVertex, PROCESS_INPUTS_EDGE, atlasLineageOnDemandContext, false);
+
+            outLineageInfo.setTotalOutputRelationsCount(outFilteredEdges.size());
+            inLineageInfo.setTotalInputRelationsCount(inFilteredEdges.size());
         }
 
         if (!hasRelationsLimitReached) {
