@@ -587,12 +587,14 @@ public class EntityLineageService implements AtlasLineageService {
         String                     outGuid                   = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
         LineageOnDemandConstraints outGuidLineageConstraints = getAndValidateLineageConstraintsByGuid(outGuid, atlasLineageOnDemandContext);
 
+        LOG.error("$IN-" + inVertex.getProperty("name" , String.class) + " -> " + "$OUT-" + outVertex.getProperty("name" , String.class));
+
         LineageInfoOnDemand inLineageInfo = ret.getRelationsOnDemand().containsKey(inGuid) ? ret.getRelationsOnDemand().get(inGuid) : new LineageInfoOnDemand(inGuidLineageConstraints);
         LineageInfoOnDemand outLineageInfo = ret.getRelationsOnDemand().containsKey(outGuid) ? ret.getRelationsOnDemand().get(outGuid) : new LineageInfoOnDemand(outGuidLineageConstraints);
 
         setHorizontalPaginationFlags(isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, inVertex, inGuid, outVertex, outGuid, inLineageInfo, outLineageInfo);
 
-        boolean hasRelationsLimitReached = setVerticalPaginationFlags(atlasLineageOnDemandContext, entitiesTraversed, inLineageInfo, outLineageInfo, inVertex, outVertex);
+        boolean hasRelationsLimitReached = setVerticalPaginationFlags(atlasLineageOnDemandContext, isInput, entitiesTraversed, inLineageInfo, outLineageInfo, inVertex, outVertex);
         if (!hasRelationsLimitReached) {
             ret.getRelationsOnDemand().put(inGuid, inLineageInfo);
             ret.getRelationsOnDemand().put(outGuid, outLineageInfo);
@@ -602,15 +604,23 @@ public class EntityLineageService implements AtlasLineageService {
         return hasRelationsLimitReached;
     }
 
-    private boolean setVerticalPaginationFlags(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtomicInteger entitiesTraversed, LineageInfoOnDemand inLineageInfo, LineageInfoOnDemand outLineageInfo, AtlasVertex inVertex, AtlasVertex outVertex) {
+    private boolean setVerticalPaginationFlags(AtlasLineageOnDemandContext atlasLineageOnDemandContext, boolean isInput, AtomicInteger entitiesTraversed, LineageInfoOnDemand inLineageInfo, LineageInfoOnDemand outLineageInfo, AtlasVertex inVertex, AtlasVertex outVertex) {
         boolean hasRelationsLimitReached = false;
         if (inLineageInfo.isInputRelationsReachedLimit() || outLineageInfo.isOutputRelationsReachedLimit() || isEntityTraversalLimitReached(entitiesTraversed)) {
             inLineageInfo.setHasMoreInputs(true);
             outLineageInfo.setHasMoreOutputs(true);
             hasRelationsLimitReached = true;
 
-            List<AtlasEdge> outFilteredEdges = getFilteredAtlasEdges(outVertex, PROCESS_OUTPUTS_EDGE, atlasLineageOnDemandContext, false);
-            List<AtlasEdge> inFilteredEdges = getFilteredAtlasEdges(inVertex, PROCESS_INPUTS_EDGE, atlasLineageOnDemandContext, false);
+            boolean inIsProcess = Objects.equals(AtlasGraphUtilsV2.getTypeName(inVertex), PROCESS_SUPER_TYPE);
+            AtlasEdgeDirection inDirection = inIsProcess ? OUT: IN;
+            AtlasEdgeDirection outDirection = !inIsProcess ? OUT: IN;
+            String edgeLabel = isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE;
+
+            List<AtlasEdge> inFilteredEdges = getFilteredAtlasEdges(inVertex, inDirection, edgeLabel, atlasLineageOnDemandContext, false);
+            List<AtlasEdge> outFilteredEdges = getFilteredAtlasEdges(outVertex, outDirection, edgeLabel, atlasLineageOnDemandContext, false);
+
+            inLineageInfo.setDebugInfo("IN = $IN-" + inVertex.getProperty("name" , String.class) + " -> " + "$OUT-" + outVertex.getProperty("name" , String.class));
+            outLineageInfo.setDebugInfo("OUT = $IN-" + inVertex.getProperty("name" , String.class) + " -> " + "$OUT-" + outVertex.getProperty("name" , String.class));
 
             outLineageInfo.setTotalOutputRelationsCount(outFilteredEdges.size());
             inLineageInfo.setTotalInputRelationsCount(inFilteredEdges.size());
@@ -635,20 +645,20 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private void setHasDownstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex inVertex, LineageInfoOnDemand inLineageInfo) {
-        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(inVertex, PROCESS_INPUTS_EDGE, atlasLineageOnDemandContext, true);
+        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(inVertex, IN, PROCESS_INPUTS_EDGE, atlasLineageOnDemandContext, true);
         if (!filteredEdges.isEmpty())
             inLineageInfo.setHasDownstream(true);
     }
 
     private void setHasUpstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex outVertex, LineageInfoOnDemand outLineageInfo) {
-        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(outVertex, PROCESS_OUTPUTS_EDGE, atlasLineageOnDemandContext, true);
+        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(outVertex, IN, PROCESS_OUTPUTS_EDGE, atlasLineageOnDemandContext, true);
         if (!filteredEdges.isEmpty())
             outLineageInfo.setHasUpstream(true);
     }
 
-    private List<AtlasEdge> getFilteredAtlasEdges(AtlasVertex outVertex, String processEdgeLabel, AtlasLineageOnDemandContext atlasLineageOnDemandContext, boolean hasAnyCheck) {
+    private List<AtlasEdge> getFilteredAtlasEdges(AtlasVertex outVertex, AtlasEdgeDirection direction, String processEdgeLabel, AtlasLineageOnDemandContext atlasLineageOnDemandContext, boolean hasAnyCheck) {
         List<AtlasEdge> filteredEdges = new ArrayList<>();
-        Iterable<AtlasEdge> edges = outVertex.getEdges(IN, processEdgeLabel);
+        Iterable<AtlasEdge> edges = outVertex.getEdges(direction, processEdgeLabel);
         for (AtlasEdge edge : edges) {
             if (edgeMatchesEvaluation(edge, atlasLineageOnDemandContext)) {
                 filteredEdges.add(edge);
