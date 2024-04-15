@@ -592,7 +592,7 @@ public class EntityLineageService implements AtlasLineageService {
 
         setHorizontalPaginationFlags(isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, inVertex, inGuid, outVertex, outGuid, inLineageInfo, outLineageInfo);
 
-        boolean hasRelationsLimitReached = setVerticalPaginationFlags(atlasLineageOnDemandContext, isInput, entitiesTraversed, inLineageInfo, outLineageInfo, inVertex, outVertex);
+        boolean hasRelationsLimitReached = setVerticalPaginationFlags(depth, atlasLineageOnDemandContext, isInput, entitiesTraversed, inLineageInfo, outLineageInfo, inVertex, outVertex);
         if (!hasRelationsLimitReached) {
             ret.getRelationsOnDemand().put(inGuid, inLineageInfo);
             ret.getRelationsOnDemand().put(outGuid, outLineageInfo);
@@ -602,26 +602,28 @@ public class EntityLineageService implements AtlasLineageService {
         return hasRelationsLimitReached;
     }
 
-    private boolean setVerticalPaginationFlags(AtlasLineageOnDemandContext atlasLineageOnDemandContext, boolean isInput, AtomicInteger entitiesTraversed, LineageInfoOnDemand inLineageInfo, LineageInfoOnDemand outLineageInfo, AtlasVertex inVertex, AtlasVertex outVertex) {
+    private boolean setVerticalPaginationFlags(int depth, AtlasLineageOnDemandContext atlasLineageOnDemandContext, boolean isInput, AtomicInteger entitiesTraversed, LineageInfoOnDemand inLineageInfo, LineageInfoOnDemand outLineageInfo, AtlasVertex inVertex, AtlasVertex outVertex) {
         boolean hasRelationsLimitReached = false;
         if (inLineageInfo.isInputRelationsReachedLimit() || outLineageInfo.isOutputRelationsReachedLimit() || isEntityTraversalLimitReached(entitiesTraversed)) {
             inLineageInfo.setHasMoreInputs(true);
             outLineageInfo.setHasMoreOutputs(true);
             hasRelationsLimitReached = true;
 
-            boolean inIsProcess = Objects.equals(AtlasGraphUtilsV2.getTypeName(inVertex), PROCESS_SUPER_TYPE);
-            AtlasEdgeDirection inDirection = inIsProcess ? OUT: IN;     // Process Node edges always points outwards
-            AtlasEdgeDirection outDirection = !inIsProcess ? OUT: IN;   // Data Node edges always points inwards
-            String edgeLabel = isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE;
+            if (depth >= 0) {
+                boolean inIsProcess = Objects.equals(AtlasGraphUtilsV2.getTypeName(inVertex), PROCESS_SUPER_TYPE);
+                AtlasEdgeDirection inDirection = inIsProcess ? OUT: IN;     // Process Node edges always points outwards
+                AtlasEdgeDirection outDirection = !inIsProcess ? OUT: IN;   // Data Node edges always points inwards
+                String edgeLabel = isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE;
 
-            if (outLineageInfo.getTotalOutputRelationsCount() == 0) {
-                List<AtlasEdge> outFilteredEdges = getFilteredAtlasEdges(outVertex, outDirection, edgeLabel, atlasLineageOnDemandContext, false);
-                outLineageInfo.setTotalOutputRelationsCount(outFilteredEdges.size());
-            }
+                if (outLineageInfo.getTotalOutputRelationsCount() == 0) {
+                    List<AtlasEdge> outFilteredEdges = getFilteredAtlasEdges(outVertex, outDirection, edgeLabel, atlasLineageOnDemandContext, false);
+                    outLineageInfo.setTotalOutputRelationsCount(outFilteredEdges.size());
+                }
 
-            if (inLineageInfo.getTotalInputRelationsCount() == 0) {
-                List<AtlasEdge> inFilteredEdges = getFilteredAtlasEdges(inVertex, inDirection, edgeLabel, atlasLineageOnDemandContext, false);
-                inLineageInfo.setTotalInputRelationsCount(inFilteredEdges.size());
+                if (inLineageInfo.getTotalInputRelationsCount() == 0) {
+                    List<AtlasEdge> inFilteredEdges = getFilteredAtlasEdges(inVertex, inDirection, edgeLabel, atlasLineageOnDemandContext, false);
+                    inLineageInfo.setTotalInputRelationsCount(inFilteredEdges.size());
+                }
             }
         }
 
