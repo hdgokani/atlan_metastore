@@ -182,8 +182,6 @@ public class AtlasLineageOnDemandInfo implements Serializable {
         LineageOnDemandConstraints onDemandConstraints;
         int                        fromCounter;  // Counter for relations to be skipped
 
-        String                     debugInfo;
-
         public LineageInfoOnDemand() { }
 
         public LineageInfoOnDemand(LineageOnDemandConstraints onDemandConstraints) {
@@ -194,18 +192,13 @@ public class AtlasLineageOnDemandInfo implements Serializable {
             this.outputRelationsCount          = 0;
             this.totalInputRelationsCount      = 0;
             this.totalOutputRelationsCount     = 0;
-            this.debugInfo                     = "";
             this.isInputRelationsReachedLimit  = false;
             this.isOutputRelationsReachedLimit = false;
             this.hasUpstream                   = false;
             this.hasDownstream                 = false;
             this.fromCounter                   = 0;
         }
-
-        public void setDebugInfo(String str) {this.debugInfo += str;}
-
-        public String getDebugInfo() {return debugInfo;};
-
+        
         public boolean isInputRelationsReachedLimit() {
             return isInputRelationsReachedLimit;
         }

@@ -635,18 +635,19 @@ public class EntityLineageService implements AtlasLineageService {
             hasRelationsLimitReached = true;
 
             boolean inIsProcess = Objects.equals(AtlasGraphUtilsV2.getTypeName(inVertex), PROCESS_SUPER_TYPE);
-            AtlasEdgeDirection inDirection = inIsProcess ? OUT: IN;
-            AtlasEdgeDirection outDirection = !inIsProcess ? OUT: IN;
+            AtlasEdgeDirection inDirection = inIsProcess ? OUT: IN;     // Process Node edges always points outwards
+            AtlasEdgeDirection outDirection = !inIsProcess ? OUT: IN;   // Data Node edges always points inwards
             String edgeLabel = isInput ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE;
 
-            List<AtlasEdge> inFilteredEdges = getFilteredAtlasEdges(inVertex, inDirection, edgeLabel, atlasLineageOnDemandContext, false);
-            List<AtlasEdge> outFilteredEdges = getFilteredAtlasEdges(outVertex, outDirection, edgeLabel, atlasLineageOnDemandContext, false);
+            if (outLineageInfo.getTotalOutputRelationsCount() == 0) {
+                List<AtlasEdge> outFilteredEdges = getFilteredAtlasEdges(outVertex, outDirection, edgeLabel, atlasLineageOnDemandContext, false);
+                outLineageInfo.setTotalOutputRelationsCount(outFilteredEdges.size());
+            }
 
-            inLineageInfo.setDebugInfo("IN = $IN-" + inVertex.getProperty("name" , String.class) + " -> " + "$OUT-" + outVertex.getProperty("name" , String.class));
-            outLineageInfo.setDebugInfo("OUT = $IN-" + inVertex.getProperty("name" , String.class) + " -> " + "$OUT-" + outVertex.getProperty("name" , String.class));
-
-            outLineageInfo.setTotalOutputRelationsCount(outFilteredEdges.size());
-            inLineageInfo.setTotalInputRelationsCount(inFilteredEdges.size());
+            if (inLineageInfo.getTotalInputRelationsCount() == 0) {
+                List<AtlasEdge> inFilteredEdges = getFilteredAtlasEdges(inVertex, inDirection, edgeLabel, atlasLineageOnDemandContext, false);
+                inLineageInfo.setTotalInputRelationsCount(inFilteredEdges.size());
+            }
         }
 
         if (!hasRelationsLimitReached) {
