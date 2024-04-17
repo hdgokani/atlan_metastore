@@ -135,6 +135,16 @@ public final class Constants {
 
 
     /**
+     * MESH property keys.
+     */
+    public static final String DATA_DOMAIN_ENTITY_TYPE     = "DataDomain";
+    public static final String DATA_PRODUCT_ENTITY_TYPE    = "DataProduct";
+    public static final String DATA_PRODUCT_EDGE_LABEL     = "__DataDomain.dataProducts";
+    public static final String DOMAIN_PARENT_EDGE_LABEL    = "__DataDomain.subDomains";
+
+
+
+    /**
      * SQL property keys.
      */
     public static final String CONNECTION_ENTITY_TYPE       = "Connection";
