@@ -9,7 +9,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -22,7 +21,6 @@ import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class DataProductPreProcessor extends AbstractDomainPreProcessor {
@@ -49,35 +47,43 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         setParent(entity, context);
 
-        if (operation == EntityMutations.EntityOperation.CREATE) {
-            processCreateProduct(entity, vertex);
+        switch (operation) {
+            case CREATE:
+                processCreateProduct(entity, vertex);
+                break;
+            case UPDATE:
+                processUpdateProduct(entity, vertex);
+                break;
         }
     }
 
     private void processCreateProduct(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateDomain");
-        String domainName = (String) entity.getAttribute(NAME);
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateProduct");
+        String productName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
 
-        productExists(domainName, parentDomainQualifiedName);
+        productExists(productName, parentDomainQualifiedName);
         String newQualifiedName = createQualifiedName(parentDomainQualifiedName);
-        if(!newQualifiedName.isEmpty()){
-            entity.setAttribute(QUALIFIED_NAME, newQualifiedName);
-        }
-        else{
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Parent Domain Qualified Name is empty");
-        }
+
+        entity.setAttribute(QUALIFIED_NAME, newQualifiedName);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    public static String createQualifiedName(String parentDomainQualifiedName) {
-        if (StringUtils.isNotEmpty(parentDomainQualifiedName) && parentDomainQualifiedName !=null) {
-            return parentDomainQualifiedName + "/product/" + getUUID();
+    private void processUpdateProduct(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateProduct");
+        String VertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
+
+        entity.setAttribute(QUALIFIED_NAME, VertexQName);
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private static String createQualifiedName(String parentDomainQualifiedName) throws AtlasBaseException {
+        if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Parent Domain Qualified Name cannot be empty or null");
         }
-        else{
-            return "";
-        }
+        return parentDomainQualifiedName + "/product/" + getUUID();
+
     }
 
     private void setParent(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {

@@ -18,23 +18,14 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContext;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
-import org.apache.atlas.authorize.AtlasEntityAccessRequest;
-import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.AbstractGlossaryPreProcessor;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,14 +33,12 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.PARENT_DOMAIN_QN;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.SUPER_DOMAIN_QN;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public abstract class AbstractDomainPreProcessor implements PreProcessor {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractGlossaryPreProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractDomainPreProcessor.class);
 
 
     protected final AtlasTypeRegistry typeRegistry;
@@ -103,29 +92,5 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         } while (hasMore);
 
         return ret;
-    }
-
-    protected void isAuthorized(AtlasEntityHeader sourceDomain, AtlasEntityHeader targetDomain) throws AtlasBaseException {
-
-        // source -> CREATE + UPDATE + DELETE
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, sourceDomain),
-                "create on source Domain: ", sourceDomain.getAttribute(NAME));
-
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceDomain),
-                "update on source Domain: ", sourceDomain.getAttribute(NAME));
-
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, sourceDomain),
-                "delete on source Domain: ", sourceDomain.getAttribute(NAME));
-
-
-        // target -> CREATE + UPDATE + DELETE
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, targetDomain),
-                "create on target Domain: ", targetDomain.getAttribute(NAME));
-
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetDomain),
-                "update on target Domain: ", targetDomain.getAttribute(NAME));
-
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, targetDomain),
-                "delete on target Domain: ", targetDomain.getAttribute(NAME));
     }
 }

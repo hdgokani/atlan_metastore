@@ -24,16 +24,13 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -45,9 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.graph.GraphHelper.getActiveChildrenVertices;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class DomainPreProcessor extends AbstractDomainPreProcessor {
@@ -66,7 +61,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
     public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context,
                                   EntityMutations.EntityOperation operation) throws AtlasBaseException {
         //Handle name & qualifiedName
-        if (operation == EntityMutations.EntityOperation.CREATE && LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled()) {
             LOG.debug("DomainPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
@@ -78,8 +73,15 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
         setParent(entity, context);
 
-        if (operation == EntityMutations.EntityOperation.CREATE) {
-            processCreateDomain(entity, vertex);
+        switch (operation) {
+            case CREATE:
+                processCreateDomain(entity, vertex);
+                break;
+            case UPDATE:
+                processUpdateDomain(entity, vertex);
+                break;
+            default:
+                break;
         }
     }
 
@@ -94,13 +96,21 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    public static String createQualifiedName(String parentDomainQualifiedName) {
-        if (StringUtils.isNotEmpty(parentDomainQualifiedName) && parentDomainQualifiedName !=null) {
+    private static String createQualifiedName(String parentDomainQualifiedName) {
+        if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
             return parentDomainQualifiedName + "/domain/" + getUUID();
         } else{
-            String prefixQN = "default/domain";
-            return prefixQN + "/" + getUUID();
+            return "default/domain" + "/" + getUUID();
         }
+    }
+
+    private void processUpdateDomain(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateDomain");
+        String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
+
+        entity.setAttribute(QUALIFIED_NAME, vertexQName);
+
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void setParent(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
