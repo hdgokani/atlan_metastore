@@ -45,8 +45,6 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         AtlasEntity entity = (AtlasEntity) entityStruct;
         AtlasVertex vertex = context.getVertex(entity.getGuid());
 
-        setParent(entity, context);
-
         switch (operation) {
             case CREATE:
                 processCreateProduct(entity, vertex);
@@ -73,6 +71,13 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private void processUpdateProduct(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateProduct");
         String VertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
+        String productName = (String) entity.getAttribute(NAME);
+        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
+        String productVertexName = vertex.getProperty(NAME, String.class);
+
+        if (!productVertexName.equals(productName)) {
+            productExists(productName, parentDomainQualifiedName);
+        }
 
         entity.setAttribute(QUALIFIED_NAME, VertexQName);
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -84,57 +89,6 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         }
         return parentDomainQualifiedName + "/product/" + getUUID();
 
-    }
-
-    private void setParent(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("DataProductPreProcessor.setParent");
-        if (parentDomain == null) {
-            Object relationshipAttribute = entity.getRelationshipAttribute(DATA_DOMAIN);
-            Set<String> attributes = new HashSet<>(Arrays.asList(QUALIFIED_NAME, SUPER_DOMAIN_QN, PARENT_DOMAIN_QN, "__typeName"));
-
-            if(relationshipAttribute instanceof AtlasObjectId){
-                AtlasObjectId objectId = (AtlasObjectId) relationshipAttribute;
-                if (objectId != null) {
-                    if (StringUtils.isNotEmpty(objectId.getGuid())) {
-                        AtlasVertex vertex = entityRetriever.getEntityVertex(objectId.getGuid());
-
-                        if (vertex == null) {
-                            parentDomain = entityRetriever.toAtlasEntityHeader(objectId.getGuid(), attributes);
-                        } else {
-                            parentDomain = entityRetriever.toAtlasEntityHeader(vertex, attributes);
-                        }
-
-                    } else if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
-                            StringUtils.isNotEmpty((String) objectId.getUniqueAttributes().get(QUALIFIED_NAME))) {
-                        AtlasVertex parentDomainVertex = entityRetriever.getEntityVertex(objectId);
-                        parentDomain = entityRetriever.toAtlasEntityHeader(parentDomainVertex, attributes);
-
-                    }
-                }
-            }
-            else if(relationshipAttribute instanceof Map){
-                Map<String, Object> relationshipMap = (Map<String, Object>) relationshipAttribute;
-                if (StringUtils.isNotEmpty((String) relationshipMap.get("guid"))) {
-                    AtlasVertex vertex = entityRetriever.getEntityVertex((String) relationshipMap.get("guid"));
-
-                    if (vertex == null) {
-                        parentDomain = entityRetriever.toAtlasEntityHeader((String) relationshipMap.get("guid"), attributes);
-                    } else {
-                        parentDomain = entityRetriever.toAtlasEntityHeader(vertex, attributes);
-                    }
-
-                }
-                else  {
-                    parentDomain = new AtlasEntityHeader((String) relationshipMap.get("typeName"), relationshipMap);
-
-                }
-            }
-            else{
-                LOG.warn("DataProductPreProcessor.setParent: Invalid relationshipAttribute {}", relationshipAttribute);
-            }
-
-        }
-        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void productExists(String productName, String parentDomainQualifiedName) throws AtlasBaseException {
@@ -161,7 +115,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            List<AtlasEntityHeader> products = indexSearchPaginated(dsl, DATA_PRODUCT_ENTITY_TYPE);
+            List<AtlasEntityHeader> products = indexSearchPaginated(dsl);
 
             if (CollectionUtils.isNotEmpty(products)) {
                 for (AtlasEntityHeader product : products) {

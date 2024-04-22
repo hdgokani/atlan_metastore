@@ -71,8 +71,6 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         AtlasEntity entity = (AtlasEntity) entityStruct;
         AtlasVertex vertex = context.getVertex(entity.getGuid());
 
-        setParent(entity, context);
-
         switch (operation) {
             case CREATE:
                 processCreateDomain(entity, vertex);
@@ -107,34 +105,16 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
     private void processUpdateDomain(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateDomain");
         String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
+        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
+        String domainName = (String) entity.getAttribute(NAME);
+        String domainVertexName = vertex.getProperty(NAME, String.class);
+
+        if (!domainVertexName.equals(domainName)) {
+            domainExists(domainName, parentDomainQualifiedName);
+        }
 
         entity.setAttribute(QUALIFIED_NAME, vertexQName);
 
-        RequestContext.get().endMetricRecord(metricRecorder);
-    }
-
-    private void setParent(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("DomainPreProcessor.setParent");
-        if (parentDomain == null) {
-            AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(PARENT_DOMAIN);
-            Set<String> attributes = new HashSet<>(Arrays.asList(QUALIFIED_NAME, SUPER_DOMAIN_QN, PARENT_DOMAIN_QN, "__typeName"));
-
-            if (objectId != null) {
-                if (StringUtils.isNotEmpty(objectId.getGuid())) {
-                    AtlasVertex vertex = entityRetriever.getEntityVertex(objectId.getGuid());
-
-                    if (vertex == null) {
-                        parentDomain = entityRetriever.toAtlasEntityHeader(objectId.getGuid(), attributes);
-                    } else {
-                        parentDomain = entityRetriever.toAtlasEntityHeader(vertex, attributes);
-                    }
-                } else if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
-                        StringUtils.isNotEmpty((String) objectId.getUniqueAttributes().get(QUALIFIED_NAME))) {
-                    AtlasVertex parentDomainVertex = entityRetriever.getEntityVertex(objectId);
-                    parentDomain = entityRetriever.toAtlasEntityHeader(parentDomainVertex, attributes);
-                }
-            }
-        }
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
@@ -150,7 +130,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
 
             Map<String, Object> bool = new HashMap<>();
-            if (parentDomain != null) {
+            if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
                 mustClauseList.add(mapOf("term", mapOf("parentDomainQualifiedName", parentDomainQualifiedName)));
             } else {
                 List mustNotClauseList = new ArrayList();
@@ -162,7 +142,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            List<AtlasEntityHeader> domains = indexSearchPaginated(dsl, DATA_DOMAIN_ENTITY_TYPE);
+            List<AtlasEntityHeader> domains = indexSearchPaginated(dsl);
 
             if (CollectionUtils.isNotEmpty(domains)) {
                 for (AtlasEntityHeader domain : domains) {

@@ -32,9 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public abstract class AbstractDomainPreProcessor implements PreProcessor {
@@ -57,7 +54,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         }
     }
 
-    public List<AtlasEntityHeader> indexSearchPaginated(Map<String, Object> dsl, String entityType) throws AtlasBaseException {
+    public List<AtlasEntityHeader> indexSearchPaginated(Map<String, Object> dsl) throws AtlasBaseException {
         IndexSearchParams searchParams = new IndexSearchParams();
         List<AtlasEntityHeader> ret = new ArrayList<>();
 
@@ -73,11 +70,6 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
             dsl.put("from", from);
             dsl.put("size", size);
             searchParams.setDsl(dsl);
-
-            if (entityType.equals(POLICY_ENTITY_TYPE)) {
-                Set<String> attributes = new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES, ATTR_POLICY_CATEGORY));
-                searchParams.setAttributes(attributes);
-            }
 
             List<AtlasEntityHeader> headers = discovery.directIndexSearch(searchParams).getEntities();
 
