@@ -60,6 +60,12 @@ public class AtlasEntityComparator {
         return getDiffResult(updatedEntity, null, storedVertex, findOnlyFirstDiff);
     }
 
+    private void verifyClassificationsPropagationMode(List<AtlasClassification> incomingClassifications) throws AtlasBaseException {
+        for(AtlasClassification incomingClassification : incomingClassifications){
+            entityRetriever.determinePropagationMode(incomingClassification.getRestrictPropagationThroughLineage(),incomingClassification.getRestrictPropagationThroughHierachy());
+        }
+    }
+
     private AtlasEntityDiffResult getDiffResult(AtlasEntity updatedEntity, AtlasEntity storedEntity, AtlasVertex storedVertex, boolean findOnlyFirstDiff) throws AtlasBaseException {
         AtlasEntity                              diffEntity                       = new AtlasEntity(updatedEntity.getTypeName());
         AtlasEntityType                          entityType                       = typeRegistry.getEntityTypeByName(updatedEntity.getTypeName());

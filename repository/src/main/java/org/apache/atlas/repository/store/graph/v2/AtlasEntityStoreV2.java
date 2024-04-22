@@ -63,6 +63,8 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreP
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PersonaPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PurposePreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.DataProductPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.DomainPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
@@ -1075,6 +1077,42 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
+    public void deleteClassifications(final String guid, final List<AtlasClassification> classifications) throws AtlasBaseException {
+        deleteClassifications(guid, classifications, null);
+    }
+
+    @Override
+    @GraphTransaction
+    public void deleteClassifications(final String guid, final List<AtlasClassification> classifications, final String associatedEntityGuid) throws AtlasBaseException {
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
+        }
+        if (CollectionUtils.isEmpty(classifications)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classifications not specified");
+        }
+
+        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
+
+        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+
+        // verify authorization only for removal of directly associated classification and not propagated one.
+        for (AtlasClassification classification: classifications){
+            if (StringUtils.isEmpty(associatedEntityGuid) || guid.equals(associatedEntityGuid)) {
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION,
+                                entityHeader, new AtlasClassification(classification.getTypeName())),
+                        "remove classification: guid=", guid, ", classification=", classification.getDisplayName());
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Deleting classification={} from entity={}", classification.getDisplayName(), guid);
+            }
+        }
+        entityGraphMapper.deleteClassifications(guid, classifications, associatedEntityGuid);
+    }
+
+
+    @Override
+    @GraphTransaction
     public void deleteClassification(final String guid, final String classificationName, final String associatedEntityGuid) throws AtlasBaseException {
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
@@ -1097,8 +1135,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Deleting classification={} from entity={}", classificationName, guid);
         }
-
-
         entityGraphMapper.deleteClassification(guid, classificationName, associatedEntityGuid);
     }
 
@@ -1411,6 +1447,33 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
+    private Map<String, Object> getMap(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+        return map;
+    }
+
+//    private Boolean isAccessAllowed(AtlasEntity entity, String action) {
+//        Map<String, Object> entityAttr = entity.getAttributes();
+//        Map<String, Object> entityForAuth = getMap("objects", getMap("assetCriteria", getMap("attributes", entityAttr)));;
+//
+//        String[] assetQualifiedNames = new String[1];
+//        assetQualifiedNames[0] = (String) entity.getAttribute("qualifiedName");
+//        ((Map<String, Object>) entityForAuth.get("objects")).put("assetQualifiedNames", assetQualifiedNames);
+//
+//
+//        String[] userArray = new String[1];
+//        userArray[0] = RequestContext.getCurrentUser();
+//        entityForAuth.put("subjects", getMap("users", userArray));
+//
+//        String[] actionArray = new String[1];
+//        actionArray[0] = action;
+//        entityForAuth.put("actions", actionArray);
+//
+//        Boolean accessAllowed = this.atlasAuthorization.isAccessAllowed(entityForAuth, RequestContext.getCurrentUser());
+//        return accessAllowed;
+//    }
+
     private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications, boolean replaceBusinessAttributes, boolean isOverwriteBusinessAttribute) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createOrUpdate()");
@@ -1561,7 +1624,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("preCreateOrUpdate");
-        this.graph.setEnableCache(RequestContext.get().isCacheEnabled());
+
         EntityGraphDiscovery        graphDiscoverer  = new AtlasEntityGraphDiscoveryV2(graph, typeRegistry, entityStream, entityGraphMapper);
         EntityGraphDiscoveryContext discoveryContext = graphDiscoverer.discoverEntities();
         EntityMutationContext       context          = new EntityMutationContext(discoveryContext);
@@ -1572,6 +1635,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             String guid = element.getKey();
             AtlasEntity entity = entityStream.getByGuid(guid);
 
+            if(Objects.nonNull(entity) && Objects.nonNull(entity.getClassifications())) {
+                entityRetriever.verifyClassificationsPropagationMode(entity.getClassifications());
+            }
             if (entity != null) { // entity would be null if guid is not in the stream but referenced by an entity in the stream
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
@@ -1800,6 +1866,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             case ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE:
                 preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever, graph, taskManagement, entityGraphMapper);
+                break;
+
+            case DATA_DOMAIN_ENTITY_TYPE:
+                preProcessor = new DomainPreProcessor(typeRegistry, entityRetriever, graph, entityGraphMapper);
+                break;
+
+            case DATA_PRODUCT_ENTITY_TYPE:
+                preProcessor = new DataProductPreProcessor(typeRegistry, entityRetriever, graph, entityGraphMapper);
                 break;
 
             case QUERY_ENTITY_TYPE:
