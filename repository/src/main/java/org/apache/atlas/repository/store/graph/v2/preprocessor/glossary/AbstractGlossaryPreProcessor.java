@@ -76,6 +76,7 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
     protected final AtlasTypeRegistry typeRegistry;
     protected final EntityGraphRetriever entityRetriever;
     protected final TaskManagement taskManagement;
+
     protected EntityDiscoveryService discovery;
 
     AbstractGlossaryPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph, TaskManagement taskManagement) {
