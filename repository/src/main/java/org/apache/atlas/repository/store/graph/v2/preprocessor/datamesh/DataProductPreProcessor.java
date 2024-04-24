@@ -99,7 +99,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         boolean exists = false;
         try {
-            List mustClauseList = new ArrayList();
+            List<Map<String, Object>> mustClauseList = new ArrayList<>();
             mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", DATA_PRODUCT_ENTITY_TYPE)));
             mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
             mustClauseList.add(mapOf("term", mapOf("name.keyword", productName)));
@@ -109,7 +109,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
                 mustClauseList.add(mapOf("term", mapOf("parentDomainQualifiedName", parentDomainQualifiedName)));
             } else {
-                List mustNotClauseList = new ArrayList();
+                List<Map<String, Object>> mustNotClauseList = new ArrayList<>();
                 mustNotClauseList.add(mapOf("exists", mapOf("field", "parentDomainQualifiedName")));
                 bool.put("must_not", mustNotClauseList);
             }
