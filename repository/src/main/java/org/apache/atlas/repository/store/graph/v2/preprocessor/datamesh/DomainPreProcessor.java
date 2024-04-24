@@ -19,7 +19,9 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -27,9 +29,8 @@ import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -43,15 +44,18 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
-public class DomainPreProcessor extends AbstractDomainPreProcessor {
+public class DomainPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DomainPreProcessor.class);
-    private EntityGraphMapper entityGraphMapper;
-    private EntityMutationContext context;
+    protected EntityDiscoveryService discovery;
 
-    public DomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                              AtlasGraph graph, EntityGraphMapper entityGraphMapper) {
-        super(typeRegistry, entityRetriever, graph);
-        this.entityGraphMapper = entityGraphMapper;
+    public DomainPreProcessor(AtlasTypeRegistry typeRegistry, AtlasGraph graph) {
+
+        try {
+            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
+        } catch (AtlasException e) {
+            e.printStackTrace();
+        }
+
     }
 
     @Override
@@ -62,8 +66,6 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             LOG.debug("DomainPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
-
-        this.context = context;
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
         AtlasVertex vertex = context.getVertex(entity.getGuid());
@@ -144,7 +146,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            List<AtlasEntityHeader> domains = indexSearchPaginated(dsl);
+            List<AtlasEntityHeader> domains = indexSearchPaginated(dsl, this.discovery);
 
             if (CollectionUtils.isNotEmpty(domains)) {
                 for (AtlasEntityHeader domain : domains) {

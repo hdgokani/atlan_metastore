@@ -1,14 +1,15 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -22,12 +23,15 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
-public class DataProductPreProcessor extends AbstractDomainPreProcessor {
+public class DataProductPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DataProductPreProcessor.class);
-    private EntityMutationContext context;
-    public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                                   AtlasGraph graph, EntityGraphMapper entityGraphMapper) {
-        super(typeRegistry, entityRetriever, graph);
+    protected EntityDiscoveryService discovery;
+    public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, AtlasGraph graph) {
+        try {
+            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
+        } catch (AtlasException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -38,7 +42,6 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             LOG.debug("DataProductPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
-        this.context = context;
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
         AtlasVertex vertex = context.getVertex(entity.getGuid());
@@ -118,7 +121,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            List<AtlasEntityHeader> products = indexSearchPaginated(dsl);
+            List<AtlasEntityHeader> products = indexSearchPaginated(dsl, this.discovery);
 
             if (CollectionUtils.isNotEmpty(products)) {
                 for (AtlasEntityHeader product : products) {

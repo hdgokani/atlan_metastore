@@ -19,10 +19,12 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.glossary;
 
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -356,7 +358,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            List<AtlasEntityHeader> categories = indexSearchPaginated(dsl);
+            List<AtlasEntityHeader> categories = indexSearchPaginated(dsl, this.discovery);
 
             if (CollectionUtils.isNotEmpty(categories)) {
                 for (AtlasEntityHeader category : categories) {
