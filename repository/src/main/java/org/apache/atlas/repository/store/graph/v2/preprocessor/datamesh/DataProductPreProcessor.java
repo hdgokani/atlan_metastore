@@ -12,7 +12,6 @@ import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +23,7 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class DataProductPreProcessor extends AbstractDomainPreProcessor {
-    private static final Logger LOG = LoggerFactory.getLogger(DomainPreProcessor.class);
-    private AtlasEntityHeader parentDomain;
+    private static final Logger LOG = LoggerFactory.getLogger(DataProductPreProcessor.class);
     private EntityMutationContext context;
     public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
                                    AtlasGraph graph, EntityGraphMapper entityGraphMapper) {
@@ -36,7 +34,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context,
                                   EntityMutations.EntityOperation operation) throws AtlasBaseException {
         //Handle name & qualifiedName
-        if (operation == EntityMutations.EntityOperation.CREATE && LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled()) {
             LOG.debug("DataProductPreProcessor.processAttributes: pre processing {}, {}",
                     entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
@@ -73,6 +71,11 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String VertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
         String productName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
+
+        if (StringUtils.isEmpty(parentDomainQualifiedName)){
+            parentDomainQualifiedName = vertex.getProperty(PARENT_DOMAIN_QN, String.class);
+        }
+
         String productVertexName = vertex.getProperty(NAME, String.class);
 
         if (!productVertexName.equals(productName)) {
@@ -103,7 +106,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
 
             Map<String, Object> bool = new HashMap<>();
-            if (parentDomain != null) {
+            if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
                 mustClauseList.add(mapOf("term", mapOf("parentDomainQualifiedName", parentDomainQualifiedName)));
             } else {
                 List mustNotClauseList = new ArrayList();

@@ -23,7 +23,6 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -34,7 +33,6 @@ import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +45,6 @@ import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class DomainPreProcessor extends AbstractDomainPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DomainPreProcessor.class);
-    private AtlasEntityHeader parentDomain;
     private EntityGraphMapper entityGraphMapper;
     private EntityMutationContext context;
 
@@ -98,7 +95,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
             return parentDomainQualifiedName + "/domain/" + getUUID();
         } else{
-            return "default/domain" + "/" + getUUID();
+            return "default/domain/" + getUUID();
         }
     }
 
@@ -106,6 +103,11 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateDomain");
         String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
+
+        if (StringUtils.isEmpty(parentDomainQualifiedName)) {
+            parentDomainQualifiedName = vertex.getProperty(PARENT_DOMAIN_QN, String.class);
+        }
+
         String domainName = (String) entity.getAttribute(NAME);
         String domainVertexName = vertex.getProperty(NAME, String.class);
 
