@@ -70,6 +70,25 @@ public abstract class AbstractRedisService implements RedisService {
         }
     }
 
+    @Override
+    public String getValue(String key) {
+        // If value doesn't exist, return null else return the value
+        return (String) redisClient.getBucket(convertToNamespace(key)).get();
+    }
+
+    @Override
+    public String putValue(String key, String value) {
+        // Put the value in the redis cache with TTL
+        redisClient.getBucket(convertToNamespace(key)).set(value, 30, TimeUnit.SECONDS);
+        return value;
+    }
+
+    @Override
+    public void removeValue(String key)  {
+        // Remove the value from the redis cache
+        redisClient.getBucket(convertToNamespace(key)).delete();
+    }
+
     private String getHostAddress() throws UnknownHostException {
         return InetAddress.getLocalHost().getHostAddress();
     }
@@ -84,6 +103,11 @@ public abstract class AbstractRedisService implements RedisService {
         return redisConfig;
     }
 
+    private String convertToNamespace(String key){
+        // Append key with namespace :atlas
+        return "atlas:"+key;
+    }
+
     Config getLocalConfig() throws AtlasException {
         Config config = initAtlasConfig();
         config.useSingleServer()
@@ -93,7 +117,7 @@ public abstract class AbstractRedisService implements RedisService {
         return config;
     }
 
-    Config getProdConfig() throws AtlasException {
+    protected Config getProdConfig() throws AtlasException {
         Config config = initAtlasConfig();
         config.useSentinelServers()
                 .setReadMode(ReadMode.MASTER_SLAVE)
