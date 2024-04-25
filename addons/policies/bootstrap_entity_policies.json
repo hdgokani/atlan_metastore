@@ -3144,7 +3144,7 @@
                 ],
                 "policyResourceCategory": "ENTITY",
                 "policyResources": [
-                    "entity-type:BusinessPolicyIncident",
+                    "entity-type:BusinessPolicyIncidents",
                     "entity-classification:*",
                     "entity:*"
                 ],
@@ -3173,7 +3173,7 @@
                 ],
                 "policyResourceCategory": "ENTITY",
                 "policyResources": [
-                    "entity-type:BusinessPolicyIncident",
+                    "entity-type:BusinessPolicyIncidents",
                     "entity-classification:*",
                     "entity:*"
                 ],
