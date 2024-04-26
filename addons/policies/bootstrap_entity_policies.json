@@ -3182,6 +3182,64 @@
                 ]
             }
         },
+
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "CUD_BUSINESS_POLICY_INCIDENT",
+                "qualifiedName": "CUD_BUSINESS_POLICY_INCIDENT",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources": [
+                    "entity-type:Incident",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-create"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "READ_BUSINESS_POLICY_INCIDENT",
+                "qualifiedName": "READ_BUSINESS_POLICY_INCIDENT",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$guest",
+                    "$member",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources": [
+                    "entity-type:Incident",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-read"
+                ]
+            }
+        },
+
         {
             "typeName": "AuthPolicy",
             "attributes": {
