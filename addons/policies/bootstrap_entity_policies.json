@@ -3149,7 +3149,9 @@
                     "entity:*"
                 ],
                 "policyActions": [
-                    "entity-create"
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
                 ]
             }
         },
@@ -3206,7 +3208,9 @@
                     "entity:*"
                 ],
                 "policyActions": [
-                    "entity-create"
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
                 ]
             }
         },
