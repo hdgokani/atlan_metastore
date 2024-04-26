@@ -3129,8 +3129,8 @@
         {
             "typeName": "AuthPolicy",
             "attributes": {
-                "name": "CUD_BUSINESS_POLICY_INCIDENT",
-                "qualifiedName": "CUD_BUSINESS_POLICY_INCIDENT",
+                "name": "CUD_BUSINESS_POLICY_INCIDENTS",
+                "qualifiedName": "CUD_BUSINESS_POLICY_INCIDENTS",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
@@ -3156,8 +3156,8 @@
         {
             "typeName": "AuthPolicy",
             "attributes": {
-                "name": "READ_BUSINESS_POLICY_INCIDENT",
-                "qualifiedName": "READ_BUSINESS_POLICY_INCIDENT",
+                "name": "READ_BUSINESS_POLICY_INCIDENTS",
+                "qualifiedName": "READ_BUSINESS_POLICY_INCIDENTS",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
@@ -3186,8 +3186,8 @@
         {
             "typeName": "AuthPolicy",
             "attributes": {
-                "name": "CUD_BUSINESS_POLICY_INCIDENT",
-                "qualifiedName": "CUD_BUSINESS_POLICY_INCIDENT",
+                "name": "CUD_INCIDENT",
+                "qualifiedName": "CUD_INCIDENT",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
@@ -3213,8 +3213,8 @@
         {
             "typeName": "AuthPolicy",
             "attributes": {
-                "name": "READ_BUSINESS_POLICY_INCIDENT",
-                "qualifiedName": "READ_BUSINESS_POLICY_INCIDENT",
+                "name": "READ_INCIDENT",
+                "qualifiedName": "READ_INCIDENT",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
