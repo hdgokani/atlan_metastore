@@ -86,9 +86,13 @@ public class DomainPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateDomain");
         String domainName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
+        Map<String, String> customAttributes = new HashMap<>();
+        customAttributes.put("isQualifiedNameMigrated", "true");
 
         domainExists(domainName, parentDomainQualifiedName);
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
+        entity.setCustomAttributes(customAttributes);
+
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }

@@ -60,11 +60,14 @@ public class DataProductPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateProduct");
         String productName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
+        Map<String, String> customAttributes = new HashMap<>();
+        customAttributes.put("isQualifiedNameMigrated", "true");
 
         productExists(productName, parentDomainQualifiedName);
         String newQualifiedName = createQualifiedName(parentDomainQualifiedName);
 
         entity.setAttribute(QUALIFIED_NAME, newQualifiedName);
+        entity.setCustomAttributes(customAttributes);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
