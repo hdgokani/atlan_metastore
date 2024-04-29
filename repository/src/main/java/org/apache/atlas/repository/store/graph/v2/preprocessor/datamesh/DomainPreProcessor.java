@@ -33,7 +33,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -91,9 +90,12 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateDomain");
         String domainName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN);
+        Map<String, String> customAttributes = new HashMap<>();
+        customAttributes.put("isQualifiedNameMigrated", "true");
 
         domainExists(domainName, parentDomainQualifiedName);
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
+        entity.setCustomAttributes(customAttributes);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
@@ -176,6 +178,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
 
             // Move Sub-Domain as root Domain
             if(targetDomainQualifiedName.isEmpty()){
+                LOG.info("Moving subDomain {} as root Domain", domainName);
                 targetDomainQualifiedName = "default";
                 updatedQualifiedName = currentSubDomainQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
                 domain.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
