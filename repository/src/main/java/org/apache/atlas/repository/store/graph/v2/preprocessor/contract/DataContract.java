@@ -24,83 +24,37 @@ import static org.apache.atlas.AtlasErrorCode.*;
 @JsonPropertyOrder({"kind", "status", "template_version", "data_source", "dataset", "type", "description", "owners",
         "tags", "certificate", "columns"})
 public class DataContract {
+    private static final String KIND_VALUE = "DataContract";
+    private static final Pattern versionPattern = Pattern.compile("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$");
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    static {
+        objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+    }
+
     @Valid @NotNull
     public String                               kind;
-
-    public STATUS                               status;
-
+    public Status                               status;
     @JsonProperty(value = "template_version", defaultValue = "0.0.1")
     public String                               templateVersion;
     @Valid @NotNull
-    public String                              data_source;
+    public String                               data_source;
     @Valid @NotNull
-    public String                              dataset;
+    public String                               dataset;
     @Valid @NotNull
-    public DATASET_TYPE                        type;
-    public String                              description;
-    public List<String>                        owners;
-    public List<BusinessTag>                   tags;
-    public String                              certificate;
+    public DatasetType                          type;
+    public String                               description;
+    public List<String>                         owners;
+    public List<BusinessTag>                    tags;
+    public String                               certificate;
     @Valid
-    public List<Column>                        columns;
-    private Map<String, Object>                unknownFields = new HashMap<>();
+    public List<Column>                         columns;
+    private final Map<String, Object>            unknownFields = new HashMap<>();
 
-    @JsonSetter("type")
-    public void setType(String type) throws AtlasBaseException {
-        try {
-            this.type = DATASET_TYPE.from(type);
-        } catch (IllegalArgumentException | AtlasBaseException ex) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "type " + type + " is inappropriate. Accepted values: " + Arrays.toString(DATASET_TYPE.values()));
-        }
-    }
-
-    public enum DATASET_TYPE {
-        @JsonProperty("Table") Table,
-        @JsonProperty("View") View,
-        @JsonProperty("MaterialisedView") MaterialisedView;
-
-        public static DATASET_TYPE from(String s) throws AtlasBaseException {
-
-            switch (s.toLowerCase()) {
-                case "table":
-                    return Table;
-                case "view":
-                    return View;
-                case "materialisedview":
-                    return MaterialisedView;
-                default:
-                    throw new AtlasBaseException(String.format("dataset.type: %s value not supported yet.", s));
-            }
-        }
-    }
-    public STATUS getStatus() {
-        return status;
-    }
-
-    @JsonSetter("status")
-    public void setStatus(String status) throws AtlasBaseException {
-        try {
-            this.status = STATUS.from(status);
-        } catch (IllegalArgumentException ex) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "status " + status + " is inappropriate. Accepted values: " + Arrays.toString(STATUS.values()));
-        }
-    }
-
-    @JsonAnySetter
-    public void setUnknownFields(String key, Object value) {
-        unknownFields.put(key, value);
-    }
-
-    @JsonAnyGetter
-    public Map<String, Object> getUnknownFields() {
-        return unknownFields;
-    }
-
-    public enum STATUS {
+    public enum Status {
         @JsonProperty("DRAFT") DRAFT,
         @JsonProperty("VERIFIED") VERIFIED;
 
-        public static STATUS from(String s) {
+        public static Status from(String s) {
             if(StringUtils.isEmpty(s)) {
                 return DRAFT;
             }
@@ -116,13 +70,54 @@ public class DataContract {
             }
         }
     }
+    public enum DatasetType {
+        @JsonProperty("Table") Table,
+        @JsonProperty("View") View,
+        @JsonProperty("MaterialisedView") MaterialisedView;
+
+        public static DatasetType from(String s) throws AtlasBaseException {
+
+            switch (s.toLowerCase()) {
+                case "table":
+                    return Table;
+                case "view":
+                    return View;
+                case "materialisedview":
+                    return MaterialisedView;
+                default:
+                    throw new AtlasBaseException(String.format("dataset.type: %s value not supported yet.", s));
+            }
+        }
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public DatasetType getType() {
+        return type;
+    }
+
+    @JsonAnyGetter
+    public Map<String, Object> getUnknownFields() {
+        return unknownFields;
+    }
 
     @JsonSetter("kind")
     public void setKind(String kind) throws AtlasBaseException {
-        if (!"DataContract".equals(kind)) {
+        if (!KIND_VALUE.equals(kind)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "kind " + kind + " is inappropriate.");
         }
         this.kind = kind;
+    }
+
+    @JsonSetter("status")
+    public void setStatus(String status) throws AtlasBaseException {
+        try {
+            this.status = Status.from(status);
+        } catch (IllegalArgumentException ex) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "status " + status + " is inappropriate. Accepted values: " + Arrays.toString(Status.values()));
+        }
     }
 
     public void setTemplateVersion(String templateVersion) throws AtlasBaseException {
@@ -132,8 +127,50 @@ public class DataContract {
         this.templateVersion = templateVersion;
     }
 
+    @JsonSetter("data_source")
+    public void setDataSource(String data_source) {
+        this.data_source = data_source;
+    }
+
+    public void setDataset(String dataset) {
+        this.dataset = dataset;
+    }
+
+    public void setType(String type) throws AtlasBaseException {
+        try {
+            this.type = DatasetType.from(type);
+        } catch (IllegalArgumentException | AtlasBaseException ex) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "type " + type + " is inappropriate. Accepted values: " + Arrays.toString(DatasetType.values()));
+        }
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setOwners(List<String> owners) {
+        this.owners = owners;
+    }
+
+    public void setTags(List<BusinessTag> tags) {
+        this.tags = tags;
+    }
+
+    public void setCertificate(String certificate) {
+        this.certificate = certificate;
+    }
+
+    public void setColumns(List<Column> columns) {
+        this.columns = columns;
+    }
+
+    @JsonAnySetter
+    public void setUnknownFields(String key, Object value) {
+        unknownFields.put(key, value);
+    }
+
+
     private boolean isSemVer(String version) {
-        Pattern versionPattern = Pattern.compile("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$");
         Matcher matcher = versionPattern.matcher(version);
         return matcher.matches();
     }
@@ -143,7 +180,7 @@ public class DataContract {
     public static final class BusinessTag {
         @NotNull
         public String name;
-        private Map<String, Object> unknownFields = new HashMap<>();
+        private final Map<String, Object> unknownFields = new HashMap<>();
 
         @JsonAnySetter
         public void setUnknownFields(String key, Object value) {
@@ -155,6 +192,7 @@ public class DataContract {
         }
 
     }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonPropertyOrder({"name", "description", "data_type"})
     public static final class Column {
@@ -166,7 +204,7 @@ public class DataContract {
         public boolean is_primary;
 
         public String data_type;
-        private Map<String, Object> unknownFields = new HashMap<>();
+        private final Map<String, Object> unknownFields = new HashMap<>();
 
         @JsonAnySetter
         public void setUnknownFields(String key, Object value) {
@@ -176,7 +214,6 @@ public class DataContract {
         public Map<String, Object> getUnknownFields() {
             return unknownFields;
         }
-
     }
 
     public static DataContract deserialize(String contractString) throws AtlasBaseException {
@@ -185,8 +222,6 @@ public class DataContract {
             throw new AtlasBaseException(BAD_REQUEST, "Missing attribute: contract.");
         }
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
         DataContract contract;
         try {
             contract = objectMapper.readValue(contractString, DataContract.class);
@@ -215,14 +250,11 @@ public class DataContract {
     public static String serialize(DataContract contract) throws AtlasBaseException {
 
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
             return objectMapper.writeValueAsString(contract);
         } catch (JsonProcessingException ex) {
             throw new AtlasBaseException(JSON_ERROR, ex.getMessage());
         }
     }
-
 
 }
 

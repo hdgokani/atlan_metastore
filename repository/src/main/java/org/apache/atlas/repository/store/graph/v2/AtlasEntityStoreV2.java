@@ -697,9 +697,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (CollectionUtils.isEmpty(guids)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
         }
-        if (!RequestContext.get().isSkipAuthorizationCheck()) {
-            AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE), "purge entity: guids=", guids);
-        }
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE), "purge entity: guids=", guids);
         Collection<AtlasVertex> purgeCandidates = new ArrayList<>();
 
         for (String guid : guids) {
@@ -1910,7 +1909,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case CONTRACT_ENTITY_TYPE:
-                preProcessor = new ContractPreProcessor(graph, typeRegistry, entityRetriever, this, storeDifferentialAudits, discovery);
+                preProcessor = new ContractPreProcessor(graph, typeRegistry, entityRetriever, storeDifferentialAudits, discovery);
                 break;
         }
 
