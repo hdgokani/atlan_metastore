@@ -48,8 +48,8 @@ public class QnMigrationREST {
     private final AtlasEntityStore entityStore;
     private final EntityDiscoveryService discovery;
     private final EntityGraphRetriever entityRetriever;
-    List<AtlasEntityHeader> policies;
-    Map<String, String> updatedPolicyResources;
+    private List<AtlasEntityHeader> domainPolicies = new ArrayList<>();
+    private Map<String, String> updatedPolicyResources = new HashMap<>();
 
     @Inject
     public QnMigrationREST(AtlasEntityStore entityStore, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever) {
@@ -101,7 +101,9 @@ public class QnMigrationREST {
             }
             else {
                 migrateDomainAttributes(atlasEntity, vertex, parentDomainQualifiedName, superDomainQualifiedName);
-                updatePolicy(this.policies,this.updatedPolicyResources);
+                updatePolicy(this.domainPolicies,this.updatedPolicyResources);
+                this.domainPolicies = null;
+                this.updatedPolicyResources = null;
                 LOG.info("Migrated qualified name for entity: {}", qualifiedName);
             }
         }
@@ -128,7 +130,8 @@ public class QnMigrationREST {
 
         this.updatedPolicyResources.put(currentResource, updatedResource);
 
-        this.policies = getEntity(POLICY_ENTITY_TYPE, new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES, ATTR_POLICY_CATEGORY)), currentQualifiedName);
+        List<AtlasEntityHeader> policies = getEntity(POLICY_ENTITY_TYPE, new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES, ATTR_POLICY_CATEGORY)), currentQualifiedName);
+        this.domainPolicies.addAll(policies);
 
         Map<String,String> customAttributes = new HashMap<>();
         customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
@@ -171,28 +174,34 @@ public class QnMigrationREST {
             LOG.info("Updating policy for entities {}", updatedPolicyResources);
 
             if (CollectionUtils.isNotEmpty(policies)) {
-                for (AtlasEntityHeader policy : policies) {
-                    AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
+                int batchSize = 20;
+                int totalPolicies = policies.size();
 
-                    AtlasEntity policyEntity = entityRetriever.toAtlasEntity(policyVertex);
+                for (int i = 0; i < totalPolicies; i += batchSize) {
+                    List<AtlasEntity> entityList = new ArrayList<>();
+                    List<AtlasEntityHeader> batch = policies.subList(i, Math.min(i + batchSize, totalPolicies));
 
-                    List<String> policyResources = (List<String>) policyEntity.getAttribute(ATTR_POLICY_RESOURCES);
-                    List<String> updatedPolicyResourcesList = new ArrayList<>();
+                    for (AtlasEntityHeader policy : batch) {
+                        AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
+                        AtlasEntity policyEntity = entityRetriever.toAtlasEntity(policyVertex);
 
-                    for (String resource : policyResources) {
-                        if (updatedPolicyResources.containsKey(resource)) {
-                            updatedPolicyResourcesList.add(updatedPolicyResources.get(resource));
-                        } else {
-                            updatedPolicyResourcesList.add(resource);
+                        List<String> policyResources = (List<String>) policyEntity.getAttribute(ATTR_POLICY_RESOURCES);
+                        List<String> updatedPolicyResourcesList = new ArrayList<>();
+
+                        for (String resource : policyResources) {
+                            if (updatedPolicyResources.containsKey(resource)) {
+                                updatedPolicyResourcesList.add(updatedPolicyResources.get(resource));
+                            } else {
+                                updatedPolicyResourcesList.add(resource);
+                            }
                         }
+
+                        policyEntity.setAttribute(ATTR_POLICY_RESOURCES, updatedPolicyResourcesList);
+                        entityList.add(policyEntity);
                     }
 
-                    policyVertex.removeProperty(ATTR_POLICY_RESOURCES);
-                    policyVertex.setProperty(ATTR_POLICY_RESOURCES, updatedPolicyResourcesList);
-
-                    EntityStream policyEntityStream = new AtlasEntityStream(policyEntity);
-                    EntityMutationResponse response = entityStore.createOrUpdate(policyEntityStream, false);
-
+                    EntityStream entityStream = new AtlasEntityStream(entityList);
+                    entityStore.createOrUpdate(entityStream, false);
                 }
             }
 
