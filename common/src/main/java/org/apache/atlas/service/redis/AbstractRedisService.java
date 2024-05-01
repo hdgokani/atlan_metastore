@@ -134,7 +134,6 @@ public abstract class AbstractRedisService implements RedisService {
     Config getSearchContextCacheConfig() throws AtlasException {
         Config config = new Config();
         config.useSentinelServers()
-                .setClientName(ATLAS_METASTORE_SERVICE)
                 .setReadMode(ReadMode.MASTER_SLAVE)
                 .setCheckSentinelsList(false)
                 .setKeepAlive(true)
