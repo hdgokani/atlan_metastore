@@ -31,7 +31,6 @@ public abstract class AbstractRedisService implements RedisService {
     private static final int DEFAULT_REDIS_LOCK_WATCHDOG_TIMEOUT_MS = 600_000;
 
     RedissonClient redisClient;
-
     RedissonClient searchContextCacheRedisClient;
     Map<String, RLock> keyLockMap;
     Configuration atlasConfig;
@@ -131,7 +130,7 @@ public abstract class AbstractRedisService implements RedisService {
         return config;
     }
 
-    Config getSearchContextCacheConfig() throws AtlasException {
+    Config getSearchContextCacheConfig() {
         Config config = new Config();
         config.useSentinelServers()
                 .setReadMode(ReadMode.MASTER_SLAVE)
