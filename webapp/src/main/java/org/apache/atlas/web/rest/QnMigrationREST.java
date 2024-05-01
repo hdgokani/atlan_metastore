@@ -111,7 +111,7 @@ public class QnMigrationREST {
 
     @GraphTransaction
     private void migrateDomainAttributes(AtlasEntity entity, AtlasVertex vertex, String parentDomainQualifiedName, String rootDomainQualifiedName) throws AtlasBaseException {
-        LOG.info("Migrating qualified name for entity: {}", entity.getAttribute(QUALIFIED_NAME));
+        LOG.info("Migrating qualified name for Domain: {}", entity.getAttribute(QUALIFIED_NAME));
 
         String currentQualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
         String updatedQualifiedName = createDomainQualifiedName(parentDomainQualifiedName);
@@ -157,8 +157,19 @@ public class QnMigrationREST {
     }
 
     private void migrateDataProductAttributes(AtlasEntity entity, AtlasVertex vertex, String parentDomainQualifiedName, String rootDomainQualifiedName) throws AtlasBaseException {
+        LOG.info("Migrating qualified name for Product: {}", entity.getAttribute(QUALIFIED_NAME));
+
+        String currentQualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
         String updatedQualifiedName = createProductQualifiedName(parentDomainQualifiedName);
         vertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
+
+        String currentResource = "entity:"+ currentQualifiedName;
+        String updatedResource = "entity:"+ updatedQualifiedName;
+
+        this.updatedPolicyResources.put(currentResource, updatedResource);
+
+        List<AtlasEntityHeader> policies = getEntity(POLICY_ENTITY_TYPE, new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES, ATTR_POLICY_CATEGORY)), currentQualifiedName);
+        this.domainPolicies.addAll(policies);
 
         vertex.setProperty(PARENT_DOMAIN_QN, parentDomainQualifiedName);
         vertex.setProperty(SUPER_DOMAIN_QN, rootDomainQualifiedName);
