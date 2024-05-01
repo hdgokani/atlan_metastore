@@ -59,6 +59,8 @@ import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.ConnectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.contract.ContractPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.DataProductPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.DomainPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PersonaPreProcessor;
@@ -1839,6 +1841,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             case CONTRACT_ENTITY_TYPE:
                 preProcessor = new ContractPreProcessor(graph, typeRegistry, entityRetriever, storeDifferentialAudits, discovery);
+                break;
+
+            case DATA_DOMAIN_ENTITY_TYPE:
+                preProcessor = new DomainPreProcessor(typeRegistry, graph);
+                break;
+
+            case DATA_PRODUCT_ENTITY_TYPE:
+                preProcessor = new DataProductPreProcessor(typeRegistry, graph);
                 break;
         }
 
