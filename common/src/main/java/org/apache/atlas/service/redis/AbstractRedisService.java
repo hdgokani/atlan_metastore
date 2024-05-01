@@ -119,8 +119,8 @@ public abstract class AbstractRedisService implements RedisService {
         return config;
     }
 
-    protected Config getProdConfig() throws AtlasException {
-        Config config = new Config();
+    Config getProdConfig() throws AtlasException {
+        Config config = initAtlasConfig();
         config.useSentinelServers()
                 .setReadMode(ReadMode.MASTER_SLAVE)
                 .setCheckSentinelsList(false)
@@ -128,11 +128,10 @@ public abstract class AbstractRedisService implements RedisService {
                 .addSentinelAddress(formatUrls(atlasConfig.getStringArray(ATLAS_REDIS_SENTINEL_URLS)))
                 .setUsername(atlasConfig.getString(ATLAS_REDIS_USERNAME))
                 .setPassword(atlasConfig.getString(ATLAS_REDIS_PASSWORD));
-
         return config;
     }
 
-    protected Config getSearchContextCacheConfig() throws AtlasException {
+    Config getSearchContextCacheConfig() throws AtlasException {
         Config config = new Config();
         config.useSentinelServers()
                 .setClientName(ATLAS_METASTORE_SERVICE)
