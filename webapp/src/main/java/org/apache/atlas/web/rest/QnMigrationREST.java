@@ -102,8 +102,8 @@ public class QnMigrationREST {
             else {
                 migrateDomainAttributes(atlasEntity, vertex, parentDomainQualifiedName, superDomainQualifiedName);
                 updatePolicy(this.domainPolicies,this.updatedPolicyResources);
-                this.domainPolicies = null;
-                this.updatedPolicyResources = null;
+                this.domainPolicies.clear();
+                this.updatedPolicyResources.clear();
                 LOG.info("Migrated qualified name for entity: {}", qualifiedName);
             }
         }
