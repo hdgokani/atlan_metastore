@@ -1,6 +1,5 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
@@ -11,16 +10,11 @@ import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
-import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class DataProductPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DataProductPreProcessor.class);
@@ -53,7 +47,7 @@ public class DataProductPreProcessor implements PreProcessor {
 
     private void processCreateProduct(AtlasEntity entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateProduct");
-        AtlasObjectId parentDomainObject = (AtlasObjectId) entity.getRelationshipAttribute(DOMAIN_DOMAIN_PARENT_REL_TYPE);
+        AtlasObjectId parentDomainObject = (AtlasObjectId) entity.getRelationshipAttribute(PRODUCT_DOMAIN_REL_TYPE);
 
         if (parentDomainObject == null) {
             entity.removeAttribute(PARENT_DOMAIN_QN);
@@ -78,6 +72,9 @@ public class DataProductPreProcessor implements PreProcessor {
         //never update these attributes with API request
         entity.removeAttribute(PARENT_DOMAIN_QN);
         entity.removeAttribute(SUPER_DOMAIN_QN);
+        if (entity.getRelationshipAttributes() != null) {
+            entity.getRelationshipAttributes().remove(PRODUCT_DOMAIN_REL_TYPE);
+        }
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
