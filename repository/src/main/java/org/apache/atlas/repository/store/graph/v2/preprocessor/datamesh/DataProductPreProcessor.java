@@ -10,6 +10,8 @@ import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,10 +21,12 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 public class DataProductPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DataProductPreProcessor.class);
 
-    private EntityGraphRetriever retriever = null;
+    private EntityGraphRetriever entityRetriever = null;
+    private EntityGraphRetriever retrieverNoRelation = null;
 
-    public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, AtlasGraph graph) {
-        this.retriever = new EntityGraphRetriever(graph, typeRegistry, true);
+    public DataProductPreProcessor(AtlasGraph graph, AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever) {
+        this.entityRetriever = entityRetriever;
+        this.retrieverNoRelation = new EntityGraphRetriever(graph, typeRegistry, true);
     }
 
     @Override
@@ -34,13 +38,14 @@ public class DataProductPreProcessor implements PreProcessor {
         }
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
+        AtlasVertex vertex = context.getVertex(entity.getGuid());
 
         switch (operation) {
             case CREATE:
                 processCreateProduct(entity);
                 break;
             case UPDATE:
-                processUpdateProduct(entity);
+                processUpdateProduct(entity, vertex, context);
                 break;
         }
     }
@@ -53,7 +58,7 @@ public class DataProductPreProcessor implements PreProcessor {
             entity.removeAttribute(PARENT_DOMAIN_QN);
             entity.removeAttribute(SUPER_DOMAIN_QN);
         } else {
-            AtlasVertex parentDomain = retriever.getEntityVertex(parentDomainObject);
+            AtlasVertex parentDomain = retrieverNoRelation.getEntityVertex(parentDomainObject);
             String parentDomainQualifiedName = parentDomain.getProperty(QUALIFIED_NAME, String.class);
 
             entity.setAttribute(PARENT_DOMAIN_QN, parentDomainQualifiedName);
@@ -66,16 +71,68 @@ public class DataProductPreProcessor implements PreProcessor {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void processUpdateProduct(AtlasEntity entity) throws AtlasBaseException {
+    private void processUpdateProduct(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateProduct");
 
-        //never update these attributes with API request
-        entity.removeAttribute(PARENT_DOMAIN_QN);
-        entity.removeAttribute(SUPER_DOMAIN_QN);
-        if (entity.getRelationshipAttributes() != null) {
-            entity.getRelationshipAttributes().remove(PRODUCT_DOMAIN_REL_TYPE);
+        AtlasEntity storedProduct = entityRetriever.toAtlasEntity(vertex);
+        AtlasObjectId currentParent = (AtlasObjectId) storedProduct.getRelationshipAttribute(PRODUCT_DOMAIN_REL_TYPE);
+
+        AtlasEntityHeader newParent = getNewParentDomain(entity, context);
+
+        if (currentParent == null && newParent != null) {
+            // attaching parent for the first time, set attributes as well
+
+            String parentDomainQualifiedName = (String) newParent.getAttribute(QUALIFIED_NAME);
+            entity.setAttribute(PARENT_DOMAIN_QN, parentDomainQualifiedName);
+
+            String superDomainQualifiedName = (String) newParent.getAttribute(SUPER_DOMAIN_QN);
+            if (StringUtils.isEmpty(superDomainQualifiedName)) {
+                String[] splitted = parentDomainQualifiedName.split("/");
+                superDomainQualifiedName = String.format("%s/%s/%s", splitted[0], splitted[1], splitted[2]);
+            }
+
+            entity.setAttribute(SUPER_DOMAIN_QN, superDomainQualifiedName);
+
+        } else {
+            //never update these attributes with API request
+            entity.removeAttribute(PARENT_DOMAIN_QN);
+            entity.removeAttribute(SUPER_DOMAIN_QN);
+            if (entity.getRelationshipAttributes() != null) {
+                entity.getRelationshipAttributes().remove(PRODUCT_DOMAIN_REL_TYPE);
+            }
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private AtlasEntityHeader getNewParentDomain(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("ProductPreProcessor.getNewParentDomain");
+
+        AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(PRODUCT_DOMAIN_REL_TYPE);
+
+        try {
+            if (objectId == null) {
+                return null;
+            }
+
+            if (StringUtils.isNotEmpty(objectId.getGuid())) {
+                AtlasVertex vertex = context.getVertex(objectId.getGuid());
+
+                if (vertex == null) {
+                    return retrieverNoRelation.toAtlasEntityHeader(objectId.getGuid());
+                } else {
+                    return retrieverNoRelation.toAtlasEntityHeader(vertex);
+                }
+
+            } else if (MapUtils.isNotEmpty(objectId.getUniqueAttributes()) &&
+                    StringUtils.isNotEmpty((String) objectId.getUniqueAttributes().get(QUALIFIED_NAME))) {
+                return new AtlasEntityHeader(objectId.getTypeName(), objectId.getUniqueAttributes());
+
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+
+        return null;
     }
 }
