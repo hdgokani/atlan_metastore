@@ -41,21 +41,22 @@ import static org.apache.atlas.repository.util.AccessControlUtils.*;
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 @Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class QnMigrationREST {
-
     private static final Logger LOG = LoggerFactory.getLogger(QnMigrationREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.QnMigration");
 
     private final AtlasEntityStore entityStore;
     private final EntityDiscoveryService discovery;
     private final EntityGraphRetriever entityRetriever;
+    EntityMutationResponse response;
     private List<AtlasEntityHeader> domainPolicies = new ArrayList<>();
     private Map<String, String> updatedPolicyResources = new HashMap<>();
 
     @Inject
-    public QnMigrationREST(AtlasEntityStore entityStore, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever) {
+    public QnMigrationREST(AtlasEntityStore entityStore, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, EntityMutationResponse response) {
         this.entityRetriever = entityRetriever;
         this.entityStore = entityStore;
         this.discovery = discovery;
+        this.response = response;
     }
 
     @POST
@@ -63,7 +64,6 @@ public class QnMigrationREST {
     @Timed
     public EntityMutationResponse updateQn () throws Exception {
         AtlasPerfTracer perf = null;
-        EntityMutationResponse response = new EntityMutationResponse();
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.updateQn()");
@@ -100,11 +100,18 @@ public class QnMigrationREST {
                 LOG.info("Entity already migrated for entity: {}", qualifiedName);
             }
             else {
-                migrateDomainAttributes(atlasEntity, vertex, parentDomainQualifiedName, superDomainQualifiedName);
-                updatePolicy(this.domainPolicies,this.updatedPolicyResources);
-                this.domainPolicies.clear();
-                this.updatedPolicyResources.clear();
-                LOG.info("Migrated qualified name for entity: {}", qualifiedName);
+                try{
+                    migrateDomainAttributes(atlasEntity, vertex, parentDomainQualifiedName, superDomainQualifiedName);
+                    updatePolicy(this.domainPolicies,this.updatedPolicyResources);
+                }
+                catch (AtlasBaseException e){
+                    LOG.error("Error while migrating qualified name for entity: {}", qualifiedName, e);
+                }
+                finally {
+                    this.domainPolicies.clear();
+                    this.updatedPolicyResources.clear();
+                    LOG.info("Migrated qualified name for entity: {}", qualifiedName);
+                }
             }
         }
     }
@@ -216,7 +223,8 @@ public class QnMigrationREST {
                     }
 
                     EntityStream entityStream = new AtlasEntityStream(entityList);
-                    entityStore.createOrUpdate(entityStream, false);
+                    EntityMutationResponse policyResponse = entityStore.createOrUpdate(entityStream, false);
+                    response.setMutatedEntities(policyResponse.getMutatedEntities());
                 }
             }
 
