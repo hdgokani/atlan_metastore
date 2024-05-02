@@ -243,7 +243,7 @@ public class ESAliasStore implements IndexAliasStore {
 
         allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, terms)));
     }
-
+  
     private Map<String, Object> esClausesToFilter(List<Map<String, Object>> allowClauseList) {
         if (CollectionUtils.isNotEmpty(allowClauseList)) {
             return mapOf("bool", mapOf("should", allowClauseList));
