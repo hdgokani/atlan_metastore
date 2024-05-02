@@ -130,7 +130,7 @@ public abstract class AbstractRedisService implements RedisService {
         return config;
     }
 
-    Config getSearchContextCacheConfig() {
+    Config getCacheImplConfig() {
         Config config = new Config();
         config.useSentinelServers()
                 .setReadMode(ReadMode.MASTER_SLAVE)
