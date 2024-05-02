@@ -141,7 +141,6 @@ public final class Constants {
     public static final String DATA_PRODUCT_EDGE_LABEL     = "__DataDomain.dataProducts";
     public static final String DOMAIN_PARENT_EDGE_LABEL    = "__DataDomain.subDomains";
 
-
     /**
      * SQL property keys.
      */
