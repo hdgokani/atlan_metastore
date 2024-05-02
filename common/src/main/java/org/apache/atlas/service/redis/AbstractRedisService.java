@@ -31,7 +31,7 @@ public abstract class AbstractRedisService implements RedisService {
     private static final int DEFAULT_REDIS_LOCK_WATCHDOG_TIMEOUT_MS = 600_000;
 
     RedissonClient redisClient;
-    RedissonClient searchContextCacheRedisClient;
+    RedissonClient redisCacheClient;
     Map<String, RLock> keyLockMap;
     Configuration atlasConfig;
     long waitTimeInMS;
@@ -74,20 +74,20 @@ public abstract class AbstractRedisService implements RedisService {
     @Override
     public String getValue(String key) {
         // If value doesn't exist, return null else return the value
-        return (String) searchContextCacheRedisClient.getBucket(convertToNamespace(key)).get();
+        return (String) redisCacheClient.getBucket(convertToNamespace(key)).get();
     }
 
     @Override
     public String putValue(String key, String value) {
         // Put the value in the redis cache with TTL
-        searchContextCacheRedisClient.getBucket(convertToNamespace(key)).set(value, 30, TimeUnit.SECONDS);
+        redisCacheClient.getBucket(convertToNamespace(key)).set(value, 30, TimeUnit.SECONDS);
         return value;
     }
 
     @Override
     public void removeValue(String key)  {
         // Remove the value from the redis cache
-        searchContextCacheRedisClient.getBucket(convertToNamespace(key)).delete();
+        redisCacheClient.getBucket(convertToNamespace(key)).delete();
     }
 
     private String getHostAddress() throws UnknownHostException {
@@ -144,7 +144,7 @@ public abstract class AbstractRedisService implements RedisService {
                 .addSentinelAddress(formatUrls(atlasConfig.getStringArray(ATLAS_REDIS_SENTINEL_URLS)))
                 .setUsername(atlasConfig.getString(ATLAS_REDIS_USERNAME))
                 .setPassword(atlasConfig.getString(ATLAS_REDIS_PASSWORD))
-                .setTimeout(100) //Setting UP timeout to 100ms
+                .setTimeout(10) //Setting UP timeout to 10ms
                 .setRetryAttempts(0);
         return config;
     }
