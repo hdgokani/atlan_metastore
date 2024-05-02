@@ -173,6 +173,10 @@ public class QnMigrationREST {
 
         vertex.setProperty(PARENT_DOMAIN_QN, parentDomainQualifiedName);
         vertex.setProperty(SUPER_DOMAIN_QN, rootDomainQualifiedName);
+
+        Map<String,String> customAttributes = new HashMap<>();
+        customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
+        vertex.setProperty(CUSTOM_ATTRIBUTES_PROPERTY_KEY, customAttributes);
     }
 
     protected void updatePolicy(List<AtlasEntityHeader> policies, Map<String, String> updatedPolicyResources) throws AtlasBaseException {
