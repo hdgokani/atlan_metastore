@@ -15,6 +15,8 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 
@@ -108,11 +110,18 @@ public class DataProductPreProcessor implements PreProcessor {
     private AtlasEntityHeader getNewParentDomain(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("ProductPreProcessor.getNewParentDomain");
 
-        AtlasObjectId objectId = (AtlasObjectId) entity.getRelationshipAttribute(PRODUCT_DOMAIN_REL_TYPE);
-
         try {
-            if (objectId == null) {
+            Object parentDomainObject = entity.getRelationshipAttribute(PRODUCT_DOMAIN_REL_TYPE);
+            if (parentDomainObject == null) {
                 return null;
+            }
+
+            AtlasObjectId objectId;
+
+            if (parentDomainObject instanceof Map) {
+                objectId = getAtlasObjectIdFromMapObject(parentDomainObject);
+            } else {
+                objectId = (AtlasObjectId) parentDomainObject;
             }
 
             if (StringUtils.isNotEmpty(objectId.getGuid())) {

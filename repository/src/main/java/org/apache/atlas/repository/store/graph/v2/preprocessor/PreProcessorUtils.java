@@ -15,6 +15,8 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 import static org.apache.atlas.repository.Constants.QUERY_COLLECTION_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
@@ -114,5 +116,19 @@ public class PreProcessorUtils {
         entity.setAttribute(COLLECTION_QUALIFIED_NAME, newCollectionQualifiedName);
 
         return newCollectionQualifiedName;
+    }
+
+    public static AtlasObjectId getAtlasObjectIdFromMapObject(Object obj) {
+        Map<String, Object> parentDomainMap = (Map<String, Object>) obj;
+        AtlasObjectId objectId = new AtlasObjectId();
+
+        objectId.setTypeName((String) parentDomainMap.get("typeName"));
+        if (parentDomainMap.containsKey("guid")) {
+            objectId.setGuid((String) parentDomainMap.get("guid"));
+        } else {
+            objectId.setUniqueAttributes((Map<String, Object>) parentDomainMap.get("uniqueAttributes"));
+        }
+
+        return objectId;
     }
 }
