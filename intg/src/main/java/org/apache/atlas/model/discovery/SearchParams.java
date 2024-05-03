@@ -18,6 +18,9 @@ public class SearchParams {
     boolean suppressLogs;
     boolean excludeMeanings;
     boolean excludeClassifications;
+    boolean enableFullRestriction;
+
+    boolean includeClassificationNames = false;
 
     RequestMetadata requestMetadata = new RequestMetadata();
 
@@ -28,8 +31,16 @@ public class SearchParams {
         return getQuery();
     }
 
+    public boolean getEnableFullRestriction() {
+        return enableFullRestriction;
+    }
+
     public Set<String> getAttributes() {
         return attributes;
+    }
+
+    public void setQuery(String query) {
+        setQuery(query);
     }
 
     public void setAttributes(Set<String> attributes) {
@@ -98,6 +109,14 @@ public class SearchParams {
 
     public void setExcludeMeanings(boolean excludeMeanings) {
         this.excludeMeanings = excludeMeanings;
+    }
+
+    public boolean isIncludeClassificationNames() {
+        return includeClassificationNames;
+    }
+
+    public void setIncludeClassificationNames(boolean includeClassificationNames) {
+        this.includeClassificationNames = includeClassificationNames;
     }
 
     public boolean isSaveSearchLog() {

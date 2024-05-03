@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getActiveParentVertices;
@@ -114,8 +115,6 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
-        validateCategory(entity);
-
         AtlasEntity storedTerm = entityRetriever.toAtlasEntity(vertex);
         AtlasRelatedObjectId currentGlossary = (AtlasRelatedObjectId) storedTerm.getRelationshipAttribute(ANCHOR);
         AtlasEntityHeader currentGlossaryHeader = entityRetriever.toAtlasEntityHeader(currentGlossary.getGuid());
@@ -124,6 +123,12 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         String termQualifiedName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
         String newGlossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
+
+        if(!currentGlossaryQualifiedName.equals(newGlossaryQualifiedName)) {
+            ensureOnlyOneCategoryIsAssociated(entity);
+        }
+
+        validateCategory(entity);
 
         if (!currentGlossaryQualifiedName.equals(newGlossaryQualifiedName)){
             //Auth check
@@ -159,9 +164,21 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
+    private static void ensureOnlyOneCategoryIsAssociated(AtlasEntity entity) throws AtlasBaseException {
+        if(entity.hasRelationshipAttribute(ATTR_CATEGORIES) && Objects.nonNull(entity.getRelationshipAttribute(ATTR_CATEGORIES))) {
+            List<AtlasObjectId> categories = (List<AtlasObjectId>) entity.getRelationshipAttribute(ATTR_CATEGORIES);
+
+            if(categories.size() > 1) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot move term with multiple " +
+                        "categories associated to another glossary");
+            }
+
+        }
+
+    }
+
     private void validateCategory(AtlasEntity entity) throws AtlasBaseException {
         String glossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
-
         if (entity.hasRelationshipAttribute(ATTR_CATEGORIES) && entity.getRelationshipAttribute(ATTR_CATEGORIES) != null) {
             List<AtlasObjectId> categories = (List<AtlasObjectId>) entity.getRelationshipAttribute(ATTR_CATEGORIES);
 

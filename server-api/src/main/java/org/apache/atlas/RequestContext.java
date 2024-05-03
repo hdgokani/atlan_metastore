@@ -88,6 +88,8 @@ public class RequestContext {
     private boolean     allowDeletedRelationsIndexsearch = false;
     private boolean     includeMeanings = true;
     private boolean     includeClassifications = true;
+
+    private boolean     includeClassificationNames = false;
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
@@ -97,7 +99,6 @@ public class RequestContext {
     private boolean skipAuthorizationCheck = false;
     private Set<String> deletedEdgesIdsForResetHasLineage = new HashSet<>(0);
     private String requestUri;
-    private boolean cacheEnabled;
 
     private boolean delayTagNotifications = false;
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
@@ -175,7 +176,7 @@ public class RequestContext {
         }
         if (CollectionUtils.isNotEmpty(applicationMetrics)) {
             if (Objects.nonNull(this.metricsRegistry)){
-                this.metricsRegistry.collectIndexsearch(traceId, this.requestUri, applicationMetrics);
+                this.metricsRegistry.collectIApplicationMetrics(traceId, this.requestUri, applicationMetrics);
             }
             applicationMetrics.clear();
         }
@@ -711,12 +712,12 @@ public class RequestContext {
         return this.requestUri;
     }
 
-    public void setEnableCache(boolean cacheEnabled) {
-        this.cacheEnabled = cacheEnabled;
+    public boolean isIncludeClassificationNames() {
+        return includeClassificationNames;
     }
 
-    public boolean isCacheEnabled() {
-        return this.cacheEnabled;
+    public void setIncludeClassificationNames(boolean includeClassificationNames) {
+        this.includeClassificationNames = includeClassificationNames;
     }
 
     public class EntityGuidPair {

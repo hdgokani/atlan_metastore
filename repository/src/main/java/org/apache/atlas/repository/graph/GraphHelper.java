@@ -21,6 +21,7 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Iterators;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -392,6 +393,17 @@ public final class GraphHelper {
         }
 
         return ret;
+    }
+
+    public static Integer getCountOfCategoryEdges(AtlasVertex entityVertex) {
+
+        Iterator<AtlasEdge> edges = getOutGoingEdgesByLabel(entityVertex, CATEGORY_TERMS_EDGE_LABEL);
+
+        if (edges!=null) {
+            return Iterators.size(edges);
+        }
+
+        return 0;
     }
 
     public static boolean isClassificationAttached(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
@@ -785,7 +797,18 @@ public final class GraphHelper {
     public static List<String> getPropagatedTraitNames(AtlasVertex entityVertex) {
         return getTraitNames(entityVertex, true);
     }
-
+    public static List<String> getAllTraitNamesFromAttribute(AtlasVertex entityVertex) {
+        List<String>     ret   = new ArrayList<>();
+        List<String>    traitNames = entityVertex.getMultiValuedProperty(TRAIT_NAMES_PROPERTY_KEY, String.class);
+        if (traitNames != null) {
+            ret.addAll(traitNames);
+        }
+        List<String>    propagatedTraitNames = entityVertex.getMultiValuedProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, String.class);
+        if (propagatedTraitNames != null) {
+            ret.addAll(propagatedTraitNames);
+        }
+        return ret;
+    }
     public static List<String> getAllTraitNames(AtlasVertex entityVertex) {
         return getTraitNames(entityVertex, null);
     }
