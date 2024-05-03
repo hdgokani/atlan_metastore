@@ -37,6 +37,8 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,6 +107,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
 
                 for (AtlasEntityHeader policy : policies) {
+                    LOG.info("Updating policy {}", policy);
                     AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
                     AtlasEntity policyEntity = entityRetriever.toAtlasEntity(policyVertex);
@@ -193,5 +196,35 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         }
 
         requestContext.endMetricRecord(metricRecorder);
+    }
+
+    protected AtlasEntityHeader getParent(Object parentObject, Set<String> attributes) throws AtlasBaseException {
+        if (parentObject == null) {
+            return null;
+        }
+
+        AtlasObjectId objectId;
+        if (parentObject instanceof Map) {
+            objectId = getAtlasObjectIdFromMapObject(parentObject);
+        } else {
+            objectId = (AtlasObjectId) parentObject;
+        }
+
+        AtlasVertex parentVertex = entityRetriever.getEntityVertex(objectId);
+        return entityRetriever.toAtlasEntityHeader(parentVertex, attributes);
+    }
+
+    public static AtlasObjectId getAtlasObjectIdFromMapObject(Object obj) {
+        Map<String, Object> parentMap = (Map<String, Object>) obj;
+        AtlasObjectId objectId = new AtlasObjectId();
+        objectId.setTypeName((String) parentMap.get("typeName"));
+
+        if (parentMap.containsKey("guid")) {
+            objectId.setGuid((String) parentMap.get("guid"));
+        } else {
+            objectId.setUniqueAttributes((Map<String, Object>) parentMap.get("uniqueAttributes"));
+        }
+
+        return objectId;
     }
 }
