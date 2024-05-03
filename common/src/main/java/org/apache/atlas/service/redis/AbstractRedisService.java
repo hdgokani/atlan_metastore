@@ -80,7 +80,14 @@ public abstract class AbstractRedisService implements RedisService {
     @Override
     public String putValue(String key, String value) {
         // Put the value in the redis cache with TTL
-        redisCacheClient.getBucket(convertToNamespace(key)).set(value, 30, TimeUnit.SECONDS);
+        redisCacheClient.getBucket(convertToNamespace(key)).set(value);
+        return value;
+    }
+
+    @Override
+    public String putValue(String key, String value, int timeout) {
+        // Put the value in the redis cache with TTL
+        redisCacheClient.getBucket(convertToNamespace(key)).set(value, timeout, TimeUnit.SECONDS);
         return value;
     }
 
@@ -144,7 +151,7 @@ public abstract class AbstractRedisService implements RedisService {
                 .addSentinelAddress(formatUrls(atlasConfig.getStringArray(ATLAS_REDIS_SENTINEL_URLS)))
                 .setUsername(atlasConfig.getString(ATLAS_REDIS_USERNAME))
                 .setPassword(atlasConfig.getString(ATLAS_REDIS_PASSWORD))
-                .setTimeout(10) //Setting UP timeout to 10ms
+                .setTimeout(500) //Setting UP timeout to 50ms
                 .setRetryAttempts(0);
         return config;
     }
