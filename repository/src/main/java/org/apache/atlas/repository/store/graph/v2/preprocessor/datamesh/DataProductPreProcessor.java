@@ -26,11 +26,13 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DataProductPreProcessor.class);
     private AtlasEntityHeader parentDomain;
     private EntityMutationContext context;
-    private List<String> currentResources = new ArrayList<>();
-    private Map<String, String> updatedPolicyResources = new HashMap<>();
+    private List<String> currentResources;
+    private Map<String, String> updatedPolicyResources;
     public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
                               AtlasGraph graph) {
         super(typeRegistry, entityRetriever, graph);
+        this.currentResources = new ArrayList<>();
+        this.updatedPolicyResources = new HashMap<>();
     }
 
     @Override
@@ -149,7 +151,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             String currentResource = "entity:"+ currentDataProductQualifiedName;
             String updatedResource = "entity:"+ updatedQualifiedName;
             this.updatedPolicyResources.put(currentResource, updatedResource);
-            this.currentResources.add(currentDataProductQualifiedName);
+            this.currentResources.add(currentResource);
 
             LOG.info("Moved dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
 

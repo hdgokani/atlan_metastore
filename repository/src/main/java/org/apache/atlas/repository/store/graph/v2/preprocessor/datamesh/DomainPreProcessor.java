@@ -51,12 +51,14 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DomainPreProcessor.class);
     private AtlasEntityHeader parentDomain;
     private EntityMutationContext context;
-    private List<String> currentResources = new ArrayList<>();
-    private Map<String, String> updatedPolicyResources = new HashMap<>();
+    private List<String> currentResources ;
+    private Map<String, String> updatedPolicyResources;
 
     public DomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
                               AtlasGraph graph) {
         super(typeRegistry, entityRetriever, graph);
+        this.currentResources = new ArrayList<>();
+        this.updatedPolicyResources = new HashMap<>();
     }
 
     @Override
@@ -218,7 +220,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             String currentResource = "entity:"+ currentDomainQualifiedName;
             String updatedResource = "entity:"+ updatedDomainQualifiedName;
             this.updatedPolicyResources.put(currentResource, updatedResource);
-            this.currentResources.add(currentDomainQualifiedName);
+            this.currentResources.add(currentResource);
 
             //update system properties
             GraphHelper.setModifiedByAsString(childDomainVertex, RequestContext.get().getUser());
@@ -273,7 +275,7 @@ public class DomainPreProcessor extends AbstractDomainPreProcessor {
             String currentResource = "entity:"+ currentQualifiedName;
             String updatedResource = "entity:"+ updatedQualifiedName;
             this.updatedPolicyResources.put(currentResource, updatedResource);
-            this.currentResources.add(currentQualifiedName);
+            this.currentResources.add(currentResource);
 
             //update system properties
             GraphHelper.setModifiedByAsString(productVertex, RequestContext.get().getUser());
