@@ -87,8 +87,8 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceDomain),
                    "update on source Domain: ", sourceDomain.getAttribute(NAME));
 
-           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, sourceDomain),
-                   "delete on source Domain: ", sourceDomain.getAttribute(NAME));
+           /*AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, sourceDomain),
+                   "delete on source Domain: ", sourceDomain.getAttribute(NAME));*/
        }
 
        if(targetDomain != null){
@@ -99,8 +99,8 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetDomain),
                    "update on target Domain: ", targetDomain.getAttribute(NAME));
 
-           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, targetDomain),
-                   "delete on target Domain: ", targetDomain.getAttribute(NAME));
+           /*AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_DELETE, targetDomain),
+                   "delete on target Domain: ", targetDomain.getAttribute(NAME));*/
        }
     }
 
