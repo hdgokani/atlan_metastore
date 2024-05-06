@@ -15,6 +15,8 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
@@ -48,15 +50,20 @@ public class QnMigrationREST {
     private final EntityDiscoveryService discovery;
     private final EntityGraphRetriever entityRetriever;
     EntityMutationResponse response;
-    private List<AtlasEntityHeader> domainPolicies = new ArrayList<>();
-    private Map<String, String> updatedPolicyResources = new HashMap<>();
+
+    protected final AtlasTypeRegistry typeRegistry;
+    private List<String> currentResources;
+    private Map<String, String> updatedPolicyResources;
 
     @Inject
-    public QnMigrationREST(AtlasEntityStore entityStore, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, EntityMutationResponse response) {
+    public QnMigrationREST(AtlasEntityStore entityStore, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, EntityMutationResponse response, AtlasTypeRegistry typeRegistry) {
         this.entityRetriever = entityRetriever;
         this.entityStore = entityStore;
         this.discovery = discovery;
         this.response = response;
+        this.typeRegistry = typeRegistry;
+        this.currentResources = new ArrayList<>();
+        this.updatedPolicyResources = new HashMap<>();
     }
 
     @POST
@@ -102,13 +109,13 @@ public class QnMigrationREST {
             else {
                 try{
                     migrateDomainAttributes(atlasEntity, vertex, parentDomainQualifiedName, superDomainQualifiedName);
-                    updatePolicy(this.domainPolicies,this.updatedPolicyResources);
+                    updatePolicy(this.currentResources,this.updatedPolicyResources);
                 }
                 catch (AtlasBaseException e){
                     LOG.error("Error while migrating qualified name for entity: {}", qualifiedName, e);
                 }
                 finally {
-                    this.domainPolicies.clear();
+                    this.currentResources.clear();
                     this.updatedPolicyResources.clear();
                     LOG.info("Migrated qualified name for entity: {}", qualifiedName);
                 }
@@ -119,6 +126,7 @@ public class QnMigrationREST {
     @GraphTransaction
     private void migrateDomainAttributes(AtlasEntity entity, AtlasVertex vertex, String parentDomainQualifiedName, String rootDomainQualifiedName) throws AtlasBaseException {
         LOG.info("Migrating qualified name for Domain: {}", entity.getAttribute(QUALIFIED_NAME));
+        Map<String, Object> updatedAttributes = new HashMap<>();
 
         String currentQualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
         String updatedQualifiedName = createDomainQualifiedName(parentDomainQualifiedName);
@@ -132,13 +140,13 @@ public class QnMigrationREST {
             vertex.setProperty(SUPER_DOMAIN_QN, rootDomainQualifiedName);
         }
 
+        updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
+
+        //Store domainPolicies and resources to be updated
         String currentResource = "entity:"+ currentQualifiedName;
         String updatedResource = "entity:"+ updatedQualifiedName;
-
         this.updatedPolicyResources.put(currentResource, updatedResource);
-
-        List<AtlasEntityHeader> policies = getEntity(POLICY_ENTITY_TYPE, new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES, ATTR_POLICY_CATEGORY)), currentQualifiedName);
-        this.domainPolicies.addAll(policies);
+        this.currentResources.add(currentResource);
 
         Map<String,String> customAttributes = new HashMap<>();
         customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
@@ -161,6 +169,8 @@ public class QnMigrationREST {
             migrateDomainAttributes(childEntity, childVertex, updatedQualifiedName, rootDomainQualifiedName);
         }
 
+        recordUpdatedChildEntities(vertex, updatedAttributes);
+
     }
 
     private void migrateDataProductAttributes(AtlasEntity entity, AtlasVertex vertex, String parentDomainQualifiedName, String rootDomainQualifiedName) throws AtlasBaseException {
@@ -170,13 +180,11 @@ public class QnMigrationREST {
         String updatedQualifiedName = createProductQualifiedName(parentDomainQualifiedName);
         vertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
 
+        //Store domainPolicies and resources to be updated
         String currentResource = "entity:"+ currentQualifiedName;
         String updatedResource = "entity:"+ updatedQualifiedName;
-
         this.updatedPolicyResources.put(currentResource, updatedResource);
-
-        List<AtlasEntityHeader> policies = getEntity(POLICY_ENTITY_TYPE, new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES, ATTR_POLICY_CATEGORY)), currentQualifiedName);
-        this.domainPolicies.addAll(policies);
+        this.currentResources.add(currentResource);
 
         vertex.setProperty(PARENT_DOMAIN_QN, parentDomainQualifiedName);
         vertex.setProperty(SUPER_DOMAIN_QN, rootDomainQualifiedName);
@@ -186,15 +194,17 @@ public class QnMigrationREST {
         vertex.setProperty(CUSTOM_ATTRIBUTES_PROPERTY_KEY, customAttributes);
     }
 
-    protected void updatePolicy(List<AtlasEntityHeader> policies, Map<String, String> updatedPolicyResources) throws AtlasBaseException {
+    protected void updatePolicy(List<String> currentResources, Map<String, String> updatedPolicyResources) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.updateQn()");
             }
 
-            LOG.info("Updating policy for entities {}", updatedPolicyResources);
+            LOG.info("Updating policies for entities {}", currentResources);
+            Map<String, Object> updatedAttributes = new HashMap<>();
 
+            List<AtlasEntityHeader> policies = getEntity(POLICY_ENTITY_TYPE,new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES, ATTR_POLICY_CATEGORY)), currentResources);
             if (CollectionUtils.isNotEmpty(policies)) {
                 int batchSize = 20;
                 int totalPolicies = policies.size();
@@ -217,23 +227,23 @@ public class QnMigrationREST {
                                 updatedPolicyResourcesList.add(resource);
                             }
                         }
+                        updatedAttributes.put(ATTR_POLICY_RESOURCES, updatedPolicyResourcesList);
 
                         policyEntity.setAttribute(ATTR_POLICY_RESOURCES, updatedPolicyResourcesList);
                         entityList.add(policyEntity);
+                        recordUpdatedChildEntities(policyVertex, updatedAttributes);
                     }
 
                     EntityStream entityStream = new AtlasEntityStream(entityList);
                     EntityMutationResponse policyResponse = entityStore.createOrUpdate(entityStream, false);
                     response.setMutatedEntities(policyResponse.getMutatedEntities());
                 }
-            }
 
-        }finally {
+            }
+        }finally{
             AtlasPerfTracer.log(perf);
         }
-
     }
-
 
     private static String createDomainQualifiedName(String parentDomainQualifiedName) {
         if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
@@ -254,7 +264,7 @@ public class QnMigrationREST {
         return NanoIdUtils.randomNanoId();
     }
 
-    protected List<AtlasEntityHeader> getEntity(String entityType, Set<String> attributes, String resource) throws AtlasBaseException {
+    protected List<AtlasEntityHeader> getEntity(String entityType, Set<String> attributes, List<String> resource) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -282,7 +292,7 @@ public class QnMigrationREST {
 
             if(entityType.equals(POLICY_ENTITY_TYPE)){
                 mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
-                mustClauseList.add(mapOf("terms", mapOf("policyResources", Arrays.asList(resource))));
+                mustClauseList.add(mapOf("terms", mapOf("policyResources", resource)));
             }
 
             Map<String, Object> bool = new HashMap<>();
@@ -333,6 +343,49 @@ public class QnMigrationREST {
         } while (hasMore);
 
         return ret;
+    }
+
+    /**
+     * Record the updated child entities, it will be used to send notification and store audit logs
+     * @param entityVertex Child entity vertex
+     * @param updatedAttributes Updated attributes while updating required attributes on updating collection
+     */
+    protected void recordUpdatedChildEntities(AtlasVertex entityVertex, Map<String, Object> updatedAttributes) {
+        AtlasPerfTracer perf = null;
+        try{
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.updateQn()");
+            }
+
+            RequestContext requestContext = RequestContext.get();
+
+            AtlasEntity entity = new AtlasEntity();
+            entity = entityRetriever.mapSystemAttributes(entityVertex, entity);
+            entity.setAttributes(updatedAttributes);
+            requestContext.cacheDifferentialEntity(new AtlasEntity(entity));
+
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+            //Add the min info attributes to entity header to be sent as part of notification
+            if(entityType != null) {
+                AtlasEntity finalEntity = entity;
+                entityType.getMinInfoAttributes().values().stream().filter(attribute -> !updatedAttributes.containsKey(attribute.getName())).forEach(attribute -> {
+                    Object attrValue = null;
+                    try {
+                        attrValue = entityRetriever.getVertexAttribute(entityVertex, attribute);
+                    } catch (AtlasBaseException e) {
+                        LOG.error("Error while getting vertex attribute", e);
+                    }
+                    if(attrValue != null) {
+                        finalEntity.setAttribute(attribute.getName(), attrValue);
+                    }
+                });
+                requestContext.recordEntityUpdate(new AtlasEntityHeader(finalEntity));
+            }
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+
     }
 
     public static Map<String, Object> mapOf(String key, Object value) {
