@@ -101,7 +101,7 @@ public class DomainPreProcessor implements PreProcessor {
         if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
             return parentDomainQualifiedName + "/domain/" + getUUID();
         } else{
-            return "default/domain/" + getUUID();
+            return "default/domain/" + getUUID() + "/super";
         }
     }
 
