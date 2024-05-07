@@ -8,9 +8,9 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +19,6 @@ import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
-import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DataProductPreProcessor.class);
@@ -58,7 +57,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private void processCreateProduct(AtlasEntity entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateProduct");
         String productName = (String) entity.getAttribute(NAME);
-        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN_ATTR);
+        String parentDomainQualifiedName = (String) entity.getAttribute(PreProcessorUtils.PARENT_DOMAIN_QN);
 
         AtlasEntityHeader parentDomain = getParent(entity);
         if(parentDomain != null ){
@@ -76,14 +75,14 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private void processUpdateProduct(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateProduct");
 
-        if(entity.hasRelationshipAttribute(DATA_DOMAIN_REL_TYPE) && entity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE) == null){
+        if(entity.hasRelationshipAttribute(DATA_DOMAIN) && entity.getRelationshipAttribute(DATA_DOMAIN) == null){
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProduct can only be moved to another Domain.");
         }
 
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
         AtlasEntity storedProduct = entityRetriever.toAtlasEntity(vertex);
-        AtlasRelatedObjectId currentParentDomainObjectId = (AtlasRelatedObjectId) storedProduct.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE);
+        AtlasRelatedObjectId currentParentDomainObjectId = (AtlasRelatedObjectId) storedProduct.getRelationshipAttribute(DATA_DOMAIN);
 
         String newParentDomainQualifiedName = null;
         String currentParentDomainQualifiedName = null;
@@ -103,7 +102,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             //Auth check
             isAuthorized(currentParentDomainHeader, newParentDomainHeader);
 
-            String newSuperDomainQualifiedName = (String) newParentDomainHeader.getAttribute(SUPER_DOMAIN_QN_ATTR);
+            String newSuperDomainQualifiedName = (String) newParentDomainHeader.getAttribute(SUPER_DOMAIN_QN);
             if(StringUtils.isEmpty(newSuperDomainQualifiedName)){
                 newSuperDomainQualifiedName = newParentDomainQualifiedName;
             }
@@ -147,8 +146,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             }
 
             product.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
-            product.setAttribute(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
-            product.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
+            product.setAttribute(PreProcessorUtils.PARENT_DOMAIN_QN, targetDomainQualifiedName);
+            product.setAttribute(SUPER_DOMAIN_QN, superDomainQualifiedName);
 
             //Store domainPolicies and resources to be updated
             String currentResource = "entity:"+ currentDataProductQualifiedName;
@@ -165,7 +164,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private AtlasEntityHeader getParent(AtlasEntity productEntity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("DataProductPreProcessor.getParent");
 
-        Object relationshipAttribute = productEntity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE);
+        Object relationshipAttribute = productEntity.getRelationshipAttribute(DATA_DOMAIN);
 
         RequestContext.get().endMetricRecord(metricRecorder);
         return getParent(relationshipAttribute, PARENT_ATTRIBUTES);
