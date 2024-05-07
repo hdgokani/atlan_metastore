@@ -21,7 +21,7 @@ jobs:
       - name: Run Trivy vulnerability scanner in IaC mode
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'filesystem'
+          scan-type: 'config'
           scan-ref: './Dockerfile'
           hide-progress: false
           template: '@/contrib/gitlab.tpl'
