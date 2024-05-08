@@ -1038,6 +1038,26 @@
           "isOptional": true,
           "isUnique": false,
           "includeInNotification": false
+        },
+        {
+          "name": "domainGuid",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "includeInNotification": false
+        },
+        {
+          "name": "stakeholderTitleGuid",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "includeInNotification": false
         }
       ]
     },

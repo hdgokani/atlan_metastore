@@ -405,6 +405,48 @@
       ]
     },
     {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:default/*/{entity}",
+        "entity-type:Persona",
+        "entity-classification:*"
+      ],
+      "actions": [
+        "entity-create",
+        "entity-update",
+        "entity-delete"
+      ]
+    },
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:default/*/{entity}/*",
+        "entity-type:AuthPolicy",
+        "entity-classification:*"
+      ],
+      "actions": [
+        "entity-create",
+        "entity-update",
+        "entity-delete"
+      ]
+    },
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:stakeholderTitle/domain/*/{entity}",
+        "entity-type:StakeholderTitle",
+        "entity-classification:*"
+      ],
+      "actions": [
+        "entity-create",
+        "entity-update",
+        "entity-delete"
+      ]
+    },
+    {
       "policyResourceCategory": "RELATIONSHIP",
       "policyType": "ACCESS",
       "description": "Link/unlink any DataDomain, DataProduct OR DataContract to this Domain",
@@ -552,6 +594,35 @@
         "entity-add-classification",
         "entity-update-classification",
         "entity-remove-classification"
+      ]
+    },
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:default/*/{entity}/*",
+        "entity-type:Persona",
+        "entity-type:AuthPolicy",
+        "entity-classification:*"
+      ],
+      "actions": [
+        "entity-create",
+        "entity-update",
+        "entity-delete"
+      ]
+    },
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:stakeholderTitle/domain/*/{entity}/*domain/*",
+        "entity-type:StakeholderTitle",
+        "entity-classification:*"
+      ],
+      "actions": [
+        "entity-create",
+        "entity-update",
+        "entity-delete"
       ]
     },
     {
