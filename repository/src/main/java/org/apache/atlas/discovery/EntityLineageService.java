@@ -302,6 +302,7 @@ public class EntityLineageService implements AtlasLineageService {
                 traverseEdgesOnDemand(datasetVertex, false, depth, level, new HashSet<>(), atlasLineageOnDemandContext, ret, guid, outputEntitiesTraversed, traversalOrder);
             AtlasEntityHeader baseEntityHeader = entityRetriever.toAtlasEntityHeader(datasetVertex, atlasLineageOnDemandContext.getAttributes());
             baseEntityHeader.setDepth(level);
+            baseEntityHeader.setTraversalOrder(0);
             ret.getGuidEntityMap().put(guid, baseEntityHeader);
         } else  {
             AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
@@ -1485,7 +1486,14 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processEdge");
         AtlasVertex inVertex     = edge.getInVertex();
         AtlasVertex outVertex    = edge.getOutVertex();
-        boolean     inIsProcess  = Objects.equals(AtlasGraphUtilsV2.getTypeName(inVertex), PROCESS_SUPER_TYPE);
+
+        String inTypeName = AtlasGraphUtilsV2.getTypeName(inVertex);
+        AtlasEntityType inEntityType = atlasTypeRegistry.getEntityTypeByName(inTypeName);
+        if (inEntityType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, inTypeName);
+        }
+        boolean inIsProcess = inEntityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
+
         String      inGuid       = AtlasGraphUtilsV2.getIdFromVertex(inVertex);
         String      outGuid      = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
         String      relationGuid = AtlasGraphUtilsV2.getEncodedProperty(edge, RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
