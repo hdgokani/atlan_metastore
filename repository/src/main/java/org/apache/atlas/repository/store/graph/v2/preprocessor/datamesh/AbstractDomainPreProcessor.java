@@ -65,7 +65,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
     private static final Set<String> POLICY_ATTRIBUTES_FOR_SEARCH = new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES));
 
-    static final Set<String> PARENT_ATTRIBUTES            = new HashSet<>(Arrays.asList(SUPER_DOMAIN_QN, PreProcessorUtils.PARENT_DOMAIN_QN));
+    static final Set<String> PARENT_ATTRIBUTES            = new HashSet<>(Arrays.asList(SUPER_DOMAIN_QN_ATTR, PreProcessorUtils.PARENT_DOMAIN_QN_ATTR));
 
     static final Map<String, String> customAttributes = new HashMap<>();
 

@@ -57,7 +57,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private void processCreateProduct(AtlasEntity entity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateProduct");
         String productName = (String) entity.getAttribute(NAME);
-        String parentDomainQualifiedName = (String) entity.getAttribute(PreProcessorUtils.PARENT_DOMAIN_QN);
+        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN_ATTR);
 
         AtlasEntityHeader parentDomain = getParent(entity);
         if(parentDomain != null ){
@@ -102,7 +102,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             //Auth check
             isAuthorized(currentParentDomainHeader, newParentDomainHeader);
 
-            String newSuperDomainQualifiedName = (String) newParentDomainHeader.getAttribute(SUPER_DOMAIN_QN);
+            String newSuperDomainQualifiedName = (String) newParentDomainHeader.getAttribute(SUPER_DOMAIN_QN_ATTR);
             if(StringUtils.isEmpty(newSuperDomainQualifiedName)){
                 newSuperDomainQualifiedName = newParentDomainQualifiedName;
             }
@@ -146,8 +146,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             }
 
             product.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
-            product.setAttribute(PreProcessorUtils.PARENT_DOMAIN_QN, targetDomainQualifiedName);
-            product.setAttribute(SUPER_DOMAIN_QN, superDomainQualifiedName);
+            product.setAttribute(PreProcessorUtils.PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
+            product.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
 
             //Store domainPolicies and resources to be updated
             String currentResource = "entity:"+ currentDataProductQualifiedName;
