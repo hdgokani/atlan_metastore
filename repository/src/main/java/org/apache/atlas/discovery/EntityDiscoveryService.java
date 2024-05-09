@@ -993,7 +993,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
 
             String indexName = getIndexName(params);
-            if (!params.getIndexName().isEmpty()) {
+            if (params.getIndexName() != null && params.getIndexName().length() > 0) {
                 indexName = params.getIndexName();
             }
 
