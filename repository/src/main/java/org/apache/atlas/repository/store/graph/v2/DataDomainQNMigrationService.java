@@ -180,21 +180,26 @@ public class DataDomainQNMigrationService implements MigrationService{
         Counter++;
         String currentQualifiedName = (String) vertex.getProperty(QUALIFIED_NAME,String.class);
         LOG.info("Migrating qualified name for Product: {}", currentQualifiedName);
-
+        Map<String,String> customAttributes_ = GraphHelper.getCustomAttributes(vertex);
         String updatedQualifiedName = createProductQualifiedName(parentDomainQualifiedName);
-        vertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
+        if(customAttributes_ != null && customAttributes_.get(MIGRATION_CUSTOM_ATTRIBUTE) != null && customAttributes_.get(MIGRATION_CUSTOM_ATTRIBUTE).equals("true")){
+            LOG.info("Entity already migrated for entity: {}", currentQualifiedName);
+        }
+        else {
+            vertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
 
-        //Store domainPolicies and resources to be updated
-        String currentResource = "entity:"+ currentQualifiedName;
-        String updatedResource = "entity:"+ updatedQualifiedName;
-        this.updatedPolicyResources.put(currentResource, updatedResource);
+            //Store domainPolicies and resources to be updated
+            String currentResource = "entity:" + currentQualifiedName;
+            String updatedResource = "entity:" + updatedQualifiedName;
+            this.updatedPolicyResources.put(currentResource, updatedResource);
 
-        vertex.setProperty(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
-        vertex.setProperty(SUPER_DOMAIN_QN_ATTR, rootDomainQualifiedName);
+            vertex.setProperty(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
+            vertex.setProperty(SUPER_DOMAIN_QN_ATTR, rootDomainQualifiedName);
 
-        Map<String,String> customAttributes = new HashMap<>();
-        customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
-        vertex.setProperty(CUSTOM_ATTRIBUTES_PROPERTY_KEY, AtlasEntityType.toJson(customAttributes));
+            Map<String, String> customAttributes = new HashMap<>();
+            customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
+            vertex.setProperty(CUSTOM_ATTRIBUTES_PROPERTY_KEY, AtlasEntityType.toJson(customAttributes));
+        }
         if(Counter >= BATCH_SIZE){
             commitChanges();
         }
