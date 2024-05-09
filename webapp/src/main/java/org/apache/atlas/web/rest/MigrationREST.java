@@ -12,6 +12,8 @@ import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
+import org.apache.atlas.repository.store.graph.v2.DataDomainQNMigrationService;
+import org.apache.atlas.repository.store.graph.v2.MigrationService;
 import org.apache.atlas.repository.store.users.KeycloakStore;
 import org.apache.atlas.transformer.PreProcessorPoliciesTransformer;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -53,13 +55,47 @@ public class MigrationREST {
     private final PreProcessorPoliciesTransformer transformer;
     private KeycloakStore keycloakStore;
     private AtlasGraph graph;
+    private final Map<String, MigrationService> migrationServicesMap = new HashMap<>();
+    List<MigrationService> migrationServices;
+
 
     @Inject
-    public MigrationREST(AtlasEntityStore entityStore, AtlasGraph graph) {
+    public MigrationREST(AtlasEntityStore entityStore, AtlasGraph graph, List<MigrationService> migrationServices) {
         this.entityStore = entityStore;
         this.graph = graph;
         this.transformer = new PreProcessorPoliciesTransformer();
+        this.migrationServices = migrationServices;
         keycloakStore = new KeycloakStore();
+        for (MigrationService service : migrationServices) {
+            String[] path = service.getClass().getName().split("\\.");
+            migrationServicesMap.put(path[path.length - 1], service);
+        }
+    }
+
+    @POST
+    @Path("updateQn")
+    @Timed
+    public Boolean updateQn (@QueryParam("migrationType") String migrationType) throws Exception {
+        AtlasPerfTracer perf = null;
+        MigrationService migrationService = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.updateQn()");
+            }
+            switch (migrationType){
+                case "MIGRATION_DATA_DOMAIN_QN":
+                    migrationService = migrationServicesMap.get("DataDomainQNMigrationService");
+                default:
+                    LOG.info("No service type found");
+            }
+        } catch (Exception e) {
+            LOG.error("Error while updating qualified names", e);
+            throw e;
+        } finally {
+            AtlasPerfTracer.log(perf);
+            return Objects.nonNull(migrationService)?migrationService.startMigration():Boolean.FALSE;
+        }
+
     }
 
     @POST
