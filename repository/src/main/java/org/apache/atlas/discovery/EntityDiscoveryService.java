@@ -993,6 +993,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
 
             String indexName = getIndexName(params);
+            if (!params.getIndexName().isEmpty()) {
+                indexName = params.getIndexName();
+            }
 
             indexQuery = graph.elasticsearchQuery(indexName);
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");

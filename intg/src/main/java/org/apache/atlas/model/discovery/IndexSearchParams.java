@@ -17,6 +17,7 @@ public class IndexSearchParams extends SearchParams {
     private Map dsl;
     private String purpose;
     private String persona;
+    private String indexName;
     private String queryString;
 
     /*
@@ -75,6 +76,14 @@ public class IndexSearchParams extends SearchParams {
         this.persona = persona;
     }
 
+    public String getIndexName() {
+        return indexName;
+    }
+
+    public void setIndexName(String indexName) {
+        this.indexName = indexName;
+    }
+
     public void setRelationAttributes(Set<String> relationAttributes) {
         this.relationAttributes = relationAttributes;
     }
@@ -85,6 +94,7 @@ public class IndexSearchParams extends SearchParams {
                 "dsl=" + dsl +
                 ", purpose='" + purpose + '\'' +
                 ", persona='" + persona + '\'' +
+                ", indexName='" + indexName + '\'' +
                 ", queryString='" + queryString + '\'' +
                 ", allowDeletedRelations=" + allowDeletedRelations +
                 ", accessControlExclusive=" + accessControlExclusive +
