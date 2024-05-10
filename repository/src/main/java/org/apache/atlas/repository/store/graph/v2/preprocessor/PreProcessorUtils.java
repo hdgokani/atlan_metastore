@@ -56,7 +56,7 @@ public class PreProcessorUtils {
 
 
     //Migration Constants
-    public static final String MIGRATION = "MIGRATION_";
+    public static final String MIGRATION = "MIGRATION:";
     public static final String DATA_MESH_QN = MIGRATION + "DATA_MESH_QN";
     public static final String IN_PROGRESS = "IN_PROGRESS";
     public static final String SUCCESSFUL = "SUCCESSFUL";
