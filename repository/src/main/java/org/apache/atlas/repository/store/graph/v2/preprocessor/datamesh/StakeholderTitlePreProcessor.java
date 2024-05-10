@@ -180,9 +180,6 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
             String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
             entity.setAttribute(QUALIFIED_NAME, vertexQName);
 
-            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(entity)),
-                    "update StakeholderTitle: ", entity.getAttribute(NAME));
-
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
@@ -201,7 +198,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not delete StakeholderTitle as it has reference to Active Stakeholder");
             }
 
-            List<String> domainQualifiedNames = vertex.getListProperty(ATTR_DOMAIN_QUALIFIED_NAMES, String.class);
+            List<String> domainQualifiedNames = vertex.getMultiValuedProperty(ATTR_DOMAIN_QUALIFIED_NAMES, String.class);
 
             authorizeDomainAccess(domainQualifiedNames, AtlasPrivilege.ENTITY_UPDATE);
 
