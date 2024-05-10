@@ -48,6 +48,8 @@ public class DataDomainQNMigrationService implements MigrationService{
 
     boolean errorOccur = false;
 
+    boolean skipSuperDomain = false;
+
     private int Counter;
 
     private final TransactionInterceptHelper   transactionInterceptHelper;
@@ -74,6 +76,7 @@ public class DataDomainQNMigrationService implements MigrationService{
 
 
         for (int i = 0; i < entities.size(); i++) {
+            skipSuperDomain = false;
             updateChunk(entities.get(i));
         }
         if(errorOccur)
@@ -104,6 +107,8 @@ public class DataDomainQNMigrationService implements MigrationService{
 
 
     private void migrateDomainAttributes(AtlasVertex vertex, String parentDomainQualifiedName, String rootDomainQualifiedName) throws AtlasBaseException {
+        if(skipSuperDomain)
+            return;
         String currentQualifiedName = vertex.getProperty(QUALIFIED_NAME,String.class);
         LOG.info("Migrating qualified name for Domain: {}", currentQualifiedName);
         Counter++;
@@ -116,25 +121,30 @@ public class DataDomainQNMigrationService implements MigrationService{
         else{
             rootDomainQualifiedName = commitChangesInMemory(currentQualifiedName,updatedQualifiedName,parentDomainQualifiedName,rootDomainQualifiedName,vertex,updatedAttributes);
         }
+        if(!skipSuperDomain) {
+            Iterator<AtlasVertex> products = getAllChildrenVertices(vertex, DATA_PRODUCT_EDGE_LABEL);
 
-        Iterator<AtlasVertex> products = getAllChildrenVertices(vertex, DATA_PRODUCT_EDGE_LABEL);
+            while (products.hasNext()) {
+                AtlasVertex productVertex = products.next();
+                migrateDataProductAttributes(productVertex, updatedQualifiedName, rootDomainQualifiedName);
+                if(skipSuperDomain)
+                    break;
+            }
 
-        while (products.hasNext()) {
-            AtlasVertex productVertex = products.next();
-            migrateDataProductAttributes(productVertex, updatedQualifiedName, rootDomainQualifiedName);
-        }
+            // Get all children domains of current domain
+            Iterator<AtlasVertex> childDomains = getAllChildrenVertices(vertex, DOMAIN_PARENT_EDGE_LABEL);
 
-        // Get all children domains of current domain
-        Iterator<AtlasVertex> childDomains = getAllChildrenVertices(vertex, DOMAIN_PARENT_EDGE_LABEL);
+            while (childDomains.hasNext()) {
+                AtlasVertex childVertex = childDomains.next();
+                migrateDomainAttributes(childVertex, updatedQualifiedName, rootDomainQualifiedName);
+                if(skipSuperDomain)
+                    break;
+            }
 
-        while (childDomains.hasNext()) {
-            AtlasVertex childVertex = childDomains.next();
-            migrateDomainAttributes(childVertex, updatedQualifiedName, rootDomainQualifiedName);
-        }
-
-        recordUpdatedChildEntities(vertex, updatedAttributes);
-        if(Counter >= BATCH_SIZE){
-            commitChanges();
+            recordUpdatedChildEntities(vertex, updatedAttributes);
+            if (Counter >= BATCH_SIZE) {
+                commitChanges();
+            }
         }
 
     }
@@ -149,12 +159,15 @@ public class DataDomainQNMigrationService implements MigrationService{
         try {
             transactionInterceptHelper.intercept();
         }catch (Exception e){
-
+            this.skipSuperDomain = true;
+            this.errorOccur = true;
         }
         this.updatedPolicyResources.clear();
         this.Counter = 0;
     }
     public String commitChangesInMemory(String currentQualifiedName, String updatedQualifiedName, String parentDomainQualifiedName, String rootDomainQualifiedName, AtlasVertex vertex, Map<String, Object> updatedAttributes){
+        if(skipSuperDomain)
+            return "";
         vertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
         if (StringUtils.isEmpty(parentDomainQualifiedName) && StringUtils.isEmpty(rootDomainQualifiedName)){
             rootDomainQualifiedName = updatedQualifiedName;
@@ -180,6 +193,8 @@ public class DataDomainQNMigrationService implements MigrationService{
 
 
     private void migrateDataProductAttributes(AtlasVertex vertex, String parentDomainQualifiedName, String rootDomainQualifiedName) throws AtlasBaseException {
+        if(skipSuperDomain)
+            return;
         Counter++;
         String currentQualifiedName = (String) vertex.getProperty(QUALIFIED_NAME,String.class);
         LOG.info("Migrating qualified name for Product: {}", currentQualifiedName);
@@ -209,6 +224,8 @@ public class DataDomainQNMigrationService implements MigrationService{
     }
 
     protected void updatePolicy(Map<String, String> updatedPolicyResources) throws AtlasBaseException {
+        if(skipSuperDomain)
+            return;
         List<String> currentResources = new ArrayList<>(updatedPolicyResources.keySet());
         LOG.info("Updating policies for entities {}", currentResources);
         Map<String, Object> updatedAttributes = new HashMap<>();
