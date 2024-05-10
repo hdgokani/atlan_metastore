@@ -126,30 +126,21 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                 throw new AtlasBaseException(BAD_REQUEST, "Please pass attribute domainQualifiedNames");
             }
 
-            if ((domainQualifiedNames.size() == 1 && STAR.equals(domainQualifiedNames.get(0)))
-                    || domainQualifiedNames.contains(STAR)) {
-
-                AtlasEntityHeader allDomainEntityHeader = new AtlasEntityHeader(DATA_DOMAIN_ENTITY_TYPE, mapOf(QUALIFIED_NAME, "*/super"));
-                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(allDomainEntityHeader)),
-                        "create StakeholderTitle for all domains");
+            if (domainQualifiedNames.contains(STAR)) {
+                if (domainQualifiedNames.size() > 1) {
+                    domainQualifiedNames.clear();
+                    domainQualifiedNames.add(STAR);
+                    entity.setAttribute(ATTR_DOMAIN_QUALIFIED_NAMES, domainQualifiedNames);
+                }
 
                 String qualifiedName = String.format(PATTERN_QUALIFIED_NAME_ALL_DOMAINS, getUUID());
                 entity.setAttribute(QUALIFIED_NAME, qualifiedName);
-                entity.setAttribute(ATTR_DOMAIN_QUALIFIED_NAMES, Collections.singletonList(STAR));
+
             } else {
-                for (String domainQualifiedName : domainQualifiedNames) {
-
-                    AtlasEntityHeader domainHeader = new AtlasEntityHeader(DATA_DOMAIN_ENTITY_TYPE, mapOf(QUALIFIED_NAME, domainQualifiedName));
-                    String qualifiedName = String.format("stakeholderTitle/domain/%s/%s", getUUID(), domainQualifiedName);
-
-                    entity.setAttribute(QUALIFIED_NAME, qualifiedName);
-
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(domainHeader)),
-                            "create StakeholderTitle for domain ", domainQualifiedName);
-                }
-
                 entity.setAttribute(QUALIFIED_NAME, String.format(PATTERN_QUALIFIED_NAME_DOMAIN, getUUID()));
             }
+
+            authorizeDomainAccess(domainQualifiedNames, AtlasPrivilege.ENTITY_UPDATE);
 
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
@@ -177,6 +168,15 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                         String.format("Stakeholder title with name %s already exists", newName));
             }
 
+            List<String> domainQualifiedNames;
+            if (entity.hasAttribute(ATTR_DOMAIN_QUALIFIED_NAMES)) {
+                domainQualifiedNames = (List<String>) entity.getAttribute(ATTR_DOMAIN_QUALIFIED_NAMES);
+            } else {
+                domainQualifiedNames = vertex.getListProperty(ATTR_DOMAIN_QUALIFIED_NAMES, String.class);
+            }
+
+            authorizeDomainAccess(domainQualifiedNames, AtlasPrivilege.ENTITY_UPDATE);
+
             String vertexQName = vertex.getProperty(QUALIFIED_NAME, String.class);
             entity.setAttribute(QUALIFIED_NAME, vertexQName);
 
@@ -201,8 +201,28 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not delete StakeholderTitle as it has reference to Active Stakeholder");
             }
 
+            List<String> domainQualifiedNames = vertex.getListProperty(ATTR_DOMAIN_QUALIFIED_NAMES, String.class);
+
+            authorizeDomainAccess(domainQualifiedNames, AtlasPrivilege.ENTITY_UPDATE);
+
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
+    private void authorizeDomainAccess(List<String> domainQualifiedNames, AtlasPrivilege permission) throws AtlasBaseException {
+        for (String domainQualifiedName: domainQualifiedNames) {
+            String domainQualifiedNameToAuth;
+            if (domainQualifiedNames.contains(STAR)) {
+                domainQualifiedNameToAuth = "*/super";
+            } else {
+                domainQualifiedNameToAuth = domainQualifiedName;
+            }
+
+            AtlasEntityHeader domainHeaderToAuth = new AtlasEntityHeader(DATA_DOMAIN_ENTITY_TYPE, mapOf(QUALIFIED_NAME, domainQualifiedNameToAuth));
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(domainHeaderToAuth)),
+                    "create StakeholderTitle for domain ", domainQualifiedName);
         }
     }
 }
