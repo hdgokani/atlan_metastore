@@ -123,6 +123,12 @@ public class DataMeshQNMigrationService implements MigrationService, Runnable {
         if(customAttributes != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE) != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE).equals("true")){
             LOG.info("Entity already migrated for entity: {}", currentQualifiedName);
 
+            updatedQualifiedName = vertex.getProperty(QUALIFIED_NAME,String.class);
+
+            if (StringUtils.isEmpty(superDomainQualifiedName)) {
+                superDomainQualifiedName = vertex.getProperty(QUALIFIED_NAME,String.class);
+            }
+
         } else {
             superDomainQualifiedName = commitChangesInMemory(currentQualifiedName, updatedQualifiedName, parentDomainQualifiedName, superDomainQualifiedName, vertex, updatedAttributes);
         }
