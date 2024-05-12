@@ -68,7 +68,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
         entity.setCustomAttributes(customAttributes);
 
-        productExists(productName, parentDomainQualifiedName);
+        productExists(productName, null, parentDomainQualifiedName);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
@@ -117,7 +117,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             String productNewName = (String) entity.getAttribute(NAME);
 
             if (!productCurrentName.equals(productNewName)) {
-                productExists(productNewName, currentParentDomainQualifiedName);
+                productExists(productNewName, entity.getGuid(), currentParentDomainQualifiedName);
             }
             entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         }
@@ -137,7 +137,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
             LOG.info("Moving dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
 
-            productExists(productName, targetDomainQualifiedName);
+            productExists(productName, product.getGuid(), targetDomainQualifiedName);
 
             String updatedQualifiedName;
             if(StringUtils.isEmpty(sourceDomainQualifiedName)){
@@ -171,11 +171,11 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         return getParent(relationshipAttribute, PARENT_ATTRIBUTES);
     }
 
-    private void productExists(String productName, String parentDomainQualifiedName) throws AtlasBaseException {
+    private void productExists(String productName, String productGuid, String parentDomainQualifiedName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("domainExists");
 
         try {
-            exists(DATA_PRODUCT_ENTITY_TYPE, productName, parentDomainQualifiedName);
+            exists(DATA_PRODUCT_ENTITY_TYPE, productName, productGuid, parentDomainQualifiedName);
 
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);

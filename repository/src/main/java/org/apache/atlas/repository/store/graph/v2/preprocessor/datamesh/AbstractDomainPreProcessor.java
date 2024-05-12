@@ -158,21 +158,28 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         }
     }
 
-    protected void exists(String assetType, String assetName, String parentDomainQualifiedName) throws AtlasBaseException {
+    protected void exists(String assetType, String assetName, String assetGuid, String parentDomainQualifiedName) throws AtlasBaseException {
         boolean exists = false;
 
         List<Map<String, Object>> mustClauseList = new ArrayList();
+        List<Map<String, Object>> mustNotClauseList = new ArrayList();
+
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", assetType)));
         mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
         mustClauseList.add(mapOf("term", mapOf("name.keyword", assetName)));
 
+        if (StringUtils.isNotEmpty(assetGuid)) {
+            mustNotClauseList.add(mapOf("term", mapOf("__guid", assetGuid)));
+        }
 
         Map<String, Object> bool = new HashMap<>();
         if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
             mustClauseList.add(mapOf("term", mapOf("parentDomainQualifiedName", parentDomainQualifiedName)));
         } else {
-            List<Map<String, Object>> mustNotClauseList = new ArrayList();
             mustNotClauseList.add(mapOf("exists", mapOf("field", "parentDomainQualifiedName")));
+        }
+
+        if (!mustNotClauseList.isEmpty()) {
             bool.put("must_not", mustNotClauseList);
         }
 
