@@ -1,5 +1,6 @@
 package org.apache.atlas.repository.store.graph.v2;
 
+import jline.internal.Log;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
@@ -12,30 +13,29 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
-import static org.apache.atlas.repository.graph.GraphHelper.getActiveChildrenVertices;
+import static org.apache.atlas.repository.graph.GraphHelper.getAllChildrenVertices;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_RESOURCES;
 
-@Component
-public class DataDomainQNMigrationService implements MigrationService{
+public class DataMeshQNMigrationService implements MigrationService, Runnable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DataDomainQNMigrationService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DataMeshQNMigrationService.class);
 
     private final AtlasEntityStore entityStore;
     private final EntityDiscoveryService discovery;
@@ -46,119 +46,160 @@ public class DataDomainQNMigrationService implements MigrationService{
 
     private final int BATCH_SIZE = 20;
 
-    boolean errorOccur = false;
+    boolean errorOccured = false;
 
-    private int Counter;
+    boolean skipSuperDomain = false;
 
+    private int counter;
+    private boolean forceRegen;
     private final TransactionInterceptHelper   transactionInterceptHelper;
-    private final RedisService redisService;
 
-    @Inject
-    public DataDomainQNMigrationService(AtlasEntityStore entityStore, RedisService redisService, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper transactionInterceptHelper) {
+    public DataMeshQNMigrationService(AtlasEntityStore entityStore, EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper transactionInterceptHelper, boolean forceRegen) {
         this.entityRetriever = entityRetriever;
         this.entityStore = entityStore;
         this.discovery = discovery;
         this.typeRegistry = typeRegistry;
         this.updatedPolicyResources = new HashMap<>();
-        this.Counter = 0;
+        this.counter = 0;
         this.transactionInterceptHelper = transactionInterceptHelper;
-        this.redisService = redisService;
+        this.forceRegen = forceRegen;
     }
 
-    @Async
-    public Boolean startMigration () throws Exception{
-        redisService.putValue(DATA_MESH_QN,IN_PROGRESS);
-        Set<String> attributes = new HashSet<>(Arrays.asList(QUALIFIED_NAME, SUPER_DOMAIN_QN_ATTR, PARENT_DOMAIN_QN_ATTR, "__customAttributes"));
-        List<AtlasEntityHeader> entities = null;
-        entities = getEntity(DATA_DOMAIN_ENTITY_TYPE, attributes, null);
+    public Boolean startMigration() throws Exception{
 
+        Set<String> attributes = new HashSet<>(Arrays.asList(SUPER_DOMAIN_QN_ATTR, PARENT_DOMAIN_QN_ATTR, "__customAttributes"));
 
-        for (int i = 0; i < entities.size(); i++) {
-            updateChunk(entities.get(i));
+        List<AtlasEntityHeader> entities = getEntity(DATA_DOMAIN_ENTITY_TYPE, attributes, null);
+
+        for (AtlasEntityHeader superDomain: entities) {
+            skipSuperDomain = false;
+            updateChunk(superDomain);
         }
-        if(errorOccur)
-            redisService.putValue(DATA_MESH_QN,FAILED);
-        else
-            redisService.putValue(DATA_MESH_QN,SUCCESSFUL);
-        LOG.info("MIGRATION_RESULT",redisService.getValue("MIGRATION_DATA_DOMAIN_QN"));
+
         return Boolean.TRUE;
     }
 
-    private void updateChunk (AtlasEntityHeader atlasEntity) throws AtlasBaseException {
+    private void updateChunk(AtlasEntityHeader atlasEntity) throws AtlasBaseException {
         AtlasVertex vertex = entityRetriever.getEntityVertex(atlasEntity.getGuid());
         String qualifiedName = (String) atlasEntity.getAttribute(QUALIFIED_NAME);
 
         try{
             migrateDomainAttributes(vertex, "", "");
-        }
-        catch (AtlasBaseException e){
-            this.errorOccur = true;
-            LOG.error("Error while migrating qualified name for entity: {}", qualifiedName, e);
-        }
-        finally {
+
             commitChanges();
             LOG.info("Migrated qualified name for entity: {}", qualifiedName);
+
+        } catch (AtlasBaseException e){
+            this.errorOccured = true;
+            LOG.error("Error while migrating qualified name for entity: {}", qualifiedName, e);
         }
     }
 
-//
+    private void migrateDomainAttributes(AtlasVertex vertex, String parentDomainQualifiedName, String superDomainQualifiedName) throws AtlasBaseException {
+        if(skipSuperDomain) {
+            return;
+        }
 
+        counter++;
 
-    private void migrateDomainAttributes(AtlasVertex vertex, String parentDomainQualifiedName, String rootDomainQualifiedName) throws AtlasBaseException {
         String currentQualifiedName = vertex.getProperty(QUALIFIED_NAME,String.class);
-        LOG.info("Migrating qualified name for Domain: {}", currentQualifiedName);
-        Counter++;
-        Map<String, Object> updatedAttributes = new HashMap<>();
         String updatedQualifiedName = createDomainQualifiedName(parentDomainQualifiedName);
+
+        LOG.info("Migrating qualified name for Domain: {}", currentQualifiedName);
+
+        Map<String, Object> updatedAttributes = new HashMap<>();
+
         Map<String,String> customAttributes = GraphHelper.getCustomAttributes(vertex);
-        if(customAttributes != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE) != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE).equals("true")){
+        if(!this.forceRegen && customAttributes != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE) != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE).equals("true")){
             LOG.info("Entity already migrated for entity: {}", currentQualifiedName);
-        }
-        else{
-            rootDomainQualifiedName = commitChangesInMemory(currentQualifiedName,updatedQualifiedName,parentDomainQualifiedName,rootDomainQualifiedName,vertex,updatedAttributes);
-        }
 
-        Iterator<AtlasVertex> products = getActiveChildrenVertices(vertex, DATA_PRODUCT_EDGE_LABEL);
+            updatedQualifiedName = vertex.getProperty(QUALIFIED_NAME,String.class);
 
-        while (products.hasNext()) {
-            AtlasVertex productVertex = products.next();
-            migrateDataProductAttributes(productVertex, updatedQualifiedName, rootDomainQualifiedName);
-        }
+            if (StringUtils.isEmpty(superDomainQualifiedName)) {
+                superDomainQualifiedName = vertex.getProperty(QUALIFIED_NAME,String.class);
+            }
 
-        // Get all children domains of current domain
-        Iterator<AtlasVertex> childDomains = getActiveChildrenVertices(vertex, DOMAIN_PARENT_EDGE_LABEL);
-
-        while (childDomains.hasNext()) {
-            AtlasVertex childVertex = childDomains.next();
-            migrateDomainAttributes(childVertex, updatedQualifiedName, rootDomainQualifiedName);
+        } else {
+            superDomainQualifiedName = commitChangesInMemory(currentQualifiedName, updatedQualifiedName, parentDomainQualifiedName, superDomainQualifiedName, vertex, updatedAttributes);
         }
 
-        recordUpdatedChildEntities(vertex, updatedAttributes);
-        if(Counter >= BATCH_SIZE){
-            commitChanges();
-        }
+        if (!skipSuperDomain) {
+            Iterator<AtlasVertex> products = getAllChildrenVertices(vertex, DATA_PRODUCT_EDGE_LABEL);
 
+            while (products.hasNext()) {
+                try {
+                    AtlasVertex productVertex = products.next();
+                    if (Objects.nonNull(productVertex)) {
+                        migrateDataProductAttributes(productVertex, updatedQualifiedName, superDomainQualifiedName);
+                    }
+                    if (skipSuperDomain)
+                        break;
+                }
+                catch (NullPointerException e){
+                    LOG.error("Null Pointer Exception occured for subdomains with parent : " + currentQualifiedName, e);
+                }
+            }
+
+            // Get all children domains of current domain
+            Iterator<AtlasVertex> childDomains = getAllChildrenVertices(vertex, DOMAIN_PARENT_EDGE_LABEL);
+
+            while (childDomains.hasNext()) {
+                try {
+                    AtlasVertex childVertex = childDomains.next();
+                    if (Objects.nonNull(childVertex)) {
+                        migrateDomainAttributes(childVertex, updatedQualifiedName, superDomainQualifiedName);
+                    }
+                    if (skipSuperDomain)
+                        break;
+                }
+                catch (NullPointerException e){
+                    LOG.error("Null Pointer Exception occured for subdomains with parent : " + currentQualifiedName, e);
+                }
+            }
+
+            recordUpdatedChildEntities(vertex, updatedAttributes);
+            if (counter >= BATCH_SIZE) {
+                commitChanges();
+            }
+        }
     }
 
-    public void commitChanges(){
+    public void commitChanges() {
         try {
             updatePolicy(this.updatedPolicyResources);
         } catch (AtlasBaseException e) {
-            this.errorOccur = true;
-            throw new RuntimeException(e);
+            this.errorOccured = true;
+            this.skipSuperDomain = true;
+            LOG.error("Failed to update set of policies: ", e);
+            LOG.error("Failed policies: {}", AtlasType.toJson(this.updatedPolicyResources));
+        } finally {
+            this.updatedPolicyResources.clear();
         }
-        transactionInterceptHelper.intercept();
-        this.updatedPolicyResources.clear();
-        this.Counter = 0;
+
+        try {
+            transactionInterceptHelper.intercept();
+        } catch (Exception e){
+            this.skipSuperDomain = true;
+            this.errorOccured = true;
+            LOG.error("Failed to commit set of assets: ", e);
+        } finally {
+            this.counter = 0;
+        }
     }
-    public String commitChangesInMemory(String currentQualifiedName, String updatedQualifiedName, String parentDomainQualifiedName, String rootDomainQualifiedName, AtlasVertex vertex, Map<String, Object> updatedAttributes){
-        vertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
-        if (StringUtils.isEmpty(parentDomainQualifiedName) && StringUtils.isEmpty(rootDomainQualifiedName)){
-            rootDomainQualifiedName = updatedQualifiedName;
+
+    public String commitChangesInMemory(String currentQualifiedName, String updatedQualifiedName, String parentDomainQualifiedName, String superDomainQualifiedName, AtlasVertex vertex, Map<String, Object> updatedAttributes) {
+
+        if(skipSuperDomain) {
+            return "";
         }
-        else{
+
+        vertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
+
+        if (StringUtils.isEmpty(parentDomainQualifiedName) && StringUtils.isEmpty(superDomainQualifiedName)){
+            superDomainQualifiedName = updatedQualifiedName;
+        } else{
             vertex.setProperty(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
-            vertex.setProperty(SUPER_DOMAIN_QN_ATTR, rootDomainQualifiedName);
+            vertex.setProperty(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
         }
 
         updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
@@ -168,24 +209,34 @@ public class DataDomainQNMigrationService implements MigrationService{
         String updatedResource = "entity:"+ updatedQualifiedName;
         this.updatedPolicyResources.put(currentResource, updatedResource);
 
-        Map<String,String> customAttributes = new HashMap<>();
+        Map<String,String> customAttributes = GraphHelper.getCustomAttributes(vertex);
+        if(Objects.isNull(customAttributes) || MapUtils.isEmpty(customAttributes)) {
+            customAttributes = new HashMap<>();
+        }
         customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
         vertex.setProperty(CUSTOM_ATTRIBUTES_PROPERTY_KEY, AtlasEntityType.toJson(customAttributes));
 
-        return rootDomainQualifiedName;
+        return superDomainQualifiedName;
     }
 
 
-    private void migrateDataProductAttributes(AtlasVertex vertex, String parentDomainQualifiedName, String rootDomainQualifiedName) throws AtlasBaseException {
-        Counter++;
-        String currentQualifiedName = (String) vertex.getProperty(QUALIFIED_NAME,String.class);
-        LOG.info("Migrating qualified name for Product: {}", currentQualifiedName);
-        Map<String,String> customAttributes_ = GraphHelper.getCustomAttributes(vertex);
-        String updatedQualifiedName = createProductQualifiedName(parentDomainQualifiedName);
-        if(customAttributes_ != null && customAttributes_.get(MIGRATION_CUSTOM_ATTRIBUTE) != null && customAttributes_.get(MIGRATION_CUSTOM_ATTRIBUTE).equals("true")){
-            LOG.info("Entity already migrated for entity: {}", currentQualifiedName);
+    private void migrateDataProductAttributes(AtlasVertex vertex, String parentDomainQualifiedName, String superDomainQualifiedName) throws AtlasBaseException {
+        if(skipSuperDomain) {
+            return;
         }
-        else {
+
+        counter++;
+
+        String currentQualifiedName = vertex.getProperty(QUALIFIED_NAME,String.class);
+        String updatedQualifiedName = createProductQualifiedName(parentDomainQualifiedName);
+
+        LOG.info("Migrating qualified name for Product: {}", currentQualifiedName);
+        Map<String,String> customAttributes = GraphHelper.getCustomAttributes(vertex);
+
+        if(!this.forceRegen && customAttributes != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE) != null && customAttributes.get(MIGRATION_CUSTOM_ATTRIBUTE).equals("true")) {
+            LOG.info("Product already migrated: {}", currentQualifiedName);
+
+        } else {
             vertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
 
             //Store domainPolicies and resources to be updated
@@ -194,18 +245,25 @@ public class DataDomainQNMigrationService implements MigrationService{
             this.updatedPolicyResources.put(currentResource, updatedResource);
 
             vertex.setProperty(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
-            vertex.setProperty(SUPER_DOMAIN_QN_ATTR, rootDomainQualifiedName);
+            vertex.setProperty(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
 
-            Map<String, String> customAttributes = new HashMap<>();
+            if(Objects.isNull(customAttributes) || MapUtils.isEmpty(customAttributes)) {
+                customAttributes = new HashMap<>();
+            }
             customAttributes.put(MIGRATION_CUSTOM_ATTRIBUTE, "true");
             vertex.setProperty(CUSTOM_ATTRIBUTES_PROPERTY_KEY, AtlasEntityType.toJson(customAttributes));
         }
-        if(Counter >= BATCH_SIZE){
+
+        if(counter >= BATCH_SIZE){
             commitChanges();
         }
     }
 
     protected void updatePolicy(Map<String, String> updatedPolicyResources) throws AtlasBaseException {
+        if(skipSuperDomain) {
+            return;
+        }
+
         List<String> currentResources = new ArrayList<>(updatedPolicyResources.keySet());
         LOG.info("Updating policies for entities {}", currentResources);
         Map<String, Object> updatedAttributes = new HashMap<>();
@@ -243,9 +301,7 @@ public class DataDomainQNMigrationService implements MigrationService{
                 EntityStream entityStream = new AtlasEntityStream(entityList);
                 entityStore.createOrUpdate(entityStream, false);
             }
-
         }
-
     }
 
     private static String createDomainQualifiedName(String parentDomainQualifiedName) {
@@ -368,7 +424,7 @@ public class DataDomainQNMigrationService implements MigrationService{
                 try {
                     attrValue = entityRetriever.getVertexAttribute(entityVertex, attribute);
                 } catch (AtlasBaseException e) {
-                    this.errorOccur = true;
+                    this.errorOccured = true;
                     LOG.error("Error while getting vertex attribute", e);
                 }
                 if(attrValue != null) {
@@ -384,5 +440,15 @@ public class DataDomainQNMigrationService implements MigrationService{
         Map<String, Object> map = new HashMap<>();
         map.put(key, value);
         return map;
+    }
+
+    @Override
+    public void run() {
+        try {
+            startMigration();
+        } catch (Exception e) {
+            LOG.error("Error running migration : {}",e.toString());
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -3,6 +3,7 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -10,13 +11,11 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
-import org.apache.atlas.repository.store.graph.v2.EntityStream;
-import org.apache.atlas.repository.store.graph.v2.DataDomainQNMigrationService;
-import org.apache.atlas.repository.store.graph.v2.MigrationService;
+import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.repository.store.users.KeycloakStore;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.transformer.PreProcessorPoliciesTransformer;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.web.util.Servlets;
@@ -58,60 +57,72 @@ public class MigrationREST {
     private final PreProcessorPoliciesTransformer transformer;
     private KeycloakStore keycloakStore;
     private AtlasGraph graph;
-    private final Map<String, MigrationService> migrationServicesMap = new HashMap<>();
-    List<MigrationService> migrationServices;
+    DataMeshQNMigrationService dataMeshQNMigrationService;
+
+    private final EntityGraphRetriever entityRetriever;
     private final RedisService redisService;
+    protected final AtlasTypeRegistry typeRegistry;
+    private final EntityDiscoveryService discovery;
+
+    private final TransactionInterceptHelper   transactionInterceptHelper;
 
     @Inject
-    public MigrationREST(AtlasEntityStore entityStore, AtlasGraph graph, List<MigrationService> migrationServices,RedisService redisService) {
+    public MigrationREST(AtlasEntityStore entityStore, AtlasGraph graph, RedisService redisService,EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper   transactionInterceptHelper) {
         this.entityStore = entityStore;
         this.graph = graph;
         this.transformer = new PreProcessorPoliciesTransformer();
-        this.migrationServices = migrationServices;
         keycloakStore = new KeycloakStore();
         this.redisService = redisService;
-        for (MigrationService service : migrationServices) {
-            String[] path = service.getClass().getName().split("\\.");
-            migrationServicesMap.put(path[path.length - 1], service);
-        }
+        this.discovery = discovery;
+        this.entityRetriever = entityRetriever;
+        this.typeRegistry = typeRegistry;
+        this.transactionInterceptHelper = transactionInterceptHelper;
     }
 
     @POST
-    @Path("updateQn")
+    @Path("submit")
     @Timed
-    public Boolean updateQn (@QueryParam("migrationType") String migrationType) throws Exception {
+    public Boolean submit (@QueryParam("migrationType") String migrationType,@QueryParam("forceMigration") boolean forceMigration) throws Exception {
         AtlasPerfTracer perf = null;
         MigrationService migrationService;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.updateQn()");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.submit()");
             }
-            migrationService = getMigrationService(MIGRATION + migrationType);
-            return Objects.nonNull(migrationService)?migrationService.startMigration():Boolean.FALSE;
+            if( (MIGRATION + migrationType).equals(DATA_MESH_QN)){
+                if(Objects.isNull(forceMigration) ){
+                    forceMigration = false;
+                }
+                dataMeshQNMigrationService = new DataMeshQNMigrationService(entityStore, discovery, entityRetriever, typeRegistry, transactionInterceptHelper, forceMigration);
+                dataMeshQNMigrationService.run();
+            }
+
         } catch (Exception e) {
-            LOG.error("Error while updating qualified names", e);
-            throw e;
+            LOG.error("Error while submitting migration", e);
+            return Boolean.FALSE;
         } finally {
             AtlasPerfTracer.log(perf);
         }
-
+        return Boolean.TRUE;
     }
 
+
     @GET
-    @Path("migrationStatus")
+    @Path("status")
     @Timed
-    public String migrationStatus(@QueryParam("migrationType") String migrationType) throws Exception{
+    public String getMigrationStatus(@QueryParam("migrationType") String migrationType) throws Exception{
         AtlasPerfTracer perf = null;
-        MigrationService migrationService = null;
+
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.migrationStatus()");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.getMigrationStatus()");
             }
 
             String value = redisService.getValue(MIGRATION + migrationType);
-            return Objects.nonNull(value)?value:"No Migration Found with this key";
+
+            return Objects.nonNull(value) ? value : "No Migration Found with this key";
         } catch (Exception e) {
-            LOG.error("Error while updating qualified names", e);
+            LOG.error("Error while fetching status for migration", e);
             throw e;
         } finally {
             AtlasPerfTracer.log(perf);
@@ -271,16 +282,6 @@ public class MigrationREST {
 
         } finally {
             AtlasPerfTracer.log(perf);
-        }
-    }
-
-    private MigrationService getMigrationService(String migrationType){
-        switch (migrationType){
-            case DATA_MESH_QN:
-                return migrationServicesMap.get("DataDomainQNMigrationService");
-            default:
-                LOG.info("No service type found");
-                return null;
         }
     }
 

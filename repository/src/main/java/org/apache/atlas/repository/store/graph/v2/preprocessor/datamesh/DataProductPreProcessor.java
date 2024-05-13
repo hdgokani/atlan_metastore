@@ -75,14 +75,14 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private void processUpdateProduct(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateProduct");
 
-        if(entity.hasRelationshipAttribute(DATA_DOMAIN) && entity.getRelationshipAttribute(DATA_DOMAIN) == null){
+        if(entity.hasRelationshipAttribute(DATA_DOMAIN_REL_TYPE) && entity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE) == null){
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProduct can only be moved to another Domain.");
         }
 
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
         AtlasEntity storedProduct = entityRetriever.toAtlasEntity(vertex);
-        AtlasRelatedObjectId currentParentDomainObjectId = (AtlasRelatedObjectId) storedProduct.getRelationshipAttribute(DATA_DOMAIN);
+        AtlasRelatedObjectId currentParentDomainObjectId = (AtlasRelatedObjectId) storedProduct.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE);
 
         String newParentDomainQualifiedName = null;
         String currentParentDomainQualifiedName = null;
@@ -164,7 +164,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private AtlasEntityHeader getParent(AtlasEntity productEntity) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("DataProductPreProcessor.getParent");
 
-        Object relationshipAttribute = productEntity.getRelationshipAttribute(DATA_DOMAIN);
+        Object relationshipAttribute = productEntity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE);
 
         RequestContext.get().endMetricRecord(metricRecorder);
         return getParent(relationshipAttribute, PARENT_ATTRIBUTES);
