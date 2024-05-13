@@ -46,6 +46,7 @@ public class PreProcessorUtils {
     public static final String DATA_PRODUCT_REL_TYPE = "dataProducts";
     public static final String MIGRATION_CUSTOM_ATTRIBUTE = "isQualifiedNameMigrated";
     public static final String DATA_DOMAIN_REL_TYPE = "dataDomain";
+    public static final String STAKEHOLDER_REL_TYPE = "stakeholders";
 
     public static final String MESH_POLICY_CATEGORY = "datamesh";
 
@@ -177,8 +178,6 @@ public class PreProcessorUtils {
     }
 
     public static void verifyDuplicateAssetByName(String typeName, String assetName, EntityDiscoveryService discovery, String errorMessage) throws AtlasBaseException {
-        boolean exists = false;
-
         List<Map<String, Object>> mustClauseList = new ArrayList();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
         mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
