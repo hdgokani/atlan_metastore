@@ -95,7 +95,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
         entity.setCustomAttributes(customAttributes);
 
-        domainExists(domainName, null, parentDomainQualifiedName);
+        domainExists(domainName, parentDomainQualifiedName);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
@@ -149,7 +149,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             String domainNewName = (String) entity.getAttribute(NAME);
 
             if (!domainCurrentName.equals(domainNewName)) {
-                domainExists(domainNewName, entity.getGuid(), currentParentDomainQualifiedName);
+                domainExists(domainNewName, currentParentDomainQualifiedName);
             }
             entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         }
@@ -171,7 +171,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
             LOG.info("Moving subdomain {} to Domain {}", domainName, targetDomainQualifiedName);
 
-            domainExists(domainName, domain.getGuid(), targetDomainQualifiedName);
+            domainExists(domainName, targetDomainQualifiedName);
 
             if(targetDomainQualifiedName.isEmpty()){
                 //Moving subDomain to make it Super Domain
@@ -325,10 +325,10 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         return getParent(objectId, PARENT_ATTRIBUTES);
     }
 
-    private void domainExists(String domainName, String domainGuid, String parentDomainQualifiedName) throws AtlasBaseException {
+    private void domainExists(String domainName, String parentDomainQualifiedName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("domainExists");
         try {
-            exists(DATA_DOMAIN_ENTITY_TYPE, domainName, domainGuid, parentDomainQualifiedName);
+            exists(DATA_DOMAIN_ENTITY_TYPE, domainName, parentDomainQualifiedName);
 
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
