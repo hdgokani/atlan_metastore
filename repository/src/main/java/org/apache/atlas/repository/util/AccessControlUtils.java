@@ -32,6 +32,7 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +72,7 @@ public final class AccessControlUtils {
     public static final String ATTR_POLICY_ACTIONS  = "policyActions";
     public static final String ATTR_POLICY_CATEGORY  = "policyCategory";
     public static final String ATTR_POLICY_SUB_CATEGORY  = "policySubCategory";
+    public static final String ATTR_POLICY_FILTER_CRITERIA = "policyFilterCriteria";
     public static final String ATTR_POLICY_RESOURCES  = "policyResources";
     public static final String ATTR_POLICY_IS_ENABLED  = "isPolicyEnabled";
     public static final String ATTR_POLICY_CONNECTION_QN  = "connectionQualifiedName";
@@ -90,7 +92,8 @@ public final class AccessControlUtils {
     public static final String ACCESS_READ_PERSONA_DOMAIN = "persona-domain-read";
     public static final String ACCESS_READ_PERSONA_SUB_DOMAIN = "persona-domain-sub-domain-read";
     public static final String ACCESS_READ_PERSONA_PRODUCT = "persona-domain-product-read";
-
+    public static final String ACCESS_READ_DOMAIN = "domain-entity-read";
+    
     public static final String POLICY_CATEGORY_PERSONA  = "persona";
     public static final String POLICY_CATEGORY_PURPOSE  = "purpose";
     public static final String POLICY_CATEGORY_DATAMESH = "datamesh";
@@ -119,6 +122,8 @@ public final class AccessControlUtils {
     public static final String BACKEND_SERVICE_USER_NAME = "service-account-atlan-backend";
 
     public static final String INSTANCE_DOMAIN_KEY = "instance";
+
+    public static final String POLICY_SERVICE_NAME_ABAC  = "atlas_abac";
 
     private AccessControlUtils() {}
 
@@ -171,6 +176,14 @@ public final class AccessControlUtils {
         return getStringAttribute(policyEntity, ATTR_POLICY_CATEGORY);
     }
 
+    public static String getPolicyFilterCriteria(AtlasEntity policyEntity) {
+        return getStringAttribute(policyEntity, ATTR_POLICY_FILTER_CRITERIA);
+    }
+
+    public static String getPolicyFilterCriteria(AtlasEntityHeader policyEntity) {
+        return getStringAttribute(policyEntity, ATTR_POLICY_FILTER_CRITERIA);
+    }
+
     public static String getPolicyResourceCategory(AtlasEntity policyEntity) {
         return getStringAttribute(policyEntity, ATTR_POLICY_RESOURCES_CATEGORY);
     }
@@ -192,6 +205,10 @@ public final class AccessControlUtils {
     }
 
     public static String getPolicyServiceName(AtlasEntity policyEntity) {
+        return getStringAttribute(policyEntity, ATTR_POLICY_SERVICE_NAME);
+    }
+
+    public static String getPolicyServiceName(AtlasEntityHeader policyEntity) {
         return getStringAttribute(policyEntity, ATTR_POLICY_SERVICE_NAME);
     }
 
@@ -252,19 +269,18 @@ public final class AccessControlUtils {
     }
 
     public static String getPersonaRoleName(AtlasEntity persona) {
-        String qualifiedName = getStringAttribute(persona, QUALIFIED_NAME);
-
-        String[] parts = qualifiedName.split("/");
-
-        return "persona_" + parts[parts.length - 1];
+        return "persona_" + getESAliasName(persona);
     }
 
     public static String getESAliasName(AtlasEntity entity) {
         String qualifiedName = getStringAttribute(entity, QUALIFIED_NAME);
+        return getESAliasName(qualifiedName);
+    }
 
+    public static String getESAliasName(String qualifiedName) {
         String[] parts = qualifiedName.split("/");
 
-        return parts[parts.length - 1];
+        return parts[1];
     }
 
     public static List<AtlasEntity> getPolicies(AtlasEntity.AtlasEntityWithExtInfo accessControl) {
@@ -337,7 +353,7 @@ public final class AccessControlUtils {
     public static void validateNoPoliciesAttached(AtlasEntity entity) throws AtlasBaseException {
         List<AtlasObjectId> policies = (List<AtlasObjectId>) entity.getRelationshipAttribute(REL_ATTR_POLICIES);
         if (CollectionUtils.isNotEmpty(policies)) {
-            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not attach a policy while creating/updating Persona/Purpose");
+            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not attach a policy while creating/updating Persona/Purpose/Stakeholder");
         }
     }
 
