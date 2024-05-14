@@ -6,9 +6,15 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
+import org.apache.atlas.repository.store.graph.v2.EntityStream;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
+import org.apache.atlas.repository.util.AtlasEntityUtils;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.lang.StringUtils;
@@ -19,17 +25,26 @@ import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.*;
 
 public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DataProductPreProcessor.class);
+    private static final String PRIVATE = "Private";
+    private static final String PROTECTED = "Protected";
+    private static final String PUBLIC = "Public";
+    private static final String DATA_PRODUCT = "dataProduct";
+
+
 
     private EntityMutationContext context;
+    private AtlasEntityStore entityStore;
     private Map<String, String> updatedPolicyResources;
 
     public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
-                                   AtlasGraph graph) {
+                                   AtlasGraph graph, AtlasEntityStore entityStore) {
         super(typeRegistry, entityRetriever, graph);
         this.updatedPolicyResources = new HashMap<>();
+        this.entityStore = entityStore;
     }
 
     @Override
@@ -43,18 +58,19 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
 
+        AtlasVertex vertex = context.getVertex(entity.getGuid());
+
         switch (operation) {
             case CREATE:
-                processCreateProduct(entity);
+                processCreateProduct(entity, vertex);
                 break;
             case UPDATE:
-                AtlasVertex vertex = context.getVertex(entity.getGuid());
                 processUpdateProduct(entity, vertex);
                 break;
         }
     }
 
-    private void processCreateProduct(AtlasEntity entity) throws AtlasBaseException {
+    private void processCreateProduct(AtlasEntity entity,AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateProduct");
         String productName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN_ATTR);
@@ -68,6 +84,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         entity.setCustomAttributes(customAttributes);
 
         productExists(productName, parentDomainQualifiedName);
+
+        createDaapVisibilityPolicy(entity, vertex);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
@@ -98,7 +116,18 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             newParentDomainQualifiedName = (String) newParentDomainHeader.getAttribute(QUALIFIED_NAME);
         }
 
+        // check for daapVisibility change
+        String currentProductDaapVisibility = storedProduct.getAttribute(DAAP_VISIBILITY_ATTR).toString();
+        String newProductDaapVisibility = (String) entity.getAttribute(DAAP_VISIBILITY_ATTR);// check case if attribute is not sent from FE
+
+        boolean isDaapVisibilityChanged = (newProductDaapVisibility != null && !newProductDaapVisibility.equals(currentProductDaapVisibility));
+
         if (newParentDomainQualifiedName != null && !newParentDomainQualifiedName.equals(currentParentDomainQualifiedName)) {
+
+            if(isDaapVisibilityChanged){
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Moving the product to another domain along with the change in Daap visibility is not allowed");
+            }
+
             //Auth check
             isAuthorized(currentParentDomainHeader, newParentDomainHeader);
 
@@ -119,6 +148,10 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                 productExists(productNewName, currentParentDomainQualifiedName);
             }
             entity.setAttribute(QUALIFIED_NAME, vertexQnName);
+        }
+
+        if (isDaapVisibilityChanged) {
+            updateDaapVisibilityPolicy(entity, storedProduct, currentProductDaapVisibility, newProductDaapVisibility);
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -185,7 +218,112 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         if (StringUtils.isEmpty(parentDomainQualifiedName)) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Parent Domain Qualified Name cannot be empty or null");
         }
-        return parentDomainQualifiedName + "/product/" + getUUID();
+        return parentDomainQualifiedName + "/product/" + PreProcessorUtils.getUUID();
 
+    }
+
+    private void createDaapVisibilityPolicy(AtlasEntity entity,AtlasVertex vertex) throws AtlasBaseException {
+        String productGuid = vertex.getProperty("__guid", String.class);
+
+        AtlasEntity policy = new AtlasEntity();
+        policy.setTypeName(POLICY_ENTITY_TYPE);
+        policy.setAttribute(NAME, entity.getAttribute(NAME));
+        policy.setAttribute(QUALIFIED_NAME, productGuid + "/read-policy");
+        policy.setAttribute(ATTR_POLICY_ACTIONS, Arrays.asList("entity-read"));
+        policy.setAttribute(ATTR_POLICY_CATEGORY, MESH_POLICY_CATEGORY);
+        policy.setAttribute(ATTR_POLICY_TYPE, POLICY_TYPE_ALLOW);
+        policy.setAttribute(ATTR_POLICY_RESOURCES, Arrays.asList("entity:" + entity.getAttribute(QUALIFIED_NAME)));
+        policy.setAttribute(ATTR_POLICY_RESOURCES_CATEGORY, POLICY_RESOURCE_CATEGORY_PERSONA_ENTITY);
+        policy.setAttribute(ATTR_POLICY_SERVICE_NAME, "atlas");
+        policy.setAttribute(ATTR_POLICY_SUB_CATEGORY, DATA_PRODUCT); // create new constant attr
+
+        switch ((String) entity.getAttribute(DAAP_VISIBILITY_ATTR)) {
+            case PRIVATE:
+                setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
+                break;
+            case PROTECTED:
+                setPolicyAttributes(policy,
+                        (List<String>) entity.getAttribute(DAAP_VISIBILITY_USERS_ATTR),
+                        (List<String>) entity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR)
+                );
+                break;
+            case PUBLIC:
+                setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
+                break;
+        }
+        createPolicy(policy);
+    }
+
+    private void updateDaapVisibilityPolicy(AtlasEntity newEntity, AtlasEntity currentEntity,  String currentProductDaapVisibility, String newProductDaapVisibility) throws AtlasBaseException{
+        AtlasObjectId atlasObjectId = new AtlasObjectId();
+        atlasObjectId.setTypeName(POLICY_ENTITY_TYPE);
+        atlasObjectId.setUniqueAttributes(AtlasEntityUtils.mapOf(QUALIFIED_NAME,currentEntity.getGuid()+"/read-policy"));
+        AtlasVertex policyVertex = entityRetriever.getEntityVertex(atlasObjectId);
+        AtlasEntity policy = entityRetriever.toAtlasEntity(policyVertex);
+        Map<String, Object> updatedAttributes = new HashMap<>();
+
+        switch (currentProductDaapVisibility) {
+            case PRIVATE:
+                switch (newProductDaapVisibility) {
+                    case PROTECTED:
+                        // create policy for policyUsers and policyGroups
+                        updatedAttributes = setPolicyAttributes(policy,
+                                (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_USERS_ATTR),
+                                (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR)
+                        );
+                        break;
+                    case PUBLIC:
+                        updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
+                }
+                break;
+            case PROTECTED:
+                switch (newProductDaapVisibility) {
+                    case PRIVATE:
+                        updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
+                        break;
+                    case PUBLIC:
+                        updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
+                }
+                break;
+            case PUBLIC:
+                switch (newProductDaapVisibility) {
+                    case PRIVATE:
+                        updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
+                        break;
+                    case PROTECTED:
+                        updatedAttributes = setPolicyAttributes(policy,
+                                (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_USERS_ATTR),
+                                (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR)
+                        );
+                        break;
+                }
+                break;
+        }
+
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
+        context.addUpdated(policy.getGuid(), policy, entityType, policyVertex);
+        recordUpdatedChildEntities(policyVertex, updatedAttributes);
+    }
+
+    private void createPolicy(AtlasEntity policy) throws AtlasBaseException{
+        try {
+            RequestContext.get().setSkipAuthorizationCheck(true);
+            AtlasEntity.AtlasEntitiesWithExtInfo policiesExtInfo = new AtlasEntity.AtlasEntitiesWithExtInfo();
+            policiesExtInfo.addEntity(policy);
+            EntityStream entityStream = new AtlasEntityStream(policiesExtInfo);
+            entityStore.createOrUpdate(entityStream, false); // adding new policy
+        } finally {
+            RequestContext.get().setSkipAuthorizationCheck(false);
+        }
+    }
+
+    // Helper method to set policy attributes
+    private Map<String, Object> setPolicyAttributes(AtlasEntity policy, List<String> users, List<String> groups) {
+        Map<String, Object> updatedAttributes = new HashMap<>();
+        policy.setAttribute(ATTR_POLICY_USERS, users);
+        policy.setAttribute(ATTR_POLICY_GROUPS, groups);
+        updatedAttributes.put(ATTR_POLICY_USERS, users);
+        updatedAttributes.put(ATTR_POLICY_GROUPS, groups);
+        return updatedAttributes;
     }
 }
