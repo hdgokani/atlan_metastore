@@ -45,7 +45,8 @@ public class PreProcessorUtils {
     public static final String DATA_PRODUCT_REL_TYPE = "dataProducts";
     public static final String MIGRATION_CUSTOM_ATTRIBUTE = "isQualifiedNameMigrated";
     public static final String DATA_DOMAIN_REL_TYPE = "dataDomain";
-
+    public static final String OUTPUT_PORT_REL_TYPE = "outputPorts";
+    public static final String INPUT_PORT_REL_TYPE = "inputPorts";
     public static final String MESH_POLICY_CATEGORY = "datamesh";
 
     public static final String DATA_PRODUCT_EDGE_LABEL     = "__DataDomain.dataProducts";
@@ -53,6 +54,8 @@ public class PreProcessorUtils {
 
     public static final String PARENT_DOMAIN_QN_ATTR = "parentDomainQualifiedName";
     public static final String SUPER_DOMAIN_QN_ATTR = "superDomainQualifiedName";
+    public static final String OUTPUT_PORT_GUIDS_ATTR = "daapOutputPortGuids";
+    public static final String INPUT_PORT_GUIDS_ATTR = "daapInputportGuids";
 
 
     //Migration Constants

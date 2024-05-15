@@ -70,6 +70,13 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         productExists(productName, parentDomainQualifiedName);
 
+        // Set internal attributes
+        ArrayList<Object> outputPortRel = (ArrayList<Object>)entity.getRelationshipAttribute(OUTPUT_PORT_REL_TYPE);
+        ArrayList<Object> inputPortRel = (ArrayList<Object>)entity.getRelationshipAttribute(INPUT_PORT_REL_TYPE);
+        if(CollectionUtils.isNotEmpty(outputPortRel) || CollectionUtils.isNotEmpty(inputPortRel)){
+            setInternalAttributes(entity, outputPortRel, inputPortRel);
+        }
+
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
@@ -97,6 +104,13 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         AtlasEntityHeader newParentDomainHeader = getParent(entity);
         if (newParentDomainHeader != null) {
             newParentDomainQualifiedName = (String) newParentDomainHeader.getAttribute(QUALIFIED_NAME);
+        }
+
+        //Set internal attributes
+        ArrayList<Object> outputPortRel = (ArrayList<Object>)entity.getRelationshipAttribute(OUTPUT_PORT_REL_TYPE);
+        ArrayList<Object> inputPortRel = (ArrayList<Object>)entity.getRelationshipAttribute(INPUT_PORT_REL_TYPE);
+        if(CollectionUtils.isNotEmpty(outputPortRel) || CollectionUtils.isNotEmpty(inputPortRel)){
+            setInternalAttributes(entity, outputPortRel, inputPortRel);
         }
 
         if (newParentDomainQualifiedName != null && !newParentDomainQualifiedName.equals(currentParentDomainQualifiedName)) {
@@ -160,6 +174,28 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
+    }
+
+    private void setInternalAttributes(AtlasEntity entity, ArrayList<Object> outputPortRel, ArrayList<Object> inputPortRel) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("DataProductPreProcessor.setInternalAttributes");
+
+        ArrayList<String> outputPortGuids = new ArrayList<>();
+        ArrayList<String> inputPortGuids = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(outputPortRel)) {
+            for (Object outputPort : outputPortRel) {
+                outputPortGuids.add(((Map<String, Object>) outputPort).get("guid").toString());
+            }
+        }
+        if (CollectionUtils.isNotEmpty(inputPortRel)) {
+            for (Object inputPort : inputPortRel) {
+                inputPortGuids.add(((Map<String, Object>) inputPort).get("guid").toString());
+            }
+        }
+
+        entity.setAttribute(OUTPUT_PORT_GUIDS_ATTR, outputPortGuids);
+        entity.setAttribute(INPUT_PORT_GUIDS_ATTR, inputPortGuids);
+
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private AtlasEntityHeader getParent(AtlasEntity productEntity) throws AtlasBaseException {
