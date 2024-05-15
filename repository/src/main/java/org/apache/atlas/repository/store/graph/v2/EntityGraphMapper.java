@@ -3011,7 +3011,7 @@ public class EntityGraphMapper {
                     }
                 }
             }
-            //Delete all the properties
+            //Delete array/set properties first
             entityVertex.removeProperty(TRAIT_NAMES_PROPERTY_KEY);
             entityVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
 
@@ -3080,7 +3080,7 @@ public class EntityGraphMapper {
                 }
 
                 if (restrictPropagationThroughHierarchy == null) {
-                    classification.setRestrictPropagationThroughLineage(RESTRICT_PROPAGATION_THROUGH_HIERARCHY_DEFAULT);
+                    classification.setRestrictPropagationThroughHierarchy(RESTRICT_PROPAGATION_THROUGH_HIERARCHY_DEFAULT);
                 }
 
                 // set associated entity id to classification
