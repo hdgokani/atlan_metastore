@@ -616,7 +616,7 @@
       ],
       "description": "Model to store auth service in Atlas",
       "serviceType": "atlan",
-      "typeVersion": "1.1",
+      "typeVersion": "1.2",
       "attributeDefs": [
         {
           "name": "authServiceType",
@@ -631,6 +631,17 @@
         },
         {
           "name": "tagService",
+          "typeName": "string",
+          "indexType": "STRING",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
+        {
+          "name": "abacService",
           "typeName": "string",
           "indexType": "STRING",
           "cardinality": "SINGLE",
@@ -681,9 +692,19 @@
         "Asset"
       ],
       "serviceType": "atlan",
-      "typeVersion": "1.1",
+      "typeVersion": "1.2",
       "attributeDefs":
       [
+        {
+          "name": "policyFilterCriteria",
+          "typeName": "string",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": true
+        },
         {
           "name": "policyType",
           "typeName": "AuthPolicyType",
@@ -1037,6 +1058,29 @@
           "isIndexable": false,
           "isOptional": true,
           "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        }
+      ]
+    },
+    {
+      "name": "StakeholderTitle",
+      "description": "Instance of a stakeholder title for Domains in Atlan",
+      "superTypes": [
+        "Asset"
+      ],
+      "serviceType": "atlan",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        {
+          "name": "stakeholderTitleDomainQualifiedNames",
+          "description": "qualified name array representing the Domains for which this StakeholderTitle is applicable",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "isOptional": true,
+          "cardinality": "SET",
+          "isUnique": false,
+          "isIndexable": false,
           "skipScrubbing": true,
           "includeInNotification": false
         }
