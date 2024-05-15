@@ -10,7 +10,6 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
 import org.apache.atlas.repository.util.AtlasEntityUtils;
@@ -120,7 +119,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String currentProductDaapVisibility = storedProduct.getAttribute(DAAP_VISIBILITY_ATTR).toString();
         String newProductDaapVisibility = (String) entity.getAttribute(DAAP_VISIBILITY_ATTR);// check case if attribute is not sent from FE
 
-        boolean isDaapVisibilityChanged = (newProductDaapVisibility != null && !newProductDaapVisibility.equals(currentProductDaapVisibility));
+        boolean isDaapVisibilityChanged = (newProductDaapVisibility != null && ((!newProductDaapVisibility.equals(currentProductDaapVisibility)) || newProductDaapVisibility.equals(PROTECTED)));
+
 
         if (newParentDomainQualifiedName != null && !newParentDomainQualifiedName.equals(currentParentDomainQualifiedName)) {
 
@@ -240,18 +240,20 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         switch ((String) entity.getAttribute(DAAP_VISIBILITY_ATTR)) {
             case PRIVATE:
                 setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
+                // do not create any auth policy in case of private daap visibility
                 break;
             case PROTECTED:
                 setPolicyAttributes(policy,
                         (List<String>) entity.getAttribute(DAAP_VISIBILITY_USERS_ATTR),
                         (List<String>) entity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR)
                 );
+                createPolicy(policy);
                 break;
             case PUBLIC:
                 setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
+                createPolicy(policy);
                 break;
         }
-        createPolicy(policy);
     }
 
     private void updateDaapVisibilityPolicy(AtlasEntity newEntity, AtlasEntity currentEntity,  String currentProductDaapVisibility, String newProductDaapVisibility) throws AtlasBaseException{
@@ -271,24 +273,37 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                                 (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_USERS_ATTR),
                                 (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR)
                         );
+                        updatedAttributes.put(ATTR_POLICY_IS_ENABLED, true);
                         break;
                     case PUBLIC:
                         updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
+                        updatedAttributes.put(ATTR_POLICY_IS_ENABLED, true);
+                        break;
                 }
                 break;
             case PROTECTED:
                 switch (newProductDaapVisibility) {
                     case PRIVATE:
                         updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
+                        updatedAttributes.put(ATTR_POLICY_IS_ENABLED, false);
+                        break;
+                    case PROTECTED:
+                        // create policy for policyUsers and policyGroups
+                        updatedAttributes = setPolicyAttributes(policy,
+                                (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_USERS_ATTR),
+                                (List<String>) newEntity.getAttribute(DAAP_VISIBILITY_GROUPS_ATTR)
+                        );
                         break;
                     case PUBLIC:
                         updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList("public"));
+                        break;
                 }
                 break;
             case PUBLIC:
                 switch (newProductDaapVisibility) {
                     case PRIVATE:
                         updatedAttributes = setPolicyAttributes(policy, Arrays.asList(), Arrays.asList());
+                        updatedAttributes.put(ATTR_POLICY_IS_ENABLED, false);
                         break;
                     case PROTECTED:
                         updatedAttributes = setPolicyAttributes(policy,
