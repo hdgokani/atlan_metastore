@@ -68,7 +68,6 @@ public interface AtlasEntityStore {
      */
     AtlasEntityWithExtInfo getById(String guid, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException;
 
-
     /**
      * Get entity header for the given GUID
      * @param guid
@@ -267,6 +266,11 @@ public interface AtlasEntityStore {
     EntityMutationResponse deleteByIds(List<String> guid) throws AtlasBaseException;
 
     /*
+     * Repair classification mappings
+     */
+    public void repairClassificationMappings(final String guid) throws AtlasBaseException;
+
+    /*
      * Return list of deleted entity guids
      */
     EntityMutationResponse restoreByIds(List<String> guid) throws AtlasBaseException;
@@ -292,6 +296,10 @@ public interface AtlasEntityStore {
      * Delete classification
      */
     void deleteClassification(String guid, String classificationName) throws AtlasBaseException;
+
+    void deleteClassifications(String guid, List<AtlasClassification> classificationName) throws AtlasBaseException;
+
+    public void deleteClassifications(final String guid, final List<AtlasClassification> classifications, final String associatedEntityGuid) throws AtlasBaseException;
 
     void deleteClassification(String guid, String classificationName, String associatedEntityGuid) throws AtlasBaseException;
 

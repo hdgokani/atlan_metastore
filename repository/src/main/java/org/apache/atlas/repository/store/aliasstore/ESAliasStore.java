@@ -213,7 +213,7 @@ public class ESAliasStore implements IndexAliasStore {
 
                     for (String asset : assets) {
                         terms.add(asset);
-                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
+                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "*")));
                     }
 
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_SUB_DOMAIN)) {
@@ -243,7 +243,7 @@ public class ESAliasStore implements IndexAliasStore {
 
         allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, terms)));
     }
-
+  
     private Map<String, Object> esClausesToFilter(List<Map<String, Object>> allowClauseList) {
         if (CollectionUtils.isNotEmpty(allowClauseList)) {
             return mapOf("bool", mapOf("should", allowClauseList));

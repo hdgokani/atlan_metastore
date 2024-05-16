@@ -175,7 +175,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             }
 
             product.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
-            product.setAttribute(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
+            product.setAttribute(PreProcessorUtils.PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
             product.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
 
             //Store domainPolicies and resources to be updated
