@@ -58,7 +58,9 @@ import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEnt
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.ConnectionPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.StakeholderPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.contract.ContractPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.StakeholderTitlePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PersonaPreProcessor;
@@ -914,6 +916,34 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @GraphTransaction
     public String getGuidByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException{
         return AtlasGraphUtilsV2.getGuidByUniqueAttributes(graph, entityType, uniqAttributes);
+    }
+
+    @Override
+    @GraphTransaction
+    public void repairClassificationMappings(final String guid) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> repairClassificationMappings({})", guid);
+        }
+
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION, entityHeader), "repair classification mappings: guid=", guid);
+
+        entityGraphMapper.repairClassificationMappings(entityHeader, entityVertex);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== repairClassificationMappings({})", guid);
+        }
     }
 
     @Override
@@ -1835,6 +1865,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever);
                 break;
 
+            case STAKEHOLDER_ENTITY_TYPE:
+                preProcessor = new StakeholderPreProcessor(graph, typeRegistry, entityRetriever, this);
+                break;
+
             case CONNECTION_ENTITY_TYPE:
                 preProcessor = new ConnectionPreProcessor(graph, discovery, entityRetriever, featureFlagStore, deleteDelegate, this);
                 break;
@@ -1849,6 +1883,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             case CONTRACT_ENTITY_TYPE:
                 preProcessor = new ContractPreProcessor(graph, typeRegistry, entityRetriever, storeDifferentialAudits, discovery);
+                break;
+
+            case STAKEHOLDER_TITLE_ENTITY_TYPE:
+                preProcessor = new StakeholderTitlePreProcessor(graph, typeRegistry, entityRetriever);
                 break;
         }
 
