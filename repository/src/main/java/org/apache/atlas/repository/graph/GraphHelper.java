@@ -376,6 +376,13 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static List<AtlasVertex> getAllClassificationVertex(AtlasGraph graph,  String classificationName) {
+        Iterable vertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
+        if (vertices == null) {
+            return Collections.emptyList();
+        }
+        return IteratorUtils.toList(vertices.iterator());
+    }
     public static AtlasEdge getClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
         AtlasEdge ret   = null;
         Iterable  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL)
@@ -908,23 +915,27 @@ public final class GraphHelper {
     }
 
     public static List<AtlasEdge> getClassificationEdges(AtlasVertex entityVertex) {
-        return getClassificationEdges(entityVertex, false);
+        return getClassificationEdges(entityVertex, false, null);
     }
 
     public static List<AtlasEdge> getPropagatedClassificationEdges(AtlasVertex entityVertex) {
-        return getClassificationEdges(entityVertex, true);
+        return getClassificationEdges(entityVertex, true, null);
     }
 
     public static List<AtlasEdge> getAllClassificationEdges(AtlasVertex entityVertex) {
-        return getClassificationEdges(entityVertex, null);
+        return getClassificationEdges(entityVertex, null, null);
     }
 
-    public static List<AtlasEdge> getClassificationEdges(AtlasVertex entityVertex, Boolean propagated) {
+    public static List<AtlasEdge> getClassificationEdges(AtlasVertex entityVertex, Boolean propagated, String typeName) {
         List<AtlasEdge>  ret   = new ArrayList<>();
         AtlasVertexQuery query = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL);
 
         if (propagated != null) {
             query = query.has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, propagated);
+        }
+
+        if (StringUtils.isNotEmpty(typeName)) {
+            query = query.has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, typeName);
         }
 
         Iterable edges = query.edges();
