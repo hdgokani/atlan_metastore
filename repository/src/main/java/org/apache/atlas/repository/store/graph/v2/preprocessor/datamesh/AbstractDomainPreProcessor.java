@@ -36,6 +36,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -69,7 +70,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
     private static final Set<String> POLICY_ATTRIBUTES_FOR_SEARCH = new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES));
     private static final Set<String> STAKEHOLDER_ATTRIBUTES_FOR_SEARCH = new HashSet<>(Arrays.asList(ATTR_DOMAIN_QUALIFIED_NAMES, ATTR_DOMAIN_QUALIFIED_NAME));
 
-    static final Set<String> PARENT_ATTRIBUTES            = new HashSet<>(Arrays.asList(SUPER_DOMAIN_QN_ATTR, PARENT_DOMAIN_QN_ATTR));
+    static final Set<String> PARENT_ATTRIBUTES            = new HashSet<>(Arrays.asList(SUPER_DOMAIN_QN_ATTR, PreProcessorUtils.PARENT_DOMAIN_QN_ATTR));
 
     static final Map<String, String> customAttributes = new HashMap<>();
 
@@ -218,26 +219,29 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         }
     }
 
-    protected void exists(String assetType, String assetName, String parentDomainQualifiedName) throws AtlasBaseException {
+    protected void exists(String assetType, String assetName, String parentDomainQualifiedName, String guid) throws AtlasBaseException {
         boolean exists = false;
 
         List<Map<String, Object>> mustClauseList = new ArrayList();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", assetType)));
         mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
         mustClauseList.add(mapOf("term", mapOf("name.keyword", assetName)));
-
+        List<Map<String, Object>> mustNotClauseList = new ArrayList();
+        if(StringUtils.isNotEmpty(guid)){
+            mustNotClauseList.add(mapOf("term", mapOf("__guid", guid)));
+        }
 
         Map<String, Object> bool = new HashMap<>();
         if (StringUtils.isNotEmpty(parentDomainQualifiedName)) {
             mustClauseList.add(mapOf("term", mapOf("parentDomainQualifiedName", parentDomainQualifiedName)));
         } else {
-            List<Map<String, Object>> mustNotClauseList = new ArrayList();
             mustNotClauseList.add(mapOf("exists", mapOf("field", "parentDomainQualifiedName")));
-            bool.put("must_not", mustNotClauseList);
         }
 
         bool.put("must", mustClauseList);
-
+        if(!mustNotClauseList.isEmpty()) {
+            bool.put("must_not", mustNotClauseList);
+        }
         Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
         List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, this.discovery);

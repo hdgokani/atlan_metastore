@@ -21,6 +21,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,12 +44,14 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private EntityMutationContext context;
     private AtlasEntityStore entityStore;
     private Map<String, String> updatedPolicyResources;
+    private EntityGraphRetriever retrieverNoRelation = null;
 
     public DataProductPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
                                    AtlasGraph graph, AtlasEntityStore entityStore) {
         super(typeRegistry, entityRetriever, graph);
         this.updatedPolicyResources = new HashMap<>();
         this.entityStore = entityStore;
+        this.retrieverNoRelation = new EntityGraphRetriever(graph, typeRegistry, true);
     }
 
     @Override
@@ -76,12 +79,25 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
     private void processCreateProduct(AtlasEntity entity,AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateProduct");
+        AtlasObjectId parentDomainObject = (AtlasObjectId) entity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE);
         String productName = (String) entity.getAttribute(NAME);
-        String parentDomainQualifiedName = (String) entity.getAttribute(PARENT_DOMAIN_QN_ATTR);
+        String parentDomainQualifiedName = "";
 
-        AtlasEntityHeader parentDomain = getParent(entity);
-        if(parentDomain != null ){
-            parentDomainQualifiedName = (String) parentDomain.getAttribute(QUALIFIED_NAME);
+        if (parentDomainObject == null) {
+            entity.removeAttribute(PARENT_DOMAIN_QN_ATTR);
+            entity.removeAttribute(SUPER_DOMAIN_QN_ATTR);
+        } else {
+            AtlasVertex parentDomain = retrieverNoRelation.getEntityVertex(parentDomainObject);
+            parentDomainQualifiedName = parentDomain.getProperty(QUALIFIED_NAME, String.class);
+
+
+            entity.setAttribute(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
+
+            String superDomainQualifiedName = parentDomain.getProperty(SUPER_DOMAIN_QN_ATTR, String.class);
+            if(StringUtils.isEmpty(superDomainQualifiedName)) {
+                superDomainQualifiedName = parentDomainQualifiedName;
+            }
+            entity.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
@@ -92,7 +108,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         entity.setCustomAttributes(customAttributes);
 
-        productExists(productName, parentDomainQualifiedName);
+        productExists(productName, parentDomainQualifiedName, null);
 
         createDaapVisibilityPolicy(entity, vertex);
 
@@ -146,11 +162,13 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             updatePolicies(this.updatedPolicyResources, this.context);
 
         } else {
+            entity.removeAttribute(PARENT_DOMAIN_QN_ATTR);
+            entity.removeAttribute(SUPER_DOMAIN_QN_ATTR);
             String productCurrentName = vertex.getProperty(NAME, String.class);
             String productNewName = (String) entity.getAttribute(NAME);
 
             if (!productCurrentName.equals(productNewName)) {
-                productExists(productNewName, currentParentDomainQualifiedName);
+                productExists(productNewName, currentParentDomainQualifiedName, storedProduct.getGuid());
             }
             entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         }
@@ -178,17 +196,17 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
             LOG.info("Moving dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
 
-            productExists(productName, targetDomainQualifiedName);
+            productExists(productName, targetDomainQualifiedName, product.getGuid());
 
             String updatedQualifiedName;
             if(StringUtils.isEmpty(sourceDomainQualifiedName)){
-                updatedQualifiedName = targetDomainQualifiedName + "/" + product.getAttribute(QUALIFIED_NAME);
+                updatedQualifiedName = createQualifiedName(targetDomainQualifiedName);
             } else {
                 updatedQualifiedName = currentDataProductQualifiedName.replace(sourceDomainQualifiedName, targetDomainQualifiedName);
             }
 
             product.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
-            product.setAttribute(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
+            product.setAttribute(PreProcessorUtils.PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
             product.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
 
             //Store domainPolicies and resources to be updated
@@ -212,11 +230,11 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         return getParent(relationshipAttribute, PARENT_ATTRIBUTES);
     }
 
-    private void productExists(String productName, String parentDomainQualifiedName) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("domainExists");
+    private void productExists(String productName, String parentDomainQualifiedName, String guid) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("productExists");
 
         try {
-            exists(DATA_PRODUCT_ENTITY_TYPE, productName, parentDomainQualifiedName);
+            exists(DATA_PRODUCT_ENTITY_TYPE, productName, parentDomainQualifiedName, guid);
 
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
