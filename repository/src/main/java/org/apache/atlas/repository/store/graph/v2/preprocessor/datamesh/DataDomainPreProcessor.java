@@ -20,6 +20,9 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -32,6 +35,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.lang.StringUtils;
@@ -41,7 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.graph.GraphHelper.getActiveChildrenVertices;
+import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 
 public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
@@ -96,6 +100,11 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
+
+        // Check if authorized to create entities
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
+                "create entity: type=", entity.getTypeName());
+
         entity.setCustomAttributes(customAttributes);
 
         domainExists(domainName, parentDomainQualifiedName);
@@ -359,6 +368,23 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
     private void validateStakeholderRelationship(AtlasEntity entity) throws AtlasBaseException {
         if(entity.hasRelationshipAttribute(STAKEHOLDER_REL_TYPE)){
             throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Managing Stakeholders while creating/updating a domain");
+        }
+    }
+
+    @Override
+    public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processProductDelete");
+
+        try{
+            // active childrens exists?
+            Iterator<AtlasVertex> childrens = getActiveChildrenVertices(vertex,
+                    DOMAIN_PARENT_EDGE_LABEL, DATA_PRODUCT_EDGE_LABEL);
+            if (childrens.hasNext()){
+                throw new AtlasBaseException("Domain cannot be archived because some subdomains or products are active in this domain");
+            }
+        }
+        finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 }
