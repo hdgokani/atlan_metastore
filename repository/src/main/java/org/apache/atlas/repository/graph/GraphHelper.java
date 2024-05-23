@@ -376,11 +376,28 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static List<AtlasVertex> getAllClassificationVertex(AtlasGraph graph,  String classificationName) {
+    public static List<AtlasVertex> getAllClassificationVertex(AtlasGraph graph, String classificationName) {
         Iterable vertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
         if (vertices == null) {
             return Collections.emptyList();
         }
+        return IteratorUtils.toList(vertices.iterator());
+    }
+
+    public static List<AtlasVertex> getAllAssetsWithClassificationAttached(AtlasGraph graph, String classificationName, int limit) {
+        AtlasGraphQuery query = graph.query();
+        AtlasGraphQuery hasPropagatedTraitNames = query.createChildQuery().has(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
+        AtlasGraphQuery hasTraitNames = query.createChildQuery().has(TRAIT_NAMES_PROPERTY_KEY, classificationName);
+        Iterable vertices = query.or(
+                Arrays.asList(
+                        hasPropagatedTraitNames,
+                        hasTraitNames
+                )
+        ).vertices(limit);
+        if (vertices == null) {
+            return Collections.emptyList();
+        }
+
         return IteratorUtils.toList(vertices.iterator());
     }
     public static AtlasEdge getClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex) {

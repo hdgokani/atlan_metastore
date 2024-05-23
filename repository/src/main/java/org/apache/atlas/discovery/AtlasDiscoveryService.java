@@ -29,7 +29,6 @@ import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.model.searchlog.SearchLogSearchParams;
 import org.apache.atlas.model.searchlog.SearchLogSearchResult;
-import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 
 import java.util.List;
 
@@ -158,14 +157,6 @@ public interface AtlasDiscoveryService {
      * @throws AtlasBaseException
      */
     AtlasSearchResult directIndexSearch(SearchParams searchParams) throws AtlasBaseException;
-
-    /**
-     * Search for direct ES query
-     * @param searchParams Search criteria
-     * @return Matching entities
-     * @throws AtlasBaseException
-     */
-    DirectIndexQueryResult directIndexSearch(SearchParams searchParams, boolean returnVertices) throws AtlasBaseException;
 
     /**
      * Search for direct ES query on search logs index
