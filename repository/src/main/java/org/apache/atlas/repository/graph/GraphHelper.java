@@ -1891,7 +1891,7 @@ public final class GraphHelper {
      * @param parentEdgeLabel Edge label of parent
      * @return Iterator of children vertices
      */
-    public static Iterator<AtlasVertex> getActiveParentVertices(AtlasVertex vertex, String... parentEdgeLabel) throws AtlasBaseException {
+    public static Iterator<AtlasVertex> getActiveParentVertices(AtlasVertex vertex, String parentEdgeLabel) throws AtlasBaseException {
         return getActiveVertices(vertex, AtlasEdgeDirection.IN, parentEdgeLabel);
     }
 
