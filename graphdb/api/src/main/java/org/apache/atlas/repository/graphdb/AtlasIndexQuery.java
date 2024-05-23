@@ -22,7 +22,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -43,8 +42,6 @@ public interface AtlasIndexQuery<V, E> {
      */
 
     DirectIndexQueryResult<V, E> vertices(SearchParams searchParams)  throws AtlasBaseException ;
-
-    int getNumVertices(SearchParams searchParams) throws AtlasBaseException, IOException;
 
     /**
      * Gets the query results form index
