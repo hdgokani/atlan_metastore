@@ -70,6 +70,7 @@ import java.util.Arrays;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_HOST;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_USER_AGENT;
+import com.google.common.util.concurrent.RateLimiter;
 
 /**
  * REST interface for data discovery using dsl or full text search
