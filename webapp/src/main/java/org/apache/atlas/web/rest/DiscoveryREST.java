@@ -399,9 +399,9 @@ public class DiscoveryREST {
             throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, "Rate limit exceeded for index search");
         } 
         // when
-        long startTime = ZonedDateTime.now().getSecond();
+        long startRateLimitTime = ZonedDateTime.now().getSecond();
         rateLimiter.acquire(1);
-        long elapsedTimeSeconds = ZonedDateTime.now().getSecond() - startTime;
+        long elapsedTimeSeconds = ZonedDateTime.now().getSecond() - startRateLimitTime;
 
         // then
         assertThat(elapsedTimeSeconds <= 1);
