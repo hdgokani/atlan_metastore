@@ -71,7 +71,7 @@ import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_HOST;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_USER_AGENT;
 import com.google.common.util.concurrent.RateLimiter;
-import java.time.ZonedDateTime;
+// import java.time.ZonedDateTime;
 
 /**
  * REST interface for data discovery using dsl or full text search
@@ -400,12 +400,11 @@ public class DiscoveryREST {
             throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, "Rate limit exceeded for index search");
         } 
         // when
-        long startRateLimitTime = ZonedDateTime.now().getSecond();
+        // long startRateLimitTime = ZonedDateTime.now().getSecond();
         rateLimiter.acquire(1);
-        long elapsedTimeSeconds = ZonedDateTime.now().getSecond() - startRateLimitTime;
+        // long elapsedTimeSeconds = ZonedDateTime.now().getSecond() - startRateLimitTime;
 
-        // then
-        assertThat(elapsedTimeSeconds <= 1);
+
 
         RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
         RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
