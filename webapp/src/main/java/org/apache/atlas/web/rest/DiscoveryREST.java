@@ -396,7 +396,7 @@ public class DiscoveryREST {
         RateLimiter rateLimiter = RateLimiter.create(2); // rate is "2 permits per second"
 
         if (!rateLimiter.tryAcquire()) {
-            throw new AtlasBaseException(AtlasErrorCode.RATE_LIMIT_EXCEEDED, "Rate limit exceeded for index search");
+            throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, "Rate limit exceeded for index search");
         } 
         // when
         long startTime = ZonedDateTime.now().getSecond();
