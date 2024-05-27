@@ -392,6 +392,19 @@ public class DiscoveryREST {
         AtlasPerfTracer perf = null;
         long startTime = System.currentTimeMillis();
 
+        RateLimiter rateLimiter = RateLimiter.create(2); // rate is "2 permits per second"
+
+        if (!rateLimiter.tryAcquire()) {
+            throw new AtlasBaseException(AtlasErrorCode.RATE_LIMIT_EXCEEDED, "Rate limit exceeded for index search");
+        } 
+        // when
+        long startTime = ZonedDateTime.now().getSecond();
+        rateLimiter.acquire(1);
+        long elapsedTimeSeconds = ZonedDateTime.now().getSecond() - startTime;
+
+        // then
+        assertThat(elapsedTimeSeconds <= 1);
+
         RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
         RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
         RequestContext.get().setIncludeClassificationNames(parameters.isIncludeClassificationNames());
