@@ -343,7 +343,7 @@ public class EntityLineageService implements AtlasLineageService {
             }
 
             boolean isInputEdge  = processEdge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
-            if (incrementAndCheckIfRelationsLimitReached(processEdge, isInputEdge, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, direction)) {
+            if (incrementAndCheckIfRelationsLimitReached(processEdge, isInputEdge, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, direction, false)) {
                 break;
             } else {
                 addEdgeToResult(processEdge, ret, atlasLineageOnDemandContext, nextLevel, traversalOrder);
@@ -387,7 +387,7 @@ public class EntityLineageService implements AtlasLineageService {
                     continue;
                 }
 
-                if (incrementAndCheckIfRelationsLimitReached(incomingEdge, !isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, direction)) {
+                if (incrementAndCheckIfRelationsLimitReached(incomingEdge, !isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, direction, false)) {
                     LineageInfoOnDemand entityOnDemandInfo = ret.getRelationsOnDemand().get(baseGuid);
                     if (entityOnDemandInfo == null)
                         continue;
@@ -414,7 +414,13 @@ public class EntityLineageService implements AtlasLineageService {
                     if (checkForOffset(outgoingEdge, processVertex, atlasLineageOnDemandContext, ret)) {
                         continue;
                     }
-                    if (incrementAndCheckIfRelationsLimitReached(outgoingEdge, isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, direction)) {
+
+                    String entityGuid = AtlasGraphUtilsV2.getIdFromVertex(entityVertex);
+                    boolean isEverVisited = ret.getGuidEntityMap().containsKey(entityGuid);
+                    boolean isVisitedInCurrentDirection = visitedVertices.contains(getId(entityVertex));
+                    boolean isCyclicAsset = isEverVisited && !isVisitedInCurrentDirection;
+
+                    if (incrementAndCheckIfRelationsLimitReached(outgoingEdge, isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, direction, isCyclicAsset)) {
                         String processGuid = AtlasGraphUtilsV2.getIdFromVertex(processVertex);
                         LineageInfoOnDemand entityOnDemandInfo = ret.getRelationsOnDemand().get(processGuid);
                         if (entityOnDemandInfo == null)
@@ -430,6 +436,7 @@ public class EntityLineageService implements AtlasLineageService {
                         if (isEntityTraversalLimitReached(entitiesTraversed))
                             setEntityLimitReachedFlag(isInput, ret);
                     }
+
                     if (entityVertex != null && !visitedVertices.contains(getId(entityVertex))) {
                         traverseEdgesOnDemand(entityVertex, isInput, depth - 1, nextLevel, visitedVertices, atlasLineageOnDemandContext, ret, baseGuid, entitiesTraversed, traversalOrder); // execute inner depth
                         AtlasEntityHeader traversedEntity = ret.getGuidEntityMap().get(AtlasGraphUtilsV2.getIdFromVertex(entityVertex));
@@ -597,7 +604,7 @@ public class EntityLineageService implements AtlasLineageService {
         return vertex.getIdForDisplay();
     }
 
-    private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, int depth, AtomicInteger entitiesTraversed, AtlasLineageOnDemandInfo.LineageDirection direction) {
+    private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, int depth, AtomicInteger entitiesTraversed, AtlasLineageOnDemandInfo.LineageDirection direction, boolean isCyclicAsset) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("incrementAndCheckIfRelationsLimitReached");
         if (lineageContainsVisitedEdgeV2(ret, atlasEdge))
             return false;
@@ -613,7 +620,7 @@ public class EntityLineageService implements AtlasLineageService {
         LineageInfoOnDemand inLineageInfo = ret.getRelationsOnDemand().containsKey(inGuid) ? ret.getRelationsOnDemand().get(inGuid) : new LineageInfoOnDemand(inGuidLineageConstraints);
         LineageInfoOnDemand outLineageInfo = ret.getRelationsOnDemand().containsKey(outGuid) ? ret.getRelationsOnDemand().get(outGuid) : new LineageInfoOnDemand(outGuidLineageConstraints);
 
-        setHorizontalPaginationFlags(isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, inVertex, inGuid, outVertex, outGuid, inLineageInfo, outLineageInfo);
+        setHorizontalPaginationFlags(isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, inVertex, inGuid, outVertex, outGuid, inLineageInfo, outLineageInfo, isCyclicAsset);
 
         boolean hasRelationsLimitReached = setVerticalPaginationFlags(entitiesTraversed, inLineageInfo, outLineageInfo);
         if (!hasRelationsLimitReached) {
@@ -640,13 +647,16 @@ public class EntityLineageService implements AtlasLineageService {
         return hasRelationsLimitReached;
     }
 
-    private void setHorizontalPaginationFlags(boolean isInput, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, int depth, AtomicInteger entitiesTraversed, AtlasVertex inVertex, String inGuid, AtlasVertex outVertex, String outGuid, LineageInfoOnDemand inLineageInfo, LineageInfoOnDemand outLineageInfo) {
+    private void setHorizontalPaginationFlags(boolean isInput, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, int depth, AtomicInteger entitiesTraversed, AtlasVertex inVertex, String inGuid, AtlasVertex outVertex, String outGuid, LineageInfoOnDemand inLineageInfo, LineageInfoOnDemand outLineageInfo, boolean isCyclicAsset) {
         boolean isOutVertexVisited = ret.getRelationsOnDemand().containsKey(outGuid);
         boolean isInVertexVisited = ret.getRelationsOnDemand().containsKey(inGuid);
-        if (depth == 1 || entitiesTraversed.get() == getLineageMaxNodeAllowedCount()-1) { // is the vertex a leaf?
-            if (isInput && ! isOutVertexVisited)
+        boolean isLeafNode = (depth == 1 || entitiesTraversed.get() == getLineageMaxNodeAllowedCount()-1);
+
+        // Cyclic assets are part of upstream & downstream, set horizontal flags in both direction
+        if (isCyclicAsset || isLeafNode) {
+            if (isInput && (! isOutVertexVisited || isCyclicAsset))
                 setHasUpstream(atlasLineageOnDemandContext, outVertex, outLineageInfo);
-            else if (!isInput && ! isInVertexVisited)
+            else if (!isInput && (! isInVertexVisited || isCyclicAsset))
                 setHasDownstream(atlasLineageOnDemandContext, inVertex, inLineageInfo);
         }
     }
