@@ -144,7 +144,7 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
             ensureOnlyOneCategoryIsAssociated(entity);
         }
 
-        validateCategory(entity);
+        validateAndGetCategory(entity);
 
         if (!currentGlossaryQualifiedName.equals(newGlossaryQualifiedName)){
             //Auth check
