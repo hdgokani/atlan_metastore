@@ -137,6 +137,8 @@ import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.INPUT_PORT_GUIDS_ATTR;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.OUTPUT_PORT_GUIDS_ATTR;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.*;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
@@ -169,6 +171,7 @@ public class EntityGraphMapper {
     private static final String TYPE_GLOSSARY= "AtlasGlossary";
     private static final String TYPE_CATEGORY= "AtlasGlossaryCategory";
     private static final String TYPE_TERM = "AtlasGlossaryTerm";
+    private static final String TYPE_PRODUCT = "DataProduct";
     private static final String TYPE_PROCESS = "Process";
     private static final String ATTR_MEANINGS = "meanings";
     private static final String ATTR_ANCHOR = "anchor";
@@ -2088,6 +2091,11 @@ public class EntityGraphMapper {
             case PROCESS_INPUTS:
             case PROCESS_OUTPUTS: addEdgesToContext(GraphHelper.getGuid(ctx.referringVertex), newElementsCreated,  new ArrayList<>(0));
                 break;
+
+            case INPUT_PORT_PRODUCT_EDGE_LABEL:
+            case OUTPUT_PORT_PRODUCT_EDGE_LABEL:
+                addInternalProductAttr(ctx, newElementsCreated, new ArrayList<>(0));
+                break;
         }
 
         if (LOG.isDebugEnabled()) {
@@ -2296,6 +2304,32 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
+    private void addInternalProductAttr (AttributeMutationContext ctx, AtlasEdge edge, String assetType) {
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addInternalProductAttr");
+        ArrayList<String> outputPortGuids = new ArrayList<>();
+        ArrayList<String> inputPortGuids = new ArrayList<>();
+        AtlasVertex toVertex = ctx.getReferringVertex();
+        String toVertexType = getTypeName(toVertex);
+
+        if(TYPE_ASSET.equals(toVertexType)) {
+           AtlasVertex productVertex = edge.getOutVertex();
+           String assetGuid = toVertex.getProperty("guid", String.class);
+
+           if(assetType.equals("outputPorts")){
+               outputPortGuids = productVertex.getProperty(OUTPUT_PORT_GUIDS_ATTR, ArrayList.class);
+               outputPortGuids.add(assetGuid);
+               productVertex.setProperty(OUTPUT_PORT_GUIDS_ATTR, outputPortGuids);
+           }
+
+            if(assetType.equals("inputPorts")){
+                inputPortGuids = productVertex.getProperty(INPUT_PORT_GUIDS_ATTR, ArrayList.class);
+                inputPortGuids.add(assetGuid);
+                productVertex.setProperty(INPUT_PORT_GUIDS_ATTR, ArrayList.class);
+            }
+
+        }
+    }
+
     private void addCatParentAttr(AttributeMutationContext ctx, AtlasEdge edge) {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addCatParentAttr");
         AtlasVertex toVertex = ctx.getReferringVertex();
@@ -2382,7 +2416,8 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void addMeaningsToEntity(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) {
+    private void
+    addMeaningsToEntity(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addMeaningsToEntity");
         // handle __terms attribute of entity
         List<AtlasVertex> meanings = createdElements.stream()
@@ -2426,6 +2461,40 @@ public class EntityGraphMapper {
 
         }
 
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private void
+    addInternalProductAttr (AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) {
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addInternalProductAttr");
+        AtlasVertex toVertex = ctx.getReferringVertex();
+        String toVertexType = getTypeName(toVertex);
+
+        if (TYPE_PRODUCT.equals(toVertexType)) {
+            List<String> outputPortGuids = toVertex.getProperty(OUTPUT_PORT_GUIDS_ATTR, ArrayList.class);
+            List<String> inputPortGuids = toVertex.getProperty(INPUT_PORT_GUIDS_ATTR, ArrayList.class);
+
+            if (CollectionUtils.isNotEmpty(createdElements)) {
+                List<String> assetGuids = createdElements.stream().map(x -> ((AtlasEdge) x).getInVertex().getProperty("guid", String.class)).collect(Collectors.toList());
+                if (ctx.getAttribute().getRelationshipEdgeLabel().equals(OUTPUT_PORT_PRODUCT_EDGE_LABEL)) {
+                    outputPortGuids.addAll(assetGuids);
+                } else if (ctx.getAttribute().getRelationshipEdgeLabel().equals(INPUT_PORT_PRODUCT_EDGE_LABEL)) {
+                    inputPortGuids.addAll(assetGuids);
+                }
+            }
+
+            if (CollectionUtils.isNotEmpty(deletedElements)) {
+                List<String> assetGuids = deletedElements.stream().map(x -> x.getInVertex().getProperty("guid", String.class)).collect(Collectors.toList());
+                if (ctx.getAttribute().getRelationshipEdgeLabel().equals(OUTPUT_PORT_PRODUCT_EDGE_LABEL)) {
+                    outputPortGuids.removeAll(assetGuids);
+                } else if (ctx.getAttribute().getRelationshipEdgeLabel().equals(INPUT_PORT_PRODUCT_EDGE_LABEL)) {
+                    inputPortGuids.removeAll(assetGuids);
+                }
+            }
+
+            toVertex.setProperty(OUTPUT_PORT_GUIDS_ATTR, outputPortGuids);
+            toVertex.setProperty(INPUT_PORT_GUIDS_ATTR, inputPortGuids);
+        }
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 

@@ -140,6 +140,8 @@ public final class Constants {
      */
     public static final String DATA_DOMAIN_ENTITY_TYPE     = "DataDomain";
     public static final String DATA_PRODUCT_ENTITY_TYPE    = "DataProduct";
+    public static final String INPUT_PORT_PRODUCT_EDGE_LABEL    = "__Asset.inputPortDataProducts";
+    public static final String OUTPUT_PORT_PRODUCT_EDGE_LABEL    = "__Asset.outputPortDataProducts";
 
 
     /**
