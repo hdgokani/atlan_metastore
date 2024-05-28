@@ -64,10 +64,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.Arrays;
+import java.util.*;
+
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_HOST;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_USER_AGENT;
@@ -396,13 +394,20 @@ public class DiscoveryREST {
         AtlasPerfTracer perf = null;
         long startTime = System.currentTimeMillis();
 
-        LOG.warn("RateLimiter for 2secs",startTime);
-        rateLimiter.acquire();
+        LOG.warn("RateLimiter for 2secs"+ System.currentTimeMillis());
+//        rateLimiter.acquire();
+
+        boolean acquired = rateLimiter.tryAcquire();
+
+        if (!acquired) {
+            LOG.warn("Rate limit exceeded, request rejected at " + System.currentTimeMillis());
+            throw new AtlasBaseException(AtlasErrorCode.TOO_MANY_REQUESTS, "Too many requests, please try again later.");
+        }
 
         RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
         RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
         RequestContext.get().setIncludeClassificationNames(parameters.isIncludeClassificationNames());
-        try     {
+        try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearch(" + parameters + ")");
             }
