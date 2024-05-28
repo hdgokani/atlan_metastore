@@ -51,6 +51,7 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getActiveParentVertices;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE;
+import static org.apache.atlas.type.Constants.LEXICOGRAPHICAL_SORT_ORDER;
 
 @Component
 public class TermPreProcessor extends AbstractGlossaryPreProcessor {
@@ -94,9 +95,17 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
 
         String glossaryQName = (String) anchor.getAttribute(QUALIFIED_NAME);
 
+
         termExists(termName, glossaryQName);
 
-        validateCategory(entity);
+        String parentQname = validateAndGetCategory(entity);
+
+        String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+        if(StringUtils.isEmpty(lexicographicalSortOrder)){
+            assignNewLexicographicalSortOrder(entity, glossaryQName, parentQname, this.discovery);
+        } else {
+            isValidLexoRank(lexicographicalSortOrder);
+        }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
@@ -115,6 +124,8 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
+        validateAndGetCategory(entity);
+
         AtlasEntity storedTerm = entityRetriever.toAtlasEntity(vertex);
         AtlasRelatedObjectId currentGlossary = (AtlasRelatedObjectId) storedTerm.getRelationshipAttribute(ANCHOR);
         AtlasEntityHeader currentGlossaryHeader = entityRetriever.toAtlasEntityHeader(currentGlossary.getGuid());
@@ -123,6 +134,11 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         String termQualifiedName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
         String newGlossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
+
+        String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+        if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
+            isValidLexoRank(lexicographicalSortOrder);
+        }
 
         if(!currentGlossaryQualifiedName.equals(newGlossaryQualifiedName)) {
             ensureOnlyOneCategoryIsAssociated(entity);
@@ -177,14 +193,15 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
 
     }
 
-    private void validateCategory(AtlasEntity entity) throws AtlasBaseException {
+    private String validateAndGetCategory(AtlasEntity entity) throws AtlasBaseException {
         String glossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
+        String categoryQualifiedName = null;
+
         if (entity.hasRelationshipAttribute(ATTR_CATEGORIES) && entity.getRelationshipAttribute(ATTR_CATEGORIES) != null) {
             List<AtlasObjectId> categories = (List<AtlasObjectId>) entity.getRelationshipAttribute(ATTR_CATEGORIES);
 
             if (CollectionUtils.isNotEmpty(categories)) {
                 AtlasObjectId category = categories.get(0);
-                String categoryQualifiedName;
 
                 if (category.getUniqueAttributes() != null && category.getUniqueAttributes().containsKey(QUALIFIED_NAME)) {
                     categoryQualifiedName = (String) category.getUniqueAttributes().get(QUALIFIED_NAME);
@@ -198,6 +215,7 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
                 }
             }
         }
+        return categoryQualifiedName;
     }
 
     public String moveTermToAnotherGlossary(AtlasEntity entity, AtlasVertex vertex,
