@@ -84,6 +84,7 @@ import static org.apache.atlas.repository.Constants.REQUEST_HEADER_USER_AGENT;
 public class DiscoveryREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.DiscoveryREST");
     private static final Logger LOG = LoggerFactory.getLogger(DiscoveryREST.class);
+    private final RateLimiter rateLimiter = RateLimiter.create(2); // rate is "2 permits per second"
 
     @Context
     private       HttpServletRequest httpServletRequest;
@@ -395,10 +396,8 @@ public class DiscoveryREST {
         AtlasPerfTracer perf = null;
         long startTime = System.currentTimeMillis();
 
-        RateLimiter rateLimiter = RateLimiter.create(2); // rate is "2 permits per second"
         LOG.warn("RateLimiter for 2secs",startTime);
         rateLimiter.acquire();
-
 
         RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
         RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
