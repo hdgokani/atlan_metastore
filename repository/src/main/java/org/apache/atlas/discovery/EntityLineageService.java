@@ -606,7 +606,9 @@ public class EntityLineageService implements AtlasLineageService {
 
     private boolean incrementAndCheckIfRelationsLimitReached(AtlasEdge atlasEdge, boolean isInput, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, int depth, AtomicInteger entitiesTraversed, AtlasLineageOnDemandInfo.LineageDirection direction, boolean isCyclicAsset) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("incrementAndCheckIfRelationsLimitReached");
-        if (lineageContainsVisitedEdgeV2(ret, atlasEdge))
+
+        // For cyclic assets, allow setting horizontal pagination
+        if (!isCyclicAsset && lineageContainsVisitedEdgeV2(ret, atlasEdge))
             return false;
 
         AtlasVertex                inVertex                 = isInput ? atlasEdge.getOutVertex() : atlasEdge.getInVertex();
@@ -621,6 +623,9 @@ public class EntityLineageService implements AtlasLineageService {
         LineageInfoOnDemand outLineageInfo = ret.getRelationsOnDemand().containsKey(outGuid) ? ret.getRelationsOnDemand().get(outGuid) : new LineageInfoOnDemand(outGuidLineageConstraints);
 
         setHorizontalPaginationFlags(isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, inVertex, inGuid, outVertex, outGuid, inLineageInfo, outLineageInfo, isCyclicAsset);
+
+        if (lineageContainsVisitedEdgeV2(ret, atlasEdge))
+            return false;
 
         boolean hasRelationsLimitReached = setVerticalPaginationFlags(entitiesTraversed, inLineageInfo, outLineageInfo);
         if (!hasRelationsLimitReached) {
