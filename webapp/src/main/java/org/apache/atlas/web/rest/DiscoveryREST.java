@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.web.rest;
 
+import com.google.common.util.concurrent.RateLimiter;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
@@ -70,8 +71,7 @@ import java.util.Arrays;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_HOST;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_USER_AGENT;
-import com.google.common.util.concurrent.RateLimiter;
-// import java.time.ZonedDateTime;
+
 
 /**
  * REST interface for data discovery using dsl or full text search
@@ -84,6 +84,7 @@ import com.google.common.util.concurrent.RateLimiter;
 public class DiscoveryREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.DiscoveryREST");
     private static final Logger LOG = LoggerFactory.getLogger(DiscoveryREST.class);
+
     @Context
     private       HttpServletRequest httpServletRequest;
     private final int                maxFullTextQueryLength;
@@ -395,17 +396,9 @@ public class DiscoveryREST {
         long startTime = System.currentTimeMillis();
 
         RateLimiter rateLimiter = RateLimiter.create(2); // rate is "2 permits per second"
-
-        if (!rateLimiter.tryAcquire()) {
-            throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, "Rate limit exceeded for index search");
-        } 
-        // when
-        // long startRateLimitTime = ZonedDateTime.now().getSecond();
-        rateLimiter.acquire(1);
-        // long elapsedTimeSeconds = ZonedDateTime.now().getSecond() - startRateLimitTime;
-
-
-
+        LOG.warn("RateLimiter for 2secs",startTime);
+        rateLimiter.acquire();
+        
         RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
         RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
         RequestContext.get().setIncludeClassificationNames(parameters.isIncludeClassificationNames());
