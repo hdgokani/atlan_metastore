@@ -395,16 +395,9 @@ public class DiscoveryREST {
         long startTime = System.currentTimeMillis();
 
         RateLimiter rateLimiter = RateLimiter.create(2); // rate is "2 permits per second"
-
-        if (!rateLimiter.tryAcquire()) {
-            throw new AtlasBaseException(AtlasErrorCode.RUNTIME_EXCEPTION, "Rate limit exceeded for index search");
-        } 
-        // when
-        // long startRateLimitTime = ZonedDateTime.now().getSecond();
-        rateLimiter.acquire(1);
-        // long elapsedTimeSeconds = ZonedDateTime.now().getSecond() - startRateLimitTime;
-
-
+        LOG.debug("Rate is 2 permits per second processed at ", startTime);
+    
+        rateLimiter.acquire();
 
         RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
         RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
