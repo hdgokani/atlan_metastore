@@ -2219,7 +2219,7 @@ public class EntityGraphMapper {
             List<String> inputPortGuids = toVertex.getProperty(INPUT_PORT_GUIDS_ATTR, ArrayList.class);
 
             if (CollectionUtils.isNotEmpty(createdElements)) {
-                List<String> assetGuids = createdElements.stream().map(x -> ((AtlasEdge) x).getInVertex().getProperty("guid", String.class)).collect(Collectors.toList());
+                List<String> assetGuids = createdElements.stream().map(x -> ((AtlasEdge) x).getInVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
                 if (ctx.getAttribute().getRelationshipEdgeLabel().equals(OUTPUT_PORT_PRODUCT_EDGE_LABEL)) {
                     outputPortGuids.addAll(assetGuids);
                 } else if (ctx.getAttribute().getRelationshipEdgeLabel().equals(INPUT_PORT_PRODUCT_EDGE_LABEL)) {
@@ -2228,7 +2228,7 @@ public class EntityGraphMapper {
             }
 
             if (CollectionUtils.isNotEmpty(deletedElements)) {
-                List<String> assetGuids = deletedElements.stream().map(x -> x.getInVertex().getProperty("guid", String.class)).collect(Collectors.toList());
+                List<String> assetGuids = deletedElements.stream().map(x -> x.getInVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
                 if (ctx.getAttribute().getRelationshipEdgeLabel().equals(OUTPUT_PORT_PRODUCT_EDGE_LABEL)) {
                     outputPortGuids.removeAll(assetGuids);
                 } else if (ctx.getAttribute().getRelationshipEdgeLabel().equals(INPUT_PORT_PRODUCT_EDGE_LABEL)) {
