@@ -2008,7 +2008,7 @@ public class EntityGraphMapper {
 
             case INPUT_PORT_PRODUCT_EDGE_LABEL:
             case OUTPUT_PORT_PRODUCT_EDGE_LABEL:
-                addInternalProductAttr(ctx, allArrayElements, removedElements);
+                addInternalProductAttrForAppendAndRemove(ctx, newElementsCreated, removedElements, currentElements);
                 break;
         }
 
@@ -2247,11 +2247,10 @@ public class EntityGraphMapper {
                 List<String> outputPortGuids = null;
                 outputPortGuids = allArrayElementGuids;
                 toVertex.removeProperty(OUTPUT_PORT_GUIDS_ATTR);
-                toVertex.setProperty(OUTPUT_PORT_GUIDS_ATTR, outputPortGuids);
-//                if (CollectionUtils.isNotEmpty(outputPortGuids)) {
-//                    outputPortGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(toVertex, OUTPUT_PORT_GUIDS_ATTR , guid));
-//                    LOG.info("outputPortGuids: {}", outputPortGuids);
-//                }
+                if (CollectionUtils.isNotEmpty(outputPortGuids)) {
+                    outputPortGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(toVertex, OUTPUT_PORT_GUIDS_ATTR , guid));
+                    LOG.info("outputPortGuids: {}", outputPortGuids);
+                }
             }
 
             if(ctx.getAttribute().getRelationshipEdgeLabel().equals(INPUT_PORT_PRODUCT_EDGE_LABEL)){
@@ -2270,13 +2269,12 @@ public class EntityGraphMapper {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addInternalProductAttrForAppend");
         AtlasVertex toVertex = ctx.getReferringVertex();
         String toVertexType = getTypeName(toVertex);
+        List<String> outputPortGuids = new ArrayList<>();
+        List<String> inputPortGuids = new ArrayList<>();
 
         if (TYPE_PRODUCT.equals(toVertexType)) {
             if(ctx.getAttribute().getRelationshipEdgeLabel().equals(OUTPUT_PORT_PRODUCT_EDGE_LABEL)){
-                List<String> outputPortGuids = toVertex.getProperty(OUTPUT_PORT_GUIDS_ATTR, ArrayList.class);
-                if(outputPortGuids == null) {
-                    outputPortGuids = new ArrayList<>();
-                }
+                 outputPortGuids = toVertex.getProperty(OUTPUT_PORT_GUIDS_ATTR, ArrayList.class);
 
                 if (CollectionUtils.isNotEmpty(currentElements) && CollectionUtils.isEmpty(outputPortGuids)) {
                     List<String> currentGuids = currentElements.stream()
@@ -2289,12 +2287,10 @@ public class EntityGraphMapper {
                 if (CollectionUtils.isNotEmpty(createdElements)) {
                     List<String> assetGuids = createdElements.stream().map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
                     outputPortGuids.addAll(assetGuids);
-                    LOG.info("outputPortGuids: {}", outputPortGuids);
                     toVertex.removeProperty(OUTPUT_PORT_GUIDS_ATTR);
                     if (CollectionUtils.isNotEmpty(outputPortGuids)) {
                         outputPortGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(toVertex, OUTPUT_PORT_GUIDS_ATTR , guid));
                     }
-                    LOG.info("outputPortGuids: {}", outputPortGuids);
                 }
 
                 if (CollectionUtils.isNotEmpty(deletedElements)) {
@@ -2309,7 +2305,7 @@ public class EntityGraphMapper {
             }
 
             if (ctx.getAttribute().getRelationshipEdgeLabel().equals(INPUT_PORT_PRODUCT_EDGE_LABEL)) {
-                List<String> inputPortGuids = toVertex.getProperty(INPUT_PORT_GUIDS_ATTR, ArrayList.class);
+                inputPortGuids = toVertex.getProperty(INPUT_PORT_GUIDS_ATTR, ArrayList.class);
                 if(inputPortGuids == null) {
                     inputPortGuids = new ArrayList<>();
                 }
