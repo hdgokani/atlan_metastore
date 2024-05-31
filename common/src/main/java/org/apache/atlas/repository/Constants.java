@@ -149,8 +149,6 @@ public final class Constants {
 
     public static final String REL_DOMAIN_TO_STAKEHOLDERS            = "data_domain_stakeholders";
     public static final String REL_STAKEHOLDER_TITLE_TO_STAKEHOLDERS = "stakeholder_title_stakeholders";
-    public static final String INPUT_PORT_PRODUCT_EDGE_LABEL    = "__Asset.inputPortDataProducts";
-    public static final String OUTPUT_PORT_PRODUCT_EDGE_LABEL    = "__Asset.outputPortDataProducts";
 
 
     /**
@@ -170,6 +168,8 @@ public final class Constants {
     public static final String POLICY_ENTITY_TYPE         = "AuthPolicy";
     public static final String SERVICE_ENTITY_TYPE        = "AuthService";
     public static final String REL_POLICY_TO_ACCESS_CONTROL  = "access_control_policies";
+
+    public static final String POLICY_SERVICE_NAME_ABAC  = "atlas_abac";
 
     /**
      * Resource

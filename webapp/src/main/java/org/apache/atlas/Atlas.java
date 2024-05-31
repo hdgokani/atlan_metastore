@@ -48,6 +48,8 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.INDEX_PREFIX;
@@ -139,13 +141,17 @@ public final class Atlas {
         final boolean enableTLS = isTLSEnabled(enableTLSFlag, appPort);
         configuration.setProperty(SecurityProperties.TLS_ENABLED, String.valueOf(enableTLS));
 
+        Instant start = Instant.now();
+
         showStartupInfo(buildConfiguration, enableTLS, appPort);
         if (configuration.getProperty("atlas.graph.index.search.backend").equals("elasticsearch")) {
             initElasticsearch();
+            LOG.info("Starting service {} in {}", "elasticsearch", Duration.between(start, Instant.now()).toMillis());
         }
 
         if (configuration.getString("atlas.authorizer.impl").equalsIgnoreCase("atlas")) {
             initAccessAuditElasticSearch(configuration);
+            LOG.info("Starting service {} in {}", "auditElasticsearch", Duration.between(start, Instant.now()).toMillis());
         }
 
         server = EmbeddedServer.newServer(appHost, appPort, appPath, enableTLS);
