@@ -367,4 +367,6 @@ public interface AtlasEntityStore {
 
     void repairMeaningAttributeForTerms(List<String> termGuids) throws AtlasBaseException;
 
+    public void repairAlias(String guid) throws AtlasBaseException;
+
 }
