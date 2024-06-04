@@ -137,6 +137,8 @@ import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.INPUT_PORT_GUIDS_ATTR;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.OUTPUT_PORT_GUIDS_ATTR;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.*;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
@@ -169,6 +171,7 @@ public class EntityGraphMapper {
     private static final String TYPE_GLOSSARY= "AtlasGlossary";
     private static final String TYPE_CATEGORY= "AtlasGlossaryCategory";
     private static final String TYPE_TERM = "AtlasGlossaryTerm";
+    private static final String TYPE_PRODUCT = "DataProduct";
     private static final String TYPE_PROCESS = "Process";
     private static final String ATTR_MEANINGS = "meanings";
     private static final String ATTR_ANCHOR = "anchor";
@@ -2002,6 +2005,11 @@ public class EntityGraphMapper {
             case PROCESS_INPUTS:
             case PROCESS_OUTPUTS: addEdgesToContext(GraphHelper.getGuid(ctx.referringVertex), newElementsCreated,  removedElements);
                 break;
+
+            case INPUT_PORT_PRODUCT_EDGE_LABEL:
+            case OUTPUT_PORT_PRODUCT_EDGE_LABEL:
+                addInternalProductAttr(ctx, newElementsCreated, removedElements, currentElements);
+                break;
         }
 
         if (LOG.isDebugEnabled()) {
@@ -2030,6 +2038,7 @@ public class EntityGraphMapper {
         List<Object>   newElementsCreated  = new ArrayList<>();
 
         boolean isNewElementsNull = newElements == null;
+
 
         if (isNewElementsNull) {
             newElements = new ArrayList();
@@ -2087,6 +2096,11 @@ public class EntityGraphMapper {
             case PROCESS_INPUTS:
             case PROCESS_OUTPUTS: addEdgesToContext(GraphHelper.getGuid(ctx.referringVertex), newElementsCreated,  new ArrayList<>(0));
                 break;
+
+            case INPUT_PORT_PRODUCT_EDGE_LABEL:
+            case OUTPUT_PORT_PRODUCT_EDGE_LABEL:
+                addInternalProductAttr(ctx, newElementsCreated, new ArrayList<>(0), null);
+                break;
         }
 
         if (LOG.isDebugEnabled()) {
@@ -2113,6 +2127,7 @@ public class EntityGraphMapper {
 
 
         boolean isNewElementsNull = elementsDeleted == null;
+
 
         if (isNewElementsNull) {
             elementsDeleted = new ArrayList();
@@ -2154,6 +2169,11 @@ public class EntityGraphMapper {
             case PROCESS_INPUTS:
             case PROCESS_OUTPUTS: addEdgesToContext(GraphHelper.getGuid(ctx.referringVertex), new ArrayList<>(0),  removedElements);
                 break;
+
+            case INPUT_PORT_PRODUCT_EDGE_LABEL:
+            case OUTPUT_PORT_PRODUCT_EDGE_LABEL:
+                addInternalProductAttr(ctx, new ArrayList<>(0) , removedElements, null);
+                break;
         }
 
         if (LOG.isDebugEnabled()) {
@@ -2188,6 +2208,62 @@ public class EntityGraphMapper {
                 removedElement.addAll(removedElements);
                 (RequestContext.get().getRemovedElementsMap()).put(guid, removedElement);
             }
+        }
+    }
+
+    private void addInternalProductAttr(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements, List<Object> currentElements) throws AtlasBaseException {
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addInternalProductAttrForAppend");
+        AtlasVertex toVertex = ctx.getReferringVertex();
+        String toVertexType = getTypeName(toVertex);
+
+        if (TYPE_PRODUCT.equals(toVertexType)) {
+
+            if(currentElements == null){
+                AtlasAttribute attribute           = ctx.getAttribute();
+                AtlasArrayType arrType             = (AtlasArrayType) attribute.getAttributeType();
+                AtlasType      elementType         = arrType.getElementType();
+                boolean        isStructType        = (TypeCategory.STRUCT == elementType.getTypeCategory()) ||
+                        (TypeCategory.STRUCT == attribute.getDefinedInType().getTypeCategory());
+
+                currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute, isStructType);
+            }
+
+            if(ctx.getAttribute().getRelationshipEdgeLabel().equals(OUTPUT_PORT_PRODUCT_EDGE_LABEL)){
+                addOrRemoveInternalAttr(toVertex, OUTPUT_PORT_GUIDS_ATTR, createdElements, currentElements, deletedElements);
+            }
+            if (ctx.getAttribute().getRelationshipEdgeLabel().equals(INPUT_PORT_PRODUCT_EDGE_LABEL)) {
+                addOrRemoveInternalAttr(toVertex, INPUT_PORT_GUIDS_ATTR, createdElements, currentElements, deletedElements);
+            }
+        }else{
+           throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Can not update product relations while updating any asset");
+        }
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private void addOrRemoveInternalAttr(AtlasVertex toVertex, String internalAttr, List<Object> createdElements, List<Object> currentElements, List<AtlasEdge> deletedElements) {
+        List<String> portGuids = toVertex.getMultiValuedProperty(internalAttr, String.class);
+
+        if (CollectionUtils.isNotEmpty(currentElements) && CollectionUtils.isEmpty(portGuids)) {
+            List<String> currentGuids = currentElements.stream()
+                    .map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class))
+                    .collect(Collectors.toList());
+
+            portGuids.addAll(currentGuids);
+        }
+
+        if (CollectionUtils.isNotEmpty(createdElements)) {
+            List<String> assetGuids = createdElements.stream().map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
+            portGuids = (List<String>) CollectionUtils.union(portGuids, assetGuids);
+        }
+
+        if (CollectionUtils.isNotEmpty(deletedElements)) {
+            List<String> assetGuids = deletedElements.stream().map(x -> x.getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
+            portGuids.removeAll(assetGuids);
+        }
+
+        toVertex.removeProperty(internalAttr);
+        if (CollectionUtils.isNotEmpty(portGuids)) {
+            portGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(toVertex, internalAttr , guid));
         }
     }
 
