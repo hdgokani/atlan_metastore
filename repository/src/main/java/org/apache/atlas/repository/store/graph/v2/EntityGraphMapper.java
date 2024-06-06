@@ -1907,7 +1907,7 @@ public class EntityGraphMapper {
         AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
         Cardinality    cardinality         = attribute.getAttributeDef().getCardinality();
         List<AtlasEdge> removedElements    = new ArrayList<>();
-       List<Object>   newElementsCreated  = new ArrayList<>();
+        List<Object>   newElementsCreated  = new ArrayList<>();
         List<Object>   allArrayElements    = null;
         List<Object>   currentElements;
         boolean deleteExistingRelations = shouldDeleteExistingRelations(ctx, attribute);
@@ -2039,7 +2039,6 @@ public class EntityGraphMapper {
 
         boolean isNewElementsNull = newElements == null;
 
-
         if (isNewElementsNull) {
             newElements = new ArrayList();
         }
@@ -2128,7 +2127,6 @@ public class EntityGraphMapper {
 
         boolean isNewElementsNull = elementsDeleted == null;
 
-
         if (isNewElementsNull) {
             elementsDeleted = new ArrayList();
         }
@@ -2216,7 +2214,7 @@ public class EntityGraphMapper {
         AtlasVertex toVertex = ctx.getReferringVertex();
         String toVertexType = getTypeName(toVertex);
 
-        if(currentElements.isEmpty() && createdElements.isEmpty() && deletedElements.isEmpty()){
+        if((currentElements == null || currentElements.isEmpty()) && createdElements.isEmpty() && deletedElements.isEmpty()){
             RequestContext.get().endMetricRecord(metricRecorder);
             return;
         }
@@ -2250,6 +2248,7 @@ public class EntityGraphMapper {
 
         if (CollectionUtils.isNotEmpty(currentElements) && CollectionUtils.isEmpty(portGuids)) {
             List<String> currentGuids = currentElements.stream()
+                    .filter(x -> ((AtlasEdge) x).getProperty(STATE_PROPERTY_KEY, String.class).equals("ACTIVE"))
                     .map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class))
                     .collect(Collectors.toList());
 
