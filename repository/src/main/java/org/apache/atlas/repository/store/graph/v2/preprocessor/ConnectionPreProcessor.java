@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -191,23 +191,48 @@ public class ConnectionPreProcessor implements PreProcessor {
                 throw new AtlasBaseException(AtlasErrorCode.ADMIN_LIST_SHOULD_NOT_BE_EMPTY, existingConnEntity.getTypeName());
             }
 
-            //calculate final state for all admin attributes if all 3 are empty at the end throw exception now
-            List<String> finalStateUsers = emptyName ? new ArrayList<>() : newAdminUsers;
-            List<String> finalStateRoles = emptyRole ? new ArrayList<>() : newAdminRoles;
-            List<String> finalStateGroups = emptyGroup ? new ArrayList<>() : newAdminGroups;
-
-            if (CollectionUtils.isEmpty(finalStateUsers) && CollectionUtils.isEmpty(finalStateGroups) && CollectionUtils.isEmpty(finalStateRoles)) {
-                throw new AtlasBaseException(AtlasErrorCode.ADMIN_LIST_SHOULD_NOT_BE_EMPTY, existingConnEntity.getTypeName());
-            }
 
             // Update Keycloak roles
             RoleRepresentation representation = getKeycloakClient().getRoleByName(roleName);
-            updateKeycloakRoleUsers(roleName, currentAdminUsers, newAdminUsers != null ? newAdminUsers : new ArrayList<>(), representation);
-            updateKeycloakRoleGroups(roleName, currentAdminGroups, newAdminGroups != null ? newAdminGroups : new ArrayList<>(), representation);
-            updateKeycloakRoleRoles(roleName, currentAdminRoles, newAdminRoles != null ? newAdminRoles : new ArrayList<>(), representation);
-
+            if (newAdminUsers != null) {
+                List<String> finalStateUsers = determineFinalState(newAdminUsers, currentAdminUsers);
+                if(CollectionUtils.isNotEmpty(finalStateUsers)) {
+                    keycloakStore.updateRoleUsers(roleName, currentAdminUsers, finalStateUsers, representation);
+                }
+            }
+            if (newAdminGroups != null) {
+                List<String> finalStateGroups = determineFinalState(newAdminGroups, currentAdminGroups);
+                if(CollectionUtils.isNotEmpty(finalStateGroups)) {
+                    keycloakStore.updateRoleGroups(roleName, currentAdminGroups, finalStateGroups, representation);
+                }
+            }
+            if (newAdminRoles != null) {
+                List<String> finalStateRoles = determineFinalState(newAdminRoles, currentAdminRoles);
+                if(CollectionUtils.isNotEmpty(finalStateRoles)) {
+                    keycloakStore.updateRoleRoles(roleName, currentAdminRoles, finalStateRoles, representation);
+                }
+            }
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+    }
+
+
+    // if the list is empty -> we want to remove all elements
+    // if the list is non-empty -> we want to replace
+    // if the list is equal to prev value -> no update is required
+    private List<String> determineFinalState(List<String> newAdmins, List<String> currentAdmins) {
+        if (newAdmins == null || newAdmins.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<String> sortedNewAdmins = newAdmins.stream().sorted().collect(Collectors.toList());
+        List<String> sortedCurrentAdmins = currentAdmins.stream().sorted().collect(Collectors.toList());
+
+        if (sortedNewAdmins.equals(sortedCurrentAdmins)) {
+            return new ArrayList<>();
+        }
+
+        return newAdmins;
     }
 
 
@@ -217,32 +242,6 @@ public class ConnectionPreProcessor implements PreProcessor {
         }
         return Optional.empty();
     }
-
-    // Check if all lists are empty
-    private boolean areAllListEmpty(List<String>... lists) {
-        return Arrays.stream(lists).allMatch(Collection::isEmpty);
-    }
-
-    private void updateKeycloakRoleUsers(String roleName, List<String> currentUsers, List<String> newUsers, RoleRepresentation representation) throws AtlasBaseException {
-        if (!newUsers.isEmpty() || !currentUsers.isEmpty()) {
-            keycloakStore.updateRoleUsers(roleName, currentUsers, newUsers, representation);
-        }
-    }
-
-    private void updateKeycloakRoleGroups(String roleName, List<String> currentGroups, List<String> newGroups, RoleRepresentation representation) throws AtlasBaseException {
-        if (!newGroups.isEmpty() || !currentGroups.isEmpty()) {
-            keycloakStore.updateRoleGroups(roleName, currentGroups, newGroups, representation);
-        }
-    }
-
-    private void updateKeycloakRoleRoles(String roleName, List<String> currentRoles, List<String> newRoles, RoleRepresentation representation) throws AtlasBaseException {
-        if (!newRoles.isEmpty() || !currentRoles.isEmpty()) {
-            keycloakStore.updateRoleRoles(roleName, currentRoles, newRoles, representation);
-        }
-    }
-
-
-
     @Override
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
         // Process Delete connection role and policies in case of hard delete or purge
@@ -277,7 +276,7 @@ public class ConnectionPreProcessor implements PreProcessor {
 
     private List<AtlasEntityHeader> getConnectionPolicies(String guid, String roleName) throws AtlasBaseException {
         List<AtlasEntityHeader> ret = new ArrayList<>();
-        
+
         IndexSearchParams indexSearchParams = new IndexSearchParams();
         Map<String, Object> dsl = new HashMap<>();
 
