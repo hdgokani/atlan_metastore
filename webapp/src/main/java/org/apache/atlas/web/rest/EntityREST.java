@@ -97,6 +97,8 @@ public class EntityREST {
     private static final int TWO_MILLION = HUNDRED_THOUSAND * 10 * 2;
     private static final Set<String> ATTRS_WITH_TWO_MILLION_LIMIT = new HashSet<String>() {{
         add("rawQueryText");
+        add("variablesSchemaBase64");
+        add("visualBuilderSchemaBase64");
     }};
 
 
@@ -893,7 +895,7 @@ public class EntityREST {
                                                  @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
                                                  @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-        RequestContext.get().setEnableCache(false);
+
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" +
@@ -1929,5 +1931,30 @@ public class EntityREST {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    @POST
+    @Path("/repair/accesscontrolAlias/{guid}")
+    @Timed
+    public void repairAccessControlAlias(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
+        AtlasPerfTracer perf = null;
+
+
+       try {
+           if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+               perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairAccessControlAlias");
+           }
+
+           entitiesStore.repairAccesscontrolAlias(guid);
+
+           LOG.info("Repaired access control alias for entity with guid {}", guid);
+
+       } finally {
+              AtlasPerfTracer.log(perf);
+       }
+
+
     }
 }

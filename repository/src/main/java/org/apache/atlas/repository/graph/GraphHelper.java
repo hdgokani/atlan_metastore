@@ -21,6 +21,7 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Iterators;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -73,6 +74,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.RELATIONSHIP_CREATE_INVALID_PARAMS;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
@@ -376,6 +378,37 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static List<AtlasVertex> getAllClassificationVerticesByClassificationName(AtlasGraph graph, String classificationName) {
+        Iterable vertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
+        if (vertices == null) {
+            return Collections.emptyList();
+        }
+        return IteratorUtils.toList(vertices.iterator());
+    }
+
+    public static List<AtlasVertex> getAllAssetsWithClassificationAttached(AtlasGraph graph, String classificationName) {
+        Iterable classificationVertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
+        if (classificationVertices == null) {
+            return Collections.emptyList();
+        }
+        List<AtlasVertex> classificationVerticesList = IteratorUtils.toList(classificationVertices.iterator());
+            LOG.info("classificationVerticesList size: {}", classificationVerticesList.size());
+        HashSet<AtlasVertex> entityVerticesSet = new HashSet<>();
+        for (AtlasVertex classificationVertex : classificationVerticesList) {
+            Iterable attachedVertices =  classificationVertex.query()
+                    .direction(AtlasEdgeDirection.IN)
+                    .label(CLASSIFICATION_LABEL).vertices();
+            if (attachedVertices != null) {
+                Iterator<AtlasVertex> attachedVerticesIterator = attachedVertices.iterator();
+                while (attachedVerticesIterator.hasNext()) {
+                    entityVerticesSet.add(attachedVerticesIterator.next());
+                }
+                LOG.info("entityVerticesSet size: {}", entityVerticesSet.size());
+            }
+        }
+
+        return entityVerticesSet.stream().collect(Collectors.toList());
+    }
     public static AtlasEdge getClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
         AtlasEdge ret   = null;
         Iterable  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL)
@@ -392,6 +425,17 @@ public final class GraphHelper {
         }
 
         return ret;
+    }
+
+    public static Integer getCountOfCategoryEdges(AtlasVertex entityVertex) {
+
+        Iterator<AtlasEdge> edges = getOutGoingEdgesByLabel(entityVertex, CATEGORY_TERMS_EDGE_LABEL);
+
+        if (edges!=null) {
+            return Iterators.size(edges);
+        }
+
+        return 0;
     }
 
     public static boolean isClassificationAttached(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
@@ -908,23 +952,27 @@ public final class GraphHelper {
     }
 
     public static List<AtlasEdge> getClassificationEdges(AtlasVertex entityVertex) {
-        return getClassificationEdges(entityVertex, false);
+        return getClassificationEdges(entityVertex, false, null);
     }
 
     public static List<AtlasEdge> getPropagatedClassificationEdges(AtlasVertex entityVertex) {
-        return getClassificationEdges(entityVertex, true);
+        return getClassificationEdges(entityVertex, true, null);
     }
 
     public static List<AtlasEdge> getAllClassificationEdges(AtlasVertex entityVertex) {
-        return getClassificationEdges(entityVertex, null);
+        return getClassificationEdges(entityVertex, null, null);
     }
 
-    public static List<AtlasEdge> getClassificationEdges(AtlasVertex entityVertex, Boolean propagated) {
+    public static List<AtlasEdge> getClassificationEdges(AtlasVertex entityVertex, Boolean propagated, String typeName) {
         List<AtlasEdge>  ret   = new ArrayList<>();
         AtlasVertexQuery query = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL);
 
         if (propagated != null) {
             query = query.has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, propagated);
+        }
+
+        if (StringUtils.isNotEmpty(typeName)) {
+            query = query.has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, typeName);
         }
 
         Iterable edges = query.edges();
