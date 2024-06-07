@@ -71,10 +71,13 @@ public class PreProcessorUtils {
     public static  final String DAAP_VISIBILITY_GROUPS_ATTR = "daapVisibilityGroups";
     public static final String OUTPUT_PORT_GUIDS_ATTR = "daapOutputPortGuids";
     public static final String INPUT_PORT_GUIDS_ATTR = "daapInputPortGuids";
+    public static final String OUTPUT_PORT_ATTR = "outputPorts";
+    public static final String INPUT_PORT_ATTR = "inputPorts";
 
     //Migration Constants
     public static final String MIGRATION_TYPE_PREFIX = "MIGRATION:";
     public static final String DATA_MESH_QN = MIGRATION_TYPE_PREFIX + "DATA_MESH_QN";
+    public static final String DATA_MESH_ATTR = MIGRATION_TYPE_PREFIX + "DATA_MESH_ATTR";
 
     public enum MigrationStatus {
         IN_PROGRESS,
