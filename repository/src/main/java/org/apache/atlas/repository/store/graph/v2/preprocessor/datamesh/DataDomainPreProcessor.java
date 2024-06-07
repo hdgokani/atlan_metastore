@@ -35,9 +35,9 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +47,8 @@ import java.util.*;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.StakeholderTitlePreProcessor.ATTR_DOMAIN_QUALIFIED_NAMES;
+import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DataDomainPreProcessor.class);
@@ -395,6 +397,25 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         }
     }
 
+    public boolean verifyStakeholderTitleExists(String domainQualifiedName) throws AtlasBaseException {
+
+        List<Map<String, Object>> mustClauseList = new ArrayList();
+        mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", STAKEHOLDER_TITLE_ENTITY_TYPE)));
+        mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
+        mustClauseList.add(mapOf("term", mapOf(ATTR_DOMAIN_QUALIFIED_NAMES, domainQualifiedName)));
+
+
+        Map<String, Object> bool = mapOf("must", mustClauseList);
+        Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
+
+        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, super.discovery);
+
+        if (CollectionUtils.isNotEmpty(assets)) {
+            return true;
+        }
+
+        return false;
+    }
     @Override
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processProductDelete");
@@ -406,6 +427,18 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             if (childrens.hasNext()){
                 throw new AtlasBaseException("Domain cannot be archived because some subdomains or products are active in this domain");
             }
+
+            // active stakeholder exists?
+            childrens = getActiveChildrenVertices(vertex, STAKEHOLDER_EDGE_LABEL);
+            if (childrens.hasNext()){
+                throw new AtlasBaseException("Domain cannot be archived because some stakeholders are active in this domain");
+            }
+
+            // active stakeholder titles exists?
+            if(verifyStakeholderTitleExists(vertex.getProperty(QUALIFIED_NAME, String.class))){
+                throw new AtlasBaseException("Domain cannot be archived because some stakeholdersTitles are active in this domain");
+            }
+
         }
         finally {
             RequestContext.get().endMetricRecord(metricRecorder);
