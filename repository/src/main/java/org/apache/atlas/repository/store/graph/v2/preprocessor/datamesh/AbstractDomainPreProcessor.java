@@ -91,16 +91,27 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         }
     }
 
-    protected void isAuthorized(AtlasEntityHeader sourceDomain, AtlasEntityHeader targetDomain) throws AtlasBaseException {
+    protected void isAuthorizedToMove(String typeName, AtlasEntityHeader sourceDomain, AtlasEntityHeader targetDomain) throws AtlasBaseException {
 
-       if(sourceDomain != null){
-           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceDomain),
-                   "update on source Domain: ", sourceDomain.getAttribute(NAME));
+        String qualifiedNameToAuthSuffix = DATA_DOMAIN_ENTITY_TYPE.equals(typeName) ? "/*domain/*" : "/*product/*";
+        AtlasEntityHeader headerToAuth = new AtlasEntityHeader(typeName);
+
+        if (sourceDomain != null) {
+           //Update sub-domains on source parent
+           String qualifiedNameToAuth = sourceDomain.getAttribute(QUALIFIED_NAME) + qualifiedNameToAuthSuffix;
+           headerToAuth.setAttribute(QUALIFIED_NAME, qualifiedNameToAuth);
+
+           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, headerToAuth),
+                   DATA_DOMAIN_ENTITY_TYPE, AtlasPrivilege.ENTITY_UPDATE, sourceDomain.getAttribute(NAME));
        }
 
-       if(targetDomain != null){
-           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetDomain),
-                   "update on target Domain: ", targetDomain.getAttribute(NAME));
+       if (targetDomain != null) {
+           //Create sub-domains on target parent
+           String qualifiedNameToAuth = targetDomain.getAttribute(QUALIFIED_NAME) + qualifiedNameToAuthSuffix;
+           headerToAuth.setAttribute(QUALIFIED_NAME, qualifiedNameToAuth);
+
+           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, headerToAuth),
+                   DATA_DOMAIN_ENTITY_TYPE, AtlasPrivilege.ENTITY_CREATE, targetDomain.getAttribute(NAME));
        }
     }
 
