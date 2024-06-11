@@ -97,21 +97,21 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         AtlasEntityHeader headerToAuth = new AtlasEntityHeader(typeName);
 
         if (sourceDomain != null) {
-           //Update sub-domains on source parent
+           //Update sub-domains/product on source parent
            String qualifiedNameToAuth = sourceDomain.getAttribute(QUALIFIED_NAME) + qualifiedNameToAuthSuffix;
            headerToAuth.setAttribute(QUALIFIED_NAME, qualifiedNameToAuth);
 
            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, headerToAuth),
-                   DATA_DOMAIN_ENTITY_TYPE, AtlasPrivilege.ENTITY_UPDATE, sourceDomain.getAttribute(NAME));
+                   AtlasPrivilege.ENTITY_UPDATE.name(), " " , typeName, " : ", qualifiedNameToAuth);
        }
 
        if (targetDomain != null) {
-           //Create sub-domains on target parent
+           //Create sub-domains/product on target parent
            String qualifiedNameToAuth = targetDomain.getAttribute(QUALIFIED_NAME) + qualifiedNameToAuthSuffix;
            headerToAuth.setAttribute(QUALIFIED_NAME, qualifiedNameToAuth);
 
            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, headerToAuth),
-                   DATA_DOMAIN_ENTITY_TYPE, AtlasPrivilege.ENTITY_CREATE, targetDomain.getAttribute(NAME));
+                   AtlasPrivilege.ENTITY_CREATE.name(), " " , typeName, " : ", qualifiedNameToAuth);
        }
     }
 
