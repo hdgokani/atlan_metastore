@@ -790,7 +790,7 @@
                     "end-two-entity:*",
                     "end-one-entity-type:BusinessPolicy",
                     "end-two-entity-type:BusinessPolicy",
-                    "relationship-type:*"
+                    "relationship-type:RelatedBusinessPolicy"
                 ],
                 "policyActions":
                 [
@@ -828,7 +828,7 @@
                     "end-two-entity:*",
                     "end-one-entity-type:BusinessPolicy",
                     "end-two-entity-type:BusinessPolicyException",
-                    "relationship-type:*"
+                    "relationship-type:BusinessPolicy_BusinessPolicyException"
                 ],
                 "policyActions":
                 [
