@@ -21,7 +21,6 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,7 +155,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             }
 
             //Auth check
-            isAuthorized(currentParentDomainHeader, newParentDomainHeader);
+            isAuthorizedToMove(DATA_PRODUCT_ENTITY_TYPE, currentParentDomainHeader, newParentDomainHeader);
 
             String newSuperDomainQualifiedName = (String) newParentDomainHeader.getAttribute(SUPER_DOMAIN_QN_ATTR);
             if(StringUtils.isEmpty(newSuperDomainQualifiedName)){

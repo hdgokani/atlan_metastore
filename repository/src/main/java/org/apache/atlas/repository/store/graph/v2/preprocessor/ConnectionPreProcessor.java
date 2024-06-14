@@ -6,9 +6,7 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +15,6 @@
  */
 package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
-import com.google.common.collect.Sets;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
@@ -53,15 +50,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient.getKeycloakClient;
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.ATLAS_AUTHORIZER_IMPL;
 import static org.apache.atlas.authorize.AtlasAuthorizerFactory.CURRENT_AUTHORIZER_IMPL;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
-import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
-import static org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient.getKeycloakClient;
 
 public class ConnectionPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionPreProcessor.class);
@@ -175,73 +168,64 @@ public class ConnectionPreProcessor implements PreProcessor {
             List<String> currentAdminRoles = getAttributeList(existingConnEntity, ATTR_ADMIN_ROLES).orElseGet(ArrayList::new);
 
             // Check conditions and throw exceptions as necessary
+
+            // If all new admin attributes are null, no action required as these are not meant to update in the request
             if (newAdminUsers == null && newAdminGroups == null && newAdminRoles == null) {
-                // If all new admin attributes are null, no action required as these are not meant to update in the request
                 RequestContext.get().endMetricRecord(metricRecorder);
                 return;
             }
 
-            // Check if any new admin attribute list is empty
+            // Throw exception if all new admin attributes are empty but not null
             boolean emptyName = newAdminUsers != null && newAdminUsers.isEmpty();
             boolean emptyGroup = newAdminGroups != null && newAdminGroups.isEmpty();
             boolean emptyRole = newAdminRoles != null && newAdminRoles.isEmpty();
 
-            // Throw exception if all new admin attributes are empty
             if (emptyName && emptyGroup && emptyRole) {
                 throw new AtlasBaseException(AtlasErrorCode.ADMIN_LIST_SHOULD_NOT_BE_EMPTY, existingConnEntity.getTypeName());
             }
-
-            //calculate final state for all admin attributes if all 3 are empty at the end throw exception now
-            List<String> finalStateUsers = emptyName ? new ArrayList<>() : newAdminUsers;
-            List<String> finalStateRoles = emptyRole ? new ArrayList<>() : newAdminRoles;
-            List<String> finalStateGroups = emptyGroup ? new ArrayList<>() : newAdminGroups;
-
-            if (CollectionUtils.isEmpty(finalStateUsers) && CollectionUtils.isEmpty(finalStateGroups) && CollectionUtils.isEmpty(finalStateRoles)) {
+            // Update Keycloak roles
+            RoleRepresentation representation = getKeycloakClient().getRoleByName(roleName);
+            List<String> finalStateUsers = determineFinalState(newAdminUsers, currentAdminUsers);
+            List<String> finalStateGroups = determineFinalState(newAdminGroups, currentAdminGroups);
+            List<String> finalStateRoles = determineFinalState(newAdminRoles, currentAdminRoles);
+            //this is the case where the final state after comparison with current and new value of all the attributes become empty
+            if (allEmpty(finalStateUsers, finalStateGroups, finalStateRoles)) {
                 throw new AtlasBaseException(AtlasErrorCode.ADMIN_LIST_SHOULD_NOT_BE_EMPTY, existingConnEntity.getTypeName());
             }
 
-            // Update Keycloak roles
-            RoleRepresentation representation = getKeycloakClient().getRoleByName(roleName);
-            updateKeycloakRoleUsers(roleName, currentAdminUsers, newAdminUsers != null ? newAdminUsers : new ArrayList<>(), representation);
-            updateKeycloakRoleGroups(roleName, currentAdminGroups, newAdminGroups != null ? newAdminGroups : new ArrayList<>(), representation);
-            updateKeycloakRoleRoles(roleName, currentAdminRoles, newAdminRoles != null ? newAdminRoles : new ArrayList<>(), representation);
+            keycloakStore.updateRoleUsers(roleName, currentAdminUsers, finalStateUsers, representation);
+            keycloakStore.updateRoleGroups(roleName, currentAdminGroups, finalStateGroups, representation);
+            keycloakStore.updateRoleRoles(roleName, currentAdminRoles, finalStateRoles, representation);
+
 
             RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 
+    // if the list is null -> we don't want to change
+    // if the list is empty -> we want to remove all elements
+    // if the list is non-empty -> we want to replace
+    private List<String> determineFinalState(List<String> newAdmins, List<String> currentAdmins) {
+        return newAdmins == null ? currentAdmins : newAdmins;
+    }
+
+    private boolean allEmpty(List<String>... lists) {
+        if (lists == null || lists.length == 0) {
+            return true;
+        }
+        return Stream.of(lists).allMatch(list -> list != null && list.isEmpty());
+    }
+
 
     private Optional<List<String>> getAttributeList(AtlasEntity entity, String attributeName) {
         if (entity.hasAttribute(attributeName)) {
+            if (Objects.isNull(entity.getAttribute(attributeName))) {
+                return Optional.of(new ArrayList<>(0));
+            }
             return Optional.of((List<String>) entity.getAttribute(attributeName));
         }
         return Optional.empty();
     }
-
-    // Check if all lists are empty
-    private boolean areAllListEmpty(List<String>... lists) {
-        return Arrays.stream(lists).allMatch(Collection::isEmpty);
-    }
-
-    private void updateKeycloakRoleUsers(String roleName, List<String> currentUsers, List<String> newUsers, RoleRepresentation representation) throws AtlasBaseException {
-        if (!newUsers.isEmpty() || !currentUsers.isEmpty()) {
-            keycloakStore.updateRoleUsers(roleName, currentUsers, newUsers, representation);
-        }
-    }
-
-    private void updateKeycloakRoleGroups(String roleName, List<String> currentGroups, List<String> newGroups, RoleRepresentation representation) throws AtlasBaseException {
-        if (!newGroups.isEmpty() || !currentGroups.isEmpty()) {
-            keycloakStore.updateRoleGroups(roleName, currentGroups, newGroups, representation);
-        }
-    }
-
-    private void updateKeycloakRoleRoles(String roleName, List<String> currentRoles, List<String> newRoles, RoleRepresentation representation) throws AtlasBaseException {
-        if (!newRoles.isEmpty() || !currentRoles.isEmpty()) {
-            keycloakStore.updateRoleRoles(roleName, currentRoles, newRoles, representation);
-        }
-    }
-
-
 
     @Override
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
@@ -277,7 +261,7 @@ public class ConnectionPreProcessor implements PreProcessor {
 
     private List<AtlasEntityHeader> getConnectionPolicies(String guid, String roleName) throws AtlasBaseException {
         List<AtlasEntityHeader> ret = new ArrayList<>();
-        
+
         IndexSearchParams indexSearchParams = new IndexSearchParams();
         Map<String, Object> dsl = new HashMap<>();
 
