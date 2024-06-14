@@ -104,7 +104,7 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         if(StringUtils.isEmpty(lexicographicalSortOrder)){
             assignNewLexicographicalSortOrder(entity, glossaryQName, parentQname, this.discovery);
         } else {
-            isValidLexoRank(entity.getTypeName(), lexicographicalSortOrder, glossaryQName, parentQname, this.discovery);
+            isValidLexoRank(lexicographicalSortOrder, glossaryQName, parentQname, this.discovery);
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
@@ -137,11 +137,14 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
 
         String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
         if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
-            isValidLexoRank(entity.getTypeName(), lexicographicalSortOrder, newGlossaryQualifiedName, parentQname, this.discovery);
-        } else {
-            lexicographicalSortOrder = (String) storedTerm.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
-            entity.setAttribute(LEXICOGRAPHICAL_SORT_ORDER, lexicographicalSortOrder);
+            isValidLexoRank(lexicographicalSortOrder, newGlossaryQualifiedName, parentQname, this.discovery);
         }
+
+        if(!currentGlossaryQualifiedName.equals(newGlossaryQualifiedName)) {
+            ensureOnlyOneCategoryIsAssociated(entity);
+        }
+
+        validateAndGetCategory(entity);
 
         if (!currentGlossaryQualifiedName.equals(newGlossaryQualifiedName)){
             //Auth check
@@ -175,6 +178,19 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private static void ensureOnlyOneCategoryIsAssociated(AtlasEntity entity) throws AtlasBaseException {
+        if(entity.hasRelationshipAttribute(ATTR_CATEGORIES) && Objects.nonNull(entity.getRelationshipAttribute(ATTR_CATEGORIES))) {
+            List<AtlasObjectId> categories = (List<AtlasObjectId>) entity.getRelationshipAttribute(ATTR_CATEGORIES);
+
+            if(categories.size() > 1) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot move term with multiple " +
+                        "categories associated to another glossary");
+            }
+
+        }
+
     }
 
     private String validateAndGetCategory(AtlasEntity entity) throws AtlasBaseException {
