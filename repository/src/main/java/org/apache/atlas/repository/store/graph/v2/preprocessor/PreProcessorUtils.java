@@ -225,8 +225,8 @@ public class PreProcessorUtils {
 
         Matcher matcher = regex.matcher(input);
 
-        if(!matcher.matches()){
-            throw new AtlasBaseException("Invalid LexicographicSortOrder");
+        if(!matcher.matches() || StringUtils.isEmpty(input)){
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid value for lexicographicalSortOrder attribute");
         }
         if(!requestFromMigration) {
             Map<String, Object> dslQuery = createDSLforCheckingPreExistingLexoRank(input, glossaryQualifiedName, parentQualifiedName);
