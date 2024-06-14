@@ -189,6 +189,9 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         }
 
+        // Check if authorized to update entities
+        AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, new AtlasEntityHeader(entity),"update entity: type=" + entity.getTypeName());
+
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
