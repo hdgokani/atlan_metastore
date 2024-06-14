@@ -170,6 +170,9 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
         }
         if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
             isValidLexoRank(lexicographicalSortOrder, newGlossaryQualifiedName, parentQname, this.discovery);
+        } else {
+            lexicographicalSortOrder = (String) storedCategory.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+            entity.setAttribute(LEXICOGRAPHICAL_SORT_ORDER, lexicographicalSortOrder);
         }
 
         if (!currentGlossaryQualifiedName.equals(newGlossaryQualifiedName)){
