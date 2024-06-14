@@ -692,6 +692,25 @@
         "end-two-entity:{entity}/*domain/*"
       ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink this DataProduct to any parent Domain",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity:{entity}/*",
+        "end-one-entity:{entity}",
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+
+        "end-two-entity:{entity}/*",
+        "end-one-entity:{entity}",
+        "end-two-entity-type:DataDomain",
+        "end-two-entity-classification:*"
+      ],
+      "actions": ["update-relationship", "remove-relationship"]
     }
   ],
   "persona-domain-sub-domain-delete": [
