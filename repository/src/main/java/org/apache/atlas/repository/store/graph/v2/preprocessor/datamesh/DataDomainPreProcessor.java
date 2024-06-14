@@ -428,18 +428,18 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             Iterator<AtlasVertex> childrens = getActiveChildrenVertices(vertex,
                     DOMAIN_PARENT_EDGE_LABEL, DATA_PRODUCT_EDGE_LABEL);
             if (childrens.hasNext()){
-                throw new AtlasBaseException("Domain cannot be archived because some subdomains or products are active in this domain");
+                throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Domain cannot be archived because some subdomains or products are active in this domain");
             }
 
             // active stakeholder exists?
             childrens = getActiveChildrenVertices(vertex, STAKEHOLDER_EDGE_LABEL);
             if (childrens.hasNext()){
-                throw new AtlasBaseException("Domain cannot be archived because some stakeholders are active in this domain");
+                throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Domain cannot be archived because some stakeholders are active in this domain");
             }
 
             // active stakeholder titles exists?
             if(verifyStakeholderTitleExists(vertex.getProperty(QUALIFIED_NAME, String.class))){
-                throw new AtlasBaseException("Domain cannot be archived because some stakeholdersTitles are active in this domain");
+                throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Domain cannot be archived because some stakeholdersTitles are active in this domain");
             }
 
         }

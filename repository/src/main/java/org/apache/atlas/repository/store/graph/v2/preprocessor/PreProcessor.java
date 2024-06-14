@@ -23,7 +23,7 @@ public interface PreProcessor {
         add(DATA_PRODUCT_ENTITY_TYPE);
     }};
 
-    Set<String> skipInitialAuthCheckTypesForMesh = new HashSet<String>() {{
+    Set<String> skipUpdateAuthCheckTypes = new HashSet<String>() {{
         add(DATA_DOMAIN_ENTITY_TYPE);
         add(DATA_PRODUCT_ENTITY_TYPE);
     }};
