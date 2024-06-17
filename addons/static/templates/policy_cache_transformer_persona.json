@@ -696,7 +696,7 @@
     {
       "policyResourceCategory": "RELATIONSHIP",
       "policyType": "ACCESS",
-      "description": "Link/unlink this DataProduct to any parent Domain",
+      "description": "Unlink any domain-sub-domain relationship in within this DataDomain",
       "resources": [
         "relationship-type:*",
 
@@ -706,7 +706,7 @@
         "end-one-entity-classification:*",
 
         "end-two-entity:{entity}/*",
-        "end-one-entity:{entity}",
+        "end-two-entity:{entity}",
         "end-two-entity-type:DataDomain",
         "end-two-entity-classification:*"
       ],
