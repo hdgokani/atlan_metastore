@@ -42,10 +42,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
@@ -58,15 +55,14 @@ import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserN
 import static org.apache.atlas.authorize.AtlasAuthorizationUtils.verifyAccess;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CREATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
-import static org.apache.atlas.repository.Constants.KEYCLOAK_ROLE_ADMIN;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.Constants.STAKEHOLDER_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SERVICE_NAME_ABAC;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
 
 public class AuthPolicyPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AuthPolicyPreProcessor.class);
+    public static final String ENTITY_DEFAULT_DOMAIN_SUPER = "entity:default/domain/*/super";
 
     private final AtlasGraph graph;
     private final AtlasTypeRegistry typeRegistry;
@@ -113,7 +109,28 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             verifyParentTypeName(parentEntity);
         }
 
+        String policyServiceName = getPolicyServiceName(policy);
         String policyCategory = getPolicyCategory(policy);
+
+        if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName) &&
+                (POLICY_CATEGORY_PERSONA.equals(policyCategory) || POLICY_CATEGORY_PURPOSE.equals(policyCategory))) {
+
+            policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
+
+            //extract role
+            String roleName = getPersonaRoleName(parentEntity);
+            List<String> roles = Arrays.asList(roleName);
+            policy.setAttribute(ATTR_POLICY_ROLES, roles);
+
+            policy.setAttribute(ATTR_POLICY_USERS, new ArrayList<>());
+            policy.setAttribute(ATTR_POLICY_GROUPS, new ArrayList<>());
+
+            //aliasStore.updateAlias(parentEntity, policy);
+
+            return;
+        }
+
+
         if (StringUtils.isEmpty(policyCategory)) {
             throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_POLICY_CATEGORY);
         }
@@ -127,6 +144,8 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             if (!POLICY_SUB_CATEGORY_DOMAIN.equals(policySubCategory)) {
                 validator.validate(policy, null, parentEntity, CREATE);
                 validateConnectionAdmin(policy);
+            } else {
+                validateAndReduce(policy);
             }
 
             policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
@@ -165,9 +184,45 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
+    private void validateAndReduce(AtlasEntity policy) {
+        ArrayList<String> resources = (ArrayList<String>) policy.getAttribute(ATTR_POLICY_RESOURCES);
+        boolean hasAllDomainPattern = false;
+
+        for (int i = 0; i < resources.size(); i++) {
+            String[] resourceParts = resources.get(i).split(":");
+            String resource = resourceParts[resourceParts.length - 1];
+            if (resource.equals("*") || resource.equals("*/super") || resource.equals("default/domain/*/super")) {
+                resources.remove(i);
+                hasAllDomainPattern = true;
+                i--;
+            }
+        }
+
+        if (hasAllDomainPattern) {
+            for (int i = 0; i < resources.size(); i++) {
+                String[] resourceParts = resources.get(i).split(":");
+                String resource = resourceParts[resourceParts.length - 1];
+                if (resource.matches("default/domain/.+/super(/.+)?")) {
+                    resources.remove(i);
+                    i--;
+                }
+            }
+            resources.add(ENTITY_DEFAULT_DOMAIN_SUPER);
+        }
+
+        policy.setAttribute(ATTR_POLICY_RESOURCES, resources);
+    }
+
+
     private void processUpdatePolicy(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdatePolicy");
         AtlasEntity policy = (AtlasEntity) entity;
+
+        String policyServiceName = getPolicyServiceName(policy);
+        if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
+            return;
+        }
+
         AtlasEntity existingPolicy = entityRetriever.toAtlasEntityWithExtInfo(vertex).getEntity();
 
         String policyCategory = policy.hasAttribute(ATTR_POLICY_CATEGORY) ? getPolicyCategory(policy) : getPolicyCategory(existingPolicy);
@@ -182,6 +237,8 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             if (!POLICY_SUB_CATEGORY_DOMAIN.equals(policySubCategory)) {
                 validator.validate(policy, existingPolicy, parentEntity, UPDATE);
                 validateConnectionAdmin(policy);
+            } else {
+                validateAndReduce(policy);
             }
 
             String qName = getEntityQualifiedName(existingPolicy);
@@ -236,6 +293,11 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         try {
             AtlasEntity policy = entityRetriever.toAtlasEntity(vertex);
+
+            String policyServiceName = getPolicyServiceName(policy);
+            if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
+                return;
+            }
 
             authorizeDeleteAuthPolicy(policy);
 

@@ -147,7 +147,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
     }
 
-    private Map<String, Object> runQueryWithLowLevelClient(String query) throws AtlasBaseException {
+    public Map<String, Object> runQueryWithLowLevelClient(String query) throws AtlasBaseException {
         Map<String, Object> ret = new HashMap<>();
         try {
             String responseString = performDirectIndexQuery(query, true);
@@ -445,7 +445,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         if (hits_0 == null) {
             return result;
         }
-        this.vertexTotals = (Integer) hits_0.get("total").get("value");
+        LinkedHashMap approximateCount = hits_0.get("total");
+        if (approximateCount != null) {
+            this.vertexTotals = (Integer) approximateCount.get("value");
+        }
 
         List<LinkedHashMap> hits_1 = AtlasType.fromJson(AtlasType.toJson(hits_0.get("hits")), List.class);
 
@@ -541,6 +544,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         public Map<String, List<String>> getHighLights() {
             return new HashMap<>();
         }
+
+        @Override
+        public ArrayList<Object> getSort() {
+            return new ArrayList<>();
+        }
     }
 
 
@@ -605,6 +613,15 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 return (Map<String, List<String>>) highlight;
             }
             return new HashMap<>();
+        }
+
+        @Override
+        public ArrayList<Object> getSort() {
+            Object sort = this.hit.get("sort");
+            if (Objects.nonNull(sort) && sort instanceof List) {
+                return (ArrayList<Object>) sort;
+            }
+            return new ArrayList<>();
         }
     }
 

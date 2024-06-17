@@ -43,12 +43,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.Arrays;
+import java.util.*;
 
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_ENTITY_TYPES;
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATION_TYPES;
@@ -878,42 +873,31 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     }
 
     private <T extends AtlasBaseTypeDef> void removeDuplicateTypeIfAny(List<T> defList) {
-        final Set<String> entityDefNames = new HashSet<>();
+        if (defList == null || defList.isEmpty()) {
+            return;
+        }
 
-        for (int i = 0; i < defList.size(); i++) {
-            if (!entityDefNames.add((defList.get(i)).getName())) {
-                LOG.warn(" Found Duplicate Type => " + defList.get(i).getName());
-                defList.remove(i);
-                i--;
+        final Set<String> entityDefNames = new HashSet<>();
+        Iterator<T> iterator = defList.iterator();
+
+        while (iterator.hasNext()) {
+            T def = iterator.next();
+            if (!entityDefNames.add(def.getName())) {
+                LOG.warn("Found Duplicate Type => " + def.getName());
+                iterator.remove();
             }
         }
     }
 
-
     private void rectifyAttributesIfNeeded(final Set<String> entityNames, AtlasStructDef structDef) {
         List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
 
-        if (CollectionUtils.isNotEmpty(attributeDefs)) {
-            for (AtlasAttributeDef attributeDef : attributeDefs) {
-                if (!hasOwnedReferenceConstraint(attributeDef.getConstraints())) {
-                    continue;
-                }
-
-                Set<String> referencedTypeNames = AtlasTypeUtil.getReferencedTypeNames(attributeDef.getTypeName());
-
-                boolean valid = false;
-
-                for (String referencedTypeName : referencedTypeNames) {
-                    if (entityNames.contains(referencedTypeName)) {
-                        valid = true;
-                        break;
-                    }
-                }
-
-                if (!valid) {
-                    rectifyOwnedReferenceError(structDef, attributeDef);
-                }
-            }
+        if (attributeDefs != null) {
+            attributeDefs.stream()
+                    .filter(attributeDef -> hasOwnedReferenceConstraint(attributeDef.getConstraints()))
+                    .filter(attributeDef -> AtlasTypeUtil.getReferencedTypeNames(attributeDef.getTypeName()).stream()
+                            .noneMatch(entityNames::contains))
+                    .forEach(attributeDef -> rectifyOwnedReferenceError(structDef, attributeDef));
         }
     }
 
@@ -932,16 +916,18 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     private void rectifyOwnedReferenceError(AtlasStructDef structDef, AtlasAttributeDef attributeDef) {
         List<AtlasConstraintDef> constraints = attributeDef.getConstraints();
 
-        if (CollectionUtils.isNotEmpty(constraints)) {
-            for (int i = 0; i < constraints.size(); i++) {
-                AtlasConstraintDef constraint = constraints.get(i);
+        if (constraints == null || constraints.isEmpty()) {
+            return;
+        }
 
-                if (constraint.isConstraintType(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF)) {
-                    LOG.warn("Invalid constraint ownedRef for attribute {}.{}", structDef.getName(), attributeDef.getName());
+        Iterator<AtlasConstraintDef> iterator = constraints.iterator();
 
-                    constraints.remove(i);
-                    i--;
-                }
+        while (iterator.hasNext()) {
+            AtlasConstraintDef constraint = iterator.next();
+
+            if (constraint.isConstraintType(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF)) {
+                LOG.warn("Invalid constraint ownedRef for attribute {}.{}", structDef.getName(), attributeDef.getName());
+                iterator.remove();
             }
         }
     }

@@ -18,6 +18,7 @@ public class SearchParams {
     boolean suppressLogs;
     boolean excludeMeanings;
     boolean excludeClassifications;
+    boolean enableFullRestriction;
 
     boolean includeClassificationNames = false;
 
@@ -26,12 +27,22 @@ public class SearchParams {
     Async async = new Async();
     boolean showHighlights;
 
+    boolean showSearchMetadata;
+
     public String getQuery() {
         return getQuery();
     }
 
+    public boolean getEnableFullRestriction() {
+        return enableFullRestriction;
+    }
+
     public Set<String> getAttributes() {
         return attributes;
+    }
+
+    public void setQuery(String query) {
+        setQuery(query);
     }
 
     public void setAttributes(Set<String> attributes) {
@@ -154,8 +165,12 @@ public class SearchParams {
         return this.requestMetadata.getSearchInput();
     }
 
-    public boolean isShowHighlights() {
+    public boolean getShowHighlights() {
         return showHighlights;
+    }
+
+    public boolean getShowSearchMetadata() {
+        return showSearchMetadata;
     }
 
 

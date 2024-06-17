@@ -25,7 +25,6 @@ import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasHasLineageRequests;
 import org.apache.atlas.model.instance.EntityMutationResponse;
@@ -67,7 +66,6 @@ public interface AtlasEntityStore {
      * @return AtlasEntity
      */
     AtlasEntityWithExtInfo getById(String guid, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException;
-
 
     /**
      * Get entity header for the given GUID
@@ -298,6 +296,10 @@ public interface AtlasEntityStore {
      */
     void deleteClassification(String guid, String classificationName) throws AtlasBaseException;
 
+    void deleteClassifications(String guid, List<AtlasClassification> classificationName) throws AtlasBaseException;
+
+    public void deleteClassifications(final String guid, final List<AtlasClassification> classifications, final String associatedEntityGuid) throws AtlasBaseException;
+
     void deleteClassification(String guid, String classificationName, String associatedEntityGuid) throws AtlasBaseException;
 
     List<AtlasClassification> getClassifications(String guid) throws AtlasBaseException;
@@ -363,5 +365,7 @@ public interface AtlasEntityStore {
     void repairHasLineage(AtlasHasLineageRequests requests) throws AtlasBaseException;
 
     void repairMeaningAttributeForTerms(List<String> termGuids) throws AtlasBaseException;
+
+    void repairAccesscontrolAlias(String guid) throws AtlasBaseException;
 
 }

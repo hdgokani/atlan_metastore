@@ -12,6 +12,7 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.*;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
 import org.apache.atlas.repository.store.users.KeycloakStore;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.transformer.PreProcessorPoliciesTransformer;
@@ -37,8 +38,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient.getKeycloakClient;
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.DATA_MESH_QN;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.MIGRATION;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 
 @Path("migration")
 @Singleton
@@ -57,7 +57,6 @@ public class MigrationREST {
     private final PreProcessorPoliciesTransformer transformer;
     private KeycloakStore keycloakStore;
     private AtlasGraph graph;
-    DataMeshQNMigrationService dataMeshQNMigrationService;
 
     private final EntityGraphRetriever entityRetriever;
     private final RedisService redisService;
@@ -67,7 +66,8 @@ public class MigrationREST {
     private final TransactionInterceptHelper   transactionInterceptHelper;
 
     @Inject
-    public MigrationREST(AtlasEntityStore entityStore, AtlasGraph graph, RedisService redisService,EntityDiscoveryService discovery, EntityGraphRetriever entityRetriever, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper   transactionInterceptHelper) {
+    public MigrationREST(AtlasEntityStore entityStore, AtlasGraph graph, RedisService redisService, EntityDiscoveryService discovery,
+                         EntityGraphRetriever entityRetriever, AtlasTypeRegistry typeRegistry, TransactionInterceptHelper transactionInterceptHelper) {
         this.entityStore = entityStore;
         this.graph = graph;
         this.transformer = new PreProcessorPoliciesTransformer();
@@ -82,20 +82,30 @@ public class MigrationREST {
     @POST
     @Path("submit")
     @Timed
-    public Boolean submit (@QueryParam("migrationType") String migrationType,@QueryParam("forceMigration") boolean forceMigration) throws Exception {
+    public Boolean submit (@QueryParam("migrationType") String migrationType, @QueryParam("forceMigration") boolean forceMigration) throws Exception {
         AtlasPerfTracer perf = null;
         MigrationService migrationService;
+
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.submit()");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.submit(" + migrationType + ")");
             }
-            if( (MIGRATION + migrationType).equals(DATA_MESH_QN)){
-                if(Objects.isNull(forceMigration) ){
-                    forceMigration = false;
-                }
-                dataMeshQNMigrationService = new DataMeshQNMigrationService(entityStore, discovery, entityRetriever, typeRegistry, transactionInterceptHelper, forceMigration);
-                dataMeshQNMigrationService.run();
+
+            migrationType = MIGRATION_TYPE_PREFIX + migrationType;
+
+            isMigrationInProgress(migrationType);
+
+            switch (migrationType) {
+                case DATA_MESH_QN:
+                    migrationService = new DataMeshQNMigrationService(entityStore, discovery, entityRetriever, typeRegistry, transactionInterceptHelper, redisService, forceMigration);
+                    break;
+
+                default:
+                    throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Type of migration is not valid: " + migrationType);
             }
+
+            Thread migrationThread = new Thread(migrationService);
+            migrationThread.start();
 
         } catch (Exception e) {
             LOG.error("Error while submitting migration", e);
@@ -106,19 +116,26 @@ public class MigrationREST {
         return Boolean.TRUE;
     }
 
+    private void isMigrationInProgress(String migrationType) throws AtlasBaseException {
+        String status = redisService.getValue(migrationType);
+        if (PreProcessorUtils.MigrationStatus.IN_PROGRESS.name().equals(status)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
+                    String.format("Migration for %s is already in progress", migrationType));
+        }
+    }
 
     @GET
     @Path("status")
     @Timed
-    public String getMigrationStatus(@QueryParam("migrationType") String migrationType) throws Exception{
+    public String getMigrationStatus(@QueryParam("migrationType") String migrationType) throws Exception {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.getMigrationStatus()");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.getMigrationStatus(" + migrationType + ")");
             }
 
-            String value = redisService.getValue(MIGRATION + migrationType);
+            String value = redisService.getValue(MIGRATION_TYPE_PREFIX + migrationType);
 
             return Objects.nonNull(value) ? value : "No Migration Found with this key";
         } catch (Exception e) {
@@ -127,6 +144,29 @@ public class MigrationREST {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    @POST
+    @Path("dataproduct/inputs-outputs")
+    @Timed
+    public Boolean migrateProductInternalAttr (@QueryParam("guid") String guid) throws Exception {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.migrateProductInternalAttr(" + guid + ")");
+            }
+
+            DataProductInputsOutputsMigrationService migrationService = new DataProductInputsOutputsMigrationService(entityRetriever, guid, transactionInterceptHelper);
+            migrationService.migrateProduct();
+
+        } catch (Exception e) {
+            LOG.error("Error while migration inputs/outputs for Dataproduct: {}", guid, e);
+            throw e;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+        return Boolean.TRUE;
     }
 
     @POST

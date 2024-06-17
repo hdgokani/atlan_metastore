@@ -21,7 +21,6 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +83,9 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String productName = (String) entity.getAttribute(NAME);
         String parentDomainQualifiedName = "";
 
+        entity.removeAttribute(OUTPUT_PORT_GUIDS_ATTR);
+        entity.removeAttribute(INPUT_PORT_GUIDS_ATTR);
+
         if (parentDomainObject == null) {
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot create a Product without a Domain Relationship");
         } else {
@@ -117,6 +119,9 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
     private void processUpdateProduct(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateProduct");
+
+        entity.removeAttribute(OUTPUT_PORT_GUIDS_ATTR);
+        entity.removeAttribute(INPUT_PORT_GUIDS_ATTR);
 
         if(entity.hasRelationshipAttribute(DATA_DOMAIN_REL_TYPE) && entity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE) == null){
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProduct can only be moved to another Domain.");
@@ -153,7 +158,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             }
 
             //Auth check
-            isAuthorized(currentParentDomainHeader, newParentDomainHeader);
+            isAuthorizedToMove(DATA_PRODUCT_ENTITY_TYPE, currentParentDomainHeader, newParentDomainHeader);
 
             String newSuperDomainQualifiedName = (String) newParentDomainHeader.getAttribute(SUPER_DOMAIN_QN_ATTR);
             if(StringUtils.isEmpty(newSuperDomainQualifiedName)){
@@ -208,7 +213,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             }
 
             product.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
-            product.setAttribute(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
+            product.setAttribute(PreProcessorUtils.PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
             product.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
 
             //Store domainPolicies and resources to be updated
