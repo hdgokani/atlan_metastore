@@ -19,6 +19,7 @@
 package org.apache.atlas.authorize;
 
 
+import com.esotericsoftware.minlog.Log;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
@@ -127,6 +128,7 @@ public interface AtlasAuthorizer {
 
     default void scrubEntityHeader(AtlasEntityHeader entity, AtlasTypeRegistry typeRegistry) {
 
+        long startTime = System.currentTimeMillis();
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
         boolean isScrubbed = false;
 
@@ -142,7 +144,7 @@ public interface AtlasAuthorizer {
         }
 
         entity.setScrubbed(isScrubbed);
-
+        Log.info("Time taken by scrubEntityHeader: "+ (System.currentTimeMillis() - startTime));
     }
 
 

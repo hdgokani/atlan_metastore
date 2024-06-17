@@ -21,6 +21,7 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Iterators;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -424,6 +425,17 @@ public final class GraphHelper {
         }
 
         return ret;
+    }
+
+    public static Integer getCountOfCategoryEdges(AtlasVertex entityVertex) {
+
+        Iterator<AtlasEdge> edges = getOutGoingEdgesByLabel(entityVertex, CATEGORY_TERMS_EDGE_LABEL);
+
+        if (edges!=null) {
+            return Iterators.size(edges);
+        }
+
+        return 0;
     }
 
     public static boolean isClassificationAttached(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
@@ -1928,7 +1940,7 @@ public final class GraphHelper {
      * @return Iterator of children vertices
      */
     public static Iterator<AtlasVertex> getActiveParentVertices(AtlasVertex vertex, String parentEdgeLabel) throws AtlasBaseException {
-        return getActiveVertices(vertex, parentEdgeLabel, AtlasEdgeDirection.IN);
+        return getActiveVertices(vertex, AtlasEdgeDirection.IN, parentEdgeLabel);
     }
 
     /**
@@ -1937,11 +1949,12 @@ public final class GraphHelper {
      * @param childrenEdgeLabel Edge label of children
      * @return Iterator of children vertices
      */
-    public static Iterator<AtlasVertex> getActiveChildrenVertices(AtlasVertex vertex, String childrenEdgeLabel) throws AtlasBaseException {
-        return getActiveVertices(vertex, childrenEdgeLabel, AtlasEdgeDirection.OUT);
+
+    public static Iterator<AtlasVertex> getActiveChildrenVertices(AtlasVertex vertex, String... childrenEdgeLabel) throws AtlasBaseException {
+        return getActiveVertices(vertex, AtlasEdgeDirection.OUT, childrenEdgeLabel);
     }
 
-    public static Iterator<AtlasVertex> getActiveVertices(AtlasVertex vertex, String childrenEdgeLabel, AtlasEdgeDirection direction) throws AtlasBaseException {
+    public static Iterator<AtlasVertex> getActiveVertices(AtlasVertex vertex, AtlasEdgeDirection direction, String... childrenEdgeLabel) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("CategoryPreProcessor.getEdges");
 
         try {
