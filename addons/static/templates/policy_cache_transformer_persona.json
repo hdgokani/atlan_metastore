@@ -698,15 +698,14 @@
       "policyType": "ACCESS",
       "description": "Unlink any domain-sub-domain relationship in within this DataDomain",
       "resources": [
-        "relationship-type:*",
+        "relationship-type:parent_domain_sub_domains",
 
         "end-one-entity:{entity}/*",
         "end-one-entity:{entity}",
         "end-one-entity-type:DataDomain",
         "end-one-entity-classification:*",
-
-        "end-two-entity:{entity}/*",
-        "end-two-entity:{entity}",
+        
+        "end-two-entity:*",
         "end-two-entity-type:DataDomain",
         "end-two-entity-classification:*"
       ],
