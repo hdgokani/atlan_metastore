@@ -140,6 +140,10 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         validateStakeholderRelationship(entity);
 
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
+        entity.setAttribute(QUALIFIED_NAME, vertexQnName);
+        // Check if authorized to update entities
+        AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, new AtlasEntityHeader(entity),"update entity: type=" + entity.getTypeName());
+
 
         AtlasEntity storedDomain = entityRetriever.toAtlasEntity(vertex);
         AtlasRelatedObjectId currentParentDomainObjectId = (AtlasRelatedObjectId) storedDomain.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE);
@@ -186,12 +190,8 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             if (!domainCurrentName.equals(domainNewName)) {
                 domainExists(domainNewName, currentParentDomainQualifiedName, storedDomain.getGuid());
             }
-            entity.setAttribute(QUALIFIED_NAME, vertexQnName);
+
         }
-
-        // Check if authorized to update entities
-        AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, new AtlasEntityHeader(entity),"update entity: type=" + entity.getTypeName());
-
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
