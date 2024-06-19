@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getActiveParentVertices;
@@ -102,7 +103,7 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         if(StringUtils.isEmpty(lexicographicalSortOrder)){
             assignNewLexicographicalSortOrder(entity, glossaryQName, parentQname, this.discovery);
         } else {
-            isValidLexoRank(lexicographicalSortOrder, glossaryQName, parentQname, this.discovery);
+            isValidLexoRank(entity.getTypeName(), lexicographicalSortOrder, glossaryQName, parentQname, this.discovery);
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
@@ -135,7 +136,7 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
 
         String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
         if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
-            isValidLexoRank(lexicographicalSortOrder, newGlossaryQualifiedName, parentQname, this.discovery);
+            isValidLexoRank(entity.getTypeName(), lexicographicalSortOrder, newGlossaryQualifiedName, parentQname, this.discovery);
         } else {
             entity.removeAttribute(LEXICOGRAPHICAL_SORT_ORDER);
             lexicographicalSortOrder = (String) storedTerm.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
