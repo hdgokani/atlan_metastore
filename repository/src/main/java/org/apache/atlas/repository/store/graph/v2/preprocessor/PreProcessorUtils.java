@@ -27,7 +27,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.apache.atlas.glossary.GlossaryUtils.ATLAS_GLOSSARY_CATEGORY_TYPENAME;
 import static org.apache.atlas.glossary.GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME;
 import static org.apache.atlas.repository.Constants.QUERY_COLLECTION_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
@@ -100,14 +99,6 @@ public class PreProcessorUtils {
     public static final int REBALANCING_TRIGGER = 119;
     public static final int PRE_DELIMITER_LENGTH = 9;
     public static final String LEXORANK_HARD_LIMIT = "" + (256 - PRE_DELIMITER_LENGTH);
-    public static final String LEXORANK_VALID_REGEX = "^0\\|[0-9a-z]{6}:(?:[0-9a-z]{0," + LEXORANK_HARD_LIMIT + "})?$";
-    public static final Set<String> ATTRIBUTES;
-    public static final Pattern LEXORANK_VALIDITY_PATTERN;
-    static {
-        ATTRIBUTES = new HashSet<>();
-        ATTRIBUTES.add(LEXICOGRAPHICAL_SORT_ORDER);
-        LEXORANK_VALIDITY_PATTERN = Pattern.compile(LEXORANK_VALID_REGEX);
-    }
 
     public static String getUUID(){
         return NanoIdUtils.randomNanoId();
@@ -226,51 +217,41 @@ public class PreProcessorUtils {
         }
     }
 
-    public static void isValidLexoRank(String entityType, String inputLexorank, String glossaryQualifiedName, String parentQualifiedName, EntityDiscoveryService discovery) throws AtlasBaseException {
+    public static void isValidLexoRank(String input, String glossaryQualifiedName, String parentQualifiedName, EntityDiscoveryService discovery) throws AtlasBaseException {
+        String pattern = "^0\\|[0-9a-z]{6}:(?:[0-9a-z]{0," + LEXORANK_HARD_LIMIT + "})?$";
+        // TODO : To remove this after migration is successful on all tenants and custom-sort is successfully GA
+        Boolean requestFromMigration = RequestContext.get().getRequestContextHeaders().getOrDefault("x-atlan-request-id", "").contains("custom-sort-migration");
+        Pattern regex = Pattern.compile(pattern);
 
-        Matcher matcher = LEXORANK_VALIDITY_PATTERN.matcher(inputLexorank);
+        Matcher matcher = regex.matcher(input);
 
-        if(!matcher.matches() || StringUtils.isEmpty(inputLexorank)){
+        if(!matcher.matches() || StringUtils.isEmpty(input)){
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid value for lexicographicalSortOrder attribute");
         }
-        // TODO : Need to discuss either to remove this after migration is successful on all tenants and custom-sort is successfully GA or keep it for re-balancing WF
-        Boolean requestFromMigration = RequestContext.get().getRequestContextHeaders().getOrDefault("x-atlan-request-id", "").contains("custom-sort-migration");
-        if(requestFromMigration) {
-            return;
-        }
-        Map<String, String> lexoRankCache = RequestContext.get().getLexoRankCache();
-        if(Objects.isNull(lexoRankCache)) {
-            lexoRankCache = new HashMap<>();
-        }
-        String cacheKey = entityType + "-" + glossaryQualifiedName + "-" + parentQualifiedName;
-        if(lexoRankCache.containsKey(cacheKey)){
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Duplicate value for the attribute :" + LEXICOGRAPHICAL_SORT_ORDER +" found");
-        }
-        Map<String, Object> dslQuery = createDSLforCheckingPreExistingLexoRank(entityType.equals(ATLAS_GLOSSARY_TERM_TYPENAME), inputLexorank, glossaryQualifiedName, parentQualifiedName);
-        List<AtlasEntityHeader> assetsWithDuplicateRank = new ArrayList<>();
-        try {
-            IndexSearchParams searchParams = new IndexSearchParams();
-            searchParams.setDsl(dslQuery);
-            assetsWithDuplicateRank = discovery.directIndexSearch(searchParams).getEntities();
-        } catch (AtlasBaseException e) {
-            LOG.error("IndexSearch Error Occured : " + e.getMessage());
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Something went wrong with IndexSearch");
-        }
+        if(!requestFromMigration) {
+            Map<String, Object> dslQuery = createDSLforCheckingPreExistingLexoRank(input, glossaryQualifiedName, parentQualifiedName);
+            List<AtlasEntityHeader> categories = new ArrayList<>();
+            try {
+                IndexSearchParams searchParams = new IndexSearchParams();
+                searchParams.setAttributes(new HashSet<>());
+                searchParams.setDsl(dslQuery);
+                categories = discovery.directIndexSearch(searchParams).getEntities();
+            } catch (AtlasBaseException e) {
+                e.printStackTrace();
+            }
 
-        if (!CollectionUtils.isEmpty(assetsWithDuplicateRank)) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Duplicate Lexorank found");
+            if (!CollectionUtils.isEmpty(categories)) {
+                throw new AtlasBaseException("Invalid LexicographicSortOrder");
+            }
         }
-
-        lexoRankCache.put(cacheKey, inputLexorank);
-        RequestContext.get().setLexoRankCache(lexoRankCache);
         // TODO : Add the rebalancing logic here
-//        int colonIndex = inputLexorank.indexOf(":");
-//        if (colonIndex != -1 && inputLexorank.substring(colonIndex + 1).length() >= REBALANCING_TRIGGER) {
+        int colonIndex = input.indexOf(":");
+        if (colonIndex != -1 && input.substring(colonIndex + 1).length() >= REBALANCING_TRIGGER) {
             // Rebalancing trigger
-//        }
+        }
     }
 
-    public static void assignNewLexicographicalSortOrder(AtlasEntity entity, String glossaryQualifiedName, String parentQualifiedName, EntityDiscoveryService discovery) throws AtlasBaseException{
+    public static void assignNewLexicographicalSortOrder(AtlasEntity entity, String glossaryQualifiedName, String parentQualifiedName, EntityDiscoveryService discovery) {
         Map<String, String> lexoRankCache = RequestContext.get().getLexoRankCache();
 
         if(Objects.isNull(lexoRankCache)) {
@@ -278,32 +259,33 @@ public class PreProcessorUtils {
         }
         String lexoRank = "";
         String lastLexoRank = "";
-        boolean isTerm = entity.getTypeName().equals(ATLAS_GLOSSARY_TERM_TYPENAME);
-        String cacheKey = entity.getTypeName() + "-" + glossaryQualifiedName + "-" + parentQualifiedName;
+        boolean isTerm = entity.getTypeName().equals(ATLAS_GLOSSARY_TERM_TYPENAME) ? true : false;
 
-        if(lexoRankCache.containsKey(cacheKey)) {
-            lastLexoRank = lexoRankCache.get(cacheKey);
+        if(lexoRankCache.containsKey(entity.getTypeName() + "-" + glossaryQualifiedName + "-" + parentQualifiedName)) {
+            lastLexoRank = lexoRankCache.get(entity.getTypeName() + "-" + glossaryQualifiedName + "-" + parentQualifiedName);
+
         } else {
-
+            Set<String> attributes = new HashSet<>();
+            attributes.add(LEXICOGRAPHICAL_SORT_ORDER);
             List<AtlasEntityHeader> categories = null;
-            Map<String, Object> dslQuery = generateDSLQueryForLastChild(glossaryQualifiedName, parentQualifiedName, isTerm);
+            Map<String, Object> dslQuery = generateDSLQueryForLastCategory(glossaryQualifiedName, parentQualifiedName, isTerm);
             try {
                 IndexSearchParams searchParams = new IndexSearchParams();
-                searchParams.setAttributes(ATTRIBUTES);
+                searchParams.setAttributes(attributes);
                 searchParams.setDsl(dslQuery);
                 categories = discovery.directIndexSearch(searchParams).getEntities();
             } catch (AtlasBaseException e) {
                 e.printStackTrace();
-                throw new AtlasBaseException("Something went wrong in assigning lexicographicalSortOrder");
             }
 
             if (CollectionUtils.isNotEmpty(categories)) {
-                AtlasEntityHeader category = categories.get(0);
-                String lexicographicalSortOrder = (String) category.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
-                if (StringUtils.isNotEmpty(lexicographicalSortOrder)) {
-                    lastLexoRank = lexicographicalSortOrder;
-                } else {
-                    lastLexoRank = isTerm ? INIT_TERM_LEXORANK_OFFSET : INIT_LEXORANK_OFFSET;
+                for (AtlasEntityHeader category : categories) {
+                    String lexicographicalSortOrder = (String) category.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+                    if (StringUtils.isNotEmpty(lexicographicalSortOrder)) {
+                        lastLexoRank = lexicographicalSortOrder;
+                    } else {
+                        lastLexoRank = isTerm ? INIT_TERM_LEXORANK_OFFSET : INIT_LEXORANK_OFFSET;
+                    }
                 }
             } else {
                 lastLexoRank = isTerm ? INIT_TERM_LEXORANK_OFFSET : INIT_LEXORANK_OFFSET;
@@ -315,87 +297,127 @@ public class PreProcessorUtils {
         lexoRank = nextLexoRank.toString();
 
         entity.setAttribute(LEXICOGRAPHICAL_SORT_ORDER, lexoRank);
-        lexoRankCache.put(cacheKey, lexoRank);
+        lexoRankCache.put(entity.getTypeName() + "-" + glossaryQualifiedName + "-" + parentQualifiedName, lexoRank);
         RequestContext.get().setLexoRankCache(lexoRankCache);
     }
 
-    public static Map<String, Object> createDSLforCheckingPreExistingLexoRank(boolean isTerm, String lexoRank, String glossaryQualifiedName, String parentQualifiedName) {
+    public static Map<String, Object> createDSLforCheckingPreExistingLexoRank(String lexoRank, String glossaryQualifiedName, String parentQualifiedName) {
 
-        Map<String, Object> boolMap = buildBoolQueryDuplicateLexoRank(isTerm, lexoRank, glossaryQualifiedName, parentQualifiedName);
+        Map<String, Object> sortKeyOrder = mapOf(LEXICOGRAPHICAL_SORT_ORDER, mapOf("order", "desc"));
+        Map<String, Object> scoreSortOrder = mapOf("_score", mapOf("order", "desc"));
+        Map<String, Object> displayNameSortOrder = mapOf("displayName.keyword", mapOf("order", "desc"));
+
+        Object[] sortArray = {sortKeyOrder, scoreSortOrder, displayNameSortOrder};
+
+        Map<String, Object> functionScore = mapOf("query", buildBoolQueryDuplicateLexoRank(lexoRank, glossaryQualifiedName, parentQualifiedName));
 
         Map<String, Object> dsl = new HashMap<>();
         dsl.put("from", 0);
-        dsl.put("size", 1);
-        dsl.put("query", mapOf("bool", boolMap));
+        dsl.put("size", 100);
+        dsl.put("sort", sortArray);
+        dsl.put("query", mapOf("function_score", functionScore));
 
         return dsl;
     }
 
-    private static Map<String, Object> buildBoolQueryDuplicateLexoRank(boolean isTerm, String lexoRank, String glossaryQualifiedName, String parentQualifiedName) {
+    private static Map<String, Object> buildBoolQueryDuplicateLexoRank(String lexoRank, String glossaryQualifiedName, String parentQualifiedName) {
+        Map<String, Object> boolQuery = new HashMap<>();
         Map<String, Object> boolFilter = new HashMap<>();
         List<Map<String, Object>> mustArray = new ArrayList<>();
+        List<Map<String, Object>> mustNotArray = new ArrayList<>();
         mustArray.add(mapOf("term", mapOf("__state", "ACTIVE")));
         mustArray.add(mapOf("term", mapOf(LEXICOGRAPHICAL_SORT_ORDER, lexoRank)));
         if(StringUtils.isNotEmpty(glossaryQualifiedName)) {
-            mustArray.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList(ATLAS_GLOSSARY_TERM_TYPENAME, ATLAS_GLOSSARY_CATEGORY_TYPENAME))));
+            mustArray.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossaryTerm", "AtlasGlossaryCategory"))));
             mustArray.add(mapOf("term", mapOf("__glossary", glossaryQualifiedName)));
-            String parentAttribute = isTerm ? "__categories" : "__parentCategory";
-            if(StringUtils.isEmpty(parentQualifiedName)) {
-                boolFilter.put("must_not", Arrays.asList(mapOf("exists", mapOf("field", parentAttribute))));
-            } else {
-                mustArray.add(mapOf("bool",mapOf("term", mapOf(parentAttribute, parentQualifiedName))));
-            }
         } else{
-            mustArray.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList(ATLAS_GLOSSARY_ENTITY_TYPE))));
+            mustArray.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossary"))));
+        }
+
+        if(StringUtils.isEmpty(parentQualifiedName)) {
+            mustNotArray.add(mapOf("exists", mapOf("field", "__categories")));
+            mustNotArray.add(mapOf("exists", mapOf("field", "__parentCategory")));
+            boolFilter.put("must_not", mustNotArray);
+        }
+        else {
+            List<Map<String, Object>> shouldParentArray = new ArrayList<>();
+            shouldParentArray.add(mapOf("term", mapOf("__categories", parentQualifiedName)));
+            shouldParentArray.add(mapOf("term", mapOf("__parentCategory", parentQualifiedName)));
+            mustArray.add(mapOf("bool",mapOf("should", shouldParentArray)));
         }
 
         boolFilter.put("must", mustArray);
 
-        return boolFilter;
+        Map<String, Object> nestedBoolQuery = mapOf("bool", boolFilter);
+
+        Map<String, Object> topBoolFilter = mapOf("filter", nestedBoolQuery);
+
+        boolQuery.put("bool", topBoolFilter);
+
+        return boolQuery;
     }
-    public static Map<String, Object> generateDSLQueryForLastChild(String glossaryQualifiedName, String parentQualifiedName, boolean isTerm) {
+    public static Map<String, Object> generateDSLQueryForLastCategory(String glossaryQualifiedName, String parentQualifiedName, boolean isTerm) {
 
         Map<String, Object> sortKeyOrder = mapOf(LEXICOGRAPHICAL_SORT_ORDER, mapOf("order", "desc"));
+        Map<String, Object> scoreSortOrder = mapOf("_score", mapOf("order", "desc"));
+        Map<String, Object> displayNameSortOrder = mapOf("displayName.keyword", mapOf("order", "desc"));
 
-        Object[] sortArray = {sortKeyOrder};
+        Object[] sortArray = {sortKeyOrder, scoreSortOrder, displayNameSortOrder};
 
-        Map<String, Object> boolMap = buildBoolQuery(glossaryQualifiedName, parentQualifiedName, isTerm);
+        Map<String, Object> functionScore = mapOf("query", buildBoolQuery(glossaryQualifiedName, parentQualifiedName, isTerm));
 
         Map<String, Object> dsl = new HashMap<>();
         dsl.put("from", 0);
         dsl.put("size", 1);
         dsl.put("sort", sortArray);
-        dsl.put("query", mapOf("bool", boolMap));
+        dsl.put("query", mapOf("function_score", functionScore));
 
         return dsl;
     }
 
     private static Map<String, Object> buildBoolQuery(String glossaryQualifiedName, String parentQualifiedName, boolean isTerm) {
+        Map<String, Object> boolQuery = new HashMap<>();
+        int mustArrayLength = 0;
+        if(StringUtils.isEmpty(parentQualifiedName) && StringUtils.isEmpty(glossaryQualifiedName)){
+            mustArrayLength = 2;
+        } else if(StringUtils.isEmpty(parentQualifiedName) && StringUtils.isNotEmpty(glossaryQualifiedName)){
+            mustArrayLength = 3;
+        } else {
+            mustArrayLength = 4;
+        }
+        Map<String, Object>[] mustArray = new Map[mustArrayLength];
         Map<String, Object> boolFilter = new HashMap<>();
-        List<Map<String, Object>> mustArray = new ArrayList<>();
-        List<Map<String, Object>> mustNotArray = new ArrayList<>();
+        Map<String, Object>[] mustNotArray = new Map[2];
 
-        mustArray.add(mapOf("term", mapOf("__state", "ACTIVE")));
+        mustArray[0] = mapOf("term", mapOf("__state", "ACTIVE"));
         if(StringUtils.isNotEmpty(glossaryQualifiedName)) {
-            String typeName = isTerm ? ATLAS_GLOSSARY_TERM_TYPENAME : ATLAS_GLOSSARY_CATEGORY_TYPENAME;
-            mustArray.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
-            mustArray.add(mapOf("term", mapOf("__glossary", glossaryQualifiedName)));
-            String parentAttribute = isTerm ? "__categories" : "__parentCategory";
-            if(StringUtils.isEmpty(parentQualifiedName)) {
-                mustNotArray.add(mapOf("exists", mapOf("field", parentAttribute)));
-                boolFilter.put("must_not", mustNotArray);
-            }
-            else {
-                List<Map<String, Object>> shouldParentArray = new ArrayList<>();
-                shouldParentArray.add(mapOf("term", mapOf(parentAttribute, parentQualifiedName)));
-                mustArray.add(mapOf("bool",mapOf("should", shouldParentArray)));
-            }
+            String typeName = isTerm ? "AtlasGlossaryTerm" : "AtlasGlossaryCategory";
+            mustArray[1] = mapOf("term", mapOf("__typeName.keyword", typeName));
+            mustArray[2] = mapOf("term", mapOf("__glossary", glossaryQualifiedName));
         } else{
-            mustArray.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossary"))));
+            mustArray[1] = mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossary")));
+        }
+
+        if(StringUtils.isEmpty(parentQualifiedName)) {
+            mustNotArray[0] = mapOf("exists", mapOf("field", "__categories"));
+            mustNotArray[1] = mapOf("exists", mapOf("field", "__parentCategory"));
+            boolFilter.put("must_not", mustNotArray);
+        }
+        else {
+            Map<String, Object>[] shouldParentArray = new Map[2];
+            shouldParentArray[0] = mapOf("term", mapOf("__categories", parentQualifiedName));
+            shouldParentArray[1] = mapOf("term", mapOf("__parentCategory", parentQualifiedName));
+            mustArray[3] = mapOf("bool",mapOf("should", shouldParentArray));
         }
 
         boolFilter.put("must", mustArray);
 
-        return boolFilter;
+        Map<String, Object> nestedBoolQuery = mapOf("bool", boolFilter);
+
+        Map<String, Object> topBoolFilter = mapOf("filter", nestedBoolQuery);
+
+        boolQuery.put("bool", topBoolFilter);
+
+        return boolQuery;
     }
 }

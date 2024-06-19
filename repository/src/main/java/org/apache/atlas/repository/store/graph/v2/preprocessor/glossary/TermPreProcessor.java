@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getActiveParentVertices;
@@ -94,6 +95,7 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
 
         String glossaryQName = (String) anchor.getAttribute(QUALIFIED_NAME);
 
+
         termExists(termName, glossaryQName);
 
         String parentQname = validateAndGetCategory(entity);
@@ -137,7 +139,6 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
             isValidLexoRank(lexicographicalSortOrder, newGlossaryQualifiedName, parentQname, this.discovery);
         } else {
-            entity.removeAttribute(LEXICOGRAPHICAL_SORT_ORDER);
             lexicographicalSortOrder = (String) storedTerm.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
             entity.setAttribute(LEXICOGRAPHICAL_SORT_ORDER, lexicographicalSortOrder);
         }
