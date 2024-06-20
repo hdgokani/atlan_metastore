@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getActiveParentVertices;
@@ -172,6 +173,19 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private static void ensureOnlyOneCategoryIsAssociated(AtlasEntity entity) throws AtlasBaseException {
+        if(entity.hasRelationshipAttribute(ATTR_CATEGORIES) && Objects.nonNull(entity.getRelationshipAttribute(ATTR_CATEGORIES))) {
+            List<AtlasObjectId> categories = (List<AtlasObjectId>) entity.getRelationshipAttribute(ATTR_CATEGORIES);
+
+            if(categories.size() > 1) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot move term with multiple " +
+                        "categories associated to another glossary");
+            }
+
+        }
+
     }
 
     private String validateAndGetCategory(AtlasEntity entity) throws AtlasBaseException {
