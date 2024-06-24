@@ -97,6 +97,8 @@ public class EntityREST {
     private static final int TWO_MILLION = HUNDRED_THOUSAND * 10 * 2;
     private static final Set<String> ATTRS_WITH_TWO_MILLION_LIMIT = new HashSet<String>() {{
         add("rawQueryText");
+        add("variablesSchemaBase64");
+        add("visualBuilderSchemaBase64");
     }};
 
 
@@ -1275,6 +1277,25 @@ public class EntityREST {
     }
 
     @POST
+    @Path("repairClassificationsMappings/{guid}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Timed
+    public void repairClassifications(@PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairClassifications()");
+            }
+
+            entitiesStore.repairClassificationMappings(guid);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
     @Path("/guid/{guid}/businessmetadata")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
@@ -1910,5 +1931,30 @@ public class EntityREST {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    @POST
+    @Path("/repair/accesscontrolAlias/{guid}")
+    @Timed
+    public void repairAccessControlAlias(@PathParam("guid") String guid) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("guid", guid);
+
+        AtlasPerfTracer perf = null;
+
+
+       try {
+           if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+               perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairAccessControlAlias");
+           }
+
+           entitiesStore.repairAccesscontrolAlias(guid);
+
+           LOG.info("Repaired access control alias for entity with guid {}", guid);
+
+       } finally {
+              AtlasPerfTracer.log(perf);
+       }
+
+
     }
 }

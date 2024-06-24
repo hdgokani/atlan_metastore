@@ -19,10 +19,14 @@ public class SearchParams {
     boolean excludeMeanings;
     boolean excludeClassifications;
 
+    boolean includeClassificationNames = false;
+
     RequestMetadata requestMetadata = new RequestMetadata();
 
     Async async = new Async();
     boolean showHighlights;
+
+    boolean showSearchMetadata;
 
     public String getQuery() {
         return getQuery();
@@ -100,6 +104,14 @@ public class SearchParams {
         this.excludeMeanings = excludeMeanings;
     }
 
+    public boolean isIncludeClassificationNames() {
+        return includeClassificationNames;
+    }
+
+    public void setIncludeClassificationNames(boolean includeClassificationNames) {
+        this.includeClassificationNames = includeClassificationNames;
+    }
+
     public boolean isSaveSearchLog() {
         return requestMetadata.saveSearchLog;
     }
@@ -144,8 +156,12 @@ public class SearchParams {
         return this.requestMetadata.getSearchInput();
     }
 
-    public boolean isShowHighlights() {
+    public boolean getShowHighlights() {
         return showHighlights;
+    }
+
+    public boolean getShowSearchMetadata() {
+        return showSearchMetadata;
     }
 
 

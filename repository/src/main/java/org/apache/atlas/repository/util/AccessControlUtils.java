@@ -18,7 +18,6 @@
 package org.apache.atlas.repository.util;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -28,7 +27,6 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
-import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -43,17 +41,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.ACCESS_CONTROL_ALREADY_EXISTS;
-import static org.apache.atlas.AtlasErrorCode.DISABLED_OPERATION;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
-import static org.apache.atlas.repository.Constants.ATTR_TENANT_ID;
-import static org.apache.atlas.repository.Constants.CONNECTION_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.DEFAULT_TENANT_ID;
-import static org.apache.atlas.repository.Constants.NAME;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.getListAttribute;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.getQualifiedName;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.getStringAttribute;
@@ -260,19 +249,18 @@ public final class AccessControlUtils {
     }
 
     public static String getPersonaRoleName(AtlasEntity persona) {
-        String qualifiedName = getStringAttribute(persona, QUALIFIED_NAME);
-
-        String[] parts = qualifiedName.split("/");
-
-        return "persona_" + parts[parts.length - 1];
+        return "persona_" + getESAliasName(persona);
     }
 
     public static String getESAliasName(AtlasEntity entity) {
         String qualifiedName = getStringAttribute(entity, QUALIFIED_NAME);
+        return getESAliasName(qualifiedName);
+    }
 
+    public static String getESAliasName(String qualifiedName) {
         String[] parts = qualifiedName.split("/");
 
-        return parts[parts.length - 1];
+        return parts[1];
     }
 
     public static List<AtlasEntity> getPolicies(AtlasEntity.AtlasEntityWithExtInfo accessControl) {
@@ -345,7 +333,7 @@ public final class AccessControlUtils {
     public static void validateNoPoliciesAttached(AtlasEntity entity) throws AtlasBaseException {
         List<AtlasObjectId> policies = (List<AtlasObjectId>) entity.getRelationshipAttribute(REL_ATTR_POLICIES);
         if (CollectionUtils.isNotEmpty(policies)) {
-            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not attach a policy while creating/updating Persona/Purpose");
+            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not attach a policy while creating/updating Persona/Purpose/Stakeholder");
         }
     }
 
@@ -379,7 +367,8 @@ public final class AccessControlUtils {
 
     private static boolean hasMatchingVertex(AtlasGraph graph, List<String> newTags,
                                                IndexSearchParams indexSearchParams) throws AtlasBaseException {
-        AtlasIndexQuery indexQuery = graph.elasticsearchQuery(VERTEX_INDEX_NAME);
+        String vertexIndexName = getESIndex();
+        AtlasIndexQuery indexQuery = graph.elasticsearchQuery(vertexIndexName);
 
         DirectIndexQueryResult indexQueryResult = indexQuery.vertices(indexSearchParams);
         Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();
