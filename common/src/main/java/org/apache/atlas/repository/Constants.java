@@ -174,6 +174,8 @@ public final class Constants {
     public static final String SERVICE_ENTITY_TYPE        = "AuthService";
     public static final String REL_POLICY_TO_ACCESS_CONTROL  = "access_control_policies";
 
+    public static final String POLICY_SERVICE_NAME_ABAC  = "atlas_abac";
+
     /**
      * Resource
      */
@@ -431,7 +433,8 @@ public final class Constants {
     public static final String ATTR_ASSET_STARRED_BY = "assetStarredBy";
     public static final String ATTR_ASSET_STARRED_AT = "assetStarredAt";
     public static final String ATTR_CERTIFICATE_STATUS = "certificateStatus";
-    public static final String ATTR_CONTRACT = "dataContractJson";
+    public static final String ATTR_CONTRACT = "dataContractSpec";
+    public static final String ATTR_CONTRACT_JSON = "dataContractJson";
     public static final String STRUCT_STARRED_DETAILS = "StarredDetails";
 
     public static final String KEYCLOAK_ROLE_ADMIN   = "$admin";

@@ -28,6 +28,8 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -136,13 +138,17 @@ public class DataAccess {
         }
     }
 
+    public <T extends AtlasBaseModelObject> T loadWithMinInfo(T obj, boolean isMinExtInfo, boolean ignoreRelationShip) throws AtlasBaseException {
+        return load(obj, false, true, true);
+    }
     public <T extends AtlasBaseModelObject> T load(T obj) throws AtlasBaseException {
-        return load(obj, false);
+        return load(obj, false, false, false);
     }
 
-    public <T extends AtlasBaseModelObject> T load(T obj, boolean loadDeleted) throws AtlasBaseException {
+    public <T extends AtlasBaseModelObject> T load(T obj, boolean loadDeleted, boolean isMinExtInfo, boolean ignoreRelationShip) throws AtlasBaseException {
         Objects.requireNonNull(obj, "Can't load a null object");
 
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("DataAccess.load()");
         AtlasPerfTracer perf = null;
 
         try {
@@ -160,16 +166,24 @@ public class DataAccess {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Load using GUID");
                 }
-                entityWithExtInfo = entityStore.getById(guid);
+                if (isMinExtInfo && ignoreRelationShip) {
+                    entityWithExtInfo = entityStore.getById(guid, true, true);
+                } else {
+                    entityWithExtInfo = entityStore.getById(guid);
+                }
             } else {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Load using unique attributes");
                 }
-                entityWithExtInfo = entityStore.getByUniqueAttributes(dto.getEntityType(), dto.getUniqueAttributes(obj));
+                if (isMinExtInfo && ignoreRelationShip) {
+                    entityWithExtInfo = entityStore.getByUniqueAttributes(dto.getEntityType(), dto.getUniqueAttributes(obj), true, true);
+                } else {
+                    entityWithExtInfo = entityStore.getByUniqueAttributes(dto.getEntityType(), dto.getUniqueAttributes(obj));
+                }
             }
 
             // Since GUID alone can't be used to determine what ENTITY TYPE is loaded from the graph
-            String actualTypeName   = entityWithExtInfo.getEntity().getTypeName();
+            String actualTypeName = entityWithExtInfo.getEntity().getTypeName();
             String expectedTypeName = dto.getEntityType().getTypeName();
             if (!actualTypeName.equals(expectedTypeName)) {
                 throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, expectedTypeName, actualTypeName);
@@ -182,9 +196,9 @@ public class DataAccess {
             return dto.from(entityWithExtInfo);
 
         } finally {
+            RequestContext.get().endMetricRecord(metric);
             AtlasPerfTracer.log(perf);
         }
-
     }
 
     public <T extends AtlasBaseModelObject> T load(String guid, Class<? extends AtlasBaseModelObject> clazz) throws AtlasBaseException {
