@@ -2887,7 +2887,7 @@
 
                     "entity-type:DataDomain",
                     "entity-classification:*",
-                    "entity:default/domain/*/super"
+                    "entity:*"
                 ],
                 "policyActions":
                 [
