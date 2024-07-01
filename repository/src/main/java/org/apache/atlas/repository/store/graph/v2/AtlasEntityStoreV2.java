@@ -586,6 +586,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("deleteById");
+
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
         AtlasVertex             vertex             = AtlasGraphUtilsV2.findByGuid(graph, guid);
 
@@ -611,6 +613,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
         atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
+        RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
     }
 
@@ -773,10 +776,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @Override
     @GraphTransaction
     public EntityMutationResponse deleteByUniqueAttributes(List<AtlasObjectId> objectIds) throws AtlasBaseException {
+
         if (CollectionUtils.isEmpty(objectIds)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS);
         }
 
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteByUniqueAttributes");
         EntityMutationResponse ret = new EntityMutationResponse();
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
         try {
@@ -820,10 +825,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             // Notify the change listeners
             entityChangeNotifier.onEntitiesMutated(ret, false);
             atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
-
         } catch (Exception e) {
             LOG.error("Failed to delete objects:{}", objectIds.stream().map(AtlasObjectId::getUniqueAttributes).collect(Collectors.toList()), e);
             throw new AtlasBaseException(e);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
         return ret;
     }
@@ -1992,7 +1998,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             Collection<AtlasVertex> categories = new ArrayList<>();
             Collection<AtlasVertex> others = new ArrayList<>();
 
-            MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
+            MetricRecorder metric = RequestContext.get().startMetricRecord("deleteVertices_filterCategoryVertices");
             for (AtlasVertex vertex : deletionCandidates) {
                 String typeName = getTypeName(vertex);
 
@@ -2008,7 +2014,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
             }
             RequestContext.get().endMetricRecord(metric);
-
+            MetricRecorder metric2 = RequestContext.get().startMetricRecord("deleteVertices");
             if (CollectionUtils.isNotEmpty(categories)) {
                 entityGraphMapper.removeAttrForCategoryDelete(categories);
                 deleteDelegate.getHandler(DeleteType.HARD).deleteEntities(categories);
@@ -2037,11 +2043,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             for (AtlasEntityHeader entity : req.getUpdatedEntities()) {
                 response.addEntity(UPDATE, entity);
             }
+            RequestContext.get().endMetricRecord(metric2);
         } catch (Exception e) {
             LOG.error("Delete vertices request failed", e);
             throw new AtlasBaseException(e);
         }
-
         return response;
     }
 
