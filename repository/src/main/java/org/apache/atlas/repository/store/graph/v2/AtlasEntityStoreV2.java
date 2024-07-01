@@ -1930,6 +1930,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     private EntityMutationResponse deleteVertices(Collection<AtlasVertex> deletionCandidates) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteVertices");
         EntityMutationResponse response = new EntityMutationResponse();
         try {
             RequestContext req = RequestContext.get();
@@ -1937,7 +1938,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             Collection<AtlasVertex> categories = new ArrayList<>();
             Collection<AtlasVertex> others = new ArrayList<>();
 
-            MetricRecorder metric = RequestContext.get().startMetricRecord("deleteVertices_filterCategoryVertices");
+            MetricRecorder filterMetric = RequestContext.get().startMetricRecord("deleteVertices_filterCategoryVertices");
             for (AtlasVertex vertex : deletionCandidates) {
                 String typeName = getTypeName(vertex);
 
@@ -1952,8 +1953,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     others.add(vertex);
                 }
             }
-            RequestContext.get().endMetricRecord(metric);
-            MetricRecorder metric2 = RequestContext.get().startMetricRecord("deleteVertices");
+            RequestContext.get().endMetricRecord(filterMetric);
+            MetricRecorder processDeleteVerticesMetric = RequestContext.get().startMetricRecord("processDeleteVertices");
             if (CollectionUtils.isNotEmpty(categories)) {
                 entityGraphMapper.removeAttrForCategoryDelete(categories);
                 deleteDelegate.getHandler(DeleteType.HARD).deleteEntities(categories);
@@ -1982,10 +1983,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             for (AtlasEntityHeader entity : req.getUpdatedEntities()) {
                 response.addEntity(UPDATE, entity);
             }
-            RequestContext.get().endMetricRecord(metric2);
+            RequestContext.get().endMetricRecord(processDeleteVerticesMetric);
         } catch (Exception e) {
             LOG.error("Delete vertices request failed", e);
             throw new AtlasBaseException(e);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
         return response;
     }

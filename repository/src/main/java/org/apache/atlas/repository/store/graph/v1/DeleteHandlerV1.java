@@ -785,80 +785,84 @@ public abstract class DeleteHandlerV1 {
      */
     protected void deleteTypeVertex(AtlasVertex instanceVertex, boolean force) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("deleteTypeVertex");
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Deleting {}, force={}", string(instanceVertex), force);
-        }
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Deleting {}, force={}", string(instanceVertex), force);
+            }
 
-        String    typeName   = GraphHelper.getTypeName(instanceVertex);
-        AtlasType parentType = typeRegistry.getType(typeName);
+            String    typeName   = GraphHelper.getTypeName(instanceVertex);
+            AtlasType parentType = typeRegistry.getType(typeName);
 
-        if (parentType instanceof AtlasStructType) {
-            AtlasStructType structType   = (AtlasStructType) parentType;
-            boolean         isEntityType = (parentType instanceof AtlasEntityType);
+            if (parentType instanceof AtlasStructType) {
+                AtlasStructType structType   = (AtlasStructType) parentType;
+                boolean         isEntityType = (parentType instanceof AtlasEntityType);
 
-            for (AtlasStructType.AtlasAttribute attributeInfo : structType.getAllAttributes().values()) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Deleting attribute {} for {}", attributeInfo.getName(), string(instanceVertex));
-                }
+                for (AtlasStructType.AtlasAttribute attributeInfo : structType.getAllAttributes().values()) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Deleting attribute {} for {}", attributeInfo.getName(), string(instanceVertex));
+                    }
 
-                boolean   isOwned   = isEntityType && attributeInfo.isOwnedRef();
-                AtlasType attrType  = attributeInfo.getAttributeType();
-                String    edgeLabel = attributeInfo.getRelationshipEdgeLabel();
+                    boolean   isOwned   = isEntityType && attributeInfo.isOwnedRef();
+                    AtlasType attrType  = attributeInfo.getAttributeType();
+                    String    edgeLabel = attributeInfo.getRelationshipEdgeLabel();
 
-                switch (attrType.getTypeCategory()) {
-                    case OBJECT_ID_TYPE:
-                        //If its class attribute, delete the reference
-                        deleteEdgeReference(instanceVertex, edgeLabel, attrType.getTypeCategory(), isOwned);
-                        break;
+                    switch (attrType.getTypeCategory()) {
+                        case OBJECT_ID_TYPE:
+                            //If its class attribute, delete the reference
+                            deleteEdgeReference(instanceVertex, edgeLabel, attrType.getTypeCategory(), isOwned);
+                            break;
 
-                    case STRUCT:
-                        //If its struct attribute, delete the reference
-                        deleteEdgeReference(instanceVertex, edgeLabel, attrType.getTypeCategory(), false);
-                        break;
+                        case STRUCT:
+                            //If its struct attribute, delete the reference
+                            deleteEdgeReference(instanceVertex, edgeLabel, attrType.getTypeCategory(), false);
+                            break;
 
-                    case ARRAY:
-                        //For array attribute, if the element is struct/class, delete all the references
-                        AtlasArrayType arrType  = (AtlasArrayType) attrType;
-                        AtlasType      elemType = arrType.getElementType();
+                        case ARRAY:
+                            //For array attribute, if the element is struct/class, delete all the references
+                            AtlasArrayType arrType  = (AtlasArrayType) attrType;
+                            AtlasType      elemType = arrType.getElementType();
 
-                        if (isReference(elemType.getTypeCategory())) {
-                            List<AtlasEdge> edges = getCollectionElementsUsingRelationship(instanceVertex, attributeInfo);
+                            if (isReference(elemType.getTypeCategory())) {
+                                List<AtlasEdge> edges = getCollectionElementsUsingRelationship(instanceVertex, attributeInfo);
 
-                            if (CollectionUtils.isNotEmpty(edges)) {
-                                for (AtlasEdge edge : edges) {
-                                    deleteEdgeReference(edge, elemType.getTypeCategory(), isOwned, false, instanceVertex);
+                                if (CollectionUtils.isNotEmpty(edges)) {
+                                    for (AtlasEdge edge : edges) {
+                                        deleteEdgeReference(edge, elemType.getTypeCategory(), isOwned, false, instanceVertex);
+                                    }
                                 }
                             }
-                        }
-                        break;
+                            break;
 
-                    case MAP:
-                        //For map attribute, if the value type is struct/class, delete all the references
-                        AtlasMapType mapType           = (AtlasMapType) attrType;
-                        TypeCategory valueTypeCategory = mapType.getValueType().getTypeCategory();
+                        case MAP:
+                            //For map attribute, if the value type is struct/class, delete all the references
+                            AtlasMapType mapType           = (AtlasMapType) attrType;
+                            TypeCategory valueTypeCategory = mapType.getValueType().getTypeCategory();
 
-                        if (isReference(valueTypeCategory)) {
-                            List<AtlasEdge> edges = getMapValuesUsingRelationship(instanceVertex, attributeInfo);
+                            if (isReference(valueTypeCategory)) {
+                                List<AtlasEdge> edges = getMapValuesUsingRelationship(instanceVertex, attributeInfo);
 
-                            for (AtlasEdge edge : edges) {
-                                deleteEdgeReference(edge, valueTypeCategory, isOwned, false, instanceVertex);
+                                for (AtlasEdge edge : edges) {
+                                    deleteEdgeReference(edge, valueTypeCategory, isOwned, false, instanceVertex);
+                                }
                             }
-                        }
-                        break;
+                            break;
 
-                    case PRIMITIVE:
-                        // This is different from upstream atlas.
-                        // Here we are not deleting the unique property thus users can only restore after deleting an entity.
-                        if (attributeInfo.getVertexUniquePropertyName() != null && force) {
-                            instanceVertex.removeProperty(attributeInfo.getVertexUniquePropertyName());
-                        }
-                        break;
+                        case PRIMITIVE:
+                            // This is different from upstream atlas.
+                            // Here we are not deleting the unique property thus users can only restore after deleting an entity.
+                            if (attributeInfo.getVertexUniquePropertyName() != null && force) {
+                                instanceVertex.removeProperty(attributeInfo.getVertexUniquePropertyName());
+                            }
+                            break;
+                    }
                 }
             }
+
+            deleteVertex(instanceVertex, force);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
 
-        deleteVertex(instanceVertex, force);
-        RequestContext.get().endMetricRecord(metric);
     }
 
     protected AtlasAttribute getAttributeForEdge(AtlasEdge edge) throws AtlasBaseException {
@@ -1116,29 +1120,35 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     private void deleteAllClassifications(AtlasVertex instanceVertex) throws AtlasBaseException {
-        // If instance is deleted no need to operate classification deleted
-        if (!ACTIVE.equals(getState(instanceVertex)))
-            return;
-
         MetricRecorder metric = RequestContext.get().startMetricRecord("deleteAllClassifications");
-        List<AtlasEdge> classificationEdges = getAllClassificationEdges(instanceVertex);
+        try {
+            // If instance is deleted no need to operate classification deleted
+            if (!ACTIVE.equals(getState(instanceVertex)))
+                return;
+            MetricRecorder getAllClassificationEdgesMetric = RequestContext.get().startMetricRecord("getAllClassificationEdges");
+            List<AtlasEdge> classificationEdges = getAllClassificationEdges(instanceVertex);
+            RequestContext.get().endMetricRecord(getAllClassificationEdgesMetric);
 
-        for (AtlasEdge edge : classificationEdges) {
-            AtlasVertex classificationVertex = edge.getInVertex();
-            boolean     isClassificationEdge = isClassificationEdge(edge);
-            boolean     removePropagations   = getRemovePropagations(classificationVertex);
+            MetricRecorder deleteClassificationEdgesMetric = RequestContext.get().startMetricRecord("deleteClassificationEdges");
+            for (AtlasEdge edge : classificationEdges) {
+                AtlasVertex classificationVertex = edge.getInVertex();
+                boolean     isClassificationEdge = isClassificationEdge(edge);
+                boolean     removePropagations   = getRemovePropagations(classificationVertex);
 
-            if (isClassificationEdge && removePropagations) {
-                if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
-                    createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, instanceVertex, classificationVertex.getIdForDisplay(), null);
-                } else {
-                    removeTagPropagation(classificationVertex);
+                if (isClassificationEdge && removePropagations) {
+                    if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
+                        createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, instanceVertex, classificationVertex.getIdForDisplay(), null);
+                    } else {
+                        removeTagPropagation(classificationVertex);
+                    }
                 }
-            }
 
-            deleteEdgeReference(edge, CLASSIFICATION, false, false, instanceVertex);
+                deleteEdgeReference(edge, CLASSIFICATION, false, false, instanceVertex);
+            }
+            RequestContext.get().endMetricRecord(deleteClassificationEdgesMetric);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
-        RequestContext.get().endMetricRecord(metric);
     }
 
     private boolean skipVertexForDelete(AtlasVertex vertex) {
@@ -1348,47 +1358,50 @@ public abstract class DeleteHandlerV1 {
     }
 
     public void createAndQueueClassificationRefreshPropagationTask(AtlasEdge edge) throws AtlasBaseException{
-        if (taskManagement==null) {
-            LOG.warn("Task management is null, can't schedule task now");
-            return;
-        }
-
         MetricRecorder metric = RequestContext.get().startMetricRecord("createAndQueueClassificationRefreshPropagationTask");
-
-        String      currentUser         = RequestContext.getCurrentUser();
-        boolean     isRelationshipEdge  = isRelationshipEdge(edge);
-        boolean     isTermEntityEdge    = GraphHelper.isTermEntityEdge(edge);
-
-        if (edge == null || !isRelationshipEdge) {
-            LOG.warn("Edge is null or it is not relationship edge, can't schedule task now");
-            return;
-        }
-
-
-        AtlasVertex referenceVertex = GraphHelper.getPropagatingVertex(edge);
-        if(referenceVertex == null) {
-            return;
-        }
-
-        List<AtlasVertex> currentClassificationVertices = GraphHelper.getPropagatableClassifications(edge);
-        for (AtlasVertex currentClassificationVertex : currentClassificationVertices) {
-            String currentClassificationId = currentClassificationVertex.getIdForDisplay();
-            boolean removePropagationOnEntityDelete = GraphHelper.getRemovePropagations(currentClassificationVertex);
-
-            if (!(isTermEntityEdge || removePropagationOnEntityDelete)) {
-                LOG.debug("This edge is not term edge or remove propagation isn't enabled");
-                continue;
+        try {
+            if (taskManagement == null) {
+                LOG.warn("Task management is null, can't schedule task now");
+                return;
             }
 
-            if(skipClassificationTaskCreation(currentClassificationId)) {
-                LOG.info("Task is already scheduled for classification id {}, no need to schedule task for edge {}", currentClassificationId, edge.getIdForDisplay());
-                continue;
+            String      currentUser         = RequestContext.getCurrentUser();
+            boolean     isRelationshipEdge  = isRelationshipEdge(edge);
+            boolean     isTermEntityEdge    = GraphHelper.isTermEntityEdge(edge);
+
+            if (edge == null || !isRelationshipEdge) {
+                LOG.warn("Edge is null or it is not relationship edge, can't schedule task now");
+                return;
             }
 
-            Map<String, Object> taskParams = ClassificationTask.toParameters(currentClassificationVertex.getIdForDisplay());
-            AtlasTask task  =  taskManagement.createTask(CLASSIFICATION_REFRESH_PROPAGATION, currentUser, taskParams, currentClassificationId, GraphHelper.getGuid(referenceVertex));
 
-            RequestContext.get().queueTask(task);
+            AtlasVertex referenceVertex = GraphHelper.getPropagatingVertex(edge);
+            if(referenceVertex == null) {
+                return;
+            }
+
+            List<AtlasVertex> currentClassificationVertices = GraphHelper.getPropagatableClassifications(edge);
+            for (AtlasVertex currentClassificationVertex : currentClassificationVertices) {
+                String currentClassificationId = currentClassificationVertex.getIdForDisplay();
+                boolean removePropagationOnEntityDelete = GraphHelper.getRemovePropagations(currentClassificationVertex);
+
+                if (!(isTermEntityEdge || removePropagationOnEntityDelete)) {
+                    LOG.debug("This edge is not term edge or remove propagation isn't enabled");
+                    continue;
+                }
+
+                if(skipClassificationTaskCreation(currentClassificationId)) {
+                    LOG.info("Task is already scheduled for classification id {}, no need to schedule task for edge {}", currentClassificationId, edge.getIdForDisplay());
+                    continue;
+                }
+
+                Map<String, Object> taskParams = ClassificationTask.toParameters(currentClassificationVertex.getIdForDisplay());
+                AtlasTask task  =  taskManagement.createTask(CLASSIFICATION_REFRESH_PROPAGATION, currentUser, taskParams, currentClassificationId, GraphHelper.getGuid(referenceVertex));
+
+                RequestContext.get().queueTask(task);
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
         RequestContext.get().endMetricRecord(metric);
     }
