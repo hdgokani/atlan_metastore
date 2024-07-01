@@ -105,7 +105,8 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
         } catch (Exception e) {
             LOG.error("Error while deleting edge {}", GraphHelper.string(edge), e);
             throw new AtlasBaseException(e);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
-        RequestContext.get().endMetricRecord(metric);
     }
 }

@@ -122,28 +122,35 @@ public abstract class DeleteHandlerV1 {
         MetricRecorder metric = RequestContext.get().startMetricRecord("deleteEntities");
         final RequestContext   requestContext            = RequestContext.get();
         final Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
+
         for (AtlasVertex instanceVertex : instanceVertices) {
             final String             guid  = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
+
             if (skipVertexForDelete(instanceVertex)) {
                 if (LOG.isDebugEnabled()) {
                         LOG.debug("Skipping deletion of entity={} as it is already deleted", guid);
                 }
                 continue;
             }
+
             // Record all deletion candidate entities in RequestContext
             // and gather deletion candidate vertices.
             for (GraphHelper.VertexInfo vertexInfo : getOwnedVertices(instanceVertex)) {
                 AtlasEntityHeader entityHeader = vertexInfo.getEntity();
+
                 if (requestContext.isPurgeRequested()) {
                     entityHeader.setClassifications(entityRetriever.getAllClassifications(vertexInfo.getVertex()));
                 }
+
                 requestContext.recordEntityDelete(entityHeader);
                 deletionCandidateVertices.add(vertexInfo.getVertex());
             }
         }
+
         // Delete traits and vertices.
         for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
             RequestContext.get().getDeletedEdgesIds().clear();
+
             deleteAllClassifications(deletionCandidateVertex);
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 
@@ -750,6 +757,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     protected void deleteTypeVertex(AtlasVertex instanceVertex, TypeCategory typeCategory, boolean force) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteTypeVertex");
         switch (typeCategory) {
             case STRUCT:
                 deleteTypeVertex(instanceVertex, force);
@@ -767,6 +775,7 @@ public abstract class DeleteHandlerV1 {
             default:
                 throw new IllegalStateException("Type category " + typeCategory + " not handled");
         }
+        RequestContext.get().endMetricRecord(metric);
     }
 
     /**
@@ -879,7 +888,6 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     protected void deleteEdgeBetweenVertices(AtlasVertex outVertex, AtlasVertex inVertex, AtlasAttribute attribute) throws AtlasBaseException {
-        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteEdgeBetweenVertices");
         if (LOG.isDebugEnabled()) {
             LOG.debug("Removing edge from {} to {} with attribute name {}", string(outVertex), string(inVertex), attribute.getName());
         }
@@ -887,6 +895,7 @@ public abstract class DeleteHandlerV1 {
         if (skipVertexForDelete(outVertex)) {
             return;
         }
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteEdgeBetweenVertices");
 
         AtlasStructType   parentType   = (AtlasStructType) typeRegistry.getType(GraphHelper.getTypeName(outVertex));
         String            propertyName = getQualifiedAttributePropertyKey(parentType, attribute.getName());
@@ -995,6 +1004,7 @@ public abstract class DeleteHandlerV1 {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Setting the external references to {} to null(removing edges)", string(instanceVertex));
         }
+
         // Delete external references to this vertex - incoming edges from lineage or glossary term edges
         final Iterable<AtlasEdge> incomingEdges    = instanceVertex.getEdges(AtlasEdgeDirection.IN);
         final Iterable<AtlasEdge> outgoingEdges    = instanceVertex.getEdges(AtlasEdgeDirection.OUT);
@@ -1006,9 +1016,11 @@ public abstract class DeleteHandlerV1 {
                     AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_HARD_DELETE, edge, entityRetriever);
             }
         }
+
         for (AtlasEdge edge : incomingEdges) {
             AtlasEntity.Status edgeStatus = getStatus(edge);
             boolean            isProceed   = edgeStatus == (isPurgeRequested ? DELETED : ACTIVE);
+
             if (isProceed) {
                 if (isRelationshipEdge(edge)) {
                     deleteRelationship(edge);
@@ -1023,6 +1035,7 @@ public abstract class DeleteHandlerV1 {
                 }
             }
         }
+
         _deleteVertex(instanceVertex, force);
         RequestContext.get().endMetricRecord(metric);
     }
@@ -1103,11 +1116,11 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     private void deleteAllClassifications(AtlasVertex instanceVertex) throws AtlasBaseException {
-        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteAllClassifications");
         // If instance is deleted no need to operate classification deleted
         if (!ACTIVE.equals(getState(instanceVertex)))
             return;
 
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteAllClassifications");
         List<AtlasEdge> classificationEdges = getAllClassificationEdges(instanceVertex);
 
         for (AtlasEdge edge : classificationEdges) {
@@ -1335,7 +1348,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     public void createAndQueueClassificationRefreshPropagationTask(AtlasEdge edge) throws AtlasBaseException{
-
+        MetricRecorder metric = RequestContext.get().startMetricRecord("createAndQueueClassificationRefreshPropagationTask");
         if (taskManagement==null) {
             LOG.warn("Task management is null, can't schedule task now");
             return;
@@ -1376,7 +1389,7 @@ public abstract class DeleteHandlerV1 {
 
             RequestContext.get().queueTask(task);
         }
-
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private boolean skipClassificationTaskCreation(String classificationId) throws AtlasBaseException {
