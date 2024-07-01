@@ -353,59 +353,64 @@ public abstract class DeleteHandlerV1 {
 
     public boolean deleteEdgeReference(AtlasEdge edge, TypeCategory typeCategory, boolean isOwned, boolean forceDeleteStructTrait,
                                        AtlasRelationshipEdgeDirection relationshipDirection, AtlasVertex entityVertex) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Deleting {}, force = {}", string(edge), forceDeleteStructTrait);
-        }
-
-        boolean isInternalType = isInternalType(entityVertex);
-        boolean forceDelete    = (typeCategory == STRUCT || typeCategory == CLASSIFICATION) && (forceDeleteStructTrait || isInternalType);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("isInternal = {}, forceDelete = {}", isInternalType, forceDelete);
-        }
-
-        if (typeCategory == STRUCT || typeCategory == CLASSIFICATION || (typeCategory == OBJECT_ID_TYPE && isOwned)) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteEdgeReference");
+        try {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Processing delete for typeCategory={}, isOwned={}", typeCategory, isOwned);
+                LOG.debug("Deleting {}, force = {}", string(edge), forceDeleteStructTrait);
             }
-            //If the vertex is of type struct delete the edge and then the reference vertex as the vertex is not shared by any other entities.
-            //If the vertex is of type classification, delete the edge and then the reference vertex only if the vertex is not shared by any other propagated entities.
-            //If the vertex is of type class, and its composite attribute, this reference vertex' lifecycle is controlled
-            //through this delete, hence delete the edge and the reference vertex.
-            AtlasVertex vertexForDelete = edge.getInVertex();
 
-            //If deleting the edge and then the in vertex, reverse attribute shouldn't be updated
-            deleteEdge(edge, false, forceDelete);
-            deleteTypeVertex(vertexForDelete, typeCategory, forceDelete);
-        } else {
-            //If the vertex is of type class, and its not a composite attributes, the reference AtlasVertex' lifecycle is not controlled
-            //through this delete. Hence just remove the reference edge. Leave the reference AtlasVertex as is
+            boolean isInternalType = isInternalType(entityVertex);
+            boolean forceDelete    = (typeCategory == STRUCT || typeCategory == CLASSIFICATION) && (forceDeleteStructTrait || isInternalType);
 
-            // for relationship edges, inverse vertex's relationship attribute doesn't need to be updated.
-            // only delete the reference relationship edge
-            if (GraphHelper.isRelationshipEdge(edge)) {
-                deleteEdge(edge, isInternalType);
-                AtlasVertex referencedVertex = entityRetriever.getReferencedEntityVertex(edge, relationshipDirection, entityVertex);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("isInternal = {}, forceDelete = {}", isInternalType, forceDelete);
+            }
 
-                if (referencedVertex != null) {
-                    RequestContext requestContext = RequestContext.get();
-
-                    if (!requestContext.isUpdatedEntity(GraphHelper.getGuid(referencedVertex))) {
-                        AtlasGraphUtilsV2.setEncodedProperty(referencedVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
-                        AtlasGraphUtilsV2.setEncodedProperty(referencedVertex, MODIFIED_BY_KEY, requestContext.getUser());
-
-                        requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(referencedVertex));
-                    }
+            if (typeCategory == STRUCT || typeCategory == CLASSIFICATION || (typeCategory == OBJECT_ID_TYPE && isOwned)) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Processing delete for typeCategory={}, isOwned={}", typeCategory, isOwned);
                 }
-            } else {
-                //legacy case - not a relationship edge
-                //If deleting just the edge, reverse attribute should be updated for any references
-                //For example, for the department type system, if the person's manager edge is deleted, subordinates of manager should be updated
-                deleteEdge(edge, true, isInternalType);
-            }
-        }
+                //If the vertex is of type struct delete the edge and then the reference vertex as the vertex is not shared by any other entities.
+                //If the vertex is of type classification, delete the edge and then the reference vertex only if the vertex is not shared by any other propagated entities.
+                //If the vertex is of type class, and its composite attribute, this reference vertex' lifecycle is controlled
+                //through this delete, hence delete the edge and the reference vertex.
+                AtlasVertex vertexForDelete = edge.getInVertex();
 
-        return !softDelete || forceDelete;
+                //If deleting the edge and then the in vertex, reverse attribute shouldn't be updated
+                deleteEdge(edge, false, forceDelete);
+                deleteTypeVertex(vertexForDelete, typeCategory, forceDelete);
+            } else {
+                //If the vertex is of type class, and its not a composite attributes, the reference AtlasVertex' lifecycle is not controlled
+                //through this delete. Hence just remove the reference edge. Leave the reference AtlasVertex as is
+
+                // for relationship edges, inverse vertex's relationship attribute doesn't need to be updated.
+                // only delete the reference relationship edge
+                if (GraphHelper.isRelationshipEdge(edge)) {
+                    deleteEdge(edge, isInternalType);
+                    AtlasVertex referencedVertex = entityRetriever.getReferencedEntityVertex(edge, relationshipDirection, entityVertex);
+
+                    if (referencedVertex != null) {
+                        RequestContext requestContext = RequestContext.get();
+
+                        if (!requestContext.isUpdatedEntity(GraphHelper.getGuid(referencedVertex))) {
+                            AtlasGraphUtilsV2.setEncodedProperty(referencedVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
+                            AtlasGraphUtilsV2.setEncodedProperty(referencedVertex, MODIFIED_BY_KEY, requestContext.getUser());
+
+                            requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(referencedVertex));
+                        }
+                    }
+                } else {
+                    //legacy case - not a relationship edge
+                    //If deleting just the edge, reverse attribute should be updated for any references
+                    //For example, for the department type system, if the person's manager edge is deleted, subordinates of manager should be updated
+                    deleteEdge(edge, true, isInternalType);
+                }
+            }
+
+            return !softDelete || forceDelete;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
     }
 
     public void addTagPropagation(AtlasEdge edge, PropagateTags propagateTags) throws AtlasBaseException {
@@ -757,19 +762,25 @@ public abstract class DeleteHandlerV1 {
     }
 
     protected void deleteTypeVertex(AtlasVertex instanceVertex, TypeCategory typeCategory, boolean force) throws AtlasBaseException {
-        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteTypeVertex");
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteTypeVertexForced");
         switch (typeCategory) {
             case STRUCT:
+                MetricRecorder structMetric = RequestContext.get().startMetricRecord("deleteTypeVertexForced.struct");
                 deleteTypeVertex(instanceVertex, force);
+                RequestContext.get().endMetricRecord(structMetric);
                 break;
 
             case CLASSIFICATION:
+                MetricRecorder classificationMetric = RequestContext.get().startMetricRecord("deleteTypeVertexForced.classification");
                 deleteClassificationVertex(instanceVertex, force);
+                RequestContext.get().endMetricRecord(classificationMetric);
                 break;
 
             case ENTITY:
             case OBJECT_ID_TYPE:
+                MetricRecorder objectIdMetric = RequestContext.get().startMetricRecord("deleteTypeVertexForced.objectId");
                 deleteEntities(Collections.singletonList(instanceVertex));
+                RequestContext.get().endMetricRecord(objectIdMetric);
                 break;
 
             default:
@@ -809,16 +820,21 @@ public abstract class DeleteHandlerV1 {
                     switch (attrType.getTypeCategory()) {
                         case OBJECT_ID_TYPE:
                             //If its class attribute, delete the reference
+                            MetricRecorder objectIdMetric = RequestContext.get().startMetricRecord("deleteTypeVertex.objectId");
                             deleteEdgeReference(instanceVertex, edgeLabel, attrType.getTypeCategory(), isOwned);
+                            RequestContext.get().endMetricRecord(objectIdMetric);
                             break;
 
                         case STRUCT:
                             //If its struct attribute, delete the reference
+                            MetricRecorder structMetric = RequestContext.get().startMetricRecord("deleteTypeVertex.struct");
                             deleteEdgeReference(instanceVertex, edgeLabel, attrType.getTypeCategory(), false);
+                            RequestContext.get().endMetricRecord(structMetric);
                             break;
 
                         case ARRAY:
                             //For array attribute, if the element is struct/class, delete all the references
+                            MetricRecorder arrayMetric = RequestContext.get().startMetricRecord("deleteTypeVertex.array");
                             AtlasArrayType arrType  = (AtlasArrayType) attrType;
                             AtlasType      elemType = arrType.getElementType();
 
@@ -831,6 +847,7 @@ public abstract class DeleteHandlerV1 {
                                     }
                                 }
                             }
+                            RequestContext.get().endMetricRecord(arrayMetric);
                             break;
 
                         case MAP:
@@ -857,8 +874,9 @@ public abstract class DeleteHandlerV1 {
                     }
                 }
             }
-
+            MetricRecorder deleteMetric = RequestContext.get().startMetricRecord("deleteTypeVertex._deleteVertex");
             deleteVertex(instanceVertex, force);
+            RequestContext.get().endMetricRecord(deleteMetric);
         } finally {
             RequestContext.get().endMetricRecord(metric);
         }
@@ -1058,6 +1076,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     public void deleteClassificationVertex(AtlasVertex classificationVertex, boolean force) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteClassificationVertex");
         if (LOG.isDebugEnabled()) {
             LOG.debug("Deleting classification vertex", string(classificationVertex));
         }
@@ -1066,6 +1085,7 @@ public abstract class DeleteHandlerV1 {
         if (!hasEntityReferences(classificationVertex)) {
             _deleteVertex(classificationVertex, force);
         }
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private boolean isInternalType(final AtlasVertex instanceVertex) {
