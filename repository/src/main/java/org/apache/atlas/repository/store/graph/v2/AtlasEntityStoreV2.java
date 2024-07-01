@@ -582,13 +582,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @Override
     @GraphTransaction
     public EntityMutationResponse deleteById(final String guid) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("deleteById");
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
         AtlasVertex             vertex             = AtlasGraphUtilsV2.findByGuid(graph, guid);
-
         if (vertex != null) {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
@@ -602,15 +602,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 LOG.debug("Deletion request ignored for non-existent entity with guid " + guid);
             }
         }
-
         EntityMutationResponse ret = deleteVertices(deletionCandidates);
-
         if(ret.getDeletedEntities()!=null)
             processTermEntityDeletion(ret.getDeletedEntities());
-
         // Notify the change listeners
         entityChangeNotifier.onEntitiesMutated(ret, false);
         atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
+        RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
     }
 
@@ -773,6 +771,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @Override
     @GraphTransaction
     public EntityMutationResponse deleteByUniqueAttributes(List<AtlasObjectId> objectIds) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteByUniqueAttributes");
         if (CollectionUtils.isEmpty(objectIds)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS);
         }
@@ -820,7 +819,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             // Notify the change listeners
             entityChangeNotifier.onEntitiesMutated(ret, false);
             atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
-
+            RequestContext.get().endMetricRecord(metric);
         } catch (Exception e) {
             LOG.error("Failed to delete objects:{}", objectIds.stream().map(AtlasObjectId::getUniqueAttributes).collect(Collectors.toList()), e);
             throw new AtlasBaseException(e);
@@ -1931,7 +1930,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             Collection<AtlasVertex> categories = new ArrayList<>();
             Collection<AtlasVertex> others = new ArrayList<>();
 
-            MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
+            MetricRecorder metric = RequestContext.get().startMetricRecord("deleteVertices_filterCategoryVertices");
             for (AtlasVertex vertex : deletionCandidates) {
                 String typeName = getTypeName(vertex);
 
@@ -1947,7 +1946,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
             }
             RequestContext.get().endMetricRecord(metric);
-
+            MetricRecorder metric2 = RequestContext.get().startMetricRecord("deleteVertices"); // todo change name
             if (CollectionUtils.isNotEmpty(categories)) {
                 entityGraphMapper.removeAttrForCategoryDelete(categories);
                 deleteDelegate.getHandler(DeleteType.HARD).deleteEntities(categories);
@@ -1976,11 +1975,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             for (AtlasEntityHeader entity : req.getUpdatedEntities()) {
                 response.addEntity(UPDATE, entity);
             }
+            RequestContext.get().endMetricRecord(metric2);
         } catch (Exception e) {
             LOG.error("Delete vertices request failed", e);
             throw new AtlasBaseException(e);
         }
-
         return response;
     }
 

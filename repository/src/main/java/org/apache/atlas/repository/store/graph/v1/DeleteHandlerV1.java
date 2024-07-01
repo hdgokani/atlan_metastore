@@ -53,6 +53,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -118,37 +119,31 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteEntities");
         final RequestContext   requestContext            = RequestContext.get();
         final Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
-
         for (AtlasVertex instanceVertex : instanceVertices) {
             final String             guid  = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
-
             if (skipVertexForDelete(instanceVertex)) {
                 if (LOG.isDebugEnabled()) {
                         LOG.debug("Skipping deletion of entity={} as it is already deleted", guid);
                 }
                 continue;
             }
-
             // Record all deletion candidate entities in RequestContext
             // and gather deletion candidate vertices.
             for (GraphHelper.VertexInfo vertexInfo : getOwnedVertices(instanceVertex)) {
                 AtlasEntityHeader entityHeader = vertexInfo.getEntity();
-
                 if (requestContext.isPurgeRequested()) {
                     entityHeader.setClassifications(entityRetriever.getAllClassifications(vertexInfo.getVertex()));
                 }
-
                 requestContext.recordEntityDelete(entityHeader);
                 deletionCandidateVertices.add(vertexInfo.getVertex());
             }
         }
-
         // Delete traits and vertices.
         for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
             RequestContext.get().getDeletedEdgesIds().clear();
-
             deleteAllClassifications(deletionCandidateVertex);
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 
@@ -160,6 +155,7 @@ public abstract class DeleteHandlerV1 {
                 }
             }
         }
+        RequestContext.get().endMetricRecord(metric);
     }
 
     /**
@@ -779,6 +775,7 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     protected void deleteTypeVertex(AtlasVertex instanceVertex, boolean force) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteTypeVertex");
         if (LOG.isDebugEnabled()) {
             LOG.debug("Deleting {}, force={}", string(instanceVertex), force);
         }
@@ -852,6 +849,7 @@ public abstract class DeleteHandlerV1 {
         }
 
         deleteVertex(instanceVertex, force);
+        RequestContext.get().endMetricRecord(metric);
     }
 
     protected AtlasAttribute getAttributeForEdge(AtlasEdge edge) throws AtlasBaseException {
@@ -881,6 +879,7 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     protected void deleteEdgeBetweenVertices(AtlasVertex outVertex, AtlasVertex inVertex, AtlasAttribute attribute) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteEdgeBetweenVertices");
         if (LOG.isDebugEnabled()) {
             LOG.debug("Removing edge from {} to {} with attribute name {}", string(outVertex), string(inVertex), attribute.getName());
         }
@@ -988,13 +987,14 @@ public abstract class DeleteHandlerV1 {
                 requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(outVertex));
             }
         }
+        RequestContext.get().endMetricRecord(metric);
     }
 
     protected void deleteVertex(AtlasVertex instanceVertex, boolean force) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteVertex");
         if (LOG.isDebugEnabled()) {
             LOG.debug("Setting the external references to {} to null(removing edges)", string(instanceVertex));
         }
-
         // Delete external references to this vertex - incoming edges from lineage or glossary term edges
         final Iterable<AtlasEdge> incomingEdges    = instanceVertex.getEdges(AtlasEdgeDirection.IN);
         final Iterable<AtlasEdge> outgoingEdges    = instanceVertex.getEdges(AtlasEdgeDirection.OUT);
@@ -1006,11 +1006,9 @@ public abstract class DeleteHandlerV1 {
                     AtlasRelationshipStoreV2.recordRelationshipMutation(AtlasRelationshipStoreV2.RelationshipMutation.RELATIONSHIP_HARD_DELETE, edge, entityRetriever);
             }
         }
-
         for (AtlasEdge edge : incomingEdges) {
             AtlasEntity.Status edgeStatus = getStatus(edge);
             boolean            isProceed   = edgeStatus == (isPurgeRequested ? DELETED : ACTIVE);
-
             if (isProceed) {
                 if (isRelationshipEdge(edge)) {
                     deleteRelationship(edge);
@@ -1020,14 +1018,13 @@ public abstract class DeleteHandlerV1 {
                     if (!isDeletedEntity(outVertex)) {
                         AtlasVertex inVertex = edge.getInVertex();
                         AtlasAttribute attribute = getAttributeForEdge(edge);
-
                         deleteEdgeBetweenVertices(outVertex, inVertex, attribute);
                     }
                 }
             }
         }
-
         _deleteVertex(instanceVertex, force);
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private boolean isDeletedEntity(AtlasVertex entityVertex) {
@@ -1106,6 +1103,7 @@ public abstract class DeleteHandlerV1 {
      * @throws AtlasException
      */
     private void deleteAllClassifications(AtlasVertex instanceVertex) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteAllClassifications");
         // If instance is deleted no need to operate classification deleted
         if (!ACTIVE.equals(getState(instanceVertex)))
             return;
@@ -1127,6 +1125,7 @@ public abstract class DeleteHandlerV1 {
 
             deleteEdgeReference(edge, CLASSIFICATION, false, false, instanceVertex);
         }
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private boolean skipVertexForDelete(AtlasVertex vertex) {

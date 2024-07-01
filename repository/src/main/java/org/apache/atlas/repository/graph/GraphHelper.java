@@ -56,6 +56,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.util.AttributeValueMap;
 import org.apache.atlas.util.IndexedInstance;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.lang.StringUtils;
@@ -857,6 +858,7 @@ public final class GraphHelper {
     }
 
     public static List<AtlasVertex> getPropagatableClassifications(AtlasEdge edge) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("getPropagatableClassifications");
         List<AtlasVertex> ret = new ArrayList<>();
 
         RequestContext requestContext = RequestContext.get();
@@ -875,7 +877,7 @@ public final class GraphHelper {
                 ret.addAll(getPropagationEnabledClassificationVertices(inVertex));
             }
         }
-
+        RequestContext.get().endMetricRecord(metric);
         return ret;
     }
     //Returns the vertex from which the tag is being propagated
