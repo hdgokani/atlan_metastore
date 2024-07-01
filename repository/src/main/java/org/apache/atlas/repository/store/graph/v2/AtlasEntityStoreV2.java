@@ -582,10 +582,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @Override
     @GraphTransaction
     public EntityMutationResponse deleteById(final String guid) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("deleteById");
         if (StringUtils.isEmpty(guid)) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
+
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("deleteById");
 
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
         AtlasVertex             vertex             = AtlasGraphUtilsV2.findByGuid(graph, guid);

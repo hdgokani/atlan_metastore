@@ -1348,11 +1348,12 @@ public abstract class DeleteHandlerV1 {
     }
 
     public void createAndQueueClassificationRefreshPropagationTask(AtlasEdge edge) throws AtlasBaseException{
-        MetricRecorder metric = RequestContext.get().startMetricRecord("createAndQueueClassificationRefreshPropagationTask");
         if (taskManagement==null) {
             LOG.warn("Task management is null, can't schedule task now");
             return;
         }
+
+        MetricRecorder metric = RequestContext.get().startMetricRecord("createAndQueueClassificationRefreshPropagationTask");
 
         String      currentUser         = RequestContext.getCurrentUser();
         boolean     isRelationshipEdge  = isRelationshipEdge(edge);
