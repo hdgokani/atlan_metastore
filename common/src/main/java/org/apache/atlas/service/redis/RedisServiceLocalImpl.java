@@ -8,8 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.concurrent.TimeUnit;
 
-@Component
+@Component("redisServiceImpl")
 @ConditionalOnAtlasProperty(property = "atlas.redis.service.impl")
 public class RedisServiceLocalImpl extends AbstractRedisService {
 
@@ -24,17 +25,34 @@ public class RedisServiceLocalImpl extends AbstractRedisService {
 
     @Override
     public String getValue(String key) {
-        return null;
+
+        // If value doesn't exist, return null else return the value
+        return (String) redisCacheClient.getBucket(convertToNamespace(key)).get();
+    }
+
+    @Override
+    public String putValue(String key, String value) {
+        // Put the value in the redis cache with TTL
+        redisCacheClient.getBucket(convertToNamespace(key)).set(value);
+        return value;
     }
 
     @Override
     public String putValue(String key, String value, int timeout) {
-        return null;
+        // Put the value in the redis cache with TTL
+        redisCacheClient.getBucket(convertToNamespace(key)).set(value, timeout, TimeUnit.SECONDS);
+        return value;
     }
 
     @Override
-    public void removeValue(String key) {
+    public void removeValue(String key)  {
+        // Remove the value from the redis cache
+        redisCacheClient.getBucket(convertToNamespace(key)).delete();
+    }
 
+    private String convertToNamespace(String key){
+        // Append key with namespace :atlas
+        return "atlas:"+key;
     }
 
     @Override
