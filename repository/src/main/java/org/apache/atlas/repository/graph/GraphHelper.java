@@ -541,7 +541,13 @@ public final class GraphHelper {
     }
 
     public static boolean hasEntityReferences(AtlasVertex classificationVertex) {
-        return classificationVertex.hasEdges(AtlasEdgeDirection.IN, CLASSIFICATION_LABEL);
+        MetricRecorder metric = RequestContext.get().startMetricRecord("hasEntityReferences");
+        try {
+            return classificationVertex.hasEdges(AtlasEdgeDirection.IN, CLASSIFICATION_LABEL);
+
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
     }
 
     public static List<AtlasVertex> getAllPropagatedEntityVertices(AtlasVertex classificationVertex) {
@@ -706,14 +712,19 @@ public final class GraphHelper {
      * @param vertex
      */
     public void removeVertex(AtlasVertex vertex) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> GraphHelper.removeVertex({})", string(vertex));
-        }
+        MetricRecorder metric = RequestContext.get().startMetricRecord("removeVertex");
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("==> GraphHelper.removeVertex({})", string(vertex));
+            }
 
-        graph.removeVertex(vertex);
+            graph.removeVertex(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== GraphHelper.removeVertex()");
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== GraphHelper.removeVertex()");
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
