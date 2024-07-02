@@ -9,6 +9,7 @@ services:
       discovery.type: single-node
       xpack.security.enabled: false
       ES_JAVA_OPTS: -Xms512m -Xmx2g
+
   cassandra:
     image: cassandra:2.1
     ports:
@@ -17,17 +18,14 @@ services:
       - 7199:7199
       - 9042:9042
       - 9160:9160
-  # scylla:
-  #   image: scylladb/scylla:5.4
-  #   ports:
-  #     - 9042:9042
+
   zookeeper:
     image: zookeeper
     ports:
       - 2181:2181
     restart: always
 
-  redis-master:
+  redis:
     image: redis:6.2.14
     ports:
       - 6379:6379
@@ -36,28 +34,3 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
       - REDIS_PASSWORD=redis
       - REDIS_DATABASES=16
-
-  redis-slave:
-    image: redis:6.2.14
-    command: ["redis-server", "--slaveof", "redis-master", "6379"]
-    ports:
-      - 6380:6379
-    depends_on:
-      - redis-master
-
-  sentinel:
-    image: redis:6.2.14
-    command: ["redis-sentinel", "/etc/redis/sentinel.conf"]
-    ports:
-      - 26379:26379
-    environment:
-      - SENTINEL_DOWN_AFTER=5000
-      - SENTINEL_FAILOVER=500
-      - SENTINEL_QUORUM=2
-    volumes:
-      - ./sentinel.conf:/etc/redis/sentinel.conf
-    links:
-      - redis-master
-    depends_on:
-      - redis-master
-      - redis-slave
