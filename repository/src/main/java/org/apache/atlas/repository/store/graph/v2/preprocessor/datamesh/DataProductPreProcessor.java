@@ -3,6 +3,9 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -100,6 +103,12 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
+
+        // Check if authorized to create entities
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
+                "create entity: type=", entity.getTypeName());
+
+        entity.setCustomAttributes(customAttributes);
 
         productExists(productName, parentDomainQualifiedName, null);
 
@@ -203,7 +212,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             }
 
             product.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
-            product.setAttribute(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
+            product.setAttribute(PreProcessorUtils.PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
             product.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
 
             Iterator<AtlasEdge> existingParentEdges = productVertex.getEdges(AtlasEdgeDirection.IN, DATA_PRODUCT_EDGE_LABEL).iterator();

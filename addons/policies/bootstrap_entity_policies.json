@@ -2884,6 +2884,7 @@
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
                 [
+
                     "entity-type:DataDomain",
                     "entity-classification:*",
                     "entity:*"
@@ -2959,6 +2960,7 @@
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
                 [
+
                     "entity-type:DataDomain",
                     "entity-classification:*",
                     "entity:*"
