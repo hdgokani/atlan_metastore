@@ -29,6 +29,8 @@ import org.apache.commons.collections.PredicateUtils;
 import org.apache.commons.collections.functors.NotPredicate;
 import org.apache.commons.lang.StringUtils;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -178,12 +180,12 @@ public class FilterUtil {
     }
 
     public static boolean validateFilePath(String fileToImport) {
-        String allowedDirectory = "/var/app/allowed/";
 
         try {
-            Path normalizedPath = Paths.get(fileToImport).normalize();
+            String decodedPath = URLDecoder.decode(fileToImport, "UTF-8");
 
-            if (fileToImport.contains("..") || fileToImport.contains("./") || fileToImport.contains(".\\")) {
+            Path normalizedPath = Paths.get(decodedPath).normalize();
+            if (decodedPath.contains("..") || decodedPath.contains("./") || decodedPath.contains(".\\")) {
                 return false;
             }
 
@@ -191,11 +193,9 @@ public class FilterUtil {
                 return false;
             }
 
-            if (!normalizedPath.startsWith(Paths.get(allowedDirectory))) {
-                return false;
-            }
-
             return true;
+        } catch (UnsupportedEncodingException e) {
+            return false;
         } catch (Exception e) {
             return false;
         }
