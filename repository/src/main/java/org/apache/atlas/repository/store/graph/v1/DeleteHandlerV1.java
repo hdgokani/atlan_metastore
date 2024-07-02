@@ -1148,10 +1148,12 @@ public abstract class DeleteHandlerV1 {
             MetricRecorder getAllClassificationEdgesMetric = RequestContext.get().startMetricRecord("getAllClassificationEdges");
             List<AtlasEdge> classificationEdges = getAllClassificationEdges(instanceVertex);
             RequestContext.get().endMetricRecord(getAllClassificationEdgesMetric);
+            LOG.info("Test: Deleting classifications from entity with guid: {}, with {} no of classifications", GraphHelper.getGuid(instanceVertex), classificationEdges.size());
 
             MetricRecorder deleteClassificationEdgesMetric = RequestContext.get().startMetricRecord("deleteClassificationEdges");
             for (AtlasEdge edge : classificationEdges) {
                 AtlasVertex classificationVertex = edge.getInVertex();
+                LOG.info("Test: Deleting classification: {} from entity with guid: {}", getTypeName(classificationVertex), GraphHelper.getGuid(instanceVertex));
                 boolean     isClassificationEdge = isClassificationEdge(edge);
                 boolean     removePropagations   = getRemovePropagations(classificationVertex);
 

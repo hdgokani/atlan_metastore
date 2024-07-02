@@ -543,8 +543,8 @@ public final class GraphHelper {
     public static boolean hasEntityReferences(AtlasVertex classificationVertex) {
         MetricRecorder metric = RequestContext.get().startMetricRecord("hasEntityReferences");
         try {
-            return classificationVertex.hasEdges(AtlasEdgeDirection.IN, CLASSIFICATION_LABEL);
-
+            LOG.debug("Test: Checking if classification vertex {} has entity references", classificationVertex.getIdForDisplay());
+            return classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL).edges(1).iterator().hasNext();
         } finally {
             RequestContext.get().endMetricRecord(metric);
         }
