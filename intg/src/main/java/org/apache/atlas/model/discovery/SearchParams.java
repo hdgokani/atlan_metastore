@@ -14,6 +14,9 @@ public class SearchParams {
     Set<String> relationAttributes;
     Set<String> collapseAttributes;
     Set<String> collapseRelationAttributes;
+
+
+    boolean isMultiSearch;
     boolean showSearchScore;
     boolean suppressLogs;
     boolean excludeMeanings;
@@ -50,6 +53,14 @@ public class SearchParams {
 
     public Set<String> getCollapseAttributes() {
         return collapseAttributes;
+    }
+
+    public boolean isMultiSearch() {
+        return isMultiSearch;
+    }
+
+    public void setMultiSearch(boolean multiSearch) {
+        isMultiSearch = multiSearch;
     }
 
     public void setCollapseAttributes(Set<String> collapseAttributes) {

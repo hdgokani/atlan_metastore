@@ -993,9 +993,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 LOG.debug("Performing ES search for the params ({})", searchParams);
             }
 
-            String indexName = getIndexName(params);
-
-            indexQuery = graph.elasticsearchQuery(indexName);
+            List<String> indexNames = getIndexName(params);
+            searchParams.setMultiSearch(indexNames.size() > 1);
+            indexQuery = graph.elasticsearchQuery(indexNames.get(0));
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
             if (indexQueryResult == null) {
@@ -1135,11 +1135,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return  entityHeaders;
     }
 
-    private String getIndexName(IndexSearchParams params) throws AtlasBaseException {
+    private List<String> getIndexName(IndexSearchParams params) throws AtlasBaseException {
         String vertexIndexName = getESIndex();
-
+        List<String> indexes = new ArrayList<>();
         if (StringUtils.isEmpty(params.getPersona()) && StringUtils.isEmpty(params.getPurpose())) {
-            return vertexIndexName;
+            return Arrays.asList(vertexIndexName);
         }
 
         String qualifiedName = "";
@@ -1150,13 +1150,13 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
 
         String aliasName = AccessControlUtils.getESAliasName(qualifiedName);
-
+        indexes.add(aliasName);
         if (StringUtils.isNotEmpty(aliasName)) {
             if(params.isAccessControlExclusive()) {
                 accessControlExclusiveDsl(params, aliasName);
-                aliasName = aliasName+","+vertexIndexName;
+                indexes.add(vertexIndexName);
             }
-            return aliasName;
+            return indexes;
         } else {
             throw new AtlasBaseException("ES alias not found for purpose/persona " + params.getPurpose());
         }

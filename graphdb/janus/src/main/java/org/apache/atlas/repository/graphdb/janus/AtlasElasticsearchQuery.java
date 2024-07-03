@@ -132,14 +132,26 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         DirectIndexQueryResult result = null;
 
         try {
-            if(searchParams.isCallAsync()) {
-                return performAsyncDirectIndexQuery(searchParams);
-            } else{
-                String responseString =  performDirectIndexQuery(searchParams.getQuery(), false);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("runQueryWithLowLevelClient.response : {}", responseString);
+            if(searchParams.isMultiSearch()) {
+                if (searchParams.isCallAsync()) {
+                    return performAsyncDirectIndexQuery(searchParams);
+                } else {
+                    String responseString = performDirectIndexQuery(searchParams.getQuery(), false);
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("runQueryWithLowLevelClient.response : {}", responseString);
+                    }
+                    return getResultFromResponse(responseString);
                 }
-                return getResultFromResponse(responseString);
+            } else {
+                if (searchParams.isCallAsync()) {
+                    return performAsyncDirectIndexQuery(searchParams);
+                } else {
+                    String responseString = performDirectIndexQuery(searchParams.getQuery(), false);
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("runQueryWithLowLevelClient.response : {}", responseString);
+                    }
+                    return getResultFromResponse(responseString);
+                }
             }
         } catch (IOException e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
@@ -191,6 +203,57 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                     * We need to check if the search context ID is present and update the cache
                     * We also need to check if the search ID exists and delete if necessary, if the sequence number is greater than the cache sequence number
                     *
+                 */
+                String esSearchId = response.getId();
+                String searchContextId = searchParams.getSearchContextId();
+                Integer searchContextSequenceNo = searchParams.getSearchContextSequenceNo();
+                if (contextIdExists) {
+                    CompletableFuture.runAsync(() -> SearchContextCache.put(searchContextId, searchContextSequenceNo, esSearchId));
+                }
+                response = getAsyncSearchResponse(searchParams, esSearchId).get();
+                if (response ==  null) {
+                    // Return null, if the response is null wil help returning @204 HTTP_NO_CONTENT to the user
+                    return null;
+                }
+                result = getResultFromResponse(response.getFullResponse(), true);
+            } else {
+                result = getResultFromResponse(response.getFullResponse(), true);
+            }
+        }catch (Exception e) {
+            LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
+        } finally {
+            if (contextIdExists) {
+                // If the search context id is present, then we need to remove the search context from the cache
+                try {
+                    CompletableFuture.runAsync(() -> SearchContextCache.remove(searchParams.getSearchContextId()));
+                } catch (Exception e) {
+                    LOG.error("Failed to remove the search context from the cache {}", e.getMessage());
+                }
+            }
+            RequestContext.get().endMetricRecord(metric);
+        }
+        return result;
+    }
+
+
+    private DirectIndexQueryResult performAsyncDirectIndexQuery__(SearchParams searchParams) throws AtlasBaseException, IOException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("performAsyncDirectIndexQuery");
+        DirectIndexQueryResult result = null;
+        boolean contextIdExists = StringUtils.isNotEmpty(searchParams.getSearchContextId()) && searchParams.getSearchContextSequenceNo() != null;
+        try {
+            if(contextIdExists) {
+                // If the search context id and greater sequence no is present,
+                // then we need to delete the previous search context async
+                processRequestWithSameSearchContextId(searchParams);
+            }
+            AsyncQueryResult response = submitAsyncSearch(searchParams, false).get();
+            if(response.isRunning()) {
+                /*
+                 * If the response is still running, then we need to wait for the response
+                 * We need to check if the search context ID is present and update the cache
+                 * We also need to check if the search ID exists and delete if necessary, if the sequence number is greater than the cache sequence number
+                 *
                  */
                 String esSearchId = response.getId();
                 String searchContextId = searchParams.getSearchContextId();
@@ -415,6 +478,31 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         } else {
             endPoint = index + "/_search?_source=false";
         }
+
+        Request request = new Request("GET", endPoint);
+        request.setEntity(entity);
+
+        Response response;
+        try {
+            response = lowLevelRestClient.performRequest(request);
+        } catch (ResponseException rex) {
+            if (rex.getResponse().getStatusLine().getStatusCode() == 404) {
+                LOG.warn(String.format("ES index with name %s not found", index));
+                throw new AtlasBaseException(INDEX_NOT_FOUND, index);
+            } else {
+                throw new AtlasBaseException(rex);
+            }
+        }
+
+        return EntityUtils.toString(response.getEntity());
+    }
+
+    private String performDirectIndexQuery__(String query) throws AtlasBaseException, IOException {
+        HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
+        String endPoint;
+
+
+        endPoint = index + "/_msearch";
 
         Request request = new Request("GET", endPoint);
         request.setEntity(entity);
