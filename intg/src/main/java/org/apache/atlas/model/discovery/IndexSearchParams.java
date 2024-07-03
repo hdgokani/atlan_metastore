@@ -18,7 +18,6 @@ public class IndexSearchParams extends SearchParams {
     private String purpose;
     private String persona;
     private String queryString;
-
     /*
     * Indexsearch includes all relations (if requested with param attributes) even if relationshipStatus is DELETED
     * Changing this behaviour to exclude related attributes which has relationshipStatus as DELETED
@@ -41,6 +40,20 @@ public class IndexSearchParams extends SearchParams {
     public void setDsl(Map dsl) {
         this.dsl = dsl;
         queryString = AtlasType.toJson(dsl);
+    }
+
+    public Integer getFrom() {
+        if (dsl != null && dsl.containsKey("from")) {
+            return (Integer) dsl.get("from");
+        }
+        return null;
+    }
+
+    public Integer getSize() {
+        if (dsl != null && dsl.containsKey("size")) {
+            return (Integer) dsl.get("size");
+        }
+        return null;
     }
 
     public boolean isAllowDeletedRelations() {

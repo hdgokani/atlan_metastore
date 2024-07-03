@@ -408,6 +408,14 @@ public class DiscoveryREST {
                 throw abe;
             }
 
+            if (parameters.getFrom() > 10000) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query: 'from' parameter is more than 10000, Use search_after parameter for pagination.");
+            }
+
+            if (parameters.getSize() > 20) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query: 'size' parameter is more than 20, 'size' parameter can only be less than equal to 20");
+            }
+
             if(LOG.isDebugEnabled()){
                 LOG.debug("Performing indexsearch for the params ({})", parameters);
             }
