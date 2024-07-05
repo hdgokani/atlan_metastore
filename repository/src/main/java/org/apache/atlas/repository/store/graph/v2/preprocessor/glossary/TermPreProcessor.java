@@ -103,7 +103,7 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
         if(StringUtils.isEmpty(lexicographicalSortOrder)){
             assignNewLexicographicalSortOrder(entity, glossaryQName, parentQname, this.discovery);
         } else {
-            isValidLexoRank(entity.getTypeName(), lexicographicalSortOrder, glossaryQName, parentQname, this.discovery);
+            isValidLexoRank(lexicographicalSortOrder, glossaryQName, parentQname, this.discovery);
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
@@ -136,7 +136,7 @@ public class TermPreProcessor extends AbstractGlossaryPreProcessor {
 
         String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
         if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
-            isValidLexoRank(entity.getTypeName(), lexicographicalSortOrder, newGlossaryQualifiedName, parentQname, this.discovery);
+            isValidLexoRank(lexicographicalSortOrder, newGlossaryQualifiedName, parentQname, this.discovery);
         } else {
             entity.removeAttribute(LEXICOGRAPHICAL_SORT_ORDER);
         }
