@@ -2892,7 +2892,7 @@
                 [
                     "entity-create",
                     "entity-read",
-                    "entity-delete"
+                    "entity-update"
                 ]
             }
         },
