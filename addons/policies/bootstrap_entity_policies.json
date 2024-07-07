@@ -2864,9 +2864,45 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "CRUD_DATA_MESH_ENTITIES",
-                "qualifiedName": "CRUD_DATA_MESH_ENTITIES",
-                "description": "Allows user to perform crud operation on data mesh assets",
+                "name": "CRU_DATA_MESH_ENTITIES",
+                "qualifiedName": "CRU_DATA_MESH_ENTITIES",
+                "description": "Allows user to perform cru operation on data mesh assets",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources":
+                [
+                    "entity-type:DataDomain",
+                    "entity-classification:*",
+                    "entity:default/domain/*/super"
+                ],
+                "policyActions":
+                [
+                    "entity-create",
+                    "entity-read",
+                    "entity-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "D_DATA_MESH_ENTITIES",
+                "qualifiedName": "D_DATA_MESH_ENTITIES",
+                "description": "Allows admins to perform delete operation on data mesh assets",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
@@ -2891,9 +2927,6 @@
                 ],
                 "policyActions":
                 [
-                    "entity-create",
-                    "entity-read",
-                    "entity-update",
                     "entity-delete"
                 ]
             }
