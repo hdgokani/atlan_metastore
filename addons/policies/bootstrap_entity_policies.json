@@ -2864,9 +2864,9 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "CRU_DATA_MESH_ENTITIES",
-                "qualifiedName": "CRU_DATA_MESH_ENTITIES",
-                "description": "Allows user to perform cru operation on data mesh assets",
+                "name": "CRUD_DATA_MESH_ENTITIES",
+                "qualifiedName": "CRUD_DATA_MESH_ENTITIES",
+                "description": "Allows user to perform crud operation on data mesh assets",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
@@ -2892,7 +2892,8 @@
                 [
                     "entity-create",
                     "entity-read",
-                    "entity-update"
+                    "entity-update",
+                    "entity-delete"
                 ]
             }
         },
