@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 
 
+import com.sun.org.apache.bcel.internal.generic.NEW;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -405,7 +406,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", STAKEHOLDER_TITLE_ENTITY_TYPE)));
 
         List<String> termsList = Arrays.asList(
-                SUPER_WILDCARD,
+                NEW_STAR,
                 STAR,
                 domainQualifiedName
         );
