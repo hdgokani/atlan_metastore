@@ -2864,8 +2864,8 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "CRU_DATA_MESH_ENTITIES",
-                "qualifiedName": "CRU_DATA_MESH_ENTITIES",
+                "name": "CRUD_DATA_MESH_ENTITIES",
+                "qualifiedName": "CRUD_DATA_MESH_ENTITIES",
                 "description": "Allows user to perform create read update operation on data mesh assets",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
@@ -2892,7 +2892,8 @@
                 [
                     "entity-create",
                     "entity-read",
-                    "entity-update"
+                    "entity-update",
+                    "entity-delete"
                 ]
             }
         },
