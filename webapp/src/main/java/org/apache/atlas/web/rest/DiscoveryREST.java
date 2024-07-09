@@ -25,6 +25,7 @@ import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
+import org.apache.atlas.discovery.ESBasedSuggestionService;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
@@ -34,6 +35,7 @@ import org.apache.atlas.model.searchlog.SearchLogSearchParams;
 import org.apache.atlas.model.searchlog.SearchLogSearchResult;
 import org.apache.atlas.model.searchlog.SearchRequestLogData.SearchRequestLogDataBuilder;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase;
 import org.apache.atlas.searchlog.SearchLoggingManagement;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
@@ -91,6 +93,8 @@ public class DiscoveryREST {
     private final AtlasTypeRegistry     typeRegistry;
     private final AtlasDiscoveryService discoveryService;
     private final SearchLoggingManagement loggerManagement;
+
+    private final ESBasedSuggestionService esBasedSuggestionService = new ESBasedSuggestionService(AtlasElasticsearchDatabase.getLowLevelClient());
 
     private static final String INDEXSEARCH_TAG_NAME = "indexsearch";
     private static final Set<String> TRACKING_UTM_TAGS = new HashSet<>(Arrays.asList("ui_main_list", "ui_popup_searchbar"));
@@ -829,7 +833,8 @@ public class DiscoveryREST {
     @Path("suggestions")
     @GET
     @Timed
-    public AtlasSuggestionsResult getSuggestions(@QueryParam("prefixString") String prefixString, @QueryParam("fieldName") String fieldName) {
+    public ESBasedSuggestionService.SuggestionResponse getSuggestions(@QueryParam("prefixString") String prefixString, @QueryParam("fieldName") String fieldName,
+                                                                      @QueryParam("fuzziness") int fuzziness) {
         AtlasPerfTracer perf = null;
 
         try {
@@ -837,7 +842,9 @@ public class DiscoveryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.getSuggestions(" + prefixString + "," + fieldName + ")");
             }
 
-            return discoveryService.getSuggestions(prefixString, fieldName);
+            return esBasedSuggestionService.searchSuggestions(prefixString, fieldName, fuzziness);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         } finally {
             AtlasPerfTracer.log(perf);
         }
