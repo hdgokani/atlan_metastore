@@ -2866,7 +2866,7 @@
             {
                 "name": "CRUD_DATA_MESH_ENTITIES",
                 "qualifiedName": "CRUD_DATA_MESH_ENTITIES",
-                "description": "Allows user to perform create read update operation on data mesh assets",
+                "description": "Allows user to perform crud operation on data mesh assets",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
@@ -2886,7 +2886,7 @@
                 [
                     "entity-type:DataDomain",
                     "entity-classification:*",
-                    "entity:default/domain/*/super"
+                    "entity:*/super"
                 ],
                 "policyActions":
                 [
