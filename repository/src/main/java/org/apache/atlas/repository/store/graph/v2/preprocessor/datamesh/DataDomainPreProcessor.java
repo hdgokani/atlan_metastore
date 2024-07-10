@@ -420,15 +420,12 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
         Map<String, Object> termsMap = mapOf(ATTR_DOMAIN_QUALIFIED_NAMES, termsList);
         Map<String, Object> termsFilter = mapOf("terms", termsMap);
-        Map<String, Object> filterBool = mapOf("filter", termsFilter);
-        Map<String, Object> nestedBool = mapOf("bool", filterBool);
 
-        mustClauseList.add(mapOf("bool", nestedBool));
+        mustClauseList.add(termsFilter);
 
-        Map<String, Object> topBool = mapOf("must", mustClauseList);
-        Map<String, Object> topFilter = mapOf("bool", topBool);
-        Map<String, Object> query = mapOf("filter", topFilter);
-        Map<String, Object> dsl = mapOf("query", mapOf("bool", query));
+        Map<String, Object> boolQuery = mapOf("must", mustClauseList);
+        Map<String, Object> query = mapOf("bool", boolQuery);
+        Map<String, Object> dsl = mapOf("query", query);
 
         List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, super.discovery);
 
@@ -460,6 +457,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
             if (CollectionUtils.isNotEmpty(stakeHolderGuids)) {
                 entityStore.deleteByIds(stakeHolderGuids);
+                LOG.info("Deleted Stakeholders: {}", stakeHolderGuids);
             }
 
             // active stakeholder titles exists?
@@ -471,6 +469,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
                     List<String> domainQualifiedNames = stakeholderTitleVertex.getMultiValuedProperty(ATTR_DOMAIN_QUALIFIED_NAMES, String.class);
                     if (CollectionUtils.isEmpty(domainQualifiedNames)) {
                         entityStore.deleteById(stakeholderTitle.getGuid());
+                        LOG.info("Deleted Stakeholder Title: {}", stakeholderTitle.getGuid());
                     }
                 }
             }
