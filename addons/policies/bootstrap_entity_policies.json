@@ -2901,8 +2901,8 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "D_DATA_MESH_ENTITIES",
-                "qualifiedName": "D_DATA_MESH_ENTITIES",
+                "name": "RD_DATA_MESH_ENTITIES",
+                "qualifiedName": "RD_DATA_MESH_ENTITIES",
                 "description": "Allows admins to perform delete operation on data mesh assets",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
@@ -2928,6 +2928,7 @@
                 ],
                 "policyActions":
                 [
+                    "entity-read",
                     "entity-delete"
                 ]
             }
