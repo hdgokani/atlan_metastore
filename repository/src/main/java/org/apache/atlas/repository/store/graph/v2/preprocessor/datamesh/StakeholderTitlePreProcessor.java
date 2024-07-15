@@ -173,7 +173,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                         if (hasRemovedItems(currentDomainQualifiedNames, domainQualifiedNames)) {
                             Iterator<AtlasVertex> childrens = getActiveChildrenVertices(vertex, STAKEHOLDER_TITLE_EDGE_LABEL);
                             if (childrens.hasNext()) {
-                                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot update StakeholderTitle as it has reference to Stakeholder");
+                                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot remove StakeholderTitle as it has reference to Stakeholder");
                             }
                         }
                     }
