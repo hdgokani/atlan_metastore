@@ -171,6 +171,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                   domainQualifiedNames = currentDomainQualifiedNames;
                 }
                 else{
+                    // validation to check if any StakeholderTitle has reference to Stakeholder
                     Iterator<AtlasVertex> childrens = getActiveChildrenVertices(vertex, STAKEHOLDER_TITLE_EDGE_LABEL);
                     if (childrens.hasNext()) {
                         throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not update StakeholderTitle as it has reference to Stakeholder");
