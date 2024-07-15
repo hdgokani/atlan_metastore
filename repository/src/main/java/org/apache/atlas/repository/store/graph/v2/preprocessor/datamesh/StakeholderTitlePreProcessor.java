@@ -170,10 +170,11 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                         domainQualifiedNames = currentDomainQualifiedNames;
                     }
                     else{
-                        // validation to check if any StakeholderTitle has reference to Stakeholder
-                        Iterator<AtlasVertex> childrens = getActiveChildrenVertices(vertex, STAKEHOLDER_TITLE_EDGE_LABEL);
-                        if (childrens.hasNext()) {
-                            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not update StakeholderTitle as it has reference to Stakeholder");
+                        if (hasRemovedItems(currentDomainQualifiedNames, domainQualifiedNames)) {
+                            Iterator<AtlasVertex> childrens = getActiveChildrenVertices(vertex, STAKEHOLDER_TITLE_EDGE_LABEL);
+                            if (childrens.hasNext()) {
+                                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot remove StakeholderTitle as it has reference to Stakeholder");
+                            }
                         }
                     }
                 }
@@ -219,6 +220,10 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+    }
+
+    private boolean hasRemovedItems(List<String> oldList, List<String> newList) {
+        return oldList.stream().anyMatch(qName -> !newList.contains(qName));
     }
 
     private void authorizeDomainAccess(List<String> domainQualifiedNames) throws AtlasBaseException {
