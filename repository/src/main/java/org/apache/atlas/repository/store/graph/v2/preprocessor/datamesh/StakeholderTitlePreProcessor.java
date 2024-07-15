@@ -166,15 +166,15 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                 Object qNamesAsObject = entity.getAttribute(ATTR_DOMAIN_QUALIFIED_NAMES);
                 if (qNamesAsObject != null) {
                     domainQualifiedNames = (List<String>) qNamesAsObject;
-                }
-                if(CollectionUtils.isEqualCollection(domainQualifiedNames, currentDomainQualifiedNames)) {
-                  domainQualifiedNames = currentDomainQualifiedNames;
-                }
-                else{
-                    // validation to check if any StakeholderTitle has reference to Stakeholder
-                    Iterator<AtlasVertex> childrens = getActiveChildrenVertices(vertex, STAKEHOLDER_TITLE_EDGE_LABEL);
-                    if (childrens.hasNext()) {
-                        throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not update StakeholderTitle as it has reference to Stakeholder");
+                    if(CollectionUtils.isEqualCollection(domainQualifiedNames, currentDomainQualifiedNames)) {
+                        domainQualifiedNames = currentDomainQualifiedNames;
+                    }
+                    else{
+                        // validation to check if any StakeholderTitle has reference to Stakeholder
+                        Iterator<AtlasVertex> childrens = getActiveChildrenVertices(vertex, STAKEHOLDER_TITLE_EDGE_LABEL);
+                        if (childrens.hasNext()) {
+                            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not update StakeholderTitle as it has reference to Stakeholder");
+                        }
                     }
                 }
             }
