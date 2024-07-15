@@ -25,6 +25,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,8 +37,8 @@ import static org.apache.atlas.repository.Constants.DATA_DOMAIN_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.STAKEHOLDER_TITLE_ENTITY_TYPE;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.getUUID;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.verifyDuplicateAssetByName;
+import static org.apache.atlas.repository.graph.GraphHelper.getActiveChildrenVertices;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class StakeholderTitlePreProcessor implements PreProcessor {
@@ -159,15 +161,26 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
             }
 
             List<String> domainQualifiedNames = null;
+            List<String> currentDomainQualifiedNames = vertex.getMultiValuedProperty(ATTR_DOMAIN_QUALIFIED_NAMES, String.class);;
             if (entity.hasAttribute(ATTR_DOMAIN_QUALIFIED_NAMES)) {
                 Object qNamesAsObject = entity.getAttribute(ATTR_DOMAIN_QUALIFIED_NAMES);
                 if (qNamesAsObject != null) {
                     domainQualifiedNames = (List<String>) qNamesAsObject;
+                    if(CollectionUtils.isEqualCollection(domainQualifiedNames, currentDomainQualifiedNames)) {
+                        domainQualifiedNames = currentDomainQualifiedNames;
+                    }
+                    else{
+                        // validation to check if any StakeholderTitle has reference to Stakeholder
+                        Iterator<AtlasVertex> childrens = getActiveChildrenVertices(vertex, STAKEHOLDER_TITLE_EDGE_LABEL);
+                        if (childrens.hasNext()) {
+                            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not update StakeholderTitle as it has reference to Stakeholder");
+                        }
+                    }
                 }
             }
 
             if (CollectionUtils.isEmpty(domainQualifiedNames)) {
-                domainQualifiedNames = vertex.getMultiValuedProperty(ATTR_DOMAIN_QUALIFIED_NAMES, String.class);
+                domainQualifiedNames = currentDomainQualifiedNames;
             }
 
             authorizeDomainAccess(domainQualifiedNames);
