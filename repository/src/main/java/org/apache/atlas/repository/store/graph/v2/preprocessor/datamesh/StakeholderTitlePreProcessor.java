@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
@@ -52,6 +53,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
     public static final String STAR = "*/super";
     public static final String NEW_STAR = "default/domain/*/super";
     public static final String ATTR_DOMAIN_QUALIFIED_NAMES = "stakeholderTitleDomainQualifiedNames";
+    public static final String ATTR_STAKEHOLDER_DOMAIN_QUALIFIED_NAME = "stakeholderDomainQualifiedName";
 
     public static final String REL_ATTR_STAKEHOLDERS = "stakeholders";
 
@@ -170,11 +172,9 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                         domainQualifiedNames = currentDomainQualifiedNames;
                     }
                     else{
-                        if (hasRemovedItems(currentDomainQualifiedNames, domainQualifiedNames)) {
-                            Iterator<AtlasVertex> childrens = getActiveChildrenVertices(vertex, STAKEHOLDER_TITLE_EDGE_LABEL);
-                            if (childrens.hasNext()) {
-                                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot remove StakeholderTitle as it has reference to Stakeholder");
-                            }
+                        List<String> removedItems = getRemovedItems(currentDomainQualifiedNames, domainQualifiedNames);
+                        if (!removedItems.isEmpty() && isStakeholderAssociatedWithRemovedItems(vertex, removedItems)) {
+                            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot remove StakeholderTitle as it has reference to Stakeholder");
                         }
                     }
                 }
@@ -222,8 +222,27 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
         }
     }
 
-    private boolean hasRemovedItems(List<String> oldList, List<String> newList) {
-        return oldList.stream().anyMatch(qName -> !newList.contains(qName));
+    private List<String> getRemovedItems(List<String> oldList, List<String> newList) {
+        return oldList.stream()
+                .filter(qName -> !newList.contains(qName))
+                .collect(Collectors.toList());
+    }
+
+    private boolean isStakeholderAssociatedWithRemovedItems(AtlasVertex vertex, List<String> removedItems) throws AtlasBaseException {
+        Iterator<AtlasVertex> childrens = getActiveChildrenVertices(vertex, STAKEHOLDER_TITLE_EDGE_LABEL);
+        while (childrens.hasNext()) {
+            if(removedItems.contains(STAR) || removedItems.contains(NEW_STAR)) {
+                return true;
+            }
+            AtlasVertex child = childrens.next();
+            String domainQualifiedName = child.getProperty(ATTR_STAKEHOLDER_DOMAIN_QUALIFIED_NAME, String.class);
+            for (String removedItem : removedItems) {
+                if (domainQualifiedName.equals(removedItem)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void authorizeDomainAccess(List<String> domainQualifiedNames) throws AtlasBaseException {
