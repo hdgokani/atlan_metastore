@@ -120,11 +120,11 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                 throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_DOMAIN_QUALIFIED_NAMES);
             }
 
-            if (domainQualifiedNames.contains(STAR)) {
+            if (domainQualifiedNames.contains(STAR) || domainQualifiedNames.contains(NEW_STAR)) {
                 if (domainQualifiedNames.size() > 1) {
 
                     domainQualifiedNames.clear();
-                    domainQualifiedNames.add(STAR);
+                    domainQualifiedNames.add(NEW_STAR);
                     entity.setAttribute(ATTR_DOMAIN_QUALIFIED_NAMES, domainQualifiedNames);
                 }
 
@@ -172,10 +172,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                         domainQualifiedNames = currentDomainQualifiedNames;
                     }
                     else{
-                        List<String> removedItems = getRemovedItems(currentDomainQualifiedNames, domainQualifiedNames);
-                        if (!removedItems.isEmpty() && isStakeholderAssociatedWithRemovedItems(vertex, removedItems)) {
-                            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot remove StakeholderTitle as it has reference to Stakeholder");
-                        }
+                       handleDomainQualifiedNamesUpdate(entity, vertex, domainQualifiedNames, currentDomainQualifiedNames);
                     }
                 }
             }
@@ -243,6 +240,20 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
             }
         }
         return false;
+    }
+
+    private void handleDomainQualifiedNamesUpdate(AtlasEntity entity, AtlasVertex vertex, List<String> domainQualifiedNames, List<String> currentDomainQualifiedNames) throws AtlasBaseException {
+        if(domainQualifiedNames.contains(STAR) || domainQualifiedNames.contains(NEW_STAR)) {
+            domainQualifiedNames.clear();
+            domainQualifiedNames.add(NEW_STAR);
+            entity.setAttribute(ATTR_DOMAIN_QUALIFIED_NAMES, domainQualifiedNames);
+        }
+        else{
+            List<String> removedItems = getRemovedItems(currentDomainQualifiedNames, domainQualifiedNames);
+            if (!removedItems.isEmpty() && isStakeholderAssociatedWithRemovedItems(vertex, removedItems)) {
+                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot remove Domain as StakeholderTitle has reference to Stakeholder in that Domain");
+            }
+        }
     }
 
     private void authorizeDomainAccess(List<String> domainQualifiedNames) throws AtlasBaseException {
