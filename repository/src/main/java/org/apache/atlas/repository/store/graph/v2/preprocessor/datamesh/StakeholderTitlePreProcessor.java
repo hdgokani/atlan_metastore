@@ -119,7 +119,6 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
             if (CollectionUtils.isEmpty(domainQualifiedNames)) {
                 throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_DOMAIN_QUALIFIED_NAMES);
             }
-
             if (domainQualifiedNames.contains(NEW_STAR) || domainQualifiedNames.contains(STAR)) {
                 if (domainQualifiedNames.size() > 1) {
 
