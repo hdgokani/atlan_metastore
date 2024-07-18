@@ -8,6 +8,7 @@ on:
       - master
       - staging
       - beta
+      - new-test
     types:
       - completed
 
