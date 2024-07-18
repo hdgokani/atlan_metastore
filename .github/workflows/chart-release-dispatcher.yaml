@@ -9,8 +9,6 @@ on:
       - staging
       - beta
       - new-test
-    types:
-      - completed
 
 jobs:
   charts-release-dispatcher:
