@@ -30,6 +30,7 @@ import org.apache.atlas.admin.client.RangerAdminClient;
 import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
 import org.apache.atlas.plugin.policyengine.RangerPluginContext;
 import org.apache.atlas.plugin.service.RangerBasePlugin;
+import org.openjdk.jol.info.GraphLayout;
 
 import java.io.File;
 import java.io.FileReader;
@@ -326,6 +327,7 @@ public class PolicyRefresher extends Thread {
 			} else {
 				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis);
 			}
+			LOG.info("AuthPerformance: PolicyRefresher(serviceName=" + serviceName + ").loadPolicyfromPolicyAdmin() svcPolicies object size" + GraphLayout.parseInstance(svcPolicies).toFootprint());
 
 			boolean isUpdated = svcPolicies != null;
 

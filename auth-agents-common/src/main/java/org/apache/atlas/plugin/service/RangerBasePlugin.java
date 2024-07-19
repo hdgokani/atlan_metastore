@@ -52,6 +52,7 @@ import org.apache.atlas.plugin.policyengine.RangerResourceAccessInfo;
 import org.apache.atlas.plugin.policyevaluator.RangerPolicyEvaluator;
 import org.apache.atlas.plugin.store.EmbeddedServiceDefsUtil;
 import org.apache.atlas.plugin.util.*;
+import org.openjdk.jol.info.GraphLayout;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -379,6 +380,7 @@ public class RangerBasePlugin {
 							RangerPolicyEngineImpl oldPolicyEngineImpl = (RangerPolicyEngineImpl) oldPolicyEngine;
 
 							newPolicyEngine = RangerPolicyEngineImpl.getPolicyEngine(oldPolicyEngineImpl, policies);
+							LOG.info("AuthPerformance: using old policies to create engine" + CollectionUtils.isNotEmpty(policies.getPolicyDeltas()));
 						}
 
 						if (newPolicyEngine != null) {
@@ -403,6 +405,7 @@ public class RangerBasePlugin {
 				}
 
 				if (newPolicyEngine != null) {
+					LOG.info("AuthPerformance: PolicyEngine object size" + GraphLayout.parseInstance(newPolicyEngine).toFootprint());
 					if (!isPolicyEngineShared) {
 						newPolicyEngine.setUseForwardedIPAddress(pluginConfig.isUseForwardedIPAddress());
 						newPolicyEngine.setTrustedProxyAddresses(pluginConfig.getTrustedProxyAddresses());
