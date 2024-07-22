@@ -460,9 +460,13 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
                     AtlasVertex stakeholderTitleVertex = entityRetriever.getEntityVertex(stakeholderTitle.getGuid());
                     AtlasGraphUtilsV2.removeItemFromListPropertyValue(stakeholderTitleVertex, ATTR_DOMAIN_QUALIFIED_NAMES, vertex.getProperty(QUALIFIED_NAME, String.class));
                     List<String> domainQualifiedNames = stakeholderTitleVertex.getMultiValuedProperty(ATTR_DOMAIN_QUALIFIED_NAMES, String.class);
+
                     if (CollectionUtils.isEmpty(domainQualifiedNames)) {
-                        entityStore.deleteById(stakeholderTitle.getGuid());
-                        LOG.info("Deleted Stakeholder Title: {}", stakeholderTitle.getGuid());
+                        Iterator<AtlasVertex> stakeholders = getActiveChildrenVertices(stakeholderTitleVertex, STAKEHOLDER_TITLE_EDGE_LABEL);
+                        if (!stakeholders.hasNext()) {
+                            entityStore.deleteById(stakeholderTitle.getGuid());
+                            LOG.info("Deleted Stakeholder Title: {}", stakeholderTitle.getGuid());
+                        }
                     }
                 }
             }
