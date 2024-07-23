@@ -6,7 +6,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -52,7 +51,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
                                 EntityGraphRetriever entityRetriever,
                                 boolean storeDifferentialAudits, EntityDiscoveryService discovery) {
 
-        super(graph, typeRegistry, entityRetriever);
+        super(graph, typeRegistry, entityRetriever, discovery);
         this.storeDifferentialAudits = storeDifferentialAudits;
         this.discovery = discovery;
         this.entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, null, true, true);
@@ -79,14 +78,10 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         AtlasEntity existingContractEntity = entityRetriever.toAtlasEntity(vertex);
         // No update to relationships allowed for the existing contract version
         resetAllRelationshipAttributes(entity);
-        DataContract contract = DataContract.deserialize(contractString);
-        String existingContractString = getContractString(existingContractEntity);
-        boolean requestFromMigration = RequestContext.get().getRequestContextHeaders().getOrDefault(
-                "x-atlan-request-id", "").contains("json-to-yaml-migration");
-        if (!requestFromMigration && !StringUtils.isEmpty(contractString) &&
-                !contract.equals(DataContract.deserialize(existingContractString))) {
+        if (entity.getAttribute(ATTR_CERTIFICATE_STATUS) == DataContract.Status.VERIFIED.name() ||
+                existingContractEntity.getAttribute(ATTR_CERTIFICATE_STATUS) == DataContract.Status.VERIFIED.name()) {
             // Update the same asset(entity)
-            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can't update a specific version of contract");
+            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can't update published version of contract.");
         }
     }
     private void processCreateContract(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
@@ -109,8 +104,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         String contractString = getContractString(entity);
         DataContract contract = DataContract.deserialize(contractString);
         String datasetQName = contractQName.substring(0, contractQName.lastIndexOf('/'));
-        contractQName = String.format("%s/%s/%s", datasetQName, contract.getType().name(), CONTRACT_QUALIFIED_NAME_SUFFIX);
-        AtlasEntityWithExtInfo associatedAsset = getAssociatedAsset(datasetQName, contract.getType().name());
+        AtlasEntity associatedAsset = getAssociatedAsset(datasetQName, contract);
+        contractQName = String.format("%s/%s/%s", datasetQName, associatedAsset.getTypeName(), CONTRACT_QUALIFIED_NAME_SUFFIX);
 
         authorizeContractCreateOrUpdate(entity, associatedAsset);
 
@@ -120,8 +115,11 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         String contractStringJSON = DataContract.serializeJSON(contract);
         entity.setAttribute(ATTR_CONTRACT_JSON, contractStringJSON);
 
-        AtlasEntity currentVersionEntity = getCurrentVersion(associatedAsset.getEntity().getGuid());
+        AtlasEntity currentVersionEntity = getCurrentVersion(associatedAsset.getGuid());
         Long newVersionNumber = 1L;
+        if (currentVersionEntity == null && contract.getStatus() == DataContract.Status.VERIFIED) {
+            throw new AtlasBaseException("Can't create a new published version");
+        }
         if (currentVersionEntity != null) {
             // Contract already exist
             Long currentVersionNumber = (Long) currentVersionEntity.getAttribute(ATTR_CONTRACT_VERSION);
@@ -130,13 +128,16 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
                 // No changes in the contract, Not creating new version
                 removeCreatingVertex(context, entity);
                 return;
-            } else if (contract.equals(DataContract.deserialize(getContractString(currentVersionEntity)))) {
+            } else if (!currentVersionEntity.getAttribute(ATTR_CERTIFICATE_STATUS).equals(DataContract.Status.VERIFIED.name())) {
                 resetAllRelationshipAttributes(entity);
-                // No change in contract, metadata changed
+                // Contract is in draft state. Update the same version
                 updateExistingVersion(context, entity, currentVersionEntity);
                 newVersionNumber = currentVersionNumber;
             } else {
-                // contract changed (metadata might/not changed). Create new version.
+                // Current version is published. Creating a new draft version.
+                if (contract.getStatus() == DataContract.Status.VERIFIED) {
+                    throw new AtlasBaseException("Can't create a new published version");
+                }
                 newVersionNumber =  currentVersionNumber + 1;
 
                 resetAllRelationshipAttributes(entity);
@@ -150,9 +151,9 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         }
         entity.setAttribute(QUALIFIED_NAME, String.format("%s/V%s", contractQName, newVersionNumber));
         entity.setAttribute(ATTR_CONTRACT_VERSION, newVersionNumber);
-        entity.setAttribute(ATTR_ASSET_GUID, associatedAsset.getEntity().getGuid());
+        entity.setAttribute(ATTR_ASSET_GUID, associatedAsset.getGuid());
 
-        datasetAttributeSync(context, associatedAsset.getEntity(), entity);
+        datasetAttributeSync(context, associatedAsset, entity);
 
     }
 

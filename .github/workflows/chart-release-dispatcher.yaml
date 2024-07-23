@@ -8,6 +8,7 @@ on:
       - master
       - staging
       - beta
+      - staging
     types:
       - completed
 
@@ -25,7 +26,6 @@ jobs:
         id: extract_branch
         run: |
           echo "branch=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
-
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
         with:
@@ -61,7 +61,6 @@ jobs:
         run: |
           echo "${{ steps.get_pr_url_user.outputs.pr_url }}"
           echo "${{ steps.get_pr_url_user.outputs.pr_user }}"
-
       - name: Repository Dispatch
         uses: peter-evans/repository-dispatch@v2
         with:

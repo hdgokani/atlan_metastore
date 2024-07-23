@@ -30,6 +30,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
 
 import javax.inject.Inject;
@@ -68,6 +69,7 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
     @Override
     protected void deleteEdge(AtlasEdge edge, boolean force) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("deleteEdge");
         try {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("==> SoftDeleteHandlerV1.deleteEdge({}, {})", GraphHelper.string(edge), force);
@@ -103,7 +105,8 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
         } catch (Exception e) {
             LOG.error("Error while deleting edge {}", GraphHelper.string(edge), e);
             throw new AtlasBaseException(e);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
-
     }
 }

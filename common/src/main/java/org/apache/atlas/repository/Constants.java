@@ -159,6 +159,8 @@ public final class Constants {
     /**
      * SQL property keys.
      */
+
+    public static final String SQL_ENTITY_TYPE              = "SQL";
     public static final String CONNECTION_ENTITY_TYPE       = "Connection";
     public static final String QUERY_ENTITY_TYPE            = "Query";
     public static final String QUERY_FOLDER_ENTITY_TYPE     = "Folder";
@@ -173,6 +175,8 @@ public final class Constants {
     public static final String POLICY_ENTITY_TYPE         = "AuthPolicy";
     public static final String SERVICE_ENTITY_TYPE        = "AuthService";
     public static final String REL_POLICY_TO_ACCESS_CONTROL  = "access_control_policies";
+
+    public static final String POLICY_SERVICE_NAME_ABAC  = "atlas_abac";
 
     /**
      * Resource
