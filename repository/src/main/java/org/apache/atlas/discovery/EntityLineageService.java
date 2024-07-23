@@ -629,7 +629,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private void setHasDownstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex inVertex, LineageInfoOnDemand inLineageInfo) {
-        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(inVertex, IN, PROCESS_INPUTS_EDGE, atlasLineageOnDemandContext, false);
+        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(inVertex, IN, PROCESS_INPUTS_EDGE, atlasLineageOnDemandContext);
         if (!filteredEdges.isEmpty()) {
             inLineageInfo.setHasDownstream(true);
             inLineageInfo.setTotalOutputRelationsCount(filteredEdges.size());
@@ -637,20 +637,19 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private void setHasUpstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex outVertex, LineageInfoOnDemand outLineageInfo) {
-        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(outVertex, IN, PROCESS_OUTPUTS_EDGE, atlasLineageOnDemandContext, false);
+        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(outVertex, IN, PROCESS_OUTPUTS_EDGE, atlasLineageOnDemandContext);
         if (!filteredEdges.isEmpty()) {
             outLineageInfo.setHasUpstream(true);
             outLineageInfo.setTotalInputRelationsCount(filteredEdges.size());
         }
     }
 
-    private List<AtlasEdge> getFilteredAtlasEdges(AtlasVertex outVertex, AtlasEdgeDirection direction, String processEdgeLabel, AtlasLineageOnDemandContext atlasLineageOnDemandContext, boolean hasAnyCheck) {
+    private List<AtlasEdge> getFilteredAtlasEdges(AtlasVertex outVertex, AtlasEdgeDirection direction, String processEdgeLabel, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
         List<AtlasEdge> filteredEdges = new ArrayList<>();
         Iterable<AtlasEdge> edges = outVertex.getEdges(direction, processEdgeLabel);
         for (AtlasEdge edge : edges) {
             if (edgeMatchesEvaluation(edge, atlasLineageOnDemandContext)) {
                 filteredEdges.add(edge);
-                if (hasAnyCheck) break;
             }
         }
         return filteredEdges;
