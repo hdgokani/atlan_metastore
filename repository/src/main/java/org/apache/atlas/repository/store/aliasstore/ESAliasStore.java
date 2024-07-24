@@ -38,12 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.ADD;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
@@ -70,6 +65,7 @@ import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 @Component
 public class ESAliasStore implements IndexAliasStore {
     private static final Logger LOG = LoggerFactory.getLogger(ESAliasStore.class);
+    public static final String NEW_WILDCARD_DOMAIN_SUPER = "default/domain/*/super";
 
     private final AtlasGraph graph;
     private final EntityGraphRetriever entityRetriever;
@@ -90,7 +86,7 @@ public class ESAliasStore implements IndexAliasStore {
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
 
         if (PERSONA_ENTITY_TYPE.equals(entity.getTypeName())) {
-            requestBuilder.addAction(ADD, new AliasAction(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName));
+            requestBuilder.addAction(ADD, new AliasAction(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName, getFilterForPersona(null, null)));
         } else {
             requestBuilder.addAction(ADD, new AliasAction(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName, getFilterForPurpose(entity)));
         }
@@ -129,6 +125,9 @@ public class ESAliasStore implements IndexAliasStore {
 
         if (PERSONA_ENTITY_TYPE.equals(accessControl.getEntity().getTypeName())) {
             filter = getFilterForPersona(accessControl, policy);
+            if (filter == null || filter.isEmpty()) {
+                filter = getEmptyFilter();
+            }
         } else {
             filter = getFilterForPurpose(accessControl.getEntity());
         }
@@ -149,6 +148,10 @@ public class ESAliasStore implements IndexAliasStore {
 
     private Map<String, Object> getFilterForPersona(AtlasEntity.AtlasEntityWithExtInfo persona, AtlasEntity policy) throws AtlasBaseException {
         List<Map<String, Object>> allowClauseList = new ArrayList<>();
+
+        if (policy == null && persona == null){
+            return getEmptyFilter();
+        }
 
         List<AtlasEntity> policies = getPolicies(persona);
         if (policy != null) {
@@ -212,8 +215,12 @@ public class ESAliasStore implements IndexAliasStore {
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_DOMAIN)) {
 
                     for (String asset : assets) {
-                        terms.add(asset);
-                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
+                        if(!isAllDomain(asset)) {
+                            terms.add(asset);
+                        } else {
+                            asset = NEW_WILDCARD_DOMAIN_SUPER;
+                        }
+                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "*")));
                     }
 
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_SUB_DOMAIN)) {
@@ -244,6 +251,9 @@ public class ESAliasStore implements IndexAliasStore {
         allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, terms)));
     }
 
+    private boolean isAllDomain(String asset) {
+        return asset.equals("*/super") || asset.equals("*") || asset.equals(NEW_WILDCARD_DOMAIN_SUPER);
+    }
     private Map<String, Object> esClausesToFilter(List<Map<String, Object>> allowClauseList) {
         if (CollectionUtils.isNotEmpty(allowClauseList)) {
             return mapOf("bool", mapOf("should", allowClauseList));

@@ -19,7 +19,9 @@
 package org.apache.atlas.repository;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -133,10 +135,32 @@ public final class Constants {
     public static final String GLOSSARY_TERMS_EDGE_LABEL           = "r:AtlasGlossaryTermAnchor";
     public static final String GLOSSARY_CATEGORY_EDGE_LABEL        = "r:AtlasGlossaryCategoryAnchor";
 
+    /**
+     * MESH property keys.
+     */
+    public static final String DATA_DOMAIN_ENTITY_TYPE     = "DataDomain";
+    public static final String DATA_PRODUCT_ENTITY_TYPE    = "DataProduct";
+
+    public static final String STAKEHOLDER_ENTITY_TYPE       = "Stakeholder";
+    public static final String STAKEHOLDER_TITLE_ENTITY_TYPE = "StakeholderTitle";
+
+    public static final String REL_DOMAIN_TO_DOMAINS  = "parent_domain_sub_domains";
+    public static final String REL_DOMAIN_TO_PRODUCTS = "data_domain_data_products";
+
+    public static final String REL_DOMAIN_TO_STAKEHOLDERS            = "data_domain_stakeholders";
+    public static final String REL_STAKEHOLDER_TITLE_TO_STAKEHOLDERS = "stakeholder_title_stakeholders";
+
+    public static final String REL_DATA_PRODUCT_TO_OUTPUT_PORTS = "data_products_output_ports";
+    public static final String REL_DATA_PRODUCT_TO_INPUT_PORTS  = "data_products_input_ports";
+
+    public static final String INPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.inputPortDataProducts";
+    public static final String OUTPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.outputPortDataProducts";
 
     /**
      * SQL property keys.
      */
+
+    public static final String SQL_ENTITY_TYPE              = "SQL";
     public static final String CONNECTION_ENTITY_TYPE       = "Connection";
     public static final String QUERY_ENTITY_TYPE            = "Query";
     public static final String QUERY_FOLDER_ENTITY_TYPE     = "Folder";
@@ -150,6 +174,9 @@ public final class Constants {
     public static final String PURPOSE_ENTITY_TYPE        = "Purpose";
     public static final String POLICY_ENTITY_TYPE         = "AuthPolicy";
     public static final String SERVICE_ENTITY_TYPE        = "AuthService";
+    public static final String REL_POLICY_TO_ACCESS_CONTROL  = "access_control_policies";
+
+    public static final String POLICY_SERVICE_NAME_ABAC  = "atlas_abac";
 
     /**
      * Resource
@@ -161,6 +188,13 @@ public final class Constants {
 
     public static final String ASSET_README_EDGE_LABEL = "__Asset.readme";
     public static final String ASSET_LINK_EDGE_LABEL = "__Asset.links";
+
+    /**
+     * Contract
+     */
+    public static final String CONTRACT_ENTITY_TYPE = "DataContract";
+    public static final String ATTR_CONTRACT_VERSION = "dataContractVersion";
+
 
     /**
      * Lineage relations.
@@ -371,7 +405,6 @@ public final class Constants {
 
     public static final String CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL = "__Process.inputs";
     public static final String CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL = "__Process.outputs";
-    public static final String COLUMN_LINEAGE_RELATIONSHIP_LABEL = "__Process.columnProcesses";
     public static final String CLASSIFICATION_PROPAGATION_MODE_DEFAULT  ="DEFAULT";
     public static final String CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE  ="RESTRICT_LINEAGE";
 
@@ -381,14 +414,12 @@ public final class Constants {
     public static final HashMap<String, ArrayList<String>> CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP = new HashMap<String, ArrayList<String>>(){{
         put(CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE, new ArrayList<>(
                 Arrays.asList(CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL,
-                CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL,
-                COLUMN_LINEAGE_RELATIONSHIP_LABEL
+                CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL
         )));
         put(CLASSIFICATION_PROPAGATION_MODE_DEFAULT, null);
         put(CLASSIFICATION_PROPAGATION_MODE_RESTRICT_HIERARCHY, new ArrayList<>(
                 Arrays.asList(CATALOG_PROCESS_INPUT_RELATIONSHIP_LABEL,
-                        CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL,
-                        COLUMN_LINEAGE_RELATIONSHIP_LABEL
+                        CATALOG_PROCESS_OUTPUT_RELATIONSHIP_LABEL
                 )));
     }};
 
@@ -403,7 +434,9 @@ public final class Constants {
     public static final String ATTR_STARRED_DETAILS_LIST = "starredDetailsList";
     public static final String ATTR_ASSET_STARRED_BY = "assetStarredBy";
     public static final String ATTR_ASSET_STARRED_AT = "assetStarredAt";
-
+    public static final String ATTR_CERTIFICATE_STATUS = "certificateStatus";
+    public static final String ATTR_CONTRACT = "dataContractSpec";
+    public static final String ATTR_CONTRACT_JSON = "dataContractJson";
     public static final String STRUCT_STARRED_DETAILS = "StarredDetails";
 
     public static final String KEYCLOAK_ROLE_ADMIN   = "$admin";
@@ -418,12 +451,15 @@ public final class Constants {
     public static final Set<String> SKIP_UPDATE_AUTH_CHECK_TYPES = new HashSet<String>() {{
         add(README_ENTITY_TYPE);
         add(LINK_ENTITY_TYPE);
+        add(STAKEHOLDER_ENTITY_TYPE);
+        add(STAKEHOLDER_TITLE_ENTITY_TYPE);
     }};
 
     public static final Set<String> SKIP_DELETE_AUTH_CHECK_TYPES = new HashSet<String>() {{
         add(README_ENTITY_TYPE);
         add(LINK_ENTITY_TYPE);
         add(POLICY_ENTITY_TYPE);
+        add(STAKEHOLDER_TITLE_ENTITY_TYPE);
     }};
 
     private Constants() {
@@ -443,6 +479,20 @@ public final class Constants {
         } catch (AtlasException e) {
             return encodePropertyKey(defaultKey);
         }
+    }
+
+    public static String getESIndex() {
+        String indexSuffix  = null;
+        if(AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean()) {
+            try {
+                if (FeatureFlagStore.evaluate("use_temp_es_index", "true")) {
+                    indexSuffix = "_temp";
+                }
+            } catch (Exception e) {
+                LOG.error("Failed to evaluate feature flag with error", e);
+            }
+        }
+        return indexSuffix == null ? VERTEX_INDEX_NAME : VERTEX_INDEX_NAME + indexSuffix;
     }
 
     public static String getStaticFileAsString(String fileName) throws IOException {

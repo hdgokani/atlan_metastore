@@ -21,6 +21,7 @@ package org.apache.atlas.web.filters;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.web.service.ActiveInstanceState;
 import org.apache.atlas.web.service.ServiceState;
@@ -41,6 +42,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.HashMap;
 
 /**
@@ -56,9 +59,9 @@ public class ActiveServerFilter implements Filter {
 
     private static final Logger LOG = LoggerFactory.getLogger(ActiveServerFilter.class);
     private static final String MIGRATION_STATUS_STATIC_PAGE = "migration-status.html";
-
     private static final String[] WHITELISTED_APIS_SIGNATURE = {"search", "lineage", "auditSearch", "accessors"
-        , "evaluator"};
+        , "evaluator", "featureFlag"};
+    private static final String DISABLE_WRITE_FLAG = "disable_writes";
 
     private final ActiveInstanceState activeInstanceState;
     private ServiceState serviceState;
@@ -88,13 +91,15 @@ public class ActiveServerFilter implements Filter {
                          FilterChain filterChain) throws IOException, ServletException {
         // If maintenance mode is enabled, return a 503
         if (AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean()) {
-            // Block all the POST, PUT, DELETE operations
-            HttpServletRequest request = (HttpServletRequest) servletRequest;
-            HttpServletResponse response = (HttpServletResponse) servletResponse;
-            if (isBlockedMethod(request.getMethod()) && !isWhitelistedAPI(request.getRequestURI())) {
-                LOG.error("Maintenance mode enabled. Blocking request: {}", request.getRequestURI());
-                sendMaintenanceModeResponse(response);
-                return; // Stop further processing
+            if (FeatureFlagStore.evaluate(DISABLE_WRITE_FLAG, "true")) {
+                // Block all the POST, PUT, DELETE operations
+                HttpServletRequest request = (HttpServletRequest) servletRequest;
+                HttpServletResponse response = (HttpServletResponse) servletResponse;
+                if (isBlockedMethod(request.getMethod()) && !isWhitelistedAPI(request.getRequestURI())) {
+                    LOG.error("Maintenance mode enabled. Blocking request: {}", request.getRequestURI());
+                    sendMaintenanceModeResponse(response);
+                    return; // Stop further processing
+                }
             }
         }
         
@@ -228,14 +233,31 @@ public class ActiveServerFilter implements Filter {
             requestURI = "/";
         }
         String redirectLocation = activeServerAddress + requestURI;
-        LOG.info("Not active. Redirecting to {}", redirectLocation);
+        String sanitizedLocation = sanitizeRedirectLocation(redirectLocation);
+        LOG.info("Not active. Redirecting to {}", sanitizedLocation);
         // A POST/PUT/DELETE require special handling by sending HTTP 307 instead of the regular 301/302.
         // Reference: http://stackoverflow.com/questions/2068418/whats-the-difference-between-a-302-and-a-307-redirect
         if (isUnsafeHttpMethod(servletRequest)) {
-            httpServletResponse.setHeader(HttpHeaders.LOCATION, redirectLocation);
+            httpServletResponse.setHeader(HttpHeaders.LOCATION, sanitizedLocation);
             httpServletResponse.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
         } else {
-            httpServletResponse.sendRedirect(redirectLocation);
+            httpServletResponse.sendRedirect(sanitizedLocation);
+        }
+    }
+    public static String sanitizeRedirectLocation(String redirectLocation) {
+        if (redirectLocation == null) return null;
+        try {
+            String preProcessedUrl = redirectLocation.replace("\r", "").replace("\n", "");
+
+            preProcessedUrl = preProcessedUrl.replaceAll("%(?![0-9a-fA-F]{2})", "%25");
+
+            String encodedUrl = URLEncoder.encode(preProcessedUrl, "UTF-8");
+
+            encodedUrl = encodedUrl.replaceAll("%25([0-9a-fA-F]{2})", "%$1");
+
+            return encodedUrl;
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("UTF-8 encoding not supported", e);
         }
     }
 

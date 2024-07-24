@@ -29,9 +29,9 @@ public abstract class AbstractRedisService implements RedisService {
     private static final String ATLAS_REDIS_LOCK_WATCHDOG_TIMEOUT_MS = "atlas.redis.lock.watchdog_timeout.ms";
     private static final int DEFAULT_REDIS_WAIT_TIME_MS = 15_000;
     private static final int DEFAULT_REDIS_LOCK_WATCHDOG_TIMEOUT_MS = 600_000;
-    private static final String ATLAS_METASTORE_SERVICE = "atlas-metastore-service";
 
     RedissonClient redisClient;
+    RedissonClient redisCacheClient;
     Map<String, RLock> keyLockMap;
     Configuration atlasConfig;
     long waitTimeInMS;
@@ -71,6 +71,32 @@ public abstract class AbstractRedisService implements RedisService {
         }
     }
 
+    @Override
+    public String getValue(String key) {
+        // If value doesn't exist, return null else return the value
+        return (String) redisCacheClient.getBucket(convertToNamespace(key)).get();
+    }
+
+    @Override
+    public String putValue(String key, String value) {
+        // Put the value in the redis cache with TTL
+        redisCacheClient.getBucket(convertToNamespace(key)).set(value);
+        return value;
+    }
+
+    @Override
+    public String putValue(String key, String value, int timeout) {
+        // Put the value in the redis cache with TTL
+        redisCacheClient.getBucket(convertToNamespace(key)).set(value, timeout, TimeUnit.SECONDS);
+        return value;
+    }
+
+    @Override
+    public void removeValue(String key)  {
+        // Remove the value from the redis cache
+        redisCacheClient.getBucket(convertToNamespace(key)).delete();
+    }
+
     private String getHostAddress() throws UnknownHostException {
         return InetAddress.getLocalHost().getHostAddress();
     }
@@ -85,6 +111,11 @@ public abstract class AbstractRedisService implements RedisService {
         return redisConfig;
     }
 
+    private String convertToNamespace(String key){
+        // Append key with namespace :atlas
+        return "atlas:"+key;
+    }
+
     Config getLocalConfig() throws AtlasException {
         Config config = initAtlasConfig();
         config.useSingleServer()
@@ -97,7 +128,18 @@ public abstract class AbstractRedisService implements RedisService {
     Config getProdConfig() throws AtlasException {
         Config config = initAtlasConfig();
         config.useSentinelServers()
-                .setClientName(ATLAS_METASTORE_SERVICE)
+                .setReadMode(ReadMode.MASTER_SLAVE)
+                .setCheckSentinelsList(false)
+                .setMasterName(atlasConfig.getString(ATLAS_REDIS_MASTER_NAME))
+                .addSentinelAddress(formatUrls(atlasConfig.getStringArray(ATLAS_REDIS_SENTINEL_URLS)))
+                .setUsername(atlasConfig.getString(ATLAS_REDIS_USERNAME))
+                .setPassword(atlasConfig.getString(ATLAS_REDIS_PASSWORD));
+        return config;
+    }
+
+    Config getCacheImplConfig() {
+        Config config = new Config();
+        config.useSentinelServers()
                 .setReadMode(ReadMode.MASTER_SLAVE)
                 .setCheckSentinelsList(false)
                 .setKeepAlive(true)
@@ -108,7 +150,9 @@ public abstract class AbstractRedisService implements RedisService {
                 .setMasterName(atlasConfig.getString(ATLAS_REDIS_MASTER_NAME))
                 .addSentinelAddress(formatUrls(atlasConfig.getStringArray(ATLAS_REDIS_SENTINEL_URLS)))
                 .setUsername(atlasConfig.getString(ATLAS_REDIS_USERNAME))
-                .setPassword(atlasConfig.getString(ATLAS_REDIS_PASSWORD));
+                .setPassword(atlasConfig.getString(ATLAS_REDIS_PASSWORD))
+                .setTimeout(50) //Setting UP timeout to 50ms
+                .setRetryAttempts(0);
         return config;
     }
 

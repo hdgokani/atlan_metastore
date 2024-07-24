@@ -47,6 +47,7 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.repository.impexp.AtlasServerService;
 import org.apache.atlas.repository.impexp.ExportImportAuditService;
@@ -56,6 +57,7 @@ import org.apache.atlas.repository.impexp.MigrationProgressService;
 import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.tasks.TaskManagement;
@@ -122,6 +124,8 @@ import java.util.*;
 
 import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
 import static org.apache.atlas.AtlasErrorCode.DISABLED_API;
+import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.VERTEX_TYPE;
 import static org.apache.atlas.web.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
 
 
@@ -430,10 +434,23 @@ public class AdminResource {
             for (final HealthStatus healthStatus : healthStatuses) {
                 result.put(healthStatus.name, healthStatus);
             }
+            Iterator vertices = graph.query()
+                    .has(ENTITY_TYPE_PROPERTY_KEY, "AuthService")
+                    .has(QUALIFIED_NAME, "auth_service_atlas")
+                    .vertices().iterator();
 
-            GraphTraversal t = graph.V().limit(1);
-            t.hasNext();
-            result.put("cassandra", new HealthStatus("cassandra", "ok", true, new Date().toString(), ""));
+            if (vertices.hasNext()) {
+                // If vertices are found, assume Cassandra is OK.
+                result.put("cassandra", new HealthStatus("cassandra", "ok", true, new Date().toString(), ""));
+            } else {
+                // Fallback to alternate method to check Cassandra's status.
+                GraphTraversal t = graph.V().limit(1);
+                if (t.hasNext()) {
+                    result.put("cassandra", new HealthStatus("cassandra", "ok", true, new Date().toString(), ""));
+                } else {
+                    throw new Exception("Cassandra check failed");
+                }
+            }
         } catch (Exception e) {
             result.put("cassandra", new HealthStatus("cassandra", "error", true, new Date().toString(), e.toString()));
             cassandraFailed = true;
@@ -930,6 +947,21 @@ public class AdminResource {
         return debugMetricsRESTSink.getMetrics();
     }
 
+    @POST
+    @Path("featureFlag")
+    @Produces(MediaType.APPLICATION_JSON)
+    public void setFeatureFlag(@QueryParam("key") String key, @QueryParam("value") String value) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_FEATURE_FLAG_CUD), "featureFlag");
+        FeatureFlagStore.setFlag(key, value);
+    }
+
+    @DELETE
+    @Path("featureFlag/{flag}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public void deleteFeatureFlag(@PathParam("flag") String key) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_FEATURE_FLAG_CUD), "featureFlag");
+        FeatureFlagStore.deleteFlag(key);
+    }
     private String getEditableEntityTypes(Configuration config) {
         String ret = DEFAULT_EDITABLE_ENTITY_TYPES;
 
