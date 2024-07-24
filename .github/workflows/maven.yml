@@ -49,7 +49,7 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       - name: Get branch name
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/} | awk '{print tolower($0)}')"
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/} | awk '{gsub("/", "-"); print tolower($0)}')"
         id: get_branch
 
       - name: Create Maven Settings
