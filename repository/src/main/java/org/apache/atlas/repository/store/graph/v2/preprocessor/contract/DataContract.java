@@ -37,14 +37,12 @@ public class DataContract {
 
     @Valid @NotNull
     public String                               kind;
-    public Status                               status;
-    @JsonProperty(value = "template_version", defaultValue = "0.0.1")
-    public String                               templateVersion;
-    @Valid @NotNull
+    public Status                               status = Status.DRAFT;
+    @JsonProperty(value = "template_version")
+    public String                               templateVersion = "0.0.1";
     public String                               data_source;
     @Valid @NotNull
     public String                               dataset;
-    @Valid @NotNull
     public DatasetType                          type;
     public String                               description;
     public List<String>                         owners;
@@ -89,7 +87,7 @@ public class DataContract {
                 case "materialisedview":
                     return MaterialisedView;
                 default:
-                    throw new AtlasBaseException(String.format("dataset.type: %s value not supported yet.", s));
+                    throw new AtlasBaseException(BAD_REQUEST, String.format("type: %s value not supported yet.", s));
             }
         }
     }
@@ -144,7 +142,7 @@ public class DataContract {
         try {
             this.type = DatasetType.from(type);
         } catch (IllegalArgumentException | AtlasBaseException ex) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "type " + type + " is inappropriate. Accepted values: " + Arrays.toString(DatasetType.values()));
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "type: " + type + " is inappropriate. Accepted values: " + Arrays.toString(DatasetType.values()));
         }
     }
 
