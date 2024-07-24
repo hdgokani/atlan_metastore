@@ -692,7 +692,7 @@ public class EntityLineageService implements AtlasLineageService {
 
     private void setHasDownstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex inVertex, LineageInfoOnDemand inLineageInfo) {
         String lineageType = RequestContext.get().getLineageType();
-        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(inVertex, IN, LINEAGE_MAP.get(lineageType)[0], atlasLineageOnDemandContext, false);
+        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(inVertex, IN, LINEAGE_MAP.get(lineageType)[0], atlasLineageOnDemandContext);
         if (!filteredEdges.isEmpty()) {
             inLineageInfo.setHasDownstream(true);
             inLineageInfo.setTotalOutputRelationsCount(filteredEdges.size());
@@ -701,20 +701,19 @@ public class EntityLineageService implements AtlasLineageService {
 
     private void setHasUpstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex outVertex, LineageInfoOnDemand outLineageInfo) {
         String lineageType = RequestContext.get().getLineageType();
-        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(outVertex, IN, LINEAGE_MAP.get(lineageType)[1], atlasLineageOnDemandContext, false);
+        List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(outVertex, IN, LINEAGE_MAP.get(lineageType)[1], atlasLineageOnDemandContext);
         if (!filteredEdges.isEmpty()) {
             outLineageInfo.setHasUpstream(true);
             outLineageInfo.setTotalInputRelationsCount(filteredEdges.size());
         }
     }
 
-    private List<AtlasEdge> getFilteredAtlasEdges(AtlasVertex outVertex, AtlasEdgeDirection direction, String processEdgeLabel, AtlasLineageOnDemandContext atlasLineageOnDemandContext, boolean hasAnyCheck) {
+    private List<AtlasEdge> getFilteredAtlasEdges(AtlasVertex outVertex, AtlasEdgeDirection direction, String processEdgeLabel, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
         List<AtlasEdge> filteredEdges = new ArrayList<>();
         Iterable<AtlasEdge> edges = outVertex.getEdges(direction, processEdgeLabel);
         for (AtlasEdge edge : edges) {
             if (edgeMatchesEvaluation(edge, atlasLineageOnDemandContext)) {
                 filteredEdges.add(edge);
-                if (hasAnyCheck) break;
             }
         }
         return filteredEdges;
