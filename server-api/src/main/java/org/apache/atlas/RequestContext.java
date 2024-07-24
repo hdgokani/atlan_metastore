@@ -47,6 +47,9 @@ public class RequestContext {
     private final Map<String, AtlasEntityHeader>         updatedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         deletedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         restoreEntities      = new HashMap<>();
+
+
+    private       Map<String, String>                    lexoRankCache        = null;
     private final Map<String, AtlasEntity>               entityCache          = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         entityHeaderCache    = new HashMap<>();
     private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache   = new HashMap<>();
@@ -90,6 +93,9 @@ public class RequestContext {
     private boolean     includeClassifications = true;
 
     private boolean     includeClassificationNames = false;
+
+
+    private String     lineageType = "DatasetProcessLineage";
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
@@ -99,7 +105,6 @@ public class RequestContext {
     private boolean skipAuthorizationCheck = false;
     private Set<String> deletedEdgesIdsForResetHasLineage = new HashSet<>(0);
     private String requestUri;
-    private boolean cacheEnabled;
 
     private boolean delayTagNotifications = false;
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
@@ -162,6 +167,7 @@ public class RequestContext {
         this.requestContextHeaders.clear();
         this.relationshipEndToVertexIdMap.clear();
         this.relationshipMutationMap.clear();
+        this.lexoRankCache = null;
         this.currentTask = null;
         this.skipAuthorizationCheck = false;
         this.delayTagNotifications = false;
@@ -192,6 +198,13 @@ public class RequestContext {
         this.applicationMetrics.add(metric);
     }
 
+    public String getLineageType() {
+        return lineageType;
+    }
+
+    public void setLineageType(String lineageType) {
+        this.lineageType = lineageType;
+    }
     public void clearEntityCache() {
         this.entityCache.clear();
     }
@@ -713,14 +726,6 @@ public class RequestContext {
         return this.requestUri;
     }
 
-    public void setEnableCache(boolean cacheEnabled) {
-        this.cacheEnabled = cacheEnabled;
-    }
-
-    public boolean isCacheEnabled() {
-        return this.cacheEnabled;
-    }
-
     public boolean isIncludeClassificationNames() {
         return includeClassificationNames;
     }
@@ -787,5 +792,13 @@ public class RequestContext {
 
     public Map<String, Set<AtlasRelationship>> getRelationshipMutationMap() {
         return relationshipMutationMap;
+    }
+
+    public Map<String, String> getLexoRankCache() {
+        return lexoRankCache;
+    }
+
+    public void setLexoRankCache(Map<String, String> lexoRankCache) {
+        this.lexoRankCache = lexoRankCache;
     }
 }

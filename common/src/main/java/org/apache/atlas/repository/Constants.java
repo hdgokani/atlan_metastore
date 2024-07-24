@@ -176,6 +176,8 @@ public final class Constants {
     public static final String SERVICE_ENTITY_TYPE        = "AuthService";
     public static final String REL_POLICY_TO_ACCESS_CONTROL  = "access_control_policies";
 
+    public static final String POLICY_SERVICE_NAME_ABAC  = "atlas_abac";
+
     /**
      * Resource
      */
