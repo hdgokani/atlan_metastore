@@ -73,10 +73,15 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.util.SearchTracker;
 import org.apache.commons.configuration.Configuration;
+import org.apache.thrift.transport.TTransportException;
+import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
+import org.junit.Before;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
+
+import java.io.IOException;
 
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 
@@ -88,6 +93,13 @@ public class TestModules {
         public AtlasEntityChangeNotifier get() {
             return Mockito.mock(AtlasEntityChangeNotifier.class);
         }
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        EmbeddedCassandraServerHelper.startEmbeddedCassandra();
+        //session = EmbeddedCassandraServerHelper.getSession();
+        //new CQLDataLoader(session).load(new ClassPathCQLDataSet("people.cql", "people"));
     }
 
     // Test only DI modules
@@ -188,6 +200,16 @@ public class TestModules {
             // TaskManagement
             bind(TaskManagement.class).asEagerSingleton();
             bind(ClassificationPropagateTaskFactory.class).asEagerSingleton();
+
+            try {
+                EmbeddedCassandraServerHelper.startEmbeddedCassandra();
+            } catch (TTransportException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
             final GraphTransactionInterceptor graphTransactionInterceptor = new GraphTransactionInterceptor(new AtlasGraphProvider().get());
             requestInjection(graphTransactionInterceptor);
