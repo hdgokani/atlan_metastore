@@ -209,6 +209,8 @@ public class EntityLineageService implements AtlasLineageService {
         RequestContext.get().setLineageInputLabel(LINEAGE_MAP.get(lineageListRequest.getLineageType())[0]);
         RequestContext.get().setLineageOutputLabel(LINEAGE_MAP.get(lineageListRequest.getLineageType())[1]);
         AtlasLineageListInfo ret = new AtlasLineageListInfo(new ArrayList<>());
+        RequestContext.get().setRelationAttrsForSearch(lineageListRequest.getRelationAttributes());
+
         traverseEdgesUsingBFS(guid, new AtlasLineageListContext(lineageListRequest, atlasTypeRegistry), ret);
         ret.setSearchParameters(lineageListRequest);
 

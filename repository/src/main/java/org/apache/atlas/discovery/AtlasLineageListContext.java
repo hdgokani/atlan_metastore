@@ -18,6 +18,7 @@ public final class AtlasLineageListContext {
     private Predicate                           vertexTraversalPredicate;
     private Predicate                           edgeTraversalPredicate;
     private Set<String>                         attributes;
+    private Set<String>                         relationAttributes;
     private int                                 currentFromCounter;
     private int                                 currentEntityCounter;
     private boolean                             depthLimitReached;
@@ -35,6 +36,7 @@ public final class AtlasLineageListContext {
         this.edgeTraversalPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getRelationshipTraversalFilters());
         this.attributes = lineageListRequest.getAttributes();
         this.lineageType = lineageListRequest.getLineageType();
+        this.relationAttributes = lineageListRequest.getRelationAttributes();
     }
 
     public String getGuid() {
@@ -111,6 +113,14 @@ public final class AtlasLineageListContext {
 
     public void setAttributes(Set<String> attributes) {
         this.attributes = attributes;
+    }
+
+    public Set<String> getRelationAttributes() {
+        return relationAttributes;
+    }
+
+    public void setRelationAttributes(Set<String> relationAttributes) {
+        this.relationAttributes = relationAttributes;
     }
 
     public int getCurrentFromCounter() {
