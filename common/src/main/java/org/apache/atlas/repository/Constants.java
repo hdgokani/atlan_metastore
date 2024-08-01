@@ -176,6 +176,8 @@ public final class Constants {
     public static final String SERVICE_ENTITY_TYPE        = "AuthService";
     public static final String REL_POLICY_TO_ACCESS_CONTROL  = "access_control_policies";
 
+    public static final String POLICY_SERVICE_NAME_ABAC  = "atlas_abac";
+
     /**
      * Resource
      */
@@ -368,6 +370,10 @@ public final class Constants {
     public static final String IMPALA_SOURCE      = "impala";
     public static final String STORM_SOURCE       = "storm";
     public static final String FILE_SPOOL_SOURCE  = "file_spool";
+    public static final String ASSET_POLICY_GUIDS  = "assetPolicyGUIDs";
+    public static final String ASSET_POLICIES_COUNT  = "assetPoliciesCount";
+
+
 
     /*
      * All supported file-format extensions for Bulk Imports through file upload

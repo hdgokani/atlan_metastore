@@ -67,7 +67,6 @@ public interface AtlasEntityStore {
      */
     AtlasEntityWithExtInfo getById(String guid, boolean isMinExtInfo, boolean ignoreRelationships) throws AtlasBaseException;
 
-
     /**
      * Get entity header for the given GUID
      * @param guid
@@ -297,6 +296,10 @@ public interface AtlasEntityStore {
      */
     void deleteClassification(String guid, String classificationName) throws AtlasBaseException;
 
+    void deleteClassifications(String guid, List<AtlasClassification> classificationName) throws AtlasBaseException;
+
+    public void deleteClassifications(final String guid, final List<AtlasClassification> classifications, final String associatedEntityGuid) throws AtlasBaseException;
+
     void deleteClassification(String guid, String classificationName, String associatedEntityGuid) throws AtlasBaseException;
 
     List<AtlasClassification> getClassifications(String guid) throws AtlasBaseException;
@@ -364,5 +367,11 @@ public interface AtlasEntityStore {
     void repairMeaningAttributeForTerms(List<String> termGuids) throws AtlasBaseException;
 
     void repairAccesscontrolAlias(String guid) throws AtlasBaseException;
+
+
+    void linkBusinessPolicy(String policyId, Set<String> linkGuids) throws AtlasBaseException;
+
+
+    void unlinkBusinessPolicy(String policyId, Set<String> unlinkGuids) throws AtlasBaseException;
 
 }
