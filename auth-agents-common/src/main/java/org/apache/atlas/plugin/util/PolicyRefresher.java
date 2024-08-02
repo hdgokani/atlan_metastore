@@ -316,13 +316,21 @@ public class PolicyRefresher extends Thread {
 
 		try {
 
-			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null && lastUpdatedTiemInMillis == -1) {
+			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null) {
 				RangerRESTUtils restUtils = new RangerRESTUtils();
 				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry());
-
-				svcPolicies = transformer.getPolicies(serviceName,
+boolean usePolicyDelta = true;
+				if (usePolicyDelta) {
+				svcPolicies = transformer.getPoliciesDelta(serviceName,
 						restUtils.getPluginId(serviceName, plugIn.getAppId()),
 						lastUpdatedTiemInMillis);
+				} else if (lastUpdatedTiemInMillis == -1) {
+					svcPolicies = transformer.getPoliciesAll(serviceName,
+							restUtils.getPluginId(serviceName, plugIn.getAppId()),
+							lastUpdatedTiemInMillis);
+				} else {
+					svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis);
+				}
 			} else {
 				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis);
 			}

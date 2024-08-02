@@ -137,7 +137,78 @@ public class CachePolicyTransformerImpl {
         return service;
     }
 
-    public ServicePolicies getPolicies(String serviceName, String pluginId, Long lastUpdatedTime) {
+    public ServicePolicies getPoliciesDelta(String serviceName, String pluginId, Long lastUpdatedTime) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getPolicies." + serviceName);
+
+        ServicePolicies servicePolicies = new ServicePolicies();
+
+        try {
+            servicePolicies.setServiceName(serviceName);
+
+            service = getServiceEntity(serviceName);
+            servicePolicies.setPolicyVersion(-1L);
+            servicePolicies.setPolicyUpdateTime(new Date());
+
+            if (service != null) {
+                ServicePolicies allPolicies = getServicePoliciesWithDelta(service, 250);
+
+                servicePolicies.setServiceName(serviceName);
+                servicePolicies.setServiceId(service.getGuid());
+
+                String serviceDefName = String.format(RESOURCE_SERVICE_DEF_PATTERN, serviceName);
+                servicePolicies.setServiceDef(getResourceAsObject(serviceDefName, RangerServiceDef.class));
+
+
+                //Process tag based policies
+                String tagServiceName = (String) service.getAttribute(ATTR_SERVICE_TAG_SERVICE);
+                if (StringUtils.isNotEmpty(tagServiceName)) {
+                    AtlasEntityHeader tagService = getServiceEntity(tagServiceName);
+
+                    if (tagService != null) {
+                        List<RangerPolicy> tagRangerPolicies = getServicePolicies(tagService, 0, lastUpdatedTime);
+
+                        TagPolicies tagPolicies = new TagPolicies();
+
+                        tagPolicies.setServiceName(tagServiceName);
+                        tagPolicies.setPolicyUpdateTime(new Date());
+                        tagPolicies.setServiceId(tagService.getGuid());
+                        tagPolicies.setPolicyVersion(-1L);
+
+                        String tagServiceDefName =  String.format(RESOURCE_SERVICE_DEF_PATTERN, tagService.getAttribute(NAME));
+                        tagPolicies.setServiceDef(getResourceAsObject(tagServiceDefName, RangerServiceDef.class));
+
+                        servicePolicies.setTagPolicies(tagPolicies);
+                        servicePolicies.getTagPolicies().setPolicies(tagRangerPolicies);
+                        LOG.info("PolicyDelta: Found tag policies"+ tagRangerPolicies.size());
+                    }
+                }
+
+                AtlasPerfMetrics.MetricRecorder recorderFilterPolicies = RequestContext.get().startMetricRecord("filterPolicies");
+                //filter out policies based on serviceName
+//                List<RangerPolicy> policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
+//                List<RangerPolicy> policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
+
+//                servicePolicies.setPolicies(policiesA);
+//                servicePolicies.getTagPolicies().setPolicies(policiesB);
+                servicePolicies.setPolicyDeltas(policyDelta);
+
+                RequestContext.get().endMetricRecord(recorderFilterPolicies);
+
+                LOG.info("Found {} policies", servicePolicies.getPolicies().size());
+                LOG.info("PolicyDelta: Found {} policies and {} tag policies", servicePolicies.getPolicyDeltas().size(), servicePolicies.getTagPolicies().getPolicies().size());
+            }
+
+        } catch (Exception e) {
+            LOG.error("ERROR in getPolicies {}: {}", e.getMessage(), e.getStackTrace());
+            return null;
+        }
+
+        RequestContext.get().endMetricRecord(recorder);
+        return servicePolicies;
+    }
+
+
+    public ServicePolicies getPoliciesAll(String serviceName, String pluginId, Long lastUpdatedTime) {
         //TODO: return only if updated
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getPolicies." + serviceName);
 
@@ -186,11 +257,8 @@ public class CachePolicyTransformerImpl {
                 List<RangerPolicy> policiesA = allPolicies.stream().filter(x -> serviceName.equals(x.getService())).collect(Collectors.toList());
                 List<RangerPolicy> policiesB = allPolicies.stream().filter(x -> tagServiceName.equals(x.getService())).collect(Collectors.toList());
 
-//                servicePolicies.setPolicies(policiesA);
+                servicePolicies.setPolicies(policiesA);
                 servicePolicies.getTagPolicies().setPolicies(policiesB);
-
-                List<RangerPolicyDelta> policyDeltas  = getServicePolicyDeltas(service, 250, lastUpdatedTime);
-                servicePolicies.setPolicyDeltas(policyDeltas);
 
                 RequestContext.get().endMetricRecord(recorderFilterPolicies);
 
@@ -226,6 +294,21 @@ public class CachePolicyTransformerImpl {
         String serviceName = (String) service.getAttribute("name");
         String serviceType = (String) service.getAttribute("authServiceType");
         List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName, batchSize, lastUpdatedTime);
+
+        if (CollectionUtils.isNotEmpty(atlasPolicies)) {
+            //transform policies
+            servicePolicies = transformAtlasPoliciesToRangerPolicies(atlasPolicies, serviceType, serviceName);
+        }
+        return servicePolicies;
+    }
+
+    private List<RangerPolicy> getServicePoliciesWithDelta(AtlasEntityHeader service, int batchSize) throws AtlasBaseException, IOException {
+
+        List<RangerPolicy> servicePolicies = new ArrayList<>();
+
+        String serviceName = (String) service.getAttribute("name");
+        String serviceType = (String) service.getAttribute("authServiceType");
+        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName, batchSize);
 
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
             //transform policies
