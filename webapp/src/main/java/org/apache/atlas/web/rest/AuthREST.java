@@ -51,10 +51,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_SERVICE_LAST_SYNC;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
@@ -152,11 +149,13 @@ public class AuthREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadPolicies(serviceName="+serviceName+", pluginId="+pluginId+", lastUpdatedTime="+lastUpdatedTime+")");
             }
 
+            Date latestEditTime = null; // TODO: get latest edit time from audit logs
+
             if (!isPolicyUpdated(serviceName, lastUpdatedTime)) {
                 return null;
             }
 
-            ServicePolicies ret = policyTransformer.getPolicies(serviceName, pluginId, lastUpdatedTime);
+            ServicePolicies ret = policyTransformer.getPolicies(serviceName, pluginId, lastUpdatedTime, latestEditTime);
 
             updateLastSync(serviceName);
 

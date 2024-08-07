@@ -136,7 +136,7 @@ public class CachePolicyTransformerImpl {
         return service;
     }
 
-    public ServicePolicies getPolicies(String serviceName, String pluginId, Long lastUpdatedTime) {
+    public ServicePolicies getPolicies(String serviceName, String pluginId, Long lastUpdatedTime, Date latestEditTime) {
         //TODO: return only if updated
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getPolicies." + serviceName);
 
@@ -150,7 +150,7 @@ public class CachePolicyTransformerImpl {
             servicePolicies.setPolicyUpdateTime(new Date());
 
             if (service != null) {
-                List<RangerPolicy> allPolicies = getServicePolicies(service, 250);
+                List<RangerPolicy> allPolicies = getServicePolicies(service, 250, latestEditTime);
                 servicePolicies.setServiceName(serviceName);
                 servicePolicies.setServiceId(service.getGuid());
 
@@ -164,7 +164,7 @@ public class CachePolicyTransformerImpl {
                     AtlasEntityHeader tagService = getServiceEntity(tagServiceName);
 
                     if (tagService != null) {
-                        allPolicies.addAll(getServicePolicies(tagService, 0));
+                        allPolicies.addAll(getServicePolicies(tagService, 0, latestEditTime));
 
                         TagPolicies tagPolicies = new TagPolicies();
 
@@ -202,13 +202,13 @@ public class CachePolicyTransformerImpl {
         return servicePolicies;
     }
 
-    private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service, int batchSize) throws AtlasBaseException, IOException {
+    private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service, int batchSize, Date latestEditTime) throws AtlasBaseException, IOException {
 
         List<RangerPolicy> servicePolicies = new ArrayList<>();
 
         String serviceName = (String) service.getAttribute("name");
         String serviceType = (String) service.getAttribute("authServiceType");
-        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName, batchSize);
+        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName, batchSize, latestEditTime);
 
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
             //transform policies
@@ -451,7 +451,7 @@ public class CachePolicyTransformerImpl {
         return ret;
     }
 
-    private List<AtlasEntityHeader> getAtlasPolicies(String serviceName, int batchSize) throws AtlasBaseException {
+    private List<AtlasEntityHeader> getAtlasPolicies(String serviceName, int batchSize, Date latestEditTime) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+service+".getAtlasPolicies");
 
         List<AtlasEntityHeader> ret = new ArrayList<>();
@@ -515,6 +515,17 @@ public class CachePolicyTransformerImpl {
                 from += size;
 
             } while (found && ret.size() % size == 0);
+
+            boolean latestEditFound = false;
+            for (AtlasEntityHeader entity : ret) {
+                if (latestEditTime == null || entity.getUpdateTime().compareTo(latestEditTime) >= 0) {
+                    latestEditFound = true;
+                    break;
+                }
+            }
+            if (!latestEditFound) {
+                throw new AtlasBaseException("Latest edit not found yet");
+            }
 
         } finally {
             RequestContext.get().endMetricRecord(recorder);
