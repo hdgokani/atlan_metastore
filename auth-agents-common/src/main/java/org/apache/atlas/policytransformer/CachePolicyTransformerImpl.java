@@ -18,6 +18,7 @@
 
 package org.apache.atlas.policytransformer;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
@@ -61,6 +62,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.NAME;
@@ -202,13 +204,24 @@ public class CachePolicyTransformerImpl {
         return servicePolicies;
     }
 
-    private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service, int batchSize, Date latestEditTime) throws AtlasBaseException, IOException {
+    private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service, int batchSize, Date latestEditTime) throws AtlasBaseException, IOException, InterruptedException {
 
         List<RangerPolicy> servicePolicies = new ArrayList<>();
+        List<AtlasEntityHeader> atlasPolicies = new ArrayList<>();
 
         String serviceName = (String) service.getAttribute("name");
         String serviceType = (String) service.getAttribute("authServiceType");
-        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName, batchSize, latestEditTime);
+
+        int maxAttempts = 3;
+        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+            try {
+                atlasPolicies = getAtlasPolicies(serviceName, batchSize, latestEditTime);
+                break;
+            } catch (AtlasBaseException e) {
+                LOG.error("ERROR in getServicePolicies {}: ", e.getMessage(), e);
+                TimeUnit.SECONDS.sleep(2);
+            }
+        }
 
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
             //transform policies
