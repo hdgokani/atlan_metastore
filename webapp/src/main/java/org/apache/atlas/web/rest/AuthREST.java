@@ -216,6 +216,8 @@ public class AuthREST {
                     EntityAuditEventV2 lastAuditLog = result.getEntityAudits().get(0);
                     if (!EntityAuditEventV2.EntityAuditActionV2.getDeleteActions().contains(lastAuditLog.getAction())) {
                         lastEditTime = lastAuditLog.getTimestamp();
+                    } else {
+                        LOG.info("found delete action, so ignoring the last edit time: {}", lastAuditLog.getTimestamp());
                     }
                 } else {
                     lastEditTime = null; // no edits found
@@ -223,7 +225,6 @@ public class AuthREST {
             }
         } catch (AtlasBaseException e) {
             LOG.error("ERROR in getPoliciesIfUpdated while fetching entity audits {}: ", e.getMessage());
-            return lastEditTime;
         } finally {
             RequestContext.get().endMetricRecord(recorder);
             LOG.info("Last edit time for service {} is {}, dsl: {}", serviceName, lastEditTime, dsl);

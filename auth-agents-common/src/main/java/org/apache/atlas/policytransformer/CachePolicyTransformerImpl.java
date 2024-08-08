@@ -196,7 +196,7 @@ public class CachePolicyTransformerImpl {
             }
 
         } catch (Exception e) {
-            LOG.error("ERROR in getPolicies {}: ", e);
+            LOG.error("ERROR in getPolicies: ", e);
             return null;
         }
 
@@ -212,17 +212,19 @@ public class CachePolicyTransformerImpl {
         String serviceName = (String) service.getAttribute("name");
         String serviceType = (String) service.getAttribute("authServiceType");
 
-        int maxAttempts = 3;
+        int maxAttempts = 5;
+        int sleepFor = 500;
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
             try {
                 atlasPolicies = getAtlasPolicies(serviceName, batchSize, latestEditTime);
                 break;
             } catch (AtlasBaseException e) {
-                LOG.error("ERROR in getServicePolicies {}: ", e.getMessage(), e);
-                TimeUnit.SECONDS.sleep(2);
+                LOG.error("ERROR in getServicePolicies {}: ", e.getMessage());
+                TimeUnit.MILLISECONDS.sleep(sleepFor);
+                sleepFor *= 2;
             }
         }
-
+        LOG.info("Moving to transform policies, size: {}", atlasPolicies.size());
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
             //transform policies
             servicePolicies = transformAtlasPoliciesToRangerPolicies(atlasPolicies, serviceType, serviceName);
@@ -521,8 +523,10 @@ public class CachePolicyTransformerImpl {
                 List<AtlasEntityHeader> headers = discoveryService.directIndexSearch(indexSearchParams).getEntities();
                 if (headers != null) {
                     ret.addAll(headers);
+                    LOG.info("======= Found result with {} policies", headers.size());
                 } else {
                     found = false;
+                    LOG.info("======= Found result with null policies");
                 }
 
                 from += size;
@@ -530,13 +534,19 @@ public class CachePolicyTransformerImpl {
             } while (found && ret.size() % size == 0);
 
             boolean latestEditFound = false;
+            Date latestEditTimeAvailable = null;
             for (AtlasEntityHeader entity : ret) {
+                LOG.info("Looping on returned policies: {}, size: {}", entity.getDisplayText(), ret.size());
                 if (latestEditTime == null || entity.getUpdateTime().compareTo(latestEditTime) >= 0) {
+                    LOG.info("Found latest policy: {}, latestEditTime: {}, found policy time: {}", entity.getDisplayText(), latestEditTime, entity.getUpdateTime());
                     latestEditFound = true;
                     break;
                 }
+                latestEditTimeAvailable = entity.getUpdateTime();
+                LOG.info("Checked for latest edit, entity: {}, latestEditTimeAvailable: {}", entity.getDisplayText(),  latestEditTimeAvailable);
             }
-            if (!latestEditFound) {
+            if (latestEditTime != null && !latestEditFound) {
+                LOG.info("Latest edit not found yet, policies: {}, latestEditTime: {}, latestEditTimeAvailable: {}", ret.size(), latestEditTime,  latestEditTimeAvailable);
                 throw new AtlasBaseException("Latest edit not found yet");
             }
 
