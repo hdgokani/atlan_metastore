@@ -21,6 +21,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AuditSearchParams;
+import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.plugin.util.KeycloakUserStore;
@@ -51,10 +52,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_SERVICE_LAST_SYNC;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
@@ -152,11 +150,12 @@ public class AuthREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadPolicies(serviceName="+serviceName+", pluginId="+pluginId+", lastUpdatedTime="+lastUpdatedTime+")");
             }
 
-            if (!isPolicyUpdated(serviceName, lastUpdatedTime)) {
+            Long latestEditTime = getLastEditTime(serviceName, lastUpdatedTime);
+            if (latestEditTime == null) {
                 return null;
             }
 
-            ServicePolicies ret = policyTransformer.getPolicies(serviceName, pluginId, lastUpdatedTime);
+            ServicePolicies ret = policyTransformer.getPolicies(serviceName, pluginId, lastUpdatedTime, new Date(latestEditTime));
 
             updateLastSync(serviceName);
 
@@ -184,7 +183,7 @@ public class AuthREST {
         }
     }
 
-    private boolean isPolicyUpdated(String serviceName, long lastUpdatedTime) {
+    private Long getLastEditTime(String serviceName, long lastUpdatedTime) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AuthRest.isPolicyUpdated." + serviceName);
 
         List<String> entityUpdateToWatch = new ArrayList<>();
@@ -203,22 +202,35 @@ public class AuthREST {
 
         dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
 
+        List<Map<String, Object>> sortList = new ArrayList<>();
+        sortList.add(getMap("timestamp", "desc"));
+        dsl.put("sort", sortList);
+
         parameters.setDsl(dsl);
+        Long lastEditTime = 0L;
 
         try {
             EntityAuditSearchResult result = auditRepository.searchEvents(parameters.getQueryString());
-
-            if (result == null || CollectionUtils.isEmpty(result.getEntityAudits())) {
-                return false;
+            if (result != null) {
+                if (!CollectionUtils.isEmpty(result.getEntityAudits())) {
+                    EntityAuditEventV2 lastAuditLog = result.getEntityAudits().get(0);
+                    if (!EntityAuditEventV2.EntityAuditActionV2.getDeleteActions().contains(lastAuditLog.getAction())) {
+                        lastEditTime = lastAuditLog.getTimestamp();
+                    } else {
+                        LOG.info("found delete action, so ignoring the last edit time: {}", lastAuditLog.getTimestamp());
+                    }
+                } else {
+                    lastEditTime = null; // no edits found
+                }
             }
         } catch (AtlasBaseException e) {
             LOG.error("ERROR in getPoliciesIfUpdated while fetching entity audits {}: ", e.getMessage());
-            return true;
         } finally {
             RequestContext.get().endMetricRecord(recorder);
+            LOG.info("Last edit time for service {} is {}, dsl: {}", serviceName, lastEditTime, dsl);
         }
 
-        return true;
+        return lastEditTime;
     }
 
     private Map<String, Object> getMap(String key, Object value) {
