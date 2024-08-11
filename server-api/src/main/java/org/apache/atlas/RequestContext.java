@@ -91,6 +91,7 @@ public class RequestContext {
     private boolean     allowDeletedRelationsIndexsearch = false;
     private boolean     includeMeanings = true;
     private boolean     includeClassifications = true;
+    private boolean     requestRelationshipAttrsForSearch;
 
     private boolean     includeClassificationNames = false;
 
@@ -160,6 +161,7 @@ public class RequestContext {
         this.onlyCAUpdateEntities.clear();
         this.onlyBAUpdateEntities.clear();
         this.relationAttrsForSearch.clear();
+        this.requestRelationshipAttrsForSearch = false;
         this.queuedTasks.clear();
         this.newElementsCreatedMap.clear();
         this.removedElementsMap.clear();
@@ -212,6 +214,14 @@ public class RequestContext {
         if (CollectionUtils.isNotEmpty(relationAttrsForSearch)){
             this.relationAttrsForSearch.addAll(relationAttrsForSearch);
         }
+    }
+
+    public boolean isRequestRelationshipAttrsForSearch() {
+        return requestRelationshipAttrsForSearch;
+    }
+
+    public void setRequestRelationshipAttrsForSearch(boolean requestRelationshipAttrsForSearch) {
+        this.requestRelationshipAttrsForSearch = requestRelationshipAttrsForSearch;
     }
 
     public Map<String, List<Object>> getRemovedElementsMap() {

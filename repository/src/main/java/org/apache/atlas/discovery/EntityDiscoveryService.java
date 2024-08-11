@@ -984,6 +984,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         IndexSearchParams params = (IndexSearchParams) searchParams;
         RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
         RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
+        RequestContext.get().setRequestRelationshipAttrsForSearch(params.isRequestRelationshipAttrsForSearch());
 
         AtlasSearchResult ret = new AtlasSearchResult();
         AtlasIndexQuery indexQuery;
