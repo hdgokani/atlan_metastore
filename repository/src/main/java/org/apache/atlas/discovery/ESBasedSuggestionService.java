@@ -33,29 +33,11 @@ public class ESBasedSuggestionService {
     public ESBasedSuggestionService(RestClient lowLevelClient) {
         this.esRestClient = lowLevelClient;
     }
-    public static SearchRequest buildSuggestQuery(String userQuery, String field, String suggestion_name, int fuzziness) {
-        SearchRequest searchRequest = new SearchRequest(INDEX_NAME);
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 
-        Fuzziness fuzzinessObj = Fuzziness.build(fuzziness);
-        CompletionSuggestionBuilder completionSuggestionBuilder = SuggestBuilders.completionSuggestion(field)
-                .prefix(userQuery, fuzzinessObj);
-
-        SuggestBuilder suggestBuilder = new SuggestBuilder()
-                .addSuggestion(suggestion_name, completionSuggestionBuilder);
-
-        searchSourceBuilder.suggest(suggestBuilder);
-        searchRequest.source(searchSourceBuilder);
-
-        return searchRequest;
-    }
-
-    public SuggestionResponse searchSuggestions(String query, String fieldName, int fuzziness) throws IOException {
+    public SuggestionResponse searchSuggestions(String queryStr) throws IOException {
         // Build the suggestor query for ES
         String suggestorName = "suggest_keyword";
-        SearchRequest searchRequest = buildSuggestQuery(query, fieldName, suggestorName, fuzziness);
-        String queryStr = searchRequest.source().toString();
-        Request queryRequest = new Request("POST", "/suggest/_search");
+        Request queryRequest = new Request("POST", "/autocomplete/_search");
         queryRequest.setJsonEntity(queryStr);
         Response response = esRestClient.performRequest(queryRequest);
 

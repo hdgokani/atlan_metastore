@@ -39,6 +39,7 @@ import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase;
 import org.apache.atlas.searchlog.SearchLoggingManagement;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -831,18 +832,17 @@ public class DiscoveryREST {
     }
 
     @Path("suggestions")
-    @GET
+    @POST
     @Timed
-    public ESBasedSuggestionService.SuggestionResponse getSuggestions(@QueryParam("prefixString") String prefixString, @QueryParam("fieldName") String fieldName,
-                                                                      @QueryParam("fuzziness") int fuzziness) {
+    public ESBasedSuggestionService.SuggestionResponse getSuggestions(Object queryStr) {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.getSuggestions(" + prefixString + "," + fieldName + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.getSuggestions(" + queryStr + ")");
             }
 
-            return esBasedSuggestionService.searchSuggestions(prefixString, fieldName, fuzziness);
+            return esBasedSuggestionService.searchSuggestions(AtlasType.toJson(queryStr));
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
