@@ -53,15 +53,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -219,12 +211,12 @@ public class CachePolicyTransformerImpl {
                 atlasPolicies = getAtlasPolicies(serviceName, batchSize, latestEditTime);
                 break;
             } catch (AtlasBaseException e) {
-                LOG.error("ERROR in getServicePolicies {}: ", e.getMessage());
+                LOG.error("ES_SYNC_FIX: {}: ERROR in getServicePolicies: {}", serviceName, e.getMessage());
                 TimeUnit.MILLISECONDS.sleep(sleepFor);
                 sleepFor *= 2;
             }
         }
-        LOG.info("Moving to transform policies, size: {}", atlasPolicies.size());
+        LOG.info("ES_SYNC_FIX: {}: Moving to transform policies, size: {}", serviceName, atlasPolicies.size());
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
             //transform policies
             servicePolicies = transformAtlasPoliciesToRangerPolicies(atlasPolicies, serviceType, serviceName);
@@ -524,31 +516,32 @@ public class CachePolicyTransformerImpl {
                 List<AtlasEntityHeader> headers = discoveryService.directIndexSearch(indexSearchParams).getEntities();
                 if (headers != null) {
                     ret.addAll(headers);
-                    LOG.info("======= Found result with {} policies", headers.size());
+                    LOG.info("ES_SYNC_FIX: {}: ======= Found result with {} policies", serviceName, headers.size());
                 } else {
                     found = false;
-                    LOG.info("======= Found result with null policies");
+                    LOG.info("ES_SYNC_FIX: {}: ======= Found result with null policies", serviceName);
                 }
 
                 from += size;
 
             } while (found && ret.size() % size == 0);
-
-            boolean latestEditFound = false;
-            Date latestEditTimeAvailable = null;
-            for (AtlasEntityHeader entity : ret) {
-                LOG.info("Looping on returned policies: {}, size: {}", entity.getDisplayText(), ret.size());
-                if (latestEditTime == null || entity.getUpdateTime().compareTo(latestEditTime) >= 0) {
-                    LOG.info("Found latest policy: {}, latestEditTime: {}, found policy time: {}", entity.getDisplayText(), latestEditTime, entity.getUpdateTime());
-                    latestEditFound = true;
-                    break;
+            if (Objects.equals(serviceName, "atlas")) {
+                boolean latestEditFound = false;
+                Date latestEditTimeAvailable = null;
+                for (AtlasEntityHeader entity : ret) {
+                    // LOG.info("ES_SYNC_FIX: {}: Looping on returned policies: {}, size: {}", serviceName, entity.getDisplayText(), ret.size());
+                    if (latestEditTime == null || entity.getUpdateTime().compareTo(latestEditTime) >= 0) {
+                        LOG.info("ES_SYNC_FIX: {}: Found latest policy: {}, latestEditTime: {}, found policy time: {}", serviceName, entity.getDisplayText(), latestEditTime, entity.getUpdateTime());
+                        latestEditFound = true;
+                        break;
+                    }
+                    latestEditTimeAvailable = entity.getUpdateTime();
+                    // LOG.info("ES_SYNC_FIX: {}: Checked for latest edit, entity: {}, latestEditTimeAvailable: {}", serviceName, entity.getDisplayText(), latestEditTimeAvailable);
                 }
-                latestEditTimeAvailable = entity.getUpdateTime();
-                LOG.info("Checked for latest edit, entity: {}, latestEditTimeAvailable: {}", entity.getDisplayText(),  latestEditTimeAvailable);
-            }
-            if (latestEditTime != null && !latestEditFound) {
-                LOG.info("Latest edit not found yet, policies: {}, latestEditTime: {}, latestEditTimeAvailable: {}", ret.size(), latestEditTime,  latestEditTimeAvailable);
-                throw new AtlasBaseException("Latest edit not found yet");
+                if (latestEditTime != null && !latestEditFound) {
+                    LOG.info("ES_SYNC_FIX: {}: Latest edit not found yet, policies: {}, latestEditTime: {}, latestEditTimeAvailable: {}", serviceName, ret.size(), latestEditTime, latestEditTimeAvailable);
+                    throw new AtlasBaseException("Latest edit not found yet");
+                }
             }
 
         } finally {
