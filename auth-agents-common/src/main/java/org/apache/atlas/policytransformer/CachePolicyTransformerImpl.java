@@ -213,6 +213,9 @@ public class CachePolicyTransformerImpl {
             } catch (AtlasBaseException e) {
                 LOG.error("ES_SYNC_FIX: {}: ERROR in getServicePolicies: {}", serviceName, e.getMessage());
                 TimeUnit.MILLISECONDS.sleep(sleepFor);
+                if (attempt == maxAttempts) {
+                    throw e;
+                }
                 sleepFor *= 2;
             }
         }
