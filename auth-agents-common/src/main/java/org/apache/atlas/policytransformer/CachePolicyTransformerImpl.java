@@ -206,13 +206,16 @@ public class CachePolicyTransformerImpl {
 
         int maxAttempts = 5;
         int sleepFor = 500;
-        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+        for (int attempt = 0; attempt <= maxAttempts; attempt++) {
             try {
                 atlasPolicies = getAtlasPolicies(serviceName, batchSize, latestEditTime);
                 break;
             } catch (AtlasBaseException e) {
                 LOG.error("ES_SYNC_FIX: {}: ERROR in getServicePolicies: {}", serviceName, e.getMessage());
                 TimeUnit.MILLISECONDS.sleep(sleepFor);
+                if (attempt == maxAttempts) {
+                    throw e;
+                }
                 sleepFor *= 2;
             }
         }
