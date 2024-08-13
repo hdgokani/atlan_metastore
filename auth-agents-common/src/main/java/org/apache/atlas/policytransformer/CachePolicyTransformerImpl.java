@@ -18,6 +18,7 @@
 
 package org.apache.atlas.policytransformer;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
@@ -52,15 +53,8 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.NAME;
@@ -136,7 +130,7 @@ public class CachePolicyTransformerImpl {
         return service;
     }
 
-    public ServicePolicies getPolicies(String serviceName, String pluginId, Long lastUpdatedTime) {
+    public ServicePolicies getPolicies(String serviceName, String pluginId, Long lastUpdatedTime, Date latestEditTime) {
         //TODO: return only if updated
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getPolicies." + serviceName);
 
@@ -150,7 +144,7 @@ public class CachePolicyTransformerImpl {
             servicePolicies.setPolicyUpdateTime(new Date());
 
             if (service != null) {
-                List<RangerPolicy> allPolicies = getServicePolicies(service, 250);
+                List<RangerPolicy> allPolicies = getServicePolicies(service, 250, latestEditTime);
                 servicePolicies.setServiceName(serviceName);
                 servicePolicies.setServiceId(service.getGuid());
 
@@ -164,7 +158,7 @@ public class CachePolicyTransformerImpl {
                     AtlasEntityHeader tagService = getServiceEntity(tagServiceName);
 
                     if (tagService != null) {
-                        allPolicies.addAll(getServicePolicies(tagService, 0));
+                        allPolicies.addAll(getServicePolicies(tagService, 0, latestEditTime));
 
                         TagPolicies tagPolicies = new TagPolicies();
 
@@ -194,7 +188,7 @@ public class CachePolicyTransformerImpl {
             }
 
         } catch (Exception e) {
-            LOG.error("ERROR in getPolicies {}: ", e);
+            LOG.error("ERROR in getPolicies: ", e);
             return null;
         }
 
@@ -202,14 +196,30 @@ public class CachePolicyTransformerImpl {
         return servicePolicies;
     }
 
-    private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service, int batchSize) throws AtlasBaseException, IOException {
+    private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service, int batchSize, Date latestEditTime) throws AtlasBaseException, IOException, InterruptedException {
 
         List<RangerPolicy> servicePolicies = new ArrayList<>();
+        List<AtlasEntityHeader> atlasPolicies = new ArrayList<>();
 
         String serviceName = (String) service.getAttribute("name");
         String serviceType = (String) service.getAttribute("authServiceType");
-        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName, batchSize);
 
+        int maxAttempts = 5;
+        int sleepFor = 500;
+        for (int attempt = 0; attempt <= maxAttempts; attempt++) {
+            try {
+                atlasPolicies = getAtlasPolicies(serviceName, batchSize, latestEditTime);
+                break;
+            } catch (AtlasBaseException e) {
+                LOG.error("ES_SYNC_FIX: {}: ERROR in getServicePolicies: {}", serviceName, e.getMessage());
+                TimeUnit.MILLISECONDS.sleep(sleepFor);
+                if (attempt == maxAttempts) {
+                    throw e;
+                }
+                sleepFor *= 2;
+            }
+        }
+        LOG.info("ES_SYNC_FIX: {}: Moving to transform policies, size: {}", serviceName, atlasPolicies.size());
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
             //transform policies
             servicePolicies = transformAtlasPoliciesToRangerPolicies(atlasPolicies, serviceType, serviceName);
@@ -451,7 +461,7 @@ public class CachePolicyTransformerImpl {
         return ret;
     }
 
-    private List<AtlasEntityHeader> getAtlasPolicies(String serviceName, int batchSize) throws AtlasBaseException {
+    private List<AtlasEntityHeader> getAtlasPolicies(String serviceName, int batchSize, Date latestEditTime) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+service+".getAtlasPolicies");
 
         List<AtlasEntityHeader> ret = new ArrayList<>();
@@ -508,13 +518,33 @@ public class CachePolicyTransformerImpl {
                 List<AtlasEntityHeader> headers = discoveryService.directIndexSearch(indexSearchParams).getEntities();
                 if (headers != null) {
                     ret.addAll(headers);
+                    LOG.info("ES_SYNC_FIX: {}: ======= Found result with {} policies", serviceName, headers.size());
                 } else {
                     found = false;
+                    LOG.info("ES_SYNC_FIX: {}: ======= Found result with null policies", serviceName);
                 }
 
                 from += size;
 
             } while (found && ret.size() % size == 0);
+            if (Objects.equals(serviceName, "atlas")) {
+                boolean latestEditFound = false;
+                Date latestEditTimeAvailable = null;
+                for (AtlasEntityHeader entity : ret) {
+                    // LOG.info("ES_SYNC_FIX: {}: Looping on returned policies: {}, size: {}", serviceName, entity.getDisplayText(), ret.size());
+                    if (latestEditTime == null || entity.getUpdateTime().compareTo(latestEditTime) >= 0) {
+                        LOG.info("ES_SYNC_FIX: {}: Found latest policy: {}, latestEditTime: {}, found policy time: {}", serviceName, entity.getDisplayText(), latestEditTime, entity.getUpdateTime());
+                        latestEditFound = true;
+                        break;
+                    }
+                    latestEditTimeAvailable = entity.getUpdateTime();
+                    // LOG.info("ES_SYNC_FIX: {}: Checked for latest edit, entity: {}, latestEditTimeAvailable: {}", serviceName, entity.getDisplayText(), latestEditTimeAvailable);
+                }
+                if (latestEditTime != null && !latestEditFound) {
+                    LOG.info("ES_SYNC_FIX: {}: Latest edit not found yet, policies: {}, latestEditTime: {}, latestEditTimeAvailable: {}", serviceName, ret.size(), latestEditTime, latestEditTimeAvailable);
+                    throw new AtlasBaseException("Latest edit not found yet");
+                }
+            }
 
         } finally {
             RequestContext.get().endMetricRecord(recorder);
