@@ -206,7 +206,7 @@ public class CachePolicyTransformerImpl {
 
         int maxAttempts = 5;
         int sleepFor = 500;
-        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+        for (int attempt = 0; attempt <= maxAttempts; attempt++) {
             try {
                 atlasPolicies = getAtlasPolicies(serviceName, batchSize, latestEditTime);
                 break;

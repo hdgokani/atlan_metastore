@@ -157,7 +157,10 @@ public class AuthREST {
 
             ServicePolicies ret = policyTransformer.getPolicies(serviceName, pluginId, lastUpdatedTime, new Date(latestEditTime));
 
-            updateLastSync(serviceName);
+            // check if ret contains any policies other than tagPolicies
+            if (ret != null && ret.getPolicies() != null && !ret.getPolicies().isEmpty()) {
+                updateLastSync(serviceName);
+            }
 
             return ret;
         } finally {
