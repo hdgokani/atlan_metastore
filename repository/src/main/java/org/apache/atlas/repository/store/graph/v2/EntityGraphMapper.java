@@ -4654,13 +4654,26 @@ public class EntityGraphMapper {
         Set<String> governedPolicies = assetVertex.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
         Set<String> nonCompliantPolicies = assetVertex.getMultiValuedSetProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, String.class);
 
-        // Move the policy between governed and non-compliant sets based on the type
-        if (MoveBusinessPolicyRequest.Type.GOVERNED.getDescription().equals(type)) {
-            nonCompliantPolicies.removeAll(policyIds);
+        // Determine if the type is governed or non-compliant and move policies accordingly
+        boolean isGoverned = MoveBusinessPolicyRequest.Type.GOVERNED.getDescription().equals(type);
+
+        policyIds.forEach(policyId -> {
+            if (isGoverned) {
+                AtlasGraphUtilsV2.addItemToListProperty(assetVertex, ASSET_POLICY_GUIDS, policyId);
+                AtlasGraphUtilsV2.removeItemFromListPropertyValue(assetVertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
+            } else {
+                AtlasGraphUtilsV2.addItemToListProperty(assetVertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
+                AtlasGraphUtilsV2.removeItemFromListPropertyValue(assetVertex, ASSET_POLICY_GUIDS, policyId);
+            }
+        });
+
+        // Update the sets after processing
+        if (isGoverned) {
             governedPolicies.addAll(policyIds);
-        } else if (MoveBusinessPolicyRequest.Type.NON_COMPLIANT.getDescription().equals(type)) {
-            governedPolicies.removeAll(policyIds);
+            nonCompliantPolicies.removeAll(policyIds);
+        } else {
             nonCompliantPolicies.addAll(policyIds);
+            governedPolicies.removeAll(policyIds);
         }
 
         // Update the modification metadata
@@ -4679,6 +4692,8 @@ public class EntityGraphMapper {
 
         return assetVertex;
     }
+
+
 
 
     private void cacheDifferentialEntity(AtlasVertex ev, Set<String> existingValues) {
