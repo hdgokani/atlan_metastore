@@ -198,12 +198,12 @@ public class AuthREST {
         mustClauseList.add(getMap("terms", getMap("typeName", entityUpdateToWatch)));
 
         lastUpdatedTime = lastUpdatedTime == -1 ? 0 : lastUpdatedTime;
-        mustClauseList.add(getMap("range", getMap("timestamp", getMap("gte", lastUpdatedTime))));
+        mustClauseList.add(getMap("range", getMap("created", getMap("gte", lastUpdatedTime))));
 
         dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
 
         List<Map<String, Object>> sortList = new ArrayList<>();
-        sortList.add(getMap("timestamp", "desc"));
+        sortList.add(getMap("created", "desc"));
         dsl.put("sort", sortList);
 
         parameters.setDsl(dsl);
@@ -217,7 +217,7 @@ public class AuthREST {
                     if (!EntityAuditEventV2.EntityAuditActionV2.getDeleteActions().contains(lastAuditLog.getAction())) {
                         lastEditTime = lastAuditLog.getTimestamp();
                     } else {
-                        LOG.info("found delete action, so ignoring the last edit time: {}", lastAuditLog.getTimestamp());
+                        LOG.info("ES_SYNC_FIX: {}: found delete action, so ignoring the last edit time: {}", serviceName, lastAuditLog.getTimestamp());
                     }
                 } else {
                     lastEditTime = null; // no edits found
