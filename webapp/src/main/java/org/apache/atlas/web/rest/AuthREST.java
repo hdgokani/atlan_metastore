@@ -207,14 +207,16 @@ public class AuthREST {
         dsl.put("sort", sortList);
 
         parameters.setDsl(dsl);
-        Long lastEditTime = 0L;
+        Long lastEditTime = 0L; // this timestamp is used to verify if the found policies are synced with any policy create or update op on cassandra
 
         try {
             EntityAuditSearchResult result = auditRepository.searchEvents(parameters.getQueryString());
             if (result != null) {
                 if (!CollectionUtils.isEmpty(result.getEntityAudits())) {
                     EntityAuditEventV2 lastAuditLog = result.getEntityAudits().get(0);
-                    if (!EntityAuditEventV2.EntityAuditActionV2.getDeleteActions().contains(lastAuditLog.getAction())) {
+                    if (!EntityAuditEventV2.EntityAuditActionV2.getDeleteActions().contains(lastAuditLog.getAction()) &&
+                        lastAuditLog.getTypeName().equals(POLICY_ENTITY_TYPE)
+                    ) {
                         lastEditTime = lastAuditLog.getTimestamp();
                     } else {
                         LOG.info("ES_SYNC_FIX: {}: found delete action, so ignoring the last edit time: {}", serviceName, lastAuditLog.getTimestamp());
