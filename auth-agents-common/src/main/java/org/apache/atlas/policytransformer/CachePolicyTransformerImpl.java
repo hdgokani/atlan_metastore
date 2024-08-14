@@ -119,14 +119,13 @@ public class CachePolicyTransformerImpl {
     private PurposeCachePolicyTransformer purposeTransformer;
 
     private AtlasEntityHeader service;
-    private ESBasedAuditRepository auditRepository;
+    private final ESBasedAuditRepository auditRepository;
 
     @Inject
     public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry, ESBasedAuditRepository auditRepository) throws AtlasBaseException {
         this.graph                = new AtlasJanusGraph();
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
-        this.auditRepository = new ESBasedAuditRepository(ApplicationProperties.get());
-        LOG.info("PolicyDelta: auditRepository: {}", auditRepository);
+        this.auditRepository      = auditRepository;
 
         personaTransformer = new PersonaCachePolicyTransformer(entityRetriever);
         purposeTransformer = new PurposeCachePolicyTransformer(entityRetriever);
@@ -172,7 +171,7 @@ public class CachePolicyTransformerImpl {
                     AtlasEntityHeader tagService = getServiceEntity(tagServiceName);
 
                     if (tagService != null) {
-                        List<RangerPolicy> tagRangerPolicies = getServicePolicies(tagService, 0, lastUpdatedTime);
+                        List<RangerPolicy> tagRangerPolicies = getServicePolicies(tagService, 0);
 
                         TagPolicies tagPolicies = new TagPolicies();
 
@@ -220,7 +219,7 @@ public class CachePolicyTransformerImpl {
             servicePolicies.setPolicyUpdateTime(new Date());
 
             if (service != null) {
-                List<RangerPolicy> allPolicies = getServicePolicies(service, 250, lastUpdatedTime);
+                List<RangerPolicy> allPolicies = getServicePolicies(service, 250);
                 servicePolicies.setServiceName(serviceName);
                 servicePolicies.setServiceId(service.getGuid());
 
@@ -234,7 +233,7 @@ public class CachePolicyTransformerImpl {
                     AtlasEntityHeader tagService = getServiceEntity(tagServiceName);
 
                     if (tagService != null) {
-                        allPolicies.addAll(getServicePolicies(tagService, 0, lastUpdatedTime));
+                        allPolicies.addAll(getServicePolicies(tagService, 0));
 
                         TagPolicies tagPolicies = new TagPolicies();
 
@@ -272,13 +271,13 @@ public class CachePolicyTransformerImpl {
         return servicePolicies;
     }
 
-    private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service, int batchSize, Long lastUpdatedTime) throws AtlasBaseException, IOException {
+    private List<RangerPolicy> getServicePolicies(AtlasEntityHeader service, int batchSize) throws AtlasBaseException, IOException {
 
         List<RangerPolicy> servicePolicies = new ArrayList<>();
 
         String serviceName = (String) service.getAttribute("name");
         String serviceType = (String) service.getAttribute("authServiceType");
-        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName, batchSize, lastUpdatedTime, new ArrayList<>());
+        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName, batchSize, new ArrayList<>());
 
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
             //transform policies
@@ -300,7 +299,7 @@ public class CachePolicyTransformerImpl {
             }
         }
 
-        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName, batchSize, lastUpdatedTime, policyGuids);
+        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName, batchSize, policyGuids);
         List<RangerPolicyDelta> servicePolicies = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
             servicePolicies = transformAtlasPoliciesToRangerPoliciesDelta(atlasPolicies, serviceType, serviceName);
@@ -347,6 +346,7 @@ public class CachePolicyTransformerImpl {
             String serviceName
     ) {
         // TODO: implement transformation of atlas policies to RangerPolicyDelta
+
         return null;
     }
 
@@ -584,7 +584,7 @@ public class CachePolicyTransformerImpl {
         return ret;
     }
 
-    private List<AtlasEntityHeader> getAtlasPolicies(String serviceName, int batchSize, Long lastUpdatedTime, List<String> policyGuids) throws AtlasBaseException {
+    private List<AtlasEntityHeader> getAtlasPolicies(String serviceName, int batchSize, List<String> policyGuids) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl."+service+".getAtlasPolicies");
 
         List<AtlasEntityHeader> ret = new ArrayList<>();
@@ -618,7 +618,6 @@ public class CachePolicyTransformerImpl {
             if (!policyGuids.isEmpty()) {
                 mustClauseList.add(getMap("terms", getMap("__guid", policyGuids)));
             }
-            // add lastUpdatedTime filter
 
             dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
 

@@ -70,8 +70,8 @@ public class PolicyRefresher extends Thread {
 	private       long                           lastActivationTimeInMillis;
 	private       boolean                        policiesSetInPlugin;
 	private       boolean                        serviceDefSetInPlugin;
-	private 	  Configuration					 atlasConfig;
-    private 	  boolean						 enableDeltaBasedRefresh;
+	private       Configuration                  atlasConfig;
+	private       boolean                        enableDeltaBasedRefresh;
 
 
 	public PolicyRefresher(RangerBasePlugin plugIn) {

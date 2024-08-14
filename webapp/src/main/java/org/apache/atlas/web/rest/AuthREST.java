@@ -148,15 +148,14 @@ public class AuthREST {
         AtlasPerfTracer perf = null;
 
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadPolicies(serviceName="+serviceName+", pluginId="+pluginId+", lastUpdatedTime="+lastUpdatedTime+")");
+            }
 
             if (!isPolicyUpdated(serviceName, lastUpdatedTime)) {
                 return null;
             }
 
-            // only measure the performance when update is required, full request time anyway logged in audits
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadPolicies(serviceName="+serviceName+", pluginId="+pluginId+", lastUpdatedTime="+lastUpdatedTime+")");
-            }
             ServicePolicies ret = policyTransformer.getPoliciesAll(serviceName, pluginId, lastUpdatedTime);
 
             updateLastSync(serviceName);
