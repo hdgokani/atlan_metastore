@@ -25,6 +25,7 @@ import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AuditSearchParams;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
@@ -121,6 +122,8 @@ public class CachePolicyTransformerImpl {
     private AtlasEntityHeader service;
     private final ESBasedAuditRepository auditRepository;
 
+    private final Map<EntityAuditActionV2, Integer> auditEventToDeltaChangeType;
+
     @Inject
     public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry, ESBasedAuditRepository auditRepository) throws AtlasBaseException {
         this.graph                = new AtlasJanusGraph();
@@ -136,6 +139,11 @@ public class CachePolicyTransformerImpl {
             LOG.error("Failed to initialize discoveryService");
             throw new AtlasBaseException(e.getCause());
         }
+
+        this.auditEventToDeltaChangeType = new HashMap<>();
+        this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_CREATE, RangerPolicyDelta.CHANGE_TYPE_POLICY_CREATE);
+        this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_UPDATE, RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE);
+        this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_DELETE, RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE);
     }
 
     public AtlasEntityHeader getService() {
@@ -287,16 +295,24 @@ public class CachePolicyTransformerImpl {
     }
 
     private List<RangerPolicyDelta> getServicePoliciesWithDelta(AtlasEntityHeader service, int batchSize, Long lastUpdatedTime) throws AtlasBaseException, IOException {
+
         String serviceName = (String) service.getAttribute("name");
         String serviceType = (String) service.getAttribute("authServiceType");
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getServicePoliciesWithDelta." + serviceName);
+
+        List<RangerPolicyDelta> policyDeltas = new ArrayList<>();
 
         // TODO: when getServicePolicies (without delta) is removed, merge the pagination for audit logs and policy fetch into one
         List<EntityAuditEventV2> auditEvents = queryPoliciesAuditLogs(serviceName, lastUpdatedTime, batchSize);
-        Map<String, EntityAuditEventV2.EntityAuditActionV2> policiesWithChangeType = new HashMap<>();
+        Map<String, EntityAuditActionV2> policiesWithChangeType = new HashMap<>();
         for (EntityAuditEventV2 event : auditEvents) {
             if (POLICY_ENTITY_TYPE.equals(event.getTypeName()) && !policiesWithChangeType.containsKey(event.getEntityId())) {
                 policiesWithChangeType.put(event.getEntityId(), event.getAction());
             }
+        }
+        LOG.info("PolicyDelta: {}: Total audit logs found = {}, events for {} ({}) = {}", serviceName, auditEvents.size(), POLICY_ENTITY_TYPE, policiesWithChangeType.size(), policiesWithChangeType);
+        if (policiesWithChangeType.isEmpty()) {
+            return policyDeltas;
         }
 
         ArrayList<String> policyGuids = new ArrayList<>(policiesWithChangeType.keySet());
@@ -307,13 +323,14 @@ public class CachePolicyTransformerImpl {
             rangerPolicies = transformAtlasPoliciesToRangerPolicies(atlasPolicies, serviceType, serviceName);
         }
 
-        List<RangerPolicyDelta> policyDeltas = new ArrayList<>();
         for (RangerPolicy policy : rangerPolicies) {
-//            EntityAuditEventV2.EntityAuditActionV2 changeType = policiesWithChangeType.get(policy.getId());
-            Integer changeType = RangerPolicyDelta.CHANGE_TYPE_POLICY_CREATE; // TODO: convert auditEventAction to changeType.
-            RangerPolicyDelta delta = new RangerPolicyDelta(policy.getId(), 0, policy.getVersion(), policy);
+            Integer changeType = auditEventToDeltaChangeType.get(policiesWithChangeType.get(policy.getGuid()));
+            RangerPolicyDelta delta = new RangerPolicyDelta(policy.getId(), changeType, policy.getVersion(), policy);
             policyDeltas.add(delta);
         }
+        LOG.info("PolicyDelta: {}: atlas policies found = {}, delta created = {}", serviceName, atlasPolicies.size(), policyDeltas.size());
+        RequestContext.get().endMetricRecord(recorder);
+
         return policyDeltas;
     }
 
