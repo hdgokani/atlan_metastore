@@ -72,6 +72,7 @@ public class PolicyRefresher extends Thread {
 	private       boolean                        serviceDefSetInPlugin;
 	private       Configuration                  atlasConfig;
 	private       boolean                        enableDeltaBasedRefresh;
+	private       ESBasedAuditRepository         auditRepository;
 
 
 	public PolicyRefresher(RangerBasePlugin plugIn) {
@@ -114,6 +115,7 @@ public class PolicyRefresher extends Thread {
 
 		try {
 			this.atlasConfig = ApplicationProperties.get();
+			this.auditRepository = new ESBasedAuditRepository(atlasConfig);
 			this.enableDeltaBasedRefresh = this.atlasConfig.getBoolean(DELTA_BASED_REFRESH, false);
 		} catch (AtlasException e) {
 			LOG.error("PolicyDelta: Error while reading atlas configuration", e);
@@ -334,7 +336,7 @@ public class PolicyRefresher extends Thread {
 
 			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null) {
 				RangerRESTUtils restUtils = new RangerRESTUtils();
-				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry(), new ESBasedAuditRepository(atlasConfig));
+				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry(), auditRepository);
 				if (this.enableDeltaBasedRefresh) {
 					svcPolicies = transformer.getPoliciesDelta(serviceName,
 							restUtils.getPluginId(serviceName, plugIn.getAppId()),

@@ -18,7 +18,6 @@
 
 package org.apache.atlas.policytransformer;
 
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
@@ -169,7 +168,7 @@ public class CachePolicyTransformerImpl {
                 String serviceDefName = String.format(RESOURCE_SERVICE_DEF_PATTERN, serviceName);
                 servicePolicies.setServiceDef(getResourceAsObject(serviceDefName, RangerServiceDef.class));
 
-                List<RangerPolicyDelta> policiesDelta = getServicePoliciesWithDelta(service, 250, lastUpdatedTime);
+                List<RangerPolicyDelta> policiesDelta = getServicePoliciesDelta(service, 250, lastUpdatedTime);
                 servicePolicies.setPolicyDeltas(policiesDelta);
 
 
@@ -204,7 +203,7 @@ public class CachePolicyTransformerImpl {
             }
 
         } catch (Exception e) {
-            LOG.error("ERROR in getPoliciesDelta {}: {}", e.getMessage(), e.getStackTrace());
+            LOG.error("PolicyDelta: {}: ERROR in getPoliciesDelta {}: {}", serviceName, e.getMessage(), e);
             return null;
         }
 
@@ -294,7 +293,7 @@ public class CachePolicyTransformerImpl {
         return servicePolicies;
     }
 
-    private List<RangerPolicyDelta> getServicePoliciesWithDelta(AtlasEntityHeader service, int batchSize, Long lastUpdatedTime) throws AtlasBaseException, IOException {
+    private List<RangerPolicyDelta> getServicePoliciesDelta(AtlasEntityHeader service, int batchSize, Long lastUpdatedTime) throws AtlasBaseException, IOException {
 
         String serviceName = (String) service.getAttribute("name");
         String serviceType = (String) service.getAttribute("authServiceType");
