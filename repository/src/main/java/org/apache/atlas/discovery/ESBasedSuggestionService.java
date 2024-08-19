@@ -51,7 +51,7 @@ public class ESBasedSuggestionService {
         LinkedHashMap suggestions = suggestionMap.get(0);
         List<LinkedHashMap> options = (List<LinkedHashMap>) suggestions.get("options");
         for (LinkedHashMap option : options) {
-            suggestionResponse.addSuggestion((String) option.get("text"));
+            suggestionResponse.addSuggestion((LinkedHashMap) option.get("_source"));
         }
 
         return suggestionResponse;
@@ -63,19 +63,25 @@ public class ESBasedSuggestionService {
     public class SuggestionResponse {
 
         public SuggestionResponse() { }
-        private List<String> suggestions = new ArrayList<>();
+        private List<LinkedHashMap> suggestions = new ArrayList<>();
+        private final List<LinkedHashMap> sources = new ArrayList<>();
 
-        public List<String> getSuggestions() {
+        public List<LinkedHashMap> getSuggestions() {
             return suggestions;
         }
 
-        public void addSuggestion(String suggestion) {
+        public void addSuggestion(LinkedHashMap suggestion) {
             this.suggestions.add(suggestion);
         }
 
-        public void setSuggestions(List<String> suggestions) {
+        public void addSource(LinkedHashMap source) {
+            this.sources.add(source);
+        }
+
+        public void setSuggestions(List<LinkedHashMap> suggestions) {
             this.suggestions = suggestions;
         }
+
     }
 
 
