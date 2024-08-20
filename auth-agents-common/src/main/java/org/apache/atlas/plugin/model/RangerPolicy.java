@@ -675,6 +675,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		@Override
 		public int compare(RangerPolicy me, RangerPolicy other) {
 			return Long.compare(me.getId(), other.getId());
+//			return String.CASE_INSENSITIVE_ORDER.compare(me.getGuid(), other.getGuid());
 		}
 	}
 

@@ -79,7 +79,7 @@ public class RangerPolicyDeltaUtil {
                     int changeType = delta.getChangeType();
 
                     if (changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_CREATE || changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE || changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE) {
-                        Long policyId = delta.getPolicyId();
+                        String policyId = delta.getPolicy().getGuid(); // change to getGuid() as id is not set in policy
 
                         if (policyId == null) {
                             continue;
@@ -91,7 +91,7 @@ public class RangerPolicyDeltaUtil {
 
                         while (iter.hasNext()) {
                             RangerPolicy policy = iter.next();
-                            if (policyId.equals(policy.getId()) && (changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE || changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE)) {
+                            if (policyId.equals(policy.getGuid()) && (changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE || changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE)) {
                                 deletedPolicies.add(policy);
                                 iter.remove();
                             }
@@ -138,10 +138,6 @@ public class RangerPolicyDeltaUtil {
                 LOG.debug("applyDeltas called with empty deltas. Will return policies without change");
             }
             ret = policies;
-        }
-
-        if (CollectionUtils.isNotEmpty(deltas) && hasExpectedServiceType && CollectionUtils.isNotEmpty(ret)) {
-            ret.sort(RangerPolicy.POLICY_ID_COMPARATOR);
         }
 
         RangerPerfTracer.log(perf);
