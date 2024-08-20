@@ -79,7 +79,7 @@ public class RangerPolicyDeltaUtil {
                     int changeType = delta.getChangeType();
 
                     if (changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_CREATE || changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE || changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE) {
-                        String policyId = delta.getPolicy().getGuid(); // change to getGuid() as id is not set in policy
+                        String policyId = delta.getPolicyGuid(); // change to getGuid() as id is not set in policy
 
                         if (policyId == null) {
                             continue;
@@ -156,7 +156,7 @@ public class RangerPolicyDeltaUtil {
 
         for (RangerPolicyDelta delta : deltas) {
             final Integer changeType = delta.getChangeType();
-            final Long    policyId   = delta.getPolicyId();
+            final String policyGuid = delta.getPolicyGuid();
 
             if (changeType == null) {
                 isValid = false;
@@ -167,7 +167,7 @@ public class RangerPolicyDeltaUtil {
                     && changeType != RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE
                     && changeType != RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE) {
                 isValid = false;
-            } else if (policyId == null) {
+            } else if (policyGuid == null) {
                 isValid = false;
             } else {
                 final String  serviceType = delta.getServiceType();
