@@ -23,6 +23,7 @@ public final class AtlasLineageListContext {
     private int                                 currentEntityCounter;
     private boolean                             depthLimitReached;
     private boolean                             hasMoreUpdated;
+    private Boolean                             immediateNeighbours;
     private String                              lineageType = "DatasetProcessLineage";
 
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {
@@ -37,6 +38,7 @@ public final class AtlasLineageListContext {
         this.attributes = lineageListRequest.getAttributes();
         this.lineageType = lineageListRequest.getLineageType();
         this.relationAttributes = lineageListRequest.getRelationAttributes();
+        this.immediateNeighbours = lineageListRequest.getImmediateNeighbours();
     }
 
     public String getGuid() {
@@ -199,5 +201,13 @@ public final class AtlasLineageListContext {
 
     public void setHasMoreUpdated(boolean hasMoreUpdated) {
         this.hasMoreUpdated = hasMoreUpdated;
+    }
+
+    public Boolean getImmediateNeighbours() {
+        return immediateNeighbours;
+    }
+
+    public void setImmediateNeighbours(Boolean immediateNeighbours) {
+        this.immediateNeighbours = immediateNeighbours;
     }
 }
