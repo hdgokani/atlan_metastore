@@ -154,8 +154,7 @@ public class AuthREST {
             if (latestEditTime == null) {
                 return null;
             }
-
-            ServicePolicies ret = policyTransformer.getPolicies(serviceName, pluginId, lastUpdatedTime, new Date(latestEditTime));
+            ServicePolicies ret = policyTransformer.getPoliciesAll(serviceName, pluginId, lastUpdatedTime, new Date(latestEditTime));
 
             updateLastSync(serviceName);
 
