@@ -338,10 +338,10 @@ public class PolicyRefresher extends Thread {
 			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null) {
 				RangerRESTUtils restUtils = new RangerRESTUtils();
 				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry(), auditRepository);
-				 if (lastUpdatedTiemInMillis == -1) {
+				if (lastUpdatedTiemInMillis == -1) {
 					svcPolicies = transformer.getPoliciesAll(serviceName,
 							restUtils.getPluginId(serviceName, plugIn.getAppId()),
-							lastUpdatedTiemInMillis);
+							lastUpdatedTiemInMillis, null);
 				} else if (this.enableDeltaBasedRefresh) {
 					svcPolicies = transformer.getPoliciesDelta(serviceName,
 							restUtils.getPluginId(serviceName, plugIn.getAppId()),

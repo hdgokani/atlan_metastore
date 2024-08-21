@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.commons.lang.StringUtils;
@@ -27,29 +28,29 @@ import static org.apache.atlas.AtlasErrorCode.*;
 public class DataContract {
     private static final String KIND_VALUE = "DataContract";
     private static final Pattern versionPattern = Pattern.compile("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$");
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapperYAML = new ObjectMapper(new YAMLFactory());
+    private static final ObjectMapper objectMapperJSON = new ObjectMapper();
     static {
-        objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+        objectMapperYAML.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+        objectMapperJSON.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
     }
 
     @Valid @NotNull
     public String                               kind;
-    public Status                               status;
-    @JsonProperty(value = "template_version", defaultValue = "0.0.1")
-    public String                               templateVersion;
-    @Valid @NotNull
+    public Status                               status = Status.DRAFT;
+    @JsonProperty(value = "template_version")
+    public String                               templateVersion = "0.0.1";
     public String                               data_source;
     @Valid @NotNull
     public String                               dataset;
-    @Valid @NotNull
     public DatasetType                          type;
     public String                               description;
-    public List<String>                         owners;
+    public Object                               owners;
     public List<BusinessTag>                    tags;
     public String                               certificate;
     @Valid
     public List<Column>                         columns;
-    private final Map<String, Object>            unknownFields = new HashMap<>();
+    private final Map<String, Object>           unknownFields = new HashMap<>();
 
     public enum Status {
         @JsonProperty("DRAFT") DRAFT,
@@ -86,7 +87,7 @@ public class DataContract {
                 case "materialisedview":
                     return MaterialisedView;
                 default:
-                    throw new AtlasBaseException(String.format("dataset.type: %s value not supported yet.", s));
+                    throw new AtlasBaseException(BAD_REQUEST, String.format("type: %s value not supported yet.", s));
             }
         }
     }
@@ -141,11 +142,11 @@ public class DataContract {
         try {
             this.type = DatasetType.from(type);
         } catch (IllegalArgumentException | AtlasBaseException ex) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "type " + type + " is inappropriate. Accepted values: " + Arrays.toString(DatasetType.values()));
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE, "type: " + type + " is inappropriate. Accepted values: " + Arrays.toString(DatasetType.values()));
         }
     }
 
-    public void setOwners(List<String> owners) {
+    public void setOwners(Object owners) {
         this.owners = owners;
     }
 
@@ -184,6 +185,20 @@ public class DataContract {
             return unknownFields;
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) { return true; }
+            if (o == null || getClass() != o.getClass()) { return false; }
+            BusinessTag that = (BusinessTag) o;
+            return Objects.equals(name, that.name) &&
+                    Objects.equals(unknownFields, that.unknownFields);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), name, unknownFields);
+        }
+
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -206,6 +221,22 @@ public class DataContract {
         public Map<String, Object> getUnknownFields() {
             return unknownFields;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) { return true; }
+            if (o == null || getClass() != o.getClass()) { return false; }
+            Column that = (Column) o;
+            return Objects.equals(name, that.name) &&
+                    Objects.equals(description, that.description) &&
+                    Objects.equals(data_type, that.data_type) &&
+                    Objects.equals(unknownFields, that.unknownFields);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), name, description, data_type, unknownFields);
+        }
     }
 
     public static DataContract deserialize(String contractString) throws AtlasBaseException {
@@ -216,9 +247,13 @@ public class DataContract {
 
         DataContract contract;
         try {
-            contract = objectMapper.readValue(contractString, DataContract.class);
+            contract = objectMapperYAML.readValue(contractString, DataContract.class);
         } catch (JsonProcessingException ex) {
-            throw new AtlasBaseException(ex.getOriginalMessage());
+            try {
+                contract = objectMapperJSON.readValue(contractString, DataContract.class);
+            } catch (JsonProcessingException e) {
+                throw new AtlasBaseException(ex.getOriginalMessage());
+            }
         }
         contract.validate();
         return contract;
@@ -242,11 +277,45 @@ public class DataContract {
     public static String serialize(DataContract contract) throws AtlasBaseException {
 
         try {
-            return objectMapper.writeValueAsString(contract);
+            return objectMapperYAML.writeValueAsString(contract);
         } catch (JsonProcessingException ex) {
             throw new AtlasBaseException(JSON_ERROR, ex.getMessage());
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) { return true; }
+        if (o == null || getClass() != o.getClass()) { return false; }
+
+        DataContract that = (DataContract) o;
+        return Objects.equals(kind, that.kind) &&
+                Objects.equals(status, that.status) &&
+                Objects.equals(templateVersion, that.templateVersion) &&
+                Objects.equals(data_source, that.data_source) &&
+                Objects.equals(dataset, that.dataset) &&
+                Objects.equals(type, that.type) &&
+                Objects.equals(description, that.description) &&
+                Objects.equals(owners, that.owners) &&
+                Objects.equals(tags, that.tags) &&
+                Objects.equals(certificate, that.certificate) &&
+                Objects.equals(columns, that.columns) &&
+                Objects.equals(unknownFields, that.unknownFields);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), kind, status, templateVersion, data_source, dataset, type, description, owners,
+                tags, certificate, columns, unknownFields);
+    }
+
+    public static String serializeJSON(DataContract contract) throws AtlasBaseException {
+
+        try {
+            return objectMapperJSON.writeValueAsString(contract);
+        } catch (JsonProcessingException ex) {
+            throw new AtlasBaseException(JSON_ERROR, ex.getMessage());
+        }
+    }
 }
 

@@ -56,6 +56,7 @@ public final class Constants {
     public static final String GUID_PROPERTY_KEY                = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "guid");
     public static final String RELATIONSHIP_GUID_PROPERTY_KEY   = encodePropertyKey(RELATIONSHIP_PROPERTY_KEY_PREFIX + GUID_PROPERTY_KEY);
     public static final String HISTORICAL_GUID_PROPERTY_KEY     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "historicalGuids");
+    public static final String QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "qualifiedNameHierarchy");
     public static final String FREETEXT_REQUEST_HANDLER         = "/freetext";
     public static final String TERMS_REQUEST_HANDLER            = "/terms";
     public static final String ES_API_ALIASES                   = "/_aliases";
@@ -156,9 +157,15 @@ public final class Constants {
     public static final String INPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.inputPortDataProducts";
     public static final String OUTPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.outputPortDataProducts";
 
+    public static final String UD_RELATIONSHIP_EDGE_LABEL = "__Referenceable.userDefRelationshipTo";
+    public static final String UD_RELATIONSHIP_END_NAME_FROM = "userDefRelationshipFrom";
+    public static final String UD_RELATIONSHIP_END_NAME_TO = "userDefRelationshipTo";
+
     /**
      * SQL property keys.
      */
+
+    public static final String SQL_ENTITY_TYPE              = "SQL";
     public static final String CONNECTION_ENTITY_TYPE       = "Connection";
     public static final String QUERY_ENTITY_TYPE            = "Query";
     public static final String QUERY_FOLDER_ENTITY_TYPE     = "Folder";
@@ -173,6 +180,8 @@ public final class Constants {
     public static final String POLICY_ENTITY_TYPE         = "AuthPolicy";
     public static final String SERVICE_ENTITY_TYPE        = "AuthService";
     public static final String REL_POLICY_TO_ACCESS_CONTROL  = "access_control_policies";
+
+    public static final String POLICY_SERVICE_NAME_ABAC  = "atlas_abac";
 
     /**
      * Resource
@@ -366,6 +375,10 @@ public final class Constants {
     public static final String IMPALA_SOURCE      = "impala";
     public static final String STORM_SOURCE       = "storm";
     public static final String FILE_SPOOL_SOURCE  = "file_spool";
+    public static final String ASSET_POLICY_GUIDS  = "assetPolicyGUIDs";
+    public static final String ASSET_POLICIES_COUNT  = "assetPoliciesCount";
+
+
 
     /*
      * All supported file-format extensions for Bulk Imports through file upload
@@ -431,7 +444,8 @@ public final class Constants {
     public static final String ATTR_ASSET_STARRED_BY = "assetStarredBy";
     public static final String ATTR_ASSET_STARRED_AT = "assetStarredAt";
     public static final String ATTR_CERTIFICATE_STATUS = "certificateStatus";
-    public static final String ATTR_CONTRACT = "dataContractJson";
+    public static final String ATTR_CONTRACT = "dataContractSpec";
+    public static final String ATTR_CONTRACT_JSON = "dataContractJson";
     public static final String STRUCT_STARRED_DETAILS = "StarredDetails";
 
     public static final String KEYCLOAK_ROLE_ADMIN   = "$admin";
