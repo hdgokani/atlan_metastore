@@ -2120,7 +2120,8 @@
                 [
                     "admin",
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2185,7 +2186,8 @@
                 [
                     "admin",
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2221,7 +2223,8 @@
                 [
                     "admin",
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2257,7 +2260,8 @@
                 [
                     "admin",
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2367,7 +2371,8 @@
                 [
                     "admin",
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2441,7 +2446,8 @@
                 "policyUsers":
                 [
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2551,7 +2557,8 @@
                 "policyUsers":
                 [
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2587,7 +2594,8 @@
                 "policyUsers":
                 [
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2622,7 +2630,8 @@
                 "policyUsers":
                 [
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2657,7 +2666,8 @@
                 "policyUsers":
                 [
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2886,13 +2896,49 @@
                 [
                     "entity-type:DataDomain",
                     "entity-classification:*",
-                    "entity:*"
+                    "entity:*/super"
                 ],
                 "policyActions":
                 [
                     "entity-create",
                     "entity-read",
                     "entity-update",
+                    "entity-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "RD_DATA_MESH_ENTITIES",
+                "qualifiedName": "RD_DATA_MESH_ENTITIES",
+                "description": "Allows admins to perform delete operation on data mesh assets",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources":
+                [
+
+                    "entity-type:DataDomain",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-read",
                     "entity-delete"
                 ]
             }
@@ -2959,6 +3005,7 @@
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
                 [
+
                     "entity-type:DataDomain",
                     "entity-classification:*",
                     "entity:*"
