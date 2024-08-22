@@ -208,6 +208,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         try {
             String domainName = (String) domain.getAttribute(NAME);
             String updatedQualifiedName = "";
+            LinkedHashMap<String, Object> updatedAttributes = new LinkedHashMap<>();
 
             LOG.info("Moving subdomain {} to Domain {}", domainName, targetDomainQualifiedName);
 
@@ -222,6 +223,10 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
                 domain.setAttribute(PARENT_DOMAIN_QN_ATTR, null);
                 domain.setAttribute(SUPER_DOMAIN_QN_ATTR, null);
                 superDomainQualifiedName = updatedQualifiedName ;
+
+                updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
+                updatedAttributes.put(PARENT_DOMAIN_QN_ATTR, null);
+                updatedAttributes.put(SUPER_DOMAIN_QN_ATTR, null);
             }
             else{
                 if(StringUtils.isEmpty(sourceDomainQualifiedName)){
@@ -233,6 +238,10 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
                 domain.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
                 domain.setAttribute(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
                 domain.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
+
+                updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
+                updatedAttributes.put(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
+                updatedAttributes.put(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
             }
 
             Iterator<AtlasEdge> existingParentEdges = domainVertex.getEdges(AtlasEdgeDirection.IN, DOMAIN_PARENT_EDGE_LABEL).iterator();
@@ -243,6 +252,10 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             String currentQualifiedName = domainVertex.getProperty(QUALIFIED_NAME, String.class);
             this.updatedPolicyResources.put("entity:" + currentQualifiedName, "entity:" + updatedQualifiedName);
             this.updatedDomainQualifiedNames.put(currentQualifiedName, updatedQualifiedName);
+
+            for (Map.Entry<String, Object> entry : updatedAttributes.entrySet()) {
+                RequestContext.get().getDifferentialEntitiesMap().get(domain.getGuid()).setAttribute(entry.getKey(), entry.getValue());
+            }
 
             moveChildren(domainVertex, superDomainQualifiedName, updatedQualifiedName, sourceDomainQualifiedName, targetDomainQualifiedName);
             updatePolicies(this.updatedPolicyResources, this.context);

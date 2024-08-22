@@ -201,6 +201,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         try {
             String productName = (String) product.getAttribute(NAME);
+            LinkedHashMap<String, Object> updatedAttributes = new LinkedHashMap<>();
 
             LOG.info("Moving dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
 
@@ -217,6 +218,10 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             product.setAttribute(PreProcessorUtils.PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
             product.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
 
+            updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
+            updatedAttributes.put(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
+            updatedAttributes.put(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
+
             Iterator<AtlasEdge> existingParentEdges = productVertex.getEdges(AtlasEdgeDirection.IN, DATA_PRODUCT_EDGE_LABEL).iterator();
             if (existingParentEdges.hasNext()) {
                 graph.removeEdge(existingParentEdges.next());
@@ -227,7 +232,13 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             String updatedResource = "entity:"+ updatedQualifiedName;
             this.updatedPolicyResources.put(currentResource, updatedResource);
 
+            for (Map.Entry<String, Object> entry : updatedAttributes.entrySet()) {
+                RequestContext.get().getDifferentialEntitiesMap()
+                        .get(product.getGuid()).setAttribute(entry.getKey(), entry.getValue());
+            }
+
             LOG.info("Moved dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
+
 
         } finally {
             RequestContext.get().endMetricRecord(recorder);
