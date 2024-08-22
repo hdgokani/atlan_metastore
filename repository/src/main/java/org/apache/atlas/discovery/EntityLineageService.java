@@ -543,7 +543,7 @@ public class EntityLineageService implements AtlasLineageService {
 
                 lineageListContext.incrementEntityCount();
                 // Get the neighbors for the current node
-                enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
+                enqueueNeighbours(currentVertex, currentEntityDataTypeMap, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
 
                 // Add the current node and its neighbors to the result
                 appendToResult(currentVertex, lineageListContext, ret, currentLevel);
