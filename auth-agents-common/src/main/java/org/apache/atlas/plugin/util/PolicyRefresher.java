@@ -322,7 +322,7 @@ public class PolicyRefresher extends Thread {
 
 				svcPolicies = transformer.getPolicies(serviceName,
 						restUtils.getPluginId(serviceName, plugIn.getAppId()),
-						lastUpdatedTiemInMillis);
+						lastUpdatedTiemInMillis, null);
 			} else {
 				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis);
 			}
