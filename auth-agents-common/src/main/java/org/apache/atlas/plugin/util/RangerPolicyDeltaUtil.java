@@ -77,7 +77,7 @@ public class RangerPolicyDeltaUtil {
                         continue;
                     }
 
-                    LOG.info("PolicyDelta: "+serviceType+": Processing delta at index: "+deltaIndex+": "+delta.getPolicy().getName());
+                    LOG.info("PolicyDelta: "+serviceType+": Processing policy delta at index: "+deltaIndex+": "+delta.getPolicy().getName());
 
                     int changeType = delta.getChangeType();
 
@@ -125,6 +125,7 @@ public class RangerPolicyDeltaUtil {
 
                         if (changeType != RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE) {
                             ret.add(delta.getPolicy());
+                            LOG.info("PolicyDelta: "+serviceType+": added policy of index: "+deltaIndex+": "+delta.getPolicy().getName());
                         }
                     } else {
                         LOG.warn("Found unexpected changeType in policyDelta:[" + delta + "]. Ignoring delta");
