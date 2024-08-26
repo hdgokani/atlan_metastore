@@ -71,10 +71,13 @@ public class RangerPolicyDeltaUtil {
             if (hasExpectedServiceType) {
                 ret = new ArrayList<>(policies);
 
+                int deltaIndex = 0;
                 for (RangerPolicyDelta delta : deltas) {
                     if (!serviceType.equals(delta.getServiceType())) {
                         continue;
                     }
+
+                    LOG.info("PolicyDelta: "+serviceType+": Processing delta at index: "+deltaIndex+": "+delta.getPolicy().getName());
 
                     int changeType = delta.getChangeType();
 
@@ -126,6 +129,7 @@ public class RangerPolicyDeltaUtil {
                     } else {
                         LOG.warn("Found unexpected changeType in policyDelta:[" + delta + "]. Ignoring delta");
                     }
+                    deltaIndex++;
                 }
             } else {
                 if (LOG.isDebugEnabled()) {
