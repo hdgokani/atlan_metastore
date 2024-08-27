@@ -1641,6 +1641,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             entityType = context.getType(entity.getGuid());
             preProcessors = getPreProcessor(entityType.getTypeName());
             for(PreProcessor processor : preProcessors){
+                LOG.debug("Executing preprocessor {} for entity {}", processor.getClass().getName(), entity.getGuid());
                 processor.processAttributes(entity, context, CREATE);
             }
 
@@ -1652,6 +1653,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             entityType = context.getType(entity.getGuid());
             preProcessors = getPreProcessor(entityType.getTypeName());
             for(PreProcessor processor : preProcessors){
+                LOG.debug("Executing preprocessor {} for entity {}", processor.getClass().getName(), entity.getGuid());
                 processor.processAttributes(entity, context, UPDATE);
             }
         }
