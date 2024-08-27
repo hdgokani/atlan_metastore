@@ -332,9 +332,10 @@ public class CachePolicyTransformerImpl {
             rangerPolicies = transformAtlasPoliciesToRangerPolicies(atlasPolicies, serviceType, serviceName);
         }
 
-        for (RangerPolicy policy : rangerPolicies) {
-            Integer changeType = auditEventToDeltaChangeType.get(policiesWithChangeType.get(policy.getGuid()));
-            RangerPolicyDelta delta = new RangerPolicyDelta(policy.getId(), changeType, policy.getVersion(), policy);
+        for (RangerPolicy rangerPolicy : rangerPolicies) {
+            int changeType = auditEventToDeltaChangeType.get(policiesWithChangeType.get(rangerPolicy.getAtlasGuid()));
+
+            RangerPolicyDelta delta = new RangerPolicyDelta(rangerPolicy.getId(), changeType, rangerPolicy.getVersion(), rangerPolicy);
             policyDeltas.add(delta);
         }
         LOG.info("PolicyDelta: {}: atlas policies found = {}, delta created = {}", serviceName, atlasPolicies.size(), policyDeltas.size());
