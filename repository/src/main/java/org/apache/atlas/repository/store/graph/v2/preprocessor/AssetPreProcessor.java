@@ -59,9 +59,10 @@ public class AssetPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateAsset");
 
         if(entity.hasAttribute(DOMAIN_GUIDS)) {
-          validateDomainAssetLinks(entity);
-          AtlasEntityHeader sourceEntity = new AtlasEntityHeader(entity);
-          isAuthorized(sourceEntity);
+            LOG.info("Validating domain asset links for entity on creation: {}", entity.getAttribute(NAME));
+            validateDomainAssetLinks(entity);
+            AtlasEntityHeader sourceEntity = new AtlasEntityHeader(entity);
+            isAuthorized(sourceEntity);
         }
 
         RequestContext.get().endMetricRecord(metricRecorder);
@@ -72,6 +73,7 @@ public class AssetPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateAsset");
 
         if(entity.hasAttribute(DOMAIN_GUIDS)) {
+            LOG.info("Validating domain asset links for entity on updation: {}", entity.getAttribute(NAME));
             validateDomainAssetLinks(entity);
             AtlasEntityHeader sourceEntity = new AtlasEntityHeader(entity);
             isAuthorized(sourceEntity);
