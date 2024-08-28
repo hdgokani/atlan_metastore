@@ -3726,7 +3726,7 @@ public class EntityGraphMapper {
                     }
 
                     if (propagateDelete) {
-                        createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertex.getIdForDisplay());
+                        createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertex.getIdForDisplay(), classificationName);
                     }
 
                     entityVertices = new ArrayList<>();
