@@ -58,12 +58,7 @@ public class AssetPreProcessor implements PreProcessor {
     private void processCreateAsset(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateAsset");
 
-        if(entity.hasAttribute(DOMAIN_GUIDS)) {
-            LOG.info("Validating domain asset links for entity on creation: {}", entity.getAttribute(NAME));
-            validateDomainAssetLinks(entity);
-            AtlasEntityHeader sourceEntity = new AtlasEntityHeader(entity);
-            isAuthorized(sourceEntity);
-        }
+        processDomainLinkAttribute(entity);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
@@ -72,40 +67,44 @@ public class AssetPreProcessor implements PreProcessor {
     private void processUpdateAsset(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateAsset");
 
-        if(entity.hasAttribute(DOMAIN_GUIDS)) {
-            LOG.info("Validating domain asset links for entity on updation: {}", entity.getAttribute(NAME));
-            validateDomainAssetLinks(entity);
-            AtlasEntityHeader sourceEntity = new AtlasEntityHeader(entity);
-            isAuthorized(sourceEntity);
-        }
+        processDomainLinkAttribute(entity);
 
         RequestContext.get().endMetricRecord(metricRecorder);
 
     }
 
+    private void processDomainLinkAttribute(AtlasEntity entity) throws AtlasBaseException {
+        if(entity.hasAttribute(DOMAIN_GUIDS)){
+            validateDomainAssetLinks(entity);
+            isAuthorized(entity);
+        }
+    }
+
     private void validateDomainAssetLinks(AtlasEntity entity) throws AtlasBaseException {
         List<String> domainGuids = ( List<String>) entity.getAttribute(DOMAIN_GUIDS);
 
-        if(domainGuids.size() > 1) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Asset can be linked to only one domain");
-        }
+        if(CollectionUtils.isNotEmpty(domainGuids)){
+            if(domainGuids.size() > 1) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Asset can be linked to only one domain");
+            }
 
-        if(CollectionUtils.isNotEmpty(domainGuids)) {
             for(String domainGuid : domainGuids) {
                 AtlasVertex domainVertex = entityRetriever.getEntityVertex(domainGuid);
-                  if(domainVertex == null) {
-                        throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, domainGuid);
-                  }
-                  else{
-                      LOG.info("Domain vertex found for guid: {}", domainGuid);
-                  }
+                if(domainVertex == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, domainGuid);
+                }
+
+                if (!Objects.equals(entity.getTypeName(), DATA_DOMAIN_ENTITY_TYPE)){
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Asset can be linked to only domain");
+                }
             }
         }
     }
 
-    private void isAuthorized(AtlasEntityHeader sourceEntity) throws AtlasBaseException {
+    private void isAuthorized(AtlasEntity entity) throws AtlasBaseException {
+        AtlasEntityHeader sourceEntity = new AtlasEntityHeader(entity);
 
-        // source -> CREATE + UPDATE + READ
+        // source -> UPDATE + READ
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceEntity),
                 "update on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
 
@@ -113,6 +112,5 @@ public class AssetPreProcessor implements PreProcessor {
                 "read on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
 
     }
-
 
 }
