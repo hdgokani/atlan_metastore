@@ -4913,6 +4913,11 @@ public class EntityGraphMapper {
             Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
             return !existingValues.contains(meshEntityId);
         }).peek(ev -> {
+            try {
+                isAuthorizedToLink(ev);
+            } catch (AtlasBaseException e) {
+                LOG.error("Permission error while linking mesh entity to asset {}", ev.getProperty(GUID_PROPERTY_KEY, String.class), e);
+            }
             Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
             updateDomainAttribute(ev, existingValues, meshEntityId);
             existingValues.clear();
@@ -4929,6 +4934,11 @@ public class EntityGraphMapper {
             Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
             return existingValues.contains(meshEntityId);
         }).peek(ev -> {
+            try {
+                isAuthorizedToLink(ev);
+            } catch (AtlasBaseException e) {
+                LOG.error("Permission error while unlinking mesh entity from asset {}", ev.getProperty(GUID_PROPERTY_KEY, String.class), e);
+            }
             Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
             existingValues.remove(meshEntityId);
             ev.removePropertyValue(DOMAIN_GUIDS_ATTR, meshEntityId);
@@ -4954,6 +4964,18 @@ public class EntityGraphMapper {
 
         RequestContext requestContext = RequestContext.get();
         requestContext.cacheDifferentialEntity(diffEntity);
+    }
+
+    private void isAuthorizedToLink(AtlasVertex vertex) throws AtlasBaseException {
+        AtlasEntityHeader sourceEntity = entityRetriever.toAtlasEntityHeader(vertex);
+
+        // source -> UPDATE + READ
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceEntity),
+                "update on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, sourceEntity),
+                "read on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
+
     }
 
     private void cacheDifferentialMeshEntity(AtlasVertex ev, Set<String> existingValues) {
