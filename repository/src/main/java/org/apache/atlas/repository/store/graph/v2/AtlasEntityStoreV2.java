@@ -2935,7 +2935,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     private void handleEntityMutation(List<AtlasVertex> vertices) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleBusinessPolicyMutation");
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleEntityMutation");
         this.atlasAlternateChangeNotifier.onEntitiesMutation(vertices);
         RequestContext.get().endMetricRecord(metricRecorder);
     }

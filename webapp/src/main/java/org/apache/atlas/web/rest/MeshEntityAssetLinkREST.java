@@ -45,8 +45,8 @@ public class MeshEntityAssetLinkREST {
     @POST
     @Path("/{domainId}/link-domain")
     @Timed
-    public void linkDomainToAsset(@PathParam("domainGuid") final String domainGuid, final LinkMeshEntityRequest request) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkDomainToAsset");
+    public void linkDomainToAssets(@PathParam("domainGuid") final String domainGuid, final LinkMeshEntityRequest request) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkDomainToAssets");
         // Ensure the current user is authorized to link domain
 //        if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
 //            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Domain linking");
@@ -85,8 +85,8 @@ public class MeshEntityAssetLinkREST {
     @POST
     @Path("/{meshEntityId}/unlink-domain")
     @Timed
-    public void unlinkDomainFromAsset(@PathParam("domainGuid") final String domainGuid, final LinkMeshEntityRequest request) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkDomainFromAsset");
+    public void unlinkDomainFromAssets(@PathParam("domainGuid") final String domainGuid, final LinkMeshEntityRequest request) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkDomainFromAssets");
         // Ensure the current user is authorized to unlink policies
 //        if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
 //            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Policy unlinking");
@@ -103,7 +103,7 @@ public class MeshEntityAssetLinkREST {
         try {
             // Start performance tracing if enabled
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MeshEntityAssetLinkREST.unlinkDomainFromAsset(" + domainGuid + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MeshEntityAssetLinkREST.unlinkDomainFromAssets(" + domainGuid + ")");
             }
 
             // Unlink the domain from the specified entities
