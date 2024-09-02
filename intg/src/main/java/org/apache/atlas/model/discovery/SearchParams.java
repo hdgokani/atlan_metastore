@@ -133,6 +133,10 @@ public class SearchParams {
         return requestMetadata;
     }
 
+    public String getRequestMetadataPersona() {
+        return requestMetadata.getPersona();
+    }
+
     public void setRequestMetadata(RequestMetadata requestMetadata) {
         this.requestMetadata = requestMetadata;
     }
@@ -179,6 +183,8 @@ public class SearchParams {
         private Set<String> utmTags;
         private boolean saveSearchLog;
 
+        private String persona;
+
         public String getSearchInput() {
             return searchInput;
         }
@@ -201,6 +207,14 @@ public class SearchParams {
 
         public void setSaveSearchLog(boolean saveSearchLog) {
             this.saveSearchLog = saveSearchLog;
+        }
+
+        public String getPersona() {
+            return persona;
+        }
+
+        public void setPersona(String persona) {
+            this.persona = persona;
         }
     }
 
