@@ -190,7 +190,7 @@ public class EntityGraphMapper {
     private static final boolean RESTRICT_PROPAGATION_THROUGH_LINEAGE_DEFAULT = false;
     
     private static final boolean RESTRICT_PROPAGATION_THROUGH_HIERARCHY_DEFAULT        = false;
-    public static final int CLEANUP_BATCH_SIZE = 50000;
+    public static final int CLEANUP_BATCH_SIZE = 3000;
     private              boolean DEFERRED_ACTION_ENABLED                             = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
     private              boolean DIFFERENTIAL_AUDITS                                 = STORE_DIFFERENTIAL_AUDITS.getBoolean();
 
@@ -3122,7 +3122,7 @@ public class EntityGraphMapper {
             List<AtlasVertex> assetVertices = new ArrayList<>();
             int i;
             for (i = 0; i < classificationVertices.size(); i++) {
-                if(batchesExecuted >= batchLimit){
+                if(batchLimit > 0 && batchesExecuted >= batchLimit){
                     break;
                 }
                 long assetCount = GraphHelper.getAssetsCountOfClassificationVertex(classificationVertices.get(i));
