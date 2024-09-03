@@ -4992,14 +4992,27 @@ public class EntityGraphMapper {
 
     private void cacheDifferentialEntity(AtlasVertex ev, Set<String> existingValues) {
         AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
-        diffEntity.setGuid(ev.getProperty(GUID_PROPERTY_KEY, String.class));
+        setEntityCommonAttributes(ev, diffEntity);
         diffEntity.setAttribute(ASSET_POLICY_GUIDS, existingValues);
         diffEntity.setAttribute(ASSET_POLICIES_COUNT, existingValues.size());
-        diffEntity.setUpdatedBy(ev.getProperty(MODIFIED_BY_KEY, String.class));
-        diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
 
         RequestContext requestContext = RequestContext.get();
         requestContext.cacheDifferentialEntity(diffEntity);
+    }
+
+    private void cacheDifferentialMeshEntity(AtlasVertex ev, Set<String> existingValues) {
+        AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+        setEntityCommonAttributes(ev, diffEntity);
+        diffEntity.setAttribute(DOMAIN_GUIDS_ATTR, existingValues);
+
+        RequestContext requestContext = RequestContext.get();
+        requestContext.cacheDifferentialEntity(diffEntity);
+    }
+
+    private void setEntityCommonAttributes(AtlasVertex ev, AtlasEntity diffEntity) {
+        diffEntity.setGuid(ev.getProperty(GUID_PROPERTY_KEY, String.class));
+        diffEntity.setUpdatedBy(ev.getProperty(MODIFIED_BY_KEY, String.class));
+        diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
     }
 
     private void isAuthorizedToLink(AtlasVertex vertex) throws AtlasBaseException {
@@ -5012,16 +5025,5 @@ public class EntityGraphMapper {
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, sourceEntity),
                 "read on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
 
-    }
-
-    private void cacheDifferentialMeshEntity(AtlasVertex ev, Set<String> existingValues) {
-        AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
-        diffEntity.setGuid(ev.getProperty(GUID_PROPERTY_KEY, String.class));
-        diffEntity.setAttribute(DOMAIN_GUIDS_ATTR, existingValues);
-        diffEntity.setUpdatedBy(ev.getProperty(MODIFIED_BY_KEY, String.class));
-        diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
-
-        RequestContext requestContext = RequestContext.get();
-        requestContext.cacheDifferentialEntity(diffEntity);
     }
 }
