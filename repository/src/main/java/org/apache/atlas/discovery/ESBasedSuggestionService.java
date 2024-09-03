@@ -5,15 +5,9 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.common.unit.Fuzziness;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.suggest.SuggestBuilder;
-import org.elasticsearch.search.suggest.SuggestBuilders;
-import org.elasticsearch.search.suggest.completion.CompletionSuggestionBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +31,7 @@ public class ESBasedSuggestionService {
     public SuggestionResponse searchSuggestions(String queryStr) throws IOException {
         // Build the suggestor query for ES
         String suggestorName = "suggest_keyword";
-        Request queryRequest = new Request("POST", "/autocomplete/_search");
+        Request queryRequest = new Request("POST", "/autocomplete/_search?_source=false");
         queryRequest.setJsonEntity(queryStr);
         Response response = esRestClient.performRequest(queryRequest);
 
@@ -51,7 +45,7 @@ public class ESBasedSuggestionService {
         LinkedHashMap suggestions = suggestionMap.get(0);
         List<LinkedHashMap> options = (List<LinkedHashMap>) suggestions.get("options");
         for (LinkedHashMap option : options) {
-            suggestionResponse.addSuggestion((LinkedHashMap) option.get("_source"));
+            suggestionResponse.addSuggestion((String) option.get("text"));
         }
 
         return suggestionResponse;
@@ -63,14 +57,14 @@ public class ESBasedSuggestionService {
     public class SuggestionResponse {
 
         public SuggestionResponse() { }
-        private List<LinkedHashMap> suggestions = new ArrayList<>();
+        private List<String> suggestions = new ArrayList<>();
         private final List<LinkedHashMap> sources = new ArrayList<>();
 
-        public List<LinkedHashMap> getSuggestions() {
+        public List<String> getSuggestions() {
             return suggestions;
         }
 
-        public void addSuggestion(LinkedHashMap suggestion) {
+        public void addSuggestion(String suggestion) {
             this.suggestions.add(suggestion);
         }
 
@@ -78,7 +72,7 @@ public class ESBasedSuggestionService {
             this.sources.add(source);
         }
 
-        public void setSuggestions(List<LinkedHashMap> suggestions) {
+        public void setSuggestions(List<String> suggestions) {
             this.suggestions = suggestions;
         }
 
