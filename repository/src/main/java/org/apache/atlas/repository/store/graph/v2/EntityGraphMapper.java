@@ -2287,6 +2287,10 @@ public class EntityGraphMapper {
     }
 
     public static void validateCustomRelationshipAttributeValue(Set<String> restrictedValues, Map<String, Object> attributes) throws AtlasBaseException {
+        if (MapUtils.isEmpty(attributes)) {
+            return;
+        }
+
         for (String key : attributes.keySet()) {
             if (key.equals("toType") || key.equals("fromType")) {
                 String value = (String) attributes.get(key);
