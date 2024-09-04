@@ -2277,8 +2277,10 @@ public class EntityGraphMapper {
     public void validateCustomRelationshipAttributes(AttributeMutationContext ctx, List<Object> newElements) throws AtlasBaseException {
         List<AtlasRelatedObjectId> customRelationships = (List<AtlasRelatedObjectId>) ctx.getValue();
 
-        for (AtlasRelatedObjectId relatedObjectId : customRelationships) {
-            validateCustomRelationshipAttributeValueCase(relatedObjectId.getRelationshipAttributes().getAttributes());
+        if (CollectionUtils.isNotEmpty(customRelationships)) {
+            for (AtlasRelatedObjectId relatedObjectId : customRelationships) {
+                validateCustomRelationshipAttributeValueCase(relatedObjectId.getRelationshipAttributes().getAttributes());
+            }
         }
     }
 
