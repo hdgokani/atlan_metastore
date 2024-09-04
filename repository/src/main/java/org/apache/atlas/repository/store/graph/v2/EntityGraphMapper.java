@@ -80,6 +80,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -3188,7 +3189,7 @@ public class EntityGraphMapper {
                                 {
                                     int currentIndex = index.getAndIncrement();
                                     detachAndRepairTagEdges(currentIndex, classificationName, vertex);
-                                }));
+                                })).join();;
                         customThreadPool.shutdown();
 //                        entityVertices.stream().parallel().forEach(vertex -> detachAndRepairTagEdges(classificationName, vertex));
 
@@ -3235,9 +3236,14 @@ public class EntityGraphMapper {
             AtlasEntity entity = repairClassificationMappings(vertex);
 
             entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
+            transactionInterceptHelper.intercept();
         }
         catch (AtlasBaseException e){
             LOG.error("Encountered some problem in detaching and repairing tag edges for Asset Vertex : {}", vertex.getIdForDisplay());
+            e.printStackTrace();
+        }
+        catch (Exception e){
+            LOG.error("Encountered some unknown problem in detaching and repairing tag edges for Asset Vertex : {}", vertex.getIdForDisplay());
             e.printStackTrace();
         }
         finally {
