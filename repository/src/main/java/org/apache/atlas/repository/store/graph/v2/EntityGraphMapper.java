@@ -101,6 +101,7 @@ import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasConfiguration.LABEL_MAX_LENGTH;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
@@ -3178,20 +3179,7 @@ public class EntityGraphMapper {
                         List<AtlasVertex> entityVertices = currentAssetVerticesBatch.subList(offset, toIndex);
                         List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
                         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
-
-                        for (AtlasVertex vertex : entityVertices) {
-                            List<AtlasClassification> deletedClassifications = new ArrayList<>();
-                            List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
-                            for (AtlasEdge edge : classificationEdges) {
-                                AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
-                                deletedClassifications.add(classification);
-                                deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
-                            }
-
-                            AtlasEntity entity = repairClassificationMappings(vertex);
-
-                            entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
-                        }
+                        entityVertices.stream().parallel().forEach(vertex -> detachAndRepairTagEdges(classificationName, vertex));
 
                         transactionInterceptHelper.intercept();
 
@@ -3219,6 +3207,27 @@ public class EntityGraphMapper {
         }
 
         LOG.info("Completed cleaning up classification {}", classificationName);
+    }
+
+    private void detachAndRepairTagEdges(String classificationName, AtlasVertex vertex){
+        List<AtlasClassification> deletedClassifications = new ArrayList<>();
+        List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
+        try{
+            for (AtlasEdge edge : classificationEdges) {
+                AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
+                deletedClassifications.add(classification);
+                graph.removeEdge(edge);
+//                deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+            }
+
+            AtlasEntity entity = repairClassificationMappings(vertex);
+
+            entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
+        }
+        catch (AtlasBaseException e){
+            LOG.error("Encountered some problem in detaching and repairing tag edges for Asset Vertex : {}", vertex.getIdForDisplay());
+            e.printStackTrace();
+        }
     }
 
     public AtlasEntity repairClassificationMappings(AtlasVertex entityVertex) throws AtlasBaseException {
