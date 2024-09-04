@@ -3161,7 +3161,7 @@ public class EntityGraphMapper {
 
             while (tagVertices.hasNext() && currentAssetVerticesBatch.size() < CLEANUP_BATCH_SIZE) {
                 AtlasVertex tagVertex = tagVertices.next();
-
+                LOG.info("Currently processing tagVertice : {}", tagVertex.getIdForDisplay());
                 int availableSlots = CLEANUP_BATCH_SIZE - currentAssetVerticesBatch.size();
                 long assetCountForCurrentTagVertex = GraphHelper.getAssetsCountOfClassificationVertex(tagVertex);
                 currentAssetVerticesBatch.addAll(GraphHelper.getAllAssetsWithClassificationVertex(tagVertex, availableSlots));
@@ -3200,7 +3200,7 @@ public class EntityGraphMapper {
                     }
 
                 } while (offset < currentAssetsBatchSize);
-
+                LOG.info("{} - Now deleting {} tagVertices", classificationName, tagVerticesProcessed.size());
                 for (AtlasVertex classificationVertex : tagVerticesProcessed) {
                     try {
                         deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
@@ -3215,13 +3215,14 @@ public class EntityGraphMapper {
                 tagVerticesProcessed.clear();
             }
             tagVertices = GraphHelper.getClassificationVertices(graph, classificationName, CLEANUP_BATCH_SIZE);
+            LOG.info("{} - tagVertices.hasNext() : {}", classificationName, tagVertices.hasNext());
         }
 
         LOG.info("Completed cleaning up classification {}", classificationName);
     }
 
     private void detachAndRepairTagEdges(int idx, String classificationName, AtlasVertex vertex){
-        LOG.info("detachAndRepairTagEdges started with index-> {}, processed by thread -> {}", idx, Thread.currentThread().getName());
+        LOG.info("{} - detachAndRepairTagEdges started with index-> {}, processed by thread -> {}", classificationName, idx, Thread.currentThread().getName());
         List<AtlasClassification> deletedClassifications = new ArrayList<>();
         List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
         try{
@@ -3229,7 +3230,6 @@ public class EntityGraphMapper {
                 AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
                 deletedClassifications.add(classification);
                 graph.removeEdge(edge);
-                deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
             }
 
             AtlasEntity entity = repairClassificationMappings(vertex);
@@ -3241,7 +3241,7 @@ public class EntityGraphMapper {
             e.printStackTrace();
         }
         finally {
-            LOG.info("detachAndRepairTagEdges ended with index-> {}, processed by thread -> {}", idx, Thread.currentThread().getName());
+            LOG.info("{} - detachAndRepairTagEdges ended with index-> {}, processed by thread -> {}", classificationName, idx, Thread.currentThread().getName());
         }
     }
 
