@@ -29,9 +29,7 @@ public class ESBasedSuggestionService {
     }
 
     public SuggestionResponse searchSuggestions(String queryStr) throws IOException {
-        // Build the suggestor query for ES
-        String suggestorName = "suggest_keyword";
-        Request queryRequest = new Request("POST", "/autocomplete/_search?_source=false");
+        Request queryRequest = new Request("POST", "/autocomplete/_search");
         queryRequest.setJsonEntity(queryStr);
         Response response = esRestClient.performRequest(queryRequest);
 
@@ -40,13 +38,7 @@ public class ESBasedSuggestionService {
 
         // Parse the response and return the suggestions
         Map<String, Object> responseMap = AtlasType.fromJson(esResponseString, Map.class);
-        Map<String, Object> suggestMap = (Map<String, Object>) responseMap.get("suggest");
-        ArrayList<LinkedHashMap> suggestionMap = (ArrayList<LinkedHashMap>) suggestMap.get(suggestorName);
-        LinkedHashMap suggestions = suggestionMap.get(0);
-        List<LinkedHashMap> options = (List<LinkedHashMap>) suggestions.get("options");
-        for (LinkedHashMap option : options) {
-            suggestionResponse.addSuggestion((String) option.get("text"));
-        }
+        suggestionResponse.setResponseMap(responseMap);
 
         return suggestionResponse;
     }
@@ -57,23 +49,14 @@ public class ESBasedSuggestionService {
     public class SuggestionResponse {
 
         public SuggestionResponse() { }
-        private List<String> suggestions = new ArrayList<>();
-        private final List<LinkedHashMap> sources = new ArrayList<>();
+        private Map<String, Object> responseMap = new LinkedHashMap<>();
 
-        public List<String> getSuggestions() {
-            return suggestions;
+        public Map<String, Object> getResponseMap() {
+            return responseMap;
         }
 
-        public void addSuggestion(String suggestion) {
-            this.suggestions.add(suggestion);
-        }
-
-        public void addSource(LinkedHashMap source) {
-            this.sources.add(source);
-        }
-
-        public void setSuggestions(List<String> suggestions) {
-            this.suggestions = suggestions;
+        public void setResponseMap(Map<String, Object> responseMap) {
+            this.responseMap = responseMap;
         }
 
     }
