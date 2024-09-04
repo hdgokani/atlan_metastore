@@ -3154,7 +3154,7 @@ public class EntityGraphMapper {
         List<AtlasVertex> tagVerticesProcessed = new ArrayList<>(0);
         List<AtlasVertex> currentAssetVerticesBatch = new ArrayList<>(0);
 
-        while (tagVertices != null) {
+        while (tagVertices != null && tagVertices.hasNext()) {
             if (cleanedUpCount >= CLEANUP_MAX){
                 return;
             }
