@@ -158,6 +158,11 @@ public class LineagePreProcessor implements PreProcessor {
             for (AtlasObjectId output : outputsAssets){
                 AtlasVertex outputVertex = entityRetriever.getEntityVertex(output);
                 Map<String,String> outputVertexConnectionQualifiedName = fetchAttributes(outputVertex, FETCH_ENTITY_ATTRIBUTES);
+
+                if(inputVertexConnectionQualifiedName.get(CONNECTION_QUALIFIED_NAME) == outputVertexConnectionQualifiedName.get(CONNECTION_QUALIFIED_NAME)){
+                    continue;
+                }
+
                 String connectionProcessName = "(" + inputVertexConnectionQualifiedName.get(CONNECTION_QUALIFIED_NAME) + ")->(" + outputVertexConnectionQualifiedName.get(CONNECTION_QUALIFIED_NAME) + ")";
                 String connectionProcessQualifiedName = outputVertexConnectionQualifiedName.get(CONNECTION_QUALIFIED_NAME) + "/" + connectionProcessName;
                 // Create a map to store both connectionProcessName and connectionProcessQualifiedName
