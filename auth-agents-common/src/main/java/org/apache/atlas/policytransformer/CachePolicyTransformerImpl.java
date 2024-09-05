@@ -531,14 +531,12 @@ public class CachePolicyTransformerImpl {
                 boolean latestEditFound = false;
                 Date latestEditTimeAvailable = null;
                 for (AtlasEntityHeader entity : ret) {
-                    // LOG.info("ES_SYNC_FIX: {}: Looping on returned policies: {}, size: {}", serviceName, entity.getDisplayText(), ret.size());
                     if (latestEditTime == null || entity.getUpdateTime().compareTo(latestEditTime) >= 0) {
                         LOG.info("ES_SYNC_FIX: {}: Found latest policy: {}, latestEditTime: {}, found policy time: {}", serviceName, entity.getDisplayText(), latestEditTime, entity.getUpdateTime());
                         latestEditFound = true;
                         break;
                     }
                     latestEditTimeAvailable = entity.getUpdateTime();
-                    // LOG.info("ES_SYNC_FIX: {}: Checked for latest edit, entity: {}, latestEditTimeAvailable: {}", serviceName, entity.getDisplayText(), latestEditTimeAvailable);
                 }
                 if (latestEditTime != null && !latestEditFound) {
                     LOG.info("ES_SYNC_FIX: {}: Latest edit not found yet, policies: {}, latestEditTime: {}, latestEditTimeAvailable: {}", serviceName, ret.size(), latestEditTime, latestEditTimeAvailable);
