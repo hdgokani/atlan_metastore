@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 
+import com.datastax.oss.driver.shaded.guava.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
@@ -99,7 +100,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Date;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -194,6 +195,9 @@ public class EntityGraphMapper {
     
     private static final boolean RESTRICT_PROPAGATION_THROUGH_HIERARCHY_DEFAULT        = false;
     public static final int CLEANUP_BATCH_SIZE = 200000;
+    public static final String ATLAS_VERTEX = "ATLAS_VERTEX";
+    public static final String ATLAS_ENTITY = "ATLAS_ENTITY";
+    public static final String EDGES_TO_BE_REMOVED = "EDGES_TO_BE_REMOVED";
     private              boolean DEFERRED_ACTION_ENABLED                             = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
     private              boolean DIFFERENTIAL_AUDITS                                 = STORE_DIFFERENTIAL_AUDITS.getBoolean();
 
@@ -3176,30 +3180,75 @@ public class EntityGraphMapper {
             if (currentAssetsBatchSize > 0) {
                 LOG.info("To clean up tag {} from {} entities", classificationName, currentAssetsBatchSize);
                 int offset = 0;
+                ExecutorService service = Executors.newFixedThreadPool(5);
+                List<AtlasVertex> entityVerticesUpdated;
                 do {
                     try {
                         int toIndex = Math.min((offset + CHUNK_SIZE), currentAssetsBatchSize);
                         List<AtlasVertex> entityVertices = currentAssetVerticesBatch.subList(offset, toIndex);
                         List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
                         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
-                        entityVertices.forEach(vertex ->
-                        {
-                            detachAndRepairTagEdges(classificationName, vertex);
-                        });
-//                        entityVertices.stream().parallel().forEach(vertex -> detachAndRepairTagEdges(classificationName, vertex));
+                        AtomicInteger index = new AtomicInteger(0);
+                        LOG.info("HR -> classification of Last entity vertice in a chunk 1: {}", entityVertices.get(entityVertices.size() - 1).getProperty(CLASSIFICATION_TEXT_KEY, String.class));
 
+                        List<Future<HashMap<String, Object>>> futures = new ArrayList<>();
+                        entityVerticesUpdated = new ArrayList<>();
+                        for (AtlasVertex vertex : entityVertices) {
+                            Future<HashMap<String, Object>> future = service.submit(() -> detachAndRepairTagEdges(index.getAndIncrement(), classificationName, vertex));
+                            futures.add(future);
+                        }
+
+                        for (Future<HashMap<String, Object>> future : futures) {
+                            try {
+                                HashMap<String, Object> data = future.get();
+//                                List<AtlasEdge> edges = (List<AtlasEdge>) data.get(EDGES_TO_BE_REMOVED);
+//                                for (AtlasEdge edge : edges) {
+//                                    graph.removeEdge(edge);
+//                                }
+                                AtlasVertex currVertex_ = (AtlasVertex) data.get(ATLAS_VERTEX);
+                                AtlasVertex currVertex = graph.getVertex(currVertex_.getIdForDisplay());
+                                currVertex.removeProperty(TRAIT_NAMES_PROPERTY_KEY);
+                                currVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
+
+
+                                //Update classificationNames and propagatedClassificationNames in entityVertex
+                                currVertex.setProperty(CLASSIFICATION_NAMES_KEY, data.get(CLASSIFICATION_NAMES_KEY));
+                                currVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, data.get(PROPAGATED_CLASSIFICATION_NAMES_KEY));
+                                currVertex.setProperty(CLASSIFICATION_TEXT_KEY, data.get(CLASSIFICATION_TEXT_KEY));
+
+                                //Update classificationNames and propagatedClassificationNames in entityHeader
+                                for (String classificationName_ : (List<String>) data.get(TRAIT_NAMES_PROPERTY_KEY)) {
+                                    AtlasGraphUtilsV2.addEncodedProperty(currVertex, TRAIT_NAMES_PROPERTY_KEY, classificationName_);
+                                }
+                                for (String classificationName_ : (List<String>) data.get(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY)) {
+                                    currVertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName_);
+                                }
+
+                                LOG.info("HR -> classification of Last entity vertice in a chunk 2: {}", currVertex.getProperty(CLASSIFICATION_TEXT_KEY, String.class));
+                                // set property all types of
+                            } catch (InterruptedException e) {
+                                LOG.error("Future interrupted due to some exception");
+                                e.printStackTrace();
+                            } catch (ExecutionException e) {
+                                LOG.error("Some exception occured");
+                                e.printStackTrace();
+                            }
+                        }
+                        LOG.info("HR -> classification of Last entity vertice in a chunk 3: {}", entityVertices.get(entityVertices.size() - 1).getProperty(CLASSIFICATION_TEXT_KEY, String.class));
+                        LOG.info("HR->Commiting transactions offset : {}", offset);
                         transactionInterceptHelper.intercept();
 
                         offset += CHUNK_SIZE;
                     } finally {
-                        LOG.info("Cleaned up {} entities for classification {}", offset, classificationName);
+                        LOG.info("HR->Cleaned up {} entities for classification {}", offset, classificationName);
                     }
 
                 } while (offset < currentAssetsBatchSize);
+//                service.shutdown();
                 LOG.info("{} - Now deleting {} tagVertices", classificationName, tagVerticesProcessed.size());
                 for (AtlasVertex classificationVertex : tagVerticesProcessed) {
                     try {
-                        deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+                        graphHelper.removeVertex(classificationVertex);
                     } catch (IllegalStateException e) {
                         e.printStackTrace();
                     }
@@ -3209,6 +3258,7 @@ public class EntityGraphMapper {
                 cleanedUpCount += currentAssetsBatchSize;
                 currentAssetVerticesBatch.clear();
                 tagVerticesProcessed.clear();
+                entityVerticesUpdated.clear();
             }
             tagVertices = GraphHelper.getClassificationVertices(graph, classificationName, CLEANUP_BATCH_SIZE);
             LOG.info("{} - tagVertices.hasNext() : {}", classificationName, tagVertices.hasNext());
@@ -3217,8 +3267,8 @@ public class EntityGraphMapper {
         LOG.info("Completed cleaning up classification {}", classificationName);
     }
 
-    private void detachAndRepairTagEdges(String classificationName, AtlasVertex vertex){
-        LOG.info("{} - detachAndRepairTagEdges started with index-> {}, processed by thread -> {}", classificationName, Thread.currentThread().getName());
+    private HashMap<String, Object> detachAndRepairTagEdges(int idx, String classificationName, AtlasVertex vertex) throws AtlasBaseException {
+        LOG.info("{} - detachAndRepairTagEdges started with index-> {}, processed by thread -> {}", classificationName, idx, Thread.currentThread().getName());
         List<AtlasClassification> deletedClassifications = new ArrayList<>();
         List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
         try{
@@ -3228,25 +3278,25 @@ public class EntityGraphMapper {
                 graph.removeEdge(edge);
             }
 
-            AtlasEntity entity = repairClassificationMappings(vertex);
-
+            HashMap<String, Object> data = repairClassificationMappings(vertex);
+            AtlasEntity entity = (AtlasEntity) data.get(ATLAS_ENTITY);
             entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
-            transactionInterceptHelper.intercept();
+//            transactionInterceptHelper.intercept();
+            LOG.info("{} - detachAndRepairTagEdges ended with index-> {}, processed by thread -> {}", classificationName, idx, Thread.currentThread().getName());
+//            data.put(EDGES_TO_BE_REMOVED, classificationEdges);
+            return data;
         }
         catch (AtlasBaseException e){
             LOG.error("Encountered some problem in detaching and repairing tag edges for Asset Vertex : {}", vertex.getIdForDisplay());
-            e.printStackTrace();
+            throw e;
         }
         catch (Exception e){
             LOG.error("Encountered some unknown problem in detaching and repairing tag edges for Asset Vertex : {}", vertex.getIdForDisplay());
-            e.printStackTrace();
-        }
-        finally {
-            LOG.info("{} - detachAndRepairTagEdges ended with index-> {}, processed by thread -> {}", classificationName, Thread.currentThread().getName());
+            throw e;
         }
     }
 
-    public AtlasEntity repairClassificationMappings(AtlasVertex entityVertex) throws AtlasBaseException {
+    public HashMap<String, Object> repairClassificationMappings(AtlasVertex entityVertex) throws AtlasBaseException {
         String guid = GraphHelper.getGuid(entityVertex);
         AtlasEntity entity = instanceConverter.getEntity(guid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
 
@@ -3264,26 +3314,18 @@ public class EntityGraphMapper {
                 }
             }
         }
-        //Delete array/set properties first
-        entityVertex.removeProperty(TRAIT_NAMES_PROPERTY_KEY);
-        entityVertex.removeProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
 
-
-        //Update classificationNames and propagatedClassificationNames in entityVertex
-        entityVertex.setProperty(CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(classificationNames));
-        entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(propagatedClassificationNames));
-        entityVertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
-        // Make classificationNames unique list as it is of type SET
         classificationNames = classificationNames.stream().distinct().collect(Collectors.toList());
-        //Update classificationNames and propagatedClassificationNames in entityHeader
-        for (String classificationName : classificationNames) {
-            AtlasGraphUtilsV2.addEncodedProperty(entityVertex, TRAIT_NAMES_PROPERTY_KEY, classificationName);
-        }
-        for (String classificationName : propagatedClassificationNames) {
-            entityVertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
-        }
 
-        return entity;
+        HashMap<String, Object> res = new HashMap<>();
+        res.put(ATLAS_VERTEX, entityVertex);
+        res.put(ATLAS_ENTITY, entity);
+        res.put(CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(classificationNames));
+        res.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(propagatedClassificationNames));
+        res.put(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
+        res.put(TRAIT_NAMES_PROPERTY_KEY, classificationNames);
+        res.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, propagatedClassificationNames);
+        return res;
     }
 
     public void addClassifications(final EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
