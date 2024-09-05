@@ -3182,15 +3182,10 @@ public class EntityGraphMapper {
                         List<AtlasVertex> entityVertices = currentAssetVerticesBatch.subList(offset, toIndex);
                         List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
                         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
-                        ForkJoinPool customThreadPool = new ForkJoinPool(5);
-                        AtomicInteger index = new AtomicInteger(0);
-                        customThreadPool.submit(
-                                () -> entityVertices.parallelStream().forEach(vertex ->
-                                {
-                                    int currentIndex = index.getAndIncrement();
-                                    detachAndRepairTagEdges(currentIndex, classificationName, vertex);
-                                })).join();;
-                        customThreadPool.shutdown();
+                        entityVertices.forEach(vertex ->
+                        {
+                            detachAndRepairTagEdges(classificationName, vertex);
+                        });
 //                        entityVertices.stream().parallel().forEach(vertex -> detachAndRepairTagEdges(classificationName, vertex));
 
                         transactionInterceptHelper.intercept();
@@ -3222,8 +3217,8 @@ public class EntityGraphMapper {
         LOG.info("Completed cleaning up classification {}", classificationName);
     }
 
-    private void detachAndRepairTagEdges(int idx, String classificationName, AtlasVertex vertex){
-        LOG.info("{} - detachAndRepairTagEdges started with index-> {}, processed by thread -> {}", classificationName, idx, Thread.currentThread().getName());
+    private void detachAndRepairTagEdges(String classificationName, AtlasVertex vertex){
+        LOG.info("{} - detachAndRepairTagEdges started with index-> {}, processed by thread -> {}", classificationName, Thread.currentThread().getName());
         List<AtlasClassification> deletedClassifications = new ArrayList<>();
         List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
         try{
@@ -3247,7 +3242,7 @@ public class EntityGraphMapper {
             e.printStackTrace();
         }
         finally {
-            LOG.info("{} - detachAndRepairTagEdges ended with index-> {}, processed by thread -> {}", classificationName, idx, Thread.currentThread().getName());
+            LOG.info("{} - detachAndRepairTagEdges ended with index-> {}, processed by thread -> {}", classificationName, Thread.currentThread().getName());
         }
     }
 
