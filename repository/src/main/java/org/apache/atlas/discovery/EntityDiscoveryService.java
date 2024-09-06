@@ -52,7 +52,6 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.userprofile.UserProfileService;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.searchlog.ESSearchLogger;
-import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.stats.StatsClient;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
@@ -984,7 +983,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         IndexSearchParams params = (IndexSearchParams) searchParams;
         RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
         RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
-        RequestContext.get().setRequestRelationshipAttrsForSearch(params.isRequestRelationshipAttrsForSearch());
+        RequestContext.get().setIncludeRelationshipAttributes(params.isIncludeRelationshipAttributes());
 
         AtlasSearchResult ret = new AtlasSearchResult();
         AtlasIndexQuery indexQuery;
