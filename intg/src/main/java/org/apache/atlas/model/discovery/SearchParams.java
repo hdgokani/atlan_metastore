@@ -141,6 +141,10 @@ public class SearchParams {
         this.requestMetadata = requestMetadata;
     }
 
+    public void setQuery(String query) {
+        setQuery(query);
+    }
+
     public Async getAsync() {
         return async;
     }

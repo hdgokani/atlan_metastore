@@ -107,4 +107,10 @@ public class IndexSearchParams extends SearchParams {
                 ", enableFullRestriction="+ enableFullRestriction +
                 '}';
     }
+
+    @Override
+    public void setQuery(String query) {
+        this.queryString = query;
+    }
+
 }
