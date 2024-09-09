@@ -52,6 +52,10 @@ public class MetricUtils {
         return matchCanonicalPattern(uri).isPresent() ? Timer.start(getMeterRegistry()) : null;
     }
 
+    public Timer.Sample start(String uri, boolean checkCanonicalPattern) {
+        return checkCanonicalPattern ? start(uri) : Timer.start(getMeterRegistry());
+    }
+
     public void recordHttpTimer(Timer.Sample sample, String method, String rawPath, int code, String... additionalTags) {
         if (Objects.isNull(sample)) {
             return;

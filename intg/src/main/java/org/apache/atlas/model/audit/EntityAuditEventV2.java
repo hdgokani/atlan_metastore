@@ -32,10 +32,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -119,6 +116,11 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
 
             throw new IllegalArgumentException("No enum constant " + EntityAuditActionV2.class.getCanonicalName() + "." + strValue);
         }
+
+        public static List<EntityAuditActionV2> getDeleteActions() {
+            return Arrays.asList(ENTITY_DELETE, ENTITY_PURGE, ENTITY_IMPORT_DELETE, CLASSIFICATION_DELETE,
+                    PROPAGATED_CLASSIFICATION_DELETE, TERM_DELETE, LABEL_DELETE);
+        }
     }
 
     private String              entityQualifiedName;
@@ -133,8 +135,12 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
     private AtlasEntity         entity;
     private EntityAuditType     type;
     private Map<String, Object> detail;
+
     private AtlasEntityHeader   entityDetail;
     private Map<String, String> headers;
+    private List<Map<String,Object>> classificationDetails;
+    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    private String classificationDetail;
 
     public EntityAuditEventV2() { }
 
@@ -290,12 +296,13 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
                Objects.equals(created, that.created) &&
                Objects.equals(typeName, that.typeName) &&
                Objects.equals(entityQualifiedName, that.entityQualifiedName) &&
-               Objects.equals(headers, that.headers);
+                Objects.equals(headers, that.headers) &&
+                Objects.equals(classificationDetails, that.classificationDetails);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity, type, detail, created, entityQualifiedName, typeName, headers);
+        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity, type, detail, created, entityQualifiedName, typeName, headers, classificationDetails);
     }
 
     @Override
@@ -315,6 +322,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         sb.append(", detail=").append(detail);
         sb.append(", created=").append(created);
         sb.append(", headers=").append(headers);
+        sb.append(", classificationDetails").append(classificationDetails);
         sb.append('}');
 
         return sb.toString();
@@ -346,6 +354,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         detail = null;
         created = 0L;
         headers = null;
+        classificationDetails = null;
     }
 
     private String getJsonPartFromDetails() {
@@ -355,7 +364,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
             if(bracketStartPosition != -1) {
                 ret = details.substring(bracketStartPosition);
             }
-        } else if(MapUtils.isNotEmpty(detail)) {
+        } else if(!detail.isEmpty()) {
             ret = AtlasType.toJson(detail);
         }
 
@@ -414,5 +423,21 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         }
 
         events.sort(sortOrderDesc ? comparator.reversed() : comparator);
+    }
+
+    public List<Map<String, Object>> getClassificationDetails() {
+        return classificationDetails;
+    }
+
+    public void setClassificationDetails(List<Map<String, Object>> classificationDetails) {
+        this.classificationDetails = classificationDetails;
+    }
+
+    public String getClassificationDetail() {
+        return classificationDetail;
+    }
+
+    public void setClassificationDetail(String classificationDetail) {
+        this.classificationDetail = classificationDetail;
     }
 }
