@@ -1644,8 +1644,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 LOG.debug("Executing preprocessor {} for entity {}", processor.getClass().getName(), entity.getGuid());
                 processor.processAttributes(entity, context, CREATE);
             }
-
-
         }
 
         List<AtlasEntity> copyOfUpdated = new ArrayList<>(context.getUpdatedEntities());
