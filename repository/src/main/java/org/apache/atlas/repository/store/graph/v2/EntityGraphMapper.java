@@ -86,21 +86,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.Date;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -4974,11 +4960,16 @@ public class EntityGraphMapper {
 
     public List<AtlasVertex> linkMeshEntityToAssets(String meshEntityId, Set<String> linkGuids) throws AtlasBaseException {
         List<AtlasVertex> linkedVertices = new ArrayList<>();
+        Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT));
 
         for (String guid : linkGuids) {
             AtlasVertex ev = findByGuid(graph, guid);
 
             if (ev != null) {
+                String typeName = ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
+                if (excludedTypes.contains(typeName)){
+                    continue;
+                }
                 Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
 
                 if (!existingValues.contains(meshEntityId)) {
@@ -5002,11 +4993,17 @@ public class EntityGraphMapper {
 
     public List<AtlasVertex> unlinkMeshEntityFromAssets(String meshEntityId, Set<String> unlinkGuids) throws AtlasBaseException {
         List<AtlasVertex> unlinkedVertices = new ArrayList<>();
+        Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT));
 
         for (String guid : unlinkGuids) {
             AtlasVertex ev = AtlasGraphUtilsV2.findByGuid(graph, guid);
 
             if (ev != null) {
+                String typeName = ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
+                if (excludedTypes.contains(typeName)){
+                    continue;
+                }
+
                 Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
 
                 if (meshEntityId.isEmpty() != existingValues.contains(meshEntityId)) {
