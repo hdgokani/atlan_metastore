@@ -681,6 +681,9 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         relationshipType.getNormalizedValue(relationship);
+
+        Map<String, Object> relAttrs = relationship.getAttributes();
+        EntityGraphMapper.validateCustomRelationshipAttributeValueCase(relAttrs);
     }
 
 

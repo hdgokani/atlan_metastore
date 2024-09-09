@@ -378,15 +378,13 @@ public final class GraphHelper {
 
         return ret;
     }
-
-    public static List<AtlasVertex> getClassificationVertexes(AtlasGraph graph, String classificationName) {
-        Iterable classificationVertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
+    public static Iterator<AtlasVertex> getClassificationVertices(AtlasGraph graph, String classificationName, int size) {
+        Iterable classificationVertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices(size);
         if (classificationVertices == null) {
-            return Collections.emptyList();
+            LOG.info("classificationVertices are null");
+            return null;
         }
-        List<AtlasVertex> classificationVerticesList = IteratorUtils.toList(classificationVertices.iterator());
-        LOG.info("classificationVerticesList size: {}", classificationVerticesList.size());
-        return classificationVerticesList;
+        return classificationVertices.iterator();
     }
 
     public static List<AtlasVertex> getAllAssetsWithClassificationVertex(AtlasVertex classificationVertice, int availableSlots) {
