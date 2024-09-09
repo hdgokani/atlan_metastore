@@ -451,12 +451,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processDomainDelete");
 
         try{
-            String domainGuid = GraphHelper.getGuid(vertex);
             List<String> stakeHolderGuids = new ArrayList<>();
-
-            if (isAssetLinked(domainGuid)) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot delete domain as it has linked assets");
-            }
 
             // active childrens exists?
             Iterator<AtlasVertex> childrens = getActiveChildrenVertices(vertex,
