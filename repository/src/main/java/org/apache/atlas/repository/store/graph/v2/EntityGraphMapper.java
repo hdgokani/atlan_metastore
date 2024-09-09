@@ -4908,50 +4908,63 @@ public class EntityGraphMapper {
         }).collect(Collectors.toList());
     }
 
-    public List<AtlasVertex> linkMeshEntityToAssets(String meshEntityId, Set<String> linkGuids) {
-        return linkGuids.stream().map(guid -> findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
-            Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
-            return !existingValues.contains(meshEntityId);
-        }).peek(ev -> {
-            try {
-                isAuthorizedToLink(ev);
-            } catch (AtlasBaseException e) {
-                throw new RuntimeException("Permission denied to link entity to asset", e);
+    public List<AtlasVertex> linkMeshEntityToAssets(String meshEntityId, Set<String> linkGuids) throws AtlasBaseException {
+        List<AtlasVertex> linkedVertices = new ArrayList<>();
+
+        for (String guid : linkGuids) {
+            AtlasVertex ev = findByGuid(graph, guid);
+
+            if (ev != null) {
+                Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+
+                if (!existingValues.contains(meshEntityId)) {
+                    isAuthorizedToLink(ev);
+
+                    updateDomainAttribute(ev, existingValues, meshEntityId);
+                    existingValues.clear();
+                    existingValues.add(meshEntityId);
+
+                    updateModificationMetadata(ev);
+
+                    cacheDifferentialMeshEntity(ev, existingValues);
+
+                    linkedVertices.add(ev);
+                }
             }
-            Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
-            updateDomainAttribute(ev, existingValues, meshEntityId);
-            existingValues.clear();
-            existingValues.add(meshEntityId);
+        }
 
-            updateModificationMetadata(ev);
-
-            cacheDifferentialMeshEntity(ev, existingValues);
-        }).collect(Collectors.toList());
+        return linkedVertices;
     }
 
-    public List<AtlasVertex> unlinkMeshEntityFromAssets(String meshEntityId, Set<String> unlinkGuids) {
-        return unlinkGuids.stream().map(guid -> AtlasGraphUtilsV2.findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
-            Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
-            return meshEntityId.isEmpty() != existingValues.contains(meshEntityId);
-        }).peek(ev -> {
-            try {
-                isAuthorizedToLink(ev);
-            } catch (AtlasBaseException e) {
-                throw new RuntimeException("Permission denied to unlink entity from asset", e);
-            }
-            Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
-            if (meshEntityId.isEmpty() || meshEntityId == null){
-                existingValues.clear();
-                ev.removeProperty(DOMAIN_GUIDS_ATTR);
-            } else {
-                existingValues.remove(meshEntityId);
-                ev.removePropertyValue(DOMAIN_GUIDS_ATTR, meshEntityId);
-            }
+    public List<AtlasVertex> unlinkMeshEntityFromAssets(String meshEntityId, Set<String> unlinkGuids) throws AtlasBaseException {
+        List<AtlasVertex> unlinkedVertices = new ArrayList<>();
 
-            updateModificationMetadata(ev);
+        for (String guid : unlinkGuids) {
+            AtlasVertex ev = AtlasGraphUtilsV2.findByGuid(graph, guid);
 
-            cacheDifferentialMeshEntity(ev, existingValues);
-        }).collect(Collectors.toList());
+            if (ev != null) {
+                Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+
+                if (meshEntityId.isEmpty() != existingValues.contains(meshEntityId)) {
+                    isAuthorizedToLink(ev);
+
+                    if (meshEntityId.isEmpty() || meshEntityId == null) {
+                        existingValues.clear();
+                        ev.removeProperty(DOMAIN_GUIDS_ATTR);
+                    } else {
+                        existingValues.remove(meshEntityId);
+                        ev.removePropertyValue(DOMAIN_GUIDS_ATTR, meshEntityId);
+                    }
+
+                    updateModificationMetadata(ev);
+                    cacheDifferentialMeshEntity(ev, existingValues);
+
+                    unlinkedVertices.add(ev);
+                }
+            }
+        }
+
+        return unlinkedVertices;
     }
 
     private void updateDomainAttribute(AtlasVertex vertex, Set<String> existingValues, String meshEntityId){
