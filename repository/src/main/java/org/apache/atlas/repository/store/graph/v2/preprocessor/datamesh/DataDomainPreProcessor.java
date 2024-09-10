@@ -452,6 +452,11 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
         try{
             List<String> stakeHolderGuids = new ArrayList<>();
+            String domainGUID = GraphHelper.getGuid(vertex);
+
+            if(isAssetLinked(domainGUID)) {
+                throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Domain cannot be deleted because some assets are linked to this domain");
+            }
 
             // active childrens exists?
             Iterator<AtlasVertex> childrens = getActiveChildrenVertices(vertex,
