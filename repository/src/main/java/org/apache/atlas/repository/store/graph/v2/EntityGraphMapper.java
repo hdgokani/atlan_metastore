@@ -5011,7 +5011,7 @@ public class EntityGraphMapper {
 
                 Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
 
-                if (meshEntityId.isEmpty() != existingValues.contains(meshEntityId)) {
+                if (meshEntityId.isEmpty() || existingValues.contains(meshEntityId)) {
                     isAuthorizedToLink(ev);
 
                     if (meshEntityId.isEmpty() || meshEntityId == null) {
