@@ -218,7 +218,7 @@ public class LineagePreProcessor implements PreProcessor {
             List mustClauseList = new ArrayList();
             mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", PROCESS_ENTITY_TYPE)));
             mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
-            mustClauseList.add(mapOf("wildcard", mapOf(PARENT_CONNECTION_PROCESS_QUALIFIED_NAME, "*"+connectionProcessQn+"*")));
+            mustClauseList.add(mapOf("term", mapOf(PARENT_CONNECTION_PROCESS_QUALIFIED_NAME, connectionProcessQn)));
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", mapOf("must", mustClauseList)));
 
