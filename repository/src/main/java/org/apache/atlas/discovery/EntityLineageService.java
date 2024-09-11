@@ -508,8 +508,10 @@ public class EntityLineageService implements AtlasLineageService {
         int currentDepth = 0;
         int currentLevel = isNotConnecterVertex? 0: 1;
 
-        // Add the current node and its neighbors to the result
-        appendToResult(baseVertex, lineageListContext, ret, currentLevel);
+        if(lineageListContext.getImmediateNeighbours()){
+            // Add the current node and its neighbors to the result
+            appendToResult(baseVertex, lineageListContext, ret, currentLevel);
+        }
 
         while (!traversalQueue.isEmpty() && !lineageListContext.isEntityLimitReached() && currentDepth < lineageListContext.getDepth()) {
             currentDepth++;
