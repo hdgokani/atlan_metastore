@@ -113,7 +113,7 @@ public class AssetPreProcessor implements PreProcessor {
     }
 
     private void isAuthorized(AtlasVertex vertex) throws AtlasBaseException {
-        AtlasEntityHeader sourceEntity = retrieverNoRelation.toAtlasEntityHeader(vertex);
+        AtlasEntityHeader sourceEntity = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(vertex);
 
         // source -> UPDATE + READ
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceEntity),
