@@ -66,6 +66,8 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.Stakehol
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.model.DMAttributePreprocessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.model.DMEntityPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.ReadmePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
@@ -1924,6 +1926,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             case STAKEHOLDER_TITLE_ENTITY_TYPE:
                 preProcessor = new StakeholderTitlePreProcessor(graph, typeRegistry, entityRetriever);
+                break;
+            case ATLAS_DM_ENTITY_TYPE:
+                preProcessor = new DMEntityPreProcessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore);
+                break;
+            case ATLAS_DM_ATTRIBUTE_TYPE:
+                preProcessor = new DMAttributePreprocessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore);
                 break;
         }
 
