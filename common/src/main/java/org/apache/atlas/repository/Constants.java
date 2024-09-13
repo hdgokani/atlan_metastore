@@ -201,6 +201,13 @@ public final class Constants {
     public static final String PROCESS_OUTPUTS = "__Process.outputs";
     public static final String PROCESS_INPUTS = "__Process.inputs";
 
+    /***
+     * DataModel
+     */
+
+    public static final String ATLAS_DM_ENTITY_TYPE  = "DMEntity";
+
+    public static final String ATLAS_DM_ATTRIBUTE_TYPE  = "DMAttribute";
     public static String[] PROCESS_EDGE_LABELS = {PROCESS_OUTPUTS, PROCESS_INPUTS};
 
     /**
@@ -371,6 +378,15 @@ public final class Constants {
     public static final String FILE_SPOOL_SOURCE  = "file_spool";
     public static final String ASSET_POLICY_GUIDS  = "assetPolicyGUIDs";
     public static final String ASSET_POLICIES_COUNT  = "assetPoliciesCount";
+
+    /***
+     *  Model related constants
+     *
+     */
+    public static  final String MODEL_EXPIRED_AT_SYSTEM_DATE= "dMDataModelExpiredAtSystemDate";
+    public static  final String MODEL_EXPIRED_AT_BUSINESS_DATE= "dMDataModelExpiredAtBusinessDate";
+    public static  final String MODEL_SYSTEM_DATE= "dMDataModelSystemDate";
+    public  static  final String MODEL_BUSINESS_DATE= "dMDataModelBusinessDate";
 
 
 
