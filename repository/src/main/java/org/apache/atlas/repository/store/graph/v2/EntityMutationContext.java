@@ -84,6 +84,20 @@ public class EntityMutationContext {
         }
     }
 
+    public void removeUpdated(String internalGuid, AtlasEntity entity, AtlasEntityType type, AtlasVertex atlasVertex) {
+        if (!entityVsVertex.containsKey(internalGuid)) { // if the entity was already created/updated
+            entitiesUpdated.remove(entity);
+            entityVsType.remove(entity.getGuid(), type);
+            entityVsVertex.remove(entity.getGuid(), atlasVertex);
+
+//            if (!StringUtils.equals(internalGuid, entity.getGuid())) {
+//                guidAssignments.put(internalGuid, entity.getGuid());
+//                entityVsVertex.put(internalGuid, atlasVertex);
+//            }
+        }
+    }
+
+
     public void addEntityToRestore(AtlasVertex vertex) {
         if (entitiesToRestore == null) {
             entitiesToRestore = new ArrayList<>();
