@@ -85,7 +85,7 @@ public class EntityMutationContext {
     }
 
     public void removeUpdated(String internalGuid, AtlasEntity entity, AtlasEntityType type, AtlasVertex atlasVertex) {
-        if (!entityVsVertex.containsKey(internalGuid)) { // if the entity was already created/updated
+        if (entityVsVertex.containsKey(internalGuid)) { // if the entity was already created/updated
             entitiesUpdated.remove(entity);
             entityVsType.remove(entity.getGuid(), type);
             entityVsVertex.remove(entity.getGuid(), atlasVertex);
