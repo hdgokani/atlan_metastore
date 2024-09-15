@@ -10,8 +10,11 @@ import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +97,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
     protected ModelResponse replicateModelVersion(AtlasRelatedObjectId existingModelVersion, long epoch) throws AtlasBaseException {
         AtlasEntity existingModelVersionEntity = entityRetriever.toAtlasEntity(existingModelVersion.getGuid());
         AtlasVertex existingModelVersionVertex = entityRetriever.getEntityVertex(existingModelVersion.getGuid());
-        AtlasVertex copyModelVertex = entityGraphMapper.createVertex(entityRetriever.toAtlasEntity(existingModelVersion.getGuid()));
+        AtlasVertex copyModelVertex = entityGraphMapper.createVertex(existingModelVersionEntity);
         AtlasEntity copyModelVersion = entityRetriever.toAtlasEntity(copyModelVertex);
         setModelDates(copyModelVersion, copyModelVertex, epoch);
         String modelQualifiedName = (String) existingModelVersionEntity.getAttribute(QUALIFIED_NAME) + epoch;
@@ -106,6 +109,8 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
     protected ModelResponse replicateModelEntity(AtlasEntity entity, AtlasVertex vertex, String modelQualifiedName, long epoch) throws AtlasBaseException {
         AtlasVertex copyEntityVertex = entityGraphMapper.createVertex(entity);
         AtlasEntity copyEntity = entityRetriever.toAtlasEntity(copyEntityVertex);
+        copyEntity.setAttributes(entity.getAttributes());
+        copyEntity.setRemoveRelationshipAttributes(entity.getRelationshipAttributes());
         setModelDates(copyEntity, copyEntityVertex, epoch);
         String entityQualifiedName = modelQualifiedName + "/" + entity.getAttribute(NAME);
         setQualifiedName(copyEntity, copyEntityVertex, entityQualifiedName);
@@ -113,6 +118,10 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         setModelExpiredAtDates(entity, vertex, epoch);
         return new ModelResponse(entity, copyEntity, vertex, copyEntityVertex);
     }
+
+//    protected ModelResponse replicateModelAttribute(){
+//
+//    }
 
     protected void createModelVersionModelEntityRelationship(AtlasEntity modelVersion, AtlasEntity modelEntity) throws AtlasBaseException {
         AtlasRelationship modelVersionEntityRelation = new AtlasRelationship("d_m_version_d_m_entities");
