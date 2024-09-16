@@ -1928,10 +1928,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 preProcessors.add(new StakeholderTitlePreProcessor(graph, typeRegistry, entityRetriever));
                 break;
             case ATLAS_DM_ENTITY_TYPE:
-                preProcessor = new DMEntityPreProcessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore);
+                preProcessors.add(new DMEntityPreProcessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
                 break;
             case ATLAS_DM_ATTRIBUTE_TYPE:
-                preProcessor = new DMAttributePreprocessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore);
+                preProcessors.add(new DMAttributePreprocessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
                 break;
         }
 
