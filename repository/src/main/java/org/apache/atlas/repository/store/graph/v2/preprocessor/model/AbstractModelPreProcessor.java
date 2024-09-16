@@ -1,5 +1,7 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.model;
 
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -96,12 +98,12 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         AtlasGraphUtilsV2.setEncodedProperty(newVertex, QUALIFIED_NAME, value);
     }
 
-    protected ModelResponse replicateModelVersion(AtlasRelatedObjectId existingModelVersion, long epoch) throws AtlasBaseException {
-        AtlasEntity.AtlasEntityWithExtInfo existingModelVersionEntityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(existingModelVersion.getGuid());
-        AtlasVertex existingModelVersionVertex = entityRetriever.getEntityVertex(existingModelVersion.getGuid());
+    protected ModelResponse replicateModelVersion(AtlasRelatedObjectId relatedObjectId, long epoch) throws AtlasBaseException {
+        AtlasEntity.AtlasEntityWithExtInfo existingModelVersionEntityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(relatedObjectId.getGuid());
+        AtlasVertex existingModelVersionVertex = entityRetriever.getEntityVertex(relatedObjectId.getGuid());
         AtlasVertex copyModelVertex = entityGraphMapper.createVertex(existingModelVersionEntityWithExtInfo.getEntity());
         AtlasEntity copyModelVersion = entityRetriever.toAtlasEntity(copyModelVertex);
-        copyAllAttributes(existingModelVersionEntityWithExtInfo.getEntity(), copyModelVersion,epoch);
+        copyAllAttributes(existingModelVersionEntityWithExtInfo.getEntity(), copyModelVersion, epoch);
         setModelDates(copyModelVersion, copyModelVertex, epoch);
         String modelQualifiedName = (String) existingModelVersionEntityWithExtInfo.getEntity().getAttribute(QUALIFIED_NAME) + epoch;
         setQualifiedName(copyModelVersion, copyModelVertex, modelQualifiedName);
@@ -109,41 +111,71 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         return new ModelResponse(existingModelVersionEntityWithExtInfo.getEntity(), copyModelVersion, existingModelVersionVertex, copyModelVertex);
     }
 
-    protected ModelResponse replicateModelEntity(AtlasEntity entity, AtlasVertex vertex, String modelQualifiedName, long epoch) throws AtlasBaseException {
-        AtlasVertex copyEntityVertex = entityGraphMapper.createVertex(entity);
+    protected ModelResponse replicateModelEntity(AtlasEntity existingEntity, AtlasVertex existingEntityVertex, String modelVersionQualifiedName, long epoch) throws AtlasBaseException {
+        AtlasVertex copyEntityVertex = entityGraphMapper.createVertex(existingEntity);
         AtlasEntity copyEntity = entityRetriever.toAtlasEntity(copyEntityVertex);
-        copyAllAttributes(entity, copyEntity, epoch);
-       // copyEntity.setRelationshipAttributes(entity.getRelationshipAttributes());
+        copyAllAttributes(existingEntity, copyEntity, epoch);
+        // copyEntity.setRelationshipAttributes(entity.getRelationshipAttributes());
         setModelDates(copyEntity, copyEntityVertex, epoch);
-        String entityQualifiedName = modelQualifiedName + "/" + entity.getAttribute(NAME);
+        String entityQualifiedName = modelVersionQualifiedName + "/" + existingEntity.getAttribute(NAME);
         setQualifiedName(copyEntity, copyEntityVertex, entityQualifiedName);
         setModelDates(copyEntity, copyEntityVertex, epoch);
-        setModelExpiredAtDates(entity, vertex, epoch);
-        return new ModelResponse(entity, copyEntity, vertex, copyEntityVertex);
+        setModelExpiredAtDates(existingEntity, existingEntityVertex, epoch);
+        return new ModelResponse(existingEntity, copyEntity, existingEntityVertex, copyEntityVertex);
     }
 
-//    protected ModelResponse replicateModelAttribute(){
-//
-//    }
+    protected ModelResponse replicateModelAttribute(AtlasEntity existingAttribute, AtlasVertex existingAttributeVertex, String entityQualifiedName, long epoch) throws AtlasBaseException {
+        AtlasVertex copyAttributeVertex = entityGraphMapper.createVertex(existingAttribute);
+        AtlasEntity copyAttributeEntity = entityRetriever.toAtlasEntity(copyAttributeVertex);
+        copyAllAttributes(existingAttribute, copyAttributeEntity, epoch);
+        // copyEntity.setRelationshipAttributes(entity.getRelationshipAttributes());
+        setModelDates(copyAttributeEntity, copyAttributeVertex, epoch);
+        String attributeQualifiedName = entityQualifiedName + "/" + existingAttribute.getAttribute(NAME);
+        setQualifiedName(copyAttributeEntity, copyAttributeVertex, attributeQualifiedName);
+        setModelDates(copyAttributeEntity, copyAttributeVertex, epoch);
+        setModelExpiredAtDates(existingAttribute, existingAttributeVertex, epoch);
+        return new ModelResponse(existingAttribute, copyAttributeEntity, existingAttributeVertex, copyAttributeVertex);
+    }
 
-    protected void  createModelVersionModelEntityRelationship(AtlasVertex modelVersionVertex, AtlasVertex modelEntityVertex) throws AtlasBaseException {
+    protected void createModelVersionModelEntityRelationship(AtlasVertex modelVersionVertex,
+                                                             AtlasVertex modelEntityVertex) throws AtlasBaseException {
         AtlasRelationship modelVersionEntityRelation = new AtlasRelationship("d_m_version_d_m_entities");
         modelVersionEntityRelation.setEnd1(new AtlasObjectId(
                 GraphHelper.getGuid(modelVersionVertex),
                 GraphHelper.getTypeName(modelVersionVertex)));
         modelVersionEntityRelation.setEnd2(new AtlasObjectId(
-               GraphHelper.getGuid(modelEntityVertex),
-               GraphHelper.getTypeName(modelEntityVertex)));
-     atlasRelationshipStore.create(modelVersionEntityRelation);
+                GraphHelper.getGuid(modelEntityVertex),
+                GraphHelper.getTypeName(modelEntityVertex)));
+        atlasRelationshipStore.create(modelVersionEntityRelation);
     }
 
-    protected void createModelEntityModelAttributeRelation(AtlasVertex entity, List<AtlasRelatedObjectId> existingEntityAttributes) throws AtlasBaseException {
+    protected void createModelVersionModelEntityRelationship(AtlasVertex modelVersionVertex, String removeEntityGuid,
+                                                             List<AtlasRelatedObjectId> existingEntities) {
+        AtlasRelationship modelVersionEntityRelation = new AtlasRelationship("d_m_version_d_m_entities");
+        modelVersionEntityRelation.setEnd1(new AtlasObjectId(
+                GraphHelper.getGuid(modelVersionVertex),
+                GraphHelper.getTypeName(modelVersionVertex)));
+        for (AtlasRelatedObjectId entity : existingEntities) {
+            if (removeEntityGuid.equals(entity.getGuid())){
+                continue;
+            }
+            modelVersionEntityRelation.setEnd2(new AtlasObjectId(
+                    entity.getGuid(),
+                    entity.getTypeName()
+            ));
+        }
+    }
+
+    protected void createModelEntityModelAttributeRelation(AtlasVertex entity, String removeAttributeGuid, List<AtlasRelatedObjectId> existingEntityAttributes) throws AtlasBaseException {
         AtlasRelationship modelEntityAttributeRelation = new AtlasRelationship("d_m_entity_d_m_attributes");
         modelEntityAttributeRelation.setEnd1(
                 new AtlasObjectId(
                         GraphHelper.getGuid(entity),
                         GraphHelper.getTypeName(entity)));
         for (AtlasRelatedObjectId existingEntityAttribute : existingEntityAttributes) {
+            if (removeAttributeGuid.equals(existingEntityAttribute.getGuid())){
+                continue;
+            }
             modelEntityAttributeRelation.setEnd2(
                     new AtlasObjectId(
                             existingEntityAttribute.getGuid(),
@@ -151,14 +183,31 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
             atlasRelationshipStore.create(modelEntityAttributeRelation);
         }
     }
+
+    protected void createModelEntityModelAttributeRelation(AtlasVertex entity, AtlasVertex attribute) throws AtlasBaseException {
+        AtlasRelationship modelEntityAttributeRelation = new AtlasRelationship("d_m_entity_d_m_attributes");
+        modelEntityAttributeRelation.setEnd1(
+                new AtlasObjectId(
+                        GraphHelper.getGuid(entity),
+                        GraphHelper.getTypeName(entity)));
+        modelEntityAttributeRelation.setEnd2(
+                new AtlasObjectId(
+                        GraphHelper.getGuid(attribute),
+                        GraphHelper.getTypeName(attribute)));
+        atlasRelationshipStore.create(modelEntityAttributeRelation);
+    }
+
     protected AtlasRelatedObjectId createModelModelVersionRelation(AtlasVertex existingModelVersionVertex, AtlasVertex latestModelVersionVertex) throws AtlasBaseException {
         AtlasEntity.AtlasEntityWithExtInfo existingModelVersionExtInfo = entityRetriever.toAtlasEntityWithExtInfo(existingModelVersionVertex, false);
         AtlasRelatedObjectId existingModel = (AtlasRelatedObjectId) existingModelVersionExtInfo.getEntity().getRelationshipAttributes().get("dMDataModel");
+        if (existingModel == null) {
+            throw new AtlasBaseException(AtlasErrorCode.DATA_MODEL_NOT_EXIST);
+        }
         AtlasRelationship modelVersionModelRelation = new AtlasRelationship("d_m_data_model_d_m_versions");
         modelVersionModelRelation.setEnd1(
                 new AtlasObjectId(
                         existingModel.getGuid(),
-                       existingModel.getTypeName()));
+                        existingModel.getTypeName()));
         modelVersionModelRelation.setEnd2(
                 new AtlasObjectId(
                         GraphHelper.getGuid(latestModelVersionVertex),
@@ -167,12 +216,12 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         return existingModel;
     }
 
-    protected void copyAllAttributes(AtlasEntity source , AtlasEntity destination, long epochNow){
+    protected void copyAllAttributes(AtlasEntity source, AtlasEntity destination, long epochNow) {
         destination.setAttributes(source.getAttributes());
         destination.setMeanings(source.getMeanings());
         destination.setCreateTime(new Date(epochNow));
         destination.setUpdateTime(new Date(epochNow));
-    //    destination.setRelationshipAttributes(source.getRelationshipAttributes());
+        //    destination.setRelationshipAttributes(source.getRelationshipAttributes());
         destination.setCustomAttributes(source.getCustomAttributes());
         destination.setClassifications(source.getClassifications());
         destination.setAppendRelationshipAttributes(source.getAppendRelationshipAttributes());
@@ -180,9 +229,9 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
     }
 
     public static void replaceAttributes(Map<String, Object> existingAttributes, Map<String, Object> diffAttributes) {
-       if (MapUtils.isEmpty(diffAttributes)){
-           return;
-       }
+        if (MapUtils.isEmpty(diffAttributes)) {
+            return;
+        }
         // Temporary map to hold new key-value pairs during replacement
         Map<String, Object> tempMap = new HashMap<>();
 
@@ -203,5 +252,18 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         // Clear the original map and put all the updated entries
         existingAttributes.clear();
         existingAttributes.putAll(tempMap);
+    }
+
+    protected void applyDiffs(AtlasEntity sourceEntity, AtlasEntity destinationEntity, String typeName) {
+        RequestContext reqContext = RequestContext.get();
+        AtlasEntity diffEntity = reqContext.getDifferentialEntity(sourceEntity.getGuid());
+        boolean diffExistsForSameType = diffEntity.getTypeName().equals(typeName);
+        if (!diffExistsForSameType) {
+            return;
+        }
+        replaceAttributes(destinationEntity.getAttributes(), diffEntity.getAttributes());
+        replaceAttributes(destinationEntity.getRelationshipAttributes(), diffEntity.getRelationshipAttributes());
+        replaceAttributes(destinationEntity.getAppendRelationshipAttributes(), diffEntity.getAppendRelationshipAttributes());
+        replaceAttributes(destinationEntity.getRemoveRelationshipAttributes(), diffEntity.getRemoveRelationshipAttributes());
     }
 }

@@ -48,8 +48,6 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         }
 
 
-
-
         AtlasEntity entity = (AtlasEntity) entityStruct;
         AtlasVertex vertex = context.getVertex(entity.getGuid());
 
@@ -74,6 +72,9 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
 
 
     private void updateDMEntity(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
+        if (!entity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)) {
+            return;
+        }
         if (CollectionUtils.isEmpty(context.getUpdatedEntities())) {
             return;
         }
@@ -89,38 +90,37 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         AtlasRelatedObjectId existingModelVersion = (AtlasRelatedObjectId) existingEntity.getEntity().getRelationshipAttributes().get("dMVersion");
         List<AtlasRelatedObjectId> existingEntityAttributes = (List<AtlasRelatedObjectId>) existingEntity.getEntity().getRelationshipAttributes().get("dMAttributes");
 
-        if (existingModelVersion == null){
-            throw new AtlasBaseException(AtlasErrorCode.MODEL_VERSION_NOT_EXIST);
+        if (existingModelVersion == null) {
+            throw new AtlasBaseException(AtlasErrorCode.DATA_MODEL_VERSION_NOT_EXIST, existingModelVersion.getGuid());
         }
 
-
-        // create modelVersion v2
+        // create modelVersion v1 ---> v2
         ModelResponse modelVersionResponse = replicateModelVersion(existingModelVersion, now);
         AtlasEntity existingModelVersionEntity = modelVersionResponse.getExistingEntity();
         AtlasEntity copyModelVersion = modelVersionResponse.getCopyEntity();
         AtlasVertex existingModelVersionVertex = modelVersionResponse.getExistingVertex();
         AtlasVertex copyModelVersionVertex = modelVersionResponse.getCopyVertex();
-        String modelQualifiedName = (String) copyModelVersion.getAttribute(QUALIFIED_NAME);
-//        System.out.println("copyModelVersion:  " +copyModelVersion.getGuid() + " existingModelVersion: "  +existingModelVersionEntity.getGuid());
-//        System.out.println("copyModelVersionVertex:  " +copyModelVersionVertex.getId() + " existingModelVersionVertex: "  +existingModelVersionVertex.getId());
+        String modelVersionAttributeQualifiedName = (String) copyModelVersion.getAttribute(QUALIFIED_NAME);
+        List<AtlasRelatedObjectId> existingEntities = (List<AtlasRelatedObjectId>) existingModelVersionEntity.getRelationshipAttributes().get("dMEntities");
 
-        // create entity e1'
-        ModelResponse modelEntityResponse = replicateModelEntity(existingEntity.getEntity(), vertex, modelQualifiedName, now);
+
+        // create entity e1 ---> e1'
+        ModelResponse modelEntityResponse = replicateModelEntity(existingEntity.getEntity(), vertex, modelVersionAttributeQualifiedName, now);
         AtlasVertex copyEntityVertex = modelEntityResponse.getCopyVertex();
         AtlasEntity copyEntity = modelEntityResponse.getCopyEntity();
-        applyDiffs(entity, copyEntity);
-//        System.out.println("copyEntity:  " +copyEntity.getGuid() + " existingEntity: "  +entity.getGuid());
-//        System.out.println("copyModelVersionVertex:  " +copyModelVersionVertex.getId() + " existingModelVersionVertex: "  +existingModelVersionVertex.getId());
-
-
-        // create modelVersion-modelEntity relationship
-        createModelVersionModelEntityRelationship(copyModelVersionVertex, copyEntityVertex);
-
-        //  create modelEntity-modelAttributeRelationship
-        createModelEntityModelAttributeRelation(copyEntityVertex, existingEntityAttributes);
+        applyDiffs(entity, copyEntity, ATLAS_DM_ENTITY_TYPE);
 
         // create model-modelVersion relation
         AtlasRelatedObjectId modelObject = createModelModelVersionRelation(existingModelVersionVertex, copyModelVersionVertex);
+
+        // create modelVersion-modelEntity relationship with new entity
+        createModelVersionModelEntityRelationship(copyModelVersionVertex, copyEntityVertex);
+
+        // create modelVersion-modelEntity relation with old entities
+        createModelVersionModelEntityRelationship(copyModelVersionVertex, entity.getGuid(), existingEntities);
+
+        //  create modelEntity-modelAttributeRelationship
+        createModelEntityModelAttributeRelation(copyEntityVertex, "", existingEntityAttributes);
 
 
         /**
@@ -129,14 +129,6 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         // previousEntity and previousModelVersion
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
         AtlasEntityType modelVersionType = typeRegistry.getEntityTypeByName(existingModelVersionEntity.getTypeName());
-
-//        context.addUpdated(entity.getGuid(), entity,
-//                entityType, vertex);
-//
-//        context.addUpdated(existingModelVersionEntity.getGuid(), existingModelVersionEntity,
-//                modelVersionType, existingModelVersionVertex);
-
-        // add createdEntity and createdModelVersion
 
         context.addCreated(copyEntity.getGuid(), copyEntity, entityType, copyEntityVertex);
         context.addCreated(copyModelVersion.getGuid(), copyModelVersion, modelVersionType, copyModelVersionVertex);
@@ -151,28 +143,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
                         modelObject.getGuid(),
                         entityRetriever.getEntityVertex(modelObject.getGuid()));
 
-//        for (AtlasRelatedObjectId attributeObject: existingEntityAttributes){
-//            context.getDiscoveryContext().
-//                    addResolvedGuid(
-//                            attributeObject.getGuid(),
-//                            entityRetriever.getEntityVertex(attributeObject.getGuid()));
-//        }
-        // add attributes as relationship is updated : check
     }
-
-
-    private void applyDiffs(AtlasEntity sourceEntity, AtlasEntity destinationEntity) {
-        RequestContext reqContext = RequestContext.get();
-        AtlasEntity diffEntity = reqContext.getDifferentialEntity(sourceEntity.getGuid());
-        if (!diffEntity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)){
-            return;
-        }
-        replaceAttributes(destinationEntity.getAttributes(), diffEntity.getAttributes());
-        replaceAttributes(destinationEntity.getRelationshipAttributes(), diffEntity.getRelationshipAttributes());
-        replaceAttributes(destinationEntity.getAppendRelationshipAttributes(), diffEntity.getAppendRelationshipAttributes());
-        replaceAttributes(destinationEntity.getRemoveRelationshipAttributes(), diffEntity.getRemoveRelationshipAttributes());
-    }
-
 }
 
 
