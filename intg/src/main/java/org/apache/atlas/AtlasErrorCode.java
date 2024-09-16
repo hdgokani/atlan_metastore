@@ -292,8 +292,9 @@ public enum AtlasErrorCode {
 
     PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED(400, "ATLAS-400-00-113", "Exceeded limit of maximum allowed assets across policies for a Persona: Limit: {0}, assets: {1}"),
     ADMIN_LIST_SHOULD_NOT_BE_EMPTY(400, "ATLAS-400-00-114", "Admin list should not be empty for type {0}"),
-    MODEL_VERSION_NOT_EXIST(400, "ATLAS-400-00-115", "Model version {0} does not exist"),
-    DATA_ENTITY_NOT_EXIST(400, "ATLAS-400-00-115", "DataEntity {0} does not exist");
+    DATA_MODEL_VERSION_NOT_EXIST(400, "ATLAS-400-00-115", "Model version {0} does not exist"),
+    DATA_ENTITY_NOT_EXIST(400, "ATLAS-400-00-116", "DataEntity {0} does not exist"),
+    DATA_MODEL_NOT_EXIST(400, "ATLAS-400-00-117", "DataModel {0} does not exist");
 
 
     private String errorCode;
