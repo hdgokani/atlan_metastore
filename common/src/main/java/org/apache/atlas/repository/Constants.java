@@ -277,6 +277,7 @@ public final class Constants {
     public static final String INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH  = "atlas.graph.index.search.tags.max-query-str-length";
     public static final String INDEX_SEARCH_VERTEX_PREFIX_PROPERTY     = "atlas.graph.index.search.vertex.prefix";
     public static final String INDEX_SEARCH_VERTEX_PREFIX_DEFAULT      = "$v$";
+    public static final String DOMAIN_GUIDS                            = "domainGUIDs";
 
     public static final String ATTR_TENANT_ID = "tenantId";
     public static final String DEFAULT_TENANT_ID = "default";
@@ -376,6 +377,7 @@ public final class Constants {
     public static final String IMPALA_SOURCE      = "impala";
     public static final String STORM_SOURCE       = "storm";
     public static final String FILE_SPOOL_SOURCE  = "file_spool";
+    public static final String DOMAIN_GUIDS_ATTR = "domainGUIDs";
     public static final String ASSET_POLICY_GUIDS  = "assetPolicyGUIDs";
     public static final String ASSET_POLICIES_COUNT  = "assetPoliciesCount";
 

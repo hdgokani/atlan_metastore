@@ -53,6 +53,7 @@ import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.AssetPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.ConnectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
@@ -136,13 +137,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final FeatureFlagStore featureFlagStore;
 
     private final ESAliasStore esAliasStore;
-
     private final IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier;
+
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
                               AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore,
                               IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier) {
+
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
         this.restoreHandlerV1     = restoreHandlerV1;
@@ -1566,25 +1568,23 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private void executePreProcessor(EntityMutationContext context) throws AtlasBaseException {
         AtlasEntityType entityType;
-        PreProcessor preProcessor;
+        List<PreProcessor> preProcessors;
 
         List<AtlasEntity> copyOfCreated = new ArrayList<>(context.getCreatedEntities());
         for (AtlasEntity entity : copyOfCreated) {
             entityType = context.getType(entity.getGuid());
-            preProcessor = getPreProcessor(entityType.getTypeName());
-
-            if (preProcessor != null) {
-                preProcessor.processAttributes(entity, context, CREATE);
+            preProcessors = getPreProcessor(entityType.getTypeName());
+            for(PreProcessor processor : preProcessors){
+                processor.processAttributes(entity, context, CREATE);
             }
         }
 
         List<AtlasEntity> copyOfUpdated = new ArrayList<>(context.getUpdatedEntities());
         for (AtlasEntity entity: copyOfUpdated) {
             entityType = context.getType(entity.getGuid());
-            preProcessor = getPreProcessor(entityType.getTypeName());
-
-            if (preProcessor != null) {
-                preProcessor.processAttributes(entity, context, UPDATE);
+            preProcessors = getPreProcessor(entityType.getTypeName());
+            for(PreProcessor processor : preProcessors){
+                processor.processAttributes(entity, context, UPDATE);
             }
         }
     }
@@ -1856,76 +1856,76 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
 
-    public PreProcessor getPreProcessor(String typeName) {
-        PreProcessor preProcessor = null;
+    public List<PreProcessor> getPreProcessor(String typeName) {
+        List<PreProcessor> preProcessors = new ArrayList<>();
 
         switch (typeName) {
             case ATLAS_GLOSSARY_ENTITY_TYPE:
-                preProcessor = new GlossaryPreProcessor(typeRegistry, entityRetriever);
+                preProcessors.add(new GlossaryPreProcessor(typeRegistry, entityRetriever));
                 break;
 
             case ATLAS_GLOSSARY_TERM_ENTITY_TYPE:
-                preProcessor = new TermPreProcessor(typeRegistry, entityRetriever, graph, taskManagement);
+                preProcessors.add(new TermPreProcessor(typeRegistry, entityRetriever, graph, taskManagement));
                 break;
 
             case ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE:
-                preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever, graph, taskManagement, entityGraphMapper);
+                preProcessors.add(new CategoryPreProcessor(typeRegistry, entityRetriever, graph, taskManagement, entityGraphMapper));
                 break;
 
             case DATA_DOMAIN_ENTITY_TYPE:
-                preProcessor = new DataDomainPreProcessor(typeRegistry, entityRetriever, graph);
+                preProcessors.add(new DataDomainPreProcessor(typeRegistry, entityRetriever, graph));
                 break;
 
             case DATA_PRODUCT_ENTITY_TYPE:
-                preProcessor = new DataProductPreProcessor(typeRegistry, entityRetriever, graph, this);
+                preProcessors.add(new DataProductPreProcessor(typeRegistry, entityRetriever, graph, this));
                 break;
 
             case QUERY_ENTITY_TYPE:
-                preProcessor = new QueryPreProcessor(typeRegistry, entityRetriever);
+                preProcessors.add(new QueryPreProcessor(typeRegistry, entityRetriever));
                 break;
 
             case QUERY_FOLDER_ENTITY_TYPE:
-                preProcessor = new QueryFolderPreProcessor(typeRegistry, entityRetriever);
+                preProcessors.add(new QueryFolderPreProcessor(typeRegistry, entityRetriever));
                 break;
 
             case QUERY_COLLECTION_ENTITY_TYPE:
-                preProcessor = new QueryCollectionPreProcessor(typeRegistry, discovery, entityRetriever, featureFlagStore, this);
+                preProcessors.add(new QueryCollectionPreProcessor(typeRegistry, discovery, entityRetriever, featureFlagStore, this));
                 break;
 
             case PERSONA_ENTITY_TYPE:
-                preProcessor = new PersonaPreProcessor(graph, typeRegistry, entityRetriever, this);
+                preProcessors.add(new PersonaPreProcessor(graph, typeRegistry, entityRetriever, this));
                 break;
 
             case PURPOSE_ENTITY_TYPE:
-                preProcessor = new PurposePreProcessor(graph, typeRegistry, entityRetriever, this);
+                preProcessors.add(new PurposePreProcessor(graph, typeRegistry, entityRetriever, this));
                 break;
 
             case POLICY_ENTITY_TYPE:
-                preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever);
+                preProcessors.add(new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever));
                 break;
 
             case STAKEHOLDER_ENTITY_TYPE:
-                preProcessor = new StakeholderPreProcessor(graph, typeRegistry, entityRetriever, this);
+                preProcessors.add(new StakeholderPreProcessor(graph, typeRegistry, entityRetriever, this));
                 break;
 
             case CONNECTION_ENTITY_TYPE:
-                preProcessor = new ConnectionPreProcessor(graph, discovery, entityRetriever, featureFlagStore, deleteDelegate, this);
+                preProcessors.add(new ConnectionPreProcessor(graph, discovery, entityRetriever, featureFlagStore, deleteDelegate, this));
                 break;
 
             case LINK_ENTITY_TYPE:
-                preProcessor = new LinkPreProcessor(typeRegistry, entityRetriever);
+                preProcessors.add(new LinkPreProcessor(typeRegistry, entityRetriever));
                 break;
 
             case README_ENTITY_TYPE:
-                preProcessor = new ReadmePreProcessor(typeRegistry, entityRetriever);
+                preProcessors.add(new ReadmePreProcessor(typeRegistry, entityRetriever));
                 break;
 
             case CONTRACT_ENTITY_TYPE:
-                preProcessor = new ContractPreProcessor(graph, typeRegistry, entityRetriever, storeDifferentialAudits, discovery);
+                preProcessors.add(new ContractPreProcessor(graph, typeRegistry, entityRetriever, storeDifferentialAudits, discovery));
                 break;
 
             case STAKEHOLDER_TITLE_ENTITY_TYPE:
-                preProcessor = new StakeholderTitlePreProcessor(graph, typeRegistry, entityRetriever);
+                preProcessors.add(new StakeholderTitlePreProcessor(graph, typeRegistry, entityRetriever));
                 break;
             case ATLAS_DM_ENTITY_TYPE:
                 preProcessor = new DMEntityPreProcessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore);
@@ -1935,7 +1935,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
         }
 
-        return preProcessor;
+        //  The default global pre-processor for all AssetTypes
+        preProcessors.add(new AssetPreProcessor(typeRegistry, entityRetriever, graph));
+
+        return preProcessors;
     }
 
     private AtlasVertex getResolvedEntityVertex(EntityGraphDiscoveryContext context, AtlasEntity entity) throws AtlasBaseException {
@@ -1981,9 +1984,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             for (AtlasVertex vertex : deletionCandidates) {
                 String typeName = getTypeName(vertex);
 
-                PreProcessor preProcessor = getPreProcessor(typeName);
-                if (preProcessor != null) {
-                    preProcessor.processDelete(vertex);
+                List<PreProcessor> preProcessors = getPreProcessor(typeName);
+                for(PreProcessor processor : preProcessors){
+                    processor.processDelete(vertex);
                 }
 
                 if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.equals(typeName)) {
@@ -2795,7 +2798,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 return;
             }
 
-            handleBusinessPolicyMutation(vertices);
+            handleEntityMutation(vertices);
         } catch (Exception e) {
             LOG.error("Error during linkBusinessPolicy for policyGuid: {}", policyGuid, e);
             throw e;
@@ -2814,7 +2817,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 return;
             }
 
-            handleBusinessPolicyMutation(vertices);
+            handleEntityMutation(vertices);
         } catch (Exception e) {
             LOG.error("Error during unlinkBusinessPolicy for policyGuid: {}", policyGuid, e);
             throw e;
@@ -2823,14 +2826,61 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
-    private void handleBusinessPolicyMutation(List<AtlasVertex> vertices) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleBusinessPolicyMutation");
+    @Override
+    @GraphTransaction
+    public void linkMeshEntityToAssets(String meshEntityGuid, Set<String> linkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkMeshEntityToAssets.GraphTransaction");
+
+        try {
+            List<String> assetGuids = new ArrayList<>(linkGuids);
+            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(assetGuids);
+            List<AtlasVertex> vertices = this.entityGraphMapper.linkMeshEntityToAssets(meshEntityGuid, linkGuids);
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+
+            LOG.info("linkMeshEntityToAssets: entityGuid={}", meshEntityGuid);
+
+            handleEntityMutation(vertices);
+        } catch (Exception e) {
+            LOG.error("Error during linkMeshEntity for entityGuid: {}", meshEntityGuid, e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
+    @GraphTransaction
+    public void unlinkMeshEntityFromAssets(String meshEntityGuid, Set<String> unlinkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkMeshEntityFromAssets.GraphTransaction");
+        try {
+            List<String> assetGuids = new ArrayList<>(unlinkGuids);
+            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(assetGuids);
+            List<AtlasVertex> vertices = this.entityGraphMapper.unlinkMeshEntityFromAssets(meshEntityGuid, unlinkGuids);
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+
+            LOG.info("unlinkMeshEntityFromAssets: assetGuids={}", unlinkGuids);
+
+            handleEntityMutation(vertices);
+        } catch (Exception e) {
+            LOG.error("Error during unlinkMeshEntity for assetGuids: {}", unlinkGuids, e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    private void handleEntityMutation(List<AtlasVertex> vertices) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleEntityMutation");
         this.atlasAlternateChangeNotifier.onEntitiesMutation(vertices);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-
 }
+
 
 
 
