@@ -26,7 +26,7 @@ on:
       - development
       - master
       - lineageondemand
-      - DQ-375
+      - temp_dq_375
 
 jobs:
   build:
