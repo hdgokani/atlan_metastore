@@ -24,7 +24,9 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.EntityResolver;
@@ -103,7 +105,29 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
 
         validateLabels(entity.getLabels());
 
+        // entity is user input
         type.validateValue(entity, entity.getTypeName(), messages);
+
+        // set guid here
+
+        // DMEntity and DMAttributeType are requested for update
+        // by dMQualifiedNamePrefix which is not a unique attribute
+        // This can return multiple entity/attribute that match this prefix vale
+        // we have to return latest entity/attribute
+        if (entity.getTypeName().equals(Constants.ATLAS_DM_ENTITY_TYPE) ||
+                entity.getTypeName().equals(Constants.ATLAS_DM_ATTRIBUTE_TYPE)){
+
+            AtlasVertex vertex = AtlasGraphUtilsV2.findLatestEntityAttributeVerticesByType(entity.getTypeName());
+            String guidFromVertex= AtlasGraphUtilsV2.getIdFromVertex(vertex);
+
+            if (guidFromVertex.isEmpty()){
+                throw new AtlasBaseException(AtlasErrorCode.NO_TYPE_EXISTS_FOR_QUALIFIED_NAME_PREFIX, (String) entity.getAttributes().get(Constants.ATLAS_DM_QUALIFIED_NAME_PREFIX));
+            }
+
+            entity.setGuid(AtlasGraphUtilsV2.getIdFromVertex(vertex));
+            type.getNormalizedValue(entity);
+            return;
+        }
 
         if (!messages.isEmpty()) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_CRUD_INVALID_PARAMS, messages);
@@ -160,6 +184,8 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
                 if (entity == null) {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "found null entity");
                 }
+
+                validateAttributesForDataModel(entity);
 
                 processDynamicAttributes(entity);
 
@@ -484,5 +510,16 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
                 entity.setAttribute(attributeName,dynAttributeValue.toString());
             }
         }
+    }
+
+    private void validateAttributesForDataModel(AtlasEntity entity) throws AtlasBaseException {
+        if (entity.getTypeName().equals(Constants.ATLAS_DM_ENTITY_TYPE) ||
+                entity.getTypeName().equals(Constants.ATLAS_DM_ATTRIBUTE_TYPE)) {
+            if (entity.getAttributes().get(Constants.ATLAS_DM_QUALIFIED_NAME_PREFIX) == null ||
+                    entity.getAttributes().get(Constants.ATLAS_DM_QUALIFIED_NAME_PREFIX) == "") {
+              throw new AtlasBaseException(AtlasErrorCode.QUALIFIED_NAME_PREFIX);
+            }
+        }
+
     }
 }
