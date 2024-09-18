@@ -145,6 +145,7 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
         AtlasVertex copyAttributeVertex = modelEntityResponse.getCopyVertex();
         AtlasEntity copyAttribute = modelEntityResponse.getCopyEntity();
         applyDiffs(entityAttribute, copyAttribute, ATLAS_DM_ATTRIBUTE_TYPE);
+        unsetExpiredDates(copyAttribute);
 
         // create model-modelVersion relationship
         AtlasRelatedObjectId modelObject = createModelModelVersionRelation(existingModelVersionVertex, copyModelVersionVertex);

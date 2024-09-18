@@ -5,6 +5,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -17,6 +18,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.apache.atlas.repository.Constants.*;
@@ -72,6 +75,10 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
 
 
     private void updateDMEntity(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
+       // lets say entity has attribute : versionQualifiedName
+        // default/dm/1725359500/com.jpmc.ct.fri/RegulatoryReporting/entity1/epoch
+        // query with qualifiedName : default/dm/1725359500/com.jpmc.ct.fri/RegulatoryReporting/entity1
+
         if (!entity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)) {
             return;
         }
@@ -84,6 +91,8 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         if (StringUtils.isEmpty(entityName) || isNameInvalid(entityName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
+
+
 
         long now = Instant.now().toEpochMilli();
         AtlasEntity.AtlasEntityWithExtInfo existingEntity = entityRetriever.toAtlasEntityWithExtInfo(vertex, false);
@@ -109,6 +118,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         AtlasVertex copyEntityVertex = modelEntityResponse.getCopyVertex();
         AtlasEntity copyEntity = modelEntityResponse.getCopyEntity();
         applyDiffs(entity, copyEntity, ATLAS_DM_ENTITY_TYPE);
+        unsetExpiredDates(copyEntity);
 
         // create model-modelVersion relation
         AtlasRelatedObjectId modelObject = createModelModelVersionRelation(existingModelVersionVertex, copyModelVersionVertex);

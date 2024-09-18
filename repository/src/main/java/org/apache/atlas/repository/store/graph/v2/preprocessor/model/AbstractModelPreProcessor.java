@@ -156,7 +156,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                 GraphHelper.getGuid(modelVersionVertex),
                 GraphHelper.getTypeName(modelVersionVertex)));
         for (AtlasRelatedObjectId entity : existingEntities) {
-            if (removeEntityGuid.equals(entity.getGuid())){
+            if (removeEntityGuid.equals(entity.getGuid())) {
                 continue;
             }
             modelVersionEntityRelation.setEnd2(new AtlasObjectId(
@@ -173,7 +173,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                         GraphHelper.getGuid(entity),
                         GraphHelper.getTypeName(entity)));
         for (AtlasRelatedObjectId existingEntityAttribute : existingEntityAttributes) {
-            if (removeAttributeGuid.equals(existingEntityAttribute.getGuid())){
+            if (removeAttributeGuid.equals(existingEntityAttribute.getGuid())) {
                 continue;
             }
             modelEntityAttributeRelation.setEnd2(
@@ -265,5 +265,10 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         replaceAttributes(destinationEntity.getRelationshipAttributes(), diffEntity.getRelationshipAttributes());
         replaceAttributes(destinationEntity.getAppendRelationshipAttributes(), diffEntity.getAppendRelationshipAttributes());
         replaceAttributes(destinationEntity.getRemoveRelationshipAttributes(), diffEntity.getRemoveRelationshipAttributes());
+    }
+
+    protected void unsetExpiredDates(AtlasEntity entity) {
+        entity.setAttribute(MODEL_EXPIRED_AT_SYSTEM_DATE, 0);
+        entity.setAttribute(MODEL_EXPIRED_AT_BUSINESS_DATE, 0);
     }
 }
