@@ -1308,7 +1308,7 @@ public abstract class DeleteHandlerV1 {
             LOG.info("Task is already scheduled for classification id {}, no need to schedule task for vertex {}", classificationVertexId, entityVertex.getIdForDisplay());
             return;
         }
-
+        // TODO : Neutraliser
         createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, classificationTypeName, relationshipGuid);
     }
 

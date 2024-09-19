@@ -192,6 +192,7 @@ public enum AtlasErrorCode {
     NO_CLASSIFICATIONS_FOUND_FOR_ENTITY(404, "ATLAS-404-00-003", "No classifications associated with entity: {0}"),
     EMPTY_RESULTS(404, "ATLAS-404-00-004", "No result found for {0}"),
     INSTANCE_GUID_NOT_FOUND(404, "ATLAS-404-00-005", "Given instance guid {0} is invalid/not found"),
+    EMPTY_GUID_LIST(404, "ATLAS-404-00-005", "Given guids list {0} is invalid/empty"),
     INSTANCE_LINEAGE_QUERY_FAILED(404, "ATLAS-404-00-006", "Instance lineage query failed {0}"),
     INSTANCE_CRUD_INVALID_PARAMS(404, "ATLAS-404-00-007", "Invalid instance creation/updation parameters passed : {0}"),
     CLASSIFICATION_NOT_FOUND(404, "ATLAS-404-00-008", "Given classification {0} was invalid"),

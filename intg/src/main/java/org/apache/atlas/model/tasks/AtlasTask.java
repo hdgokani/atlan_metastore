@@ -82,6 +82,8 @@ public class AtlasTask {
 
     private String              type;
     private String              guid;
+    private String              xAtlanAgentPackageName;
+    private String              xAtlanAgentId;
     private String              createdBy;
     private Date                createdTime;
     private Date                updatedTime;
@@ -89,6 +91,8 @@ public class AtlasTask {
     private Date                endTime;
     private Long                timeTakenInSeconds;
     private Map<String, Object> parameters;
+
+
     private int                 attemptCount;
     private String              errorMessage;
     private Status              status;
@@ -104,6 +108,8 @@ public class AtlasTask {
         this.guid               = UUID.randomUUID().toString();
         this.type               = type;
         this.createdBy          = createdBy;
+        this.xAtlanAgentPackageName = "xAtlanAgent";
+        this.xAtlanAgentId = "xAtlanAgentId";
         this.createdTime        = new Date();
         this.updatedTime        = this.createdTime;
         this.parameters         = parameters;
@@ -157,6 +163,21 @@ public class AtlasTask {
         this.type = val;
     }
 
+    public String getxAtlanAgentId() {
+        return xAtlanAgentId;
+    }
+
+    public void setxAtlanAgentId(String xAtlanAgentId) {
+        this.xAtlanAgentId = xAtlanAgentId;
+    }
+
+    public String getxAtlanAgentPackageName() {
+        return xAtlanAgentPackageName;
+    }
+
+    public void setxAtlanAgentPackageName(String xAtlanAgentPackageName) {
+        this.xAtlanAgentPackageName = xAtlanAgentPackageName;
+    }
     public String getType() {
         return this.type;
     }
@@ -261,6 +282,8 @@ public class AtlasTask {
                 "type='" + type + '\'' +
                 ", guid='" + guid + '\'' +
                 ", createdBy='" + createdBy + '\'' +
+                ", xAtlanAgentPackageName='" + xAtlanAgentPackageName + '\'' +
+                ", xAtlanAgentId='" + xAtlanAgentId + '\'' +
                 ", createdTime=" + createdTime +
                 ", updatedTime=" + updatedTime +
                 ", startTime=" + startTime +

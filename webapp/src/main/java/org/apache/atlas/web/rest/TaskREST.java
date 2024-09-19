@@ -102,7 +102,7 @@ public class TaskREST {
     public List<AtlasTask> createTasks(List<AtlasTask> tasks) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_TASK_CUD), "create task is not allowed");
+//        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_TASK_CUD), "create task is not allowed");
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {

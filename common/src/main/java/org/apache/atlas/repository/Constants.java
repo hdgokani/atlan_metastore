@@ -352,6 +352,7 @@ public final class Constants {
     public static final String TASK_CLASSIFICATION_ID       = encodePropertyKey(TASK_PREFIX + "classificationId");
     public static final String TASK_ENTITY_GUID             = encodePropertyKey(TASK_PREFIX + "entityGuid");
     public static final String TASK_CLASSIFICATION_TYPENAME = encodePropertyKey(TASK_PREFIX + "classificationTypeName");
+    public static final String TASK_CREATION_AGENT          = encodePropertyKey(TASK_PREFIX + "creationAgent");
     public static final String ACTIVE_STATE_VALUE           = "ACTIVE";
 
     /**
