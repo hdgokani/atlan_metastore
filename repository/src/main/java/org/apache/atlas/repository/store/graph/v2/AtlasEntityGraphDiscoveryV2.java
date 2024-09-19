@@ -42,9 +42,11 @@ import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.type.TemplateToken;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
+import org.apache.hadoop.util.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -117,13 +119,22 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         if (entity.getTypeName().equals(Constants.ATLAS_DM_ENTITY_TYPE) ||
                 entity.getTypeName().equals(Constants.ATLAS_DM_ATTRIBUTE_TYPE)){
 
-            AtlasVertex vertex = AtlasGraphUtilsV2.findLatestEntityAttributeVerticesByType(entity.getTypeName());
-            String guidFromVertex= AtlasGraphUtilsV2.getIdFromVertex(vertex);
+            String qualifiedNamePrefix = (String) entity.getAttributes().get(Constants.ATLAS_DM_QUALIFIED_NAME_PREFIX);
+            if (qualifiedNamePrefix.isEmpty()){
+                throw new AtlasBaseException(AtlasErrorCode.QUALIFIED_NAME_PREFIX_NOT_EXIST);
+            }
+            AtlasVertex vertex = AtlasGraphUtilsV2.findLatestEntityAttributeVerticesByType(entity.getTypeName(), qualifiedNamePrefix);
+
+            String guidFromVertex = AtlasGraphUtilsV2.getIdFromVertex(vertex);
+
 
             if (guidFromVertex.isEmpty()){
-                throw new AtlasBaseException(AtlasErrorCode.NO_TYPE_EXISTS_FOR_QUALIFIED_NAME_PREFIX, (String) entity.getAttributes().get(Constants.ATLAS_DM_QUALIFIED_NAME_PREFIX));
+                // no entity exists with this qualifiedName, set qualifiedName and let entity be created
+                entity.setAttribute(Constants.QUALIFIED_NAME, qualifiedNamePrefix + Instant.now().toEpochMilli());
+                return;
             }
 
+         //   if guidFromVertex is found let entity be updated
             entity.setGuid(AtlasGraphUtilsV2.getIdFromVertex(vertex));
             type.getNormalizedValue(entity);
             return;
@@ -517,7 +528,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
                 entity.getTypeName().equals(Constants.ATLAS_DM_ATTRIBUTE_TYPE)) {
             if (entity.getAttributes().get(Constants.ATLAS_DM_QUALIFIED_NAME_PREFIX) == null ||
                     entity.getAttributes().get(Constants.ATLAS_DM_QUALIFIED_NAME_PREFIX) == "") {
-              throw new AtlasBaseException(AtlasErrorCode.QUALIFIED_NAME_PREFIX);
+              throw new AtlasBaseException(AtlasErrorCode.QUALIFIED_NAME_PREFIX_NOT_EXIST);
             }
         }
 
