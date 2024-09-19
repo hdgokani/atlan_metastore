@@ -68,7 +68,6 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
     }
 
     private void createDMEntity(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
-
         if (!entity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)) {
             return;
         }
@@ -114,18 +113,27 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         AtlasEntity existingModelVersionEntity = null;
         AtlasVertex existingModelVersionVertex = null;
         List<AtlasRelatedObjectId> existingEntities = null;
+        ModelResponse modelVersionResponse = null;
+
 
         if (existingModelVersionObj != null) {
             existingModelVersionEntity = entityRetriever.toAtlasEntityWithExtInfo(existingModelVersionObj.getGuid()).getEntity();
             existingModelVersionVertex = entityRetriever.getEntityVertex(existingModelVersionObj.getGuid());
             setModelExpiredAtDates(existingModelVersionEntity, existingModelVersionVertex, now);
             existingEntities= (List<AtlasRelatedObjectId>) existingModelVersionEntity.getRelationshipAttributes().get("dMEntities");
+            modelVersionResponse = replicateModelVersion(existingModelVersionObj, now);
+        } else {
+            String namespace = (String) entity.getAttributes().get(ATLAS_DM_NAMESPACE);
+            modelVersionResponse = createEntity(
+                    (modelQualifiedName + "/" + modelVersion),
+                    ATLAS_DM_VERSION_TYPE,
+                    namespace,
+                    context);
         }
 
-        String namespace = (String) entity.getAttributes().get(ATLAS_DM_NAMESPACE);
-        ModelResponse modelVersionResponse = createModelVersion(modelQualifiedName, modelVersion, namespace, context);
         AtlasEntity latestModelVersionEntity = modelVersionResponse.getCopyEntity();
         AtlasVertex latestModelVersionVertex = modelVersionResponse.getCopyVertex();
+
 
         // model --- modelVersion relation
         createModelModelVersionRelation(modelGuid,latestModelVersionEntity.getGuid());
@@ -136,6 +144,9 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         // modelVersion --- entitiesOfExistingModelVersion
         createModelVersionModelEntityRelationship(latestModelVersionVertex, existingEntities);
 
+
+        context.addCreated(latestModelVersionEntity.getGuid(), latestModelVersionEntity,
+         typeRegistry.getEntityTypeByName(ATLAS_DM_VERSION_TYPE), latestModelVersionVertex);
         // resolve references
         context.getDiscoveryContext().
                 addResolvedGuid(

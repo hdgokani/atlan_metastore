@@ -109,19 +109,20 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
     }
 
 
-    protected ModelResponse createModelVersion(String modelQualifiedName, String modelVersion, String namespace, EntityMutationContext context) throws AtlasBaseException {
+
+    protected ModelResponse createEntity(String qualifiedName,String entityType, String namespace, EntityMutationContext context) throws AtlasBaseException {
         String guid = UUID.randomUUID().toString();
-        AtlasEntity modelVersionEntity = new AtlasEntity(ATLAS_DM_VERSION_TYPE);
-        modelVersionEntity.setAttribute(VERSION_PROPERTY_KEY, 0);
-        modelVersionEntity.setAttribute(QUALIFIED_NAME, modelQualifiedName + "/" + modelVersion);
-        modelVersionEntity.setAttribute(ATLAS_DM_NAMESPACE, namespace);
-        modelVersionEntity.setAttribute(ATLAS_DM_BUSINESS_DATE, RequestContext.get().getRequestTime());
-        modelVersionEntity.setAttribute(ATLAS_DM_SYSTEM_DATE, RequestContext.get().getRequestTime());
-        AtlasVertex versionVertex = entityGraphMapper.createVertexWithGuid(modelVersionEntity, guid);
+        AtlasEntity entity = new AtlasEntity(entityType);
+        entity.setAttribute(VERSION_PROPERTY_KEY, 0);
+        entity.setAttribute(QUALIFIED_NAME, qualifiedName);
+        entity.setAttribute(ATLAS_DM_NAMESPACE, namespace);
+        entity.setAttribute(ATLAS_DM_BUSINESS_DATE, RequestContext.get().getRequestTime());
+        entity.setAttribute(ATLAS_DM_SYSTEM_DATE, RequestContext.get().getRequestTime());
+        AtlasVertex versionVertex = entityGraphMapper.createVertexWithGuid(entity, guid);
         context.getDiscoveryContext().addResolvedGuid(guid, versionVertex);
-        modelVersionEntity.setGuid(guid);
-        context.addCreated(guid, modelVersionEntity, typeRegistry.getEntityTypeByName(ATLAS_DM_VERSION_TYPE), versionVertex);
-        return new ModelResponse(modelVersionEntity, versionVertex);
+        entity.setGuid(guid);
+        context.addCreated(guid, entity, typeRegistry.getEntityTypeByName(entityType), versionVertex);
+        return new ModelResponse(entity, versionVertex);
     }
     protected ModelResponse replicateModelVersion(AtlasRelatedObjectId relatedObjectId, long epoch) throws AtlasBaseException {
         AtlasEntity.AtlasEntityWithExtInfo existingModelVersionEntityWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(relatedObjectId.getGuid());
