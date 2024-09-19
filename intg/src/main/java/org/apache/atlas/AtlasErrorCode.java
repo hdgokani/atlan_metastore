@@ -295,11 +295,9 @@ public enum AtlasErrorCode {
     DATA_MODEL_VERSION_NOT_EXIST(400, "ATLAS-400-00-115", "Model version {0} does not exist"),
     DATA_ENTITY_NOT_EXIST(400, "ATLAS-400-00-116", "DataEntity {0} does not exist"),
     DATA_MODEL_NOT_EXIST(400, "ATLAS-400-00-117", "DataModel {0} does not exist"),
-    QUALIFIED_NAME_PREFIX (400, "ATLAS-400-00-118", "dMQualifiedNamePrefix is mandatory for DMEntity/DMAttribute"),
-
-    NO_TYPE_EXISTS_FOR_QUALIFIED_NAME_PREFIX (400,"ATLAS-400-00-119", "No DMEntity/DMAttribute exists for dMQualifiedNamePrefix : {0}");
-
-
+    QUALIFIED_NAME_PREFIX_NOT_EXIST(400, "ATLAS-400-00-118", "dMQualifiedNamePrefix is mandatory for DMEntity/DMAttribute"),
+    NO_TYPE_EXISTS_FOR_QUALIFIED_NAME_PREFIX (400,"ATLAS-400-00-119", "No DMEntity/DMAttribute exists for dMQualifiedNamePrefix : {0}"),
+    NAME_NAMESPACE_NOT_EXIST (400, "ATLAS-400-00-120", "name/namespace are mandatory for DMEntity/DMAttribute");
     private String errorCode;
     private String errorMessage;
     private Response.Status httpCode;

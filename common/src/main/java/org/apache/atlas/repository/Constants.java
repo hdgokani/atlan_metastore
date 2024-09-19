@@ -21,6 +21,7 @@ package org.apache.atlas.repository;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -211,6 +212,8 @@ public final class Constants {
     public static final String ATLAS_DM_DATA_MODEL = "DMDataModel";
 
     public static final String ATLAS_DM_QUALIFIED_NAME_PREFIX = "dMQualifiedNamePrefix";
+
+    public static final String ATLAS_DM_NAMESPACE = "dMDataModelNamespace";
 
     public static String[] PROCESS_EDGE_LABELS = {PROCESS_OUTPUTS, PROCESS_INPUTS};
 
