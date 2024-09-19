@@ -871,6 +871,13 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
 
         for (AtlasClassification classification : classifications) {
+            if(Objects.isNull(entity) ||
+                    Objects.isNull(classification) ||
+                    Objects.isNull(entity.getGuid()) ||
+                    Objects.isNull(classification.getEntityGuid())) {
+                LOG.info("Probable NPE prevented : Entity {}, classification : {}, entity : {}, entity.Guid : {}, classification.getEntityGuid : {}");
+                continue;
+            }
             if (entity.getGuid().equals(classification.getEntityGuid())) {
                 entityClassifications.computeIfAbsent(entity, key -> new ArrayList<>()).add(getDeleteClassificationMap(classification.getTypeName()));
             } else {
