@@ -701,8 +701,8 @@ public class AtlasGraphUtilsV2 {
         AtlasGraphQuery query = graph.query()
                 .has(ENTITY_TYPE_PROPERTY_KEY, typename)
                 .has(ATLAS_DM_QUALIFIED_NAME_PREFIX, dMQualifiedNamePrefix)
-                .has(MODEL_EXPIRED_AT_SYSTEM_DATE, 0)
-                .has(MODEL_EXPIRED_AT_BUSINESS_DATE, 0);
+                .has(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE, 0)
+                .has(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE, 0);
 
         Iterator<AtlasVertex> results =  query.vertices().iterator();
         AtlasVertex           vertex  = results.hasNext() ? results.next() : null;
