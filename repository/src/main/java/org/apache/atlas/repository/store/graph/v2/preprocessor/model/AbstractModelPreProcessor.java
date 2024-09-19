@@ -13,12 +13,8 @@ import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,22 +76,27 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
     }
 
     protected void setModelDates(AtlasEntity newEntity, AtlasVertex newVertex, Object value) {
-        newEntity.setAttribute(MODEL_SYSTEM_DATE, value);
-        newEntity.setAttribute(MODEL_BUSINESS_DATE, value);
-        AtlasGraphUtilsV2.setEncodedProperty(newVertex, MODEL_SYSTEM_DATE, value);
-        AtlasGraphUtilsV2.setEncodedProperty(newVertex, MODEL_BUSINESS_DATE, value);
+        newEntity.setAttribute(ATLAS_DM_SYSTEM_DATE, value);
+        newEntity.setAttribute(ATLAS_DM_BUSINESS_DATE, value);
+        AtlasGraphUtilsV2.setEncodedProperty(newVertex, ATLAS_DM_SYSTEM_DATE, value);
+        AtlasGraphUtilsV2.setEncodedProperty(newVertex, ATLAS_DM_BUSINESS_DATE, value);
     }
 
     protected void setModelExpiredAtDates(AtlasEntity oldEntity, AtlasVertex oldVertex, Object value) {
-        oldEntity.setAttribute(MODEL_EXPIRED_AT_SYSTEM_DATE, value);
-        oldEntity.setAttribute(MODEL_EXPIRED_AT_BUSINESS_DATE, value);
-        AtlasGraphUtilsV2.setEncodedProperty(oldVertex, MODEL_EXPIRED_AT_SYSTEM_DATE, value);
-        AtlasGraphUtilsV2.setEncodedProperty(oldVertex, MODEL_EXPIRED_AT_BUSINESS_DATE, value);
+        oldEntity.setAttribute(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE, value);
+        oldEntity.setAttribute(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE, value);
+        AtlasGraphUtilsV2.setEncodedProperty(oldVertex, ATLAS_DM_EXPIRED_AT_SYSTEM_DATE, value);
+        AtlasGraphUtilsV2.setEncodedProperty(oldVertex, ATLAS_DM_EXPIRED_AT_BUSINESS_DATE, value);
     }
 
     protected void setQualifiedName(AtlasEntity newEntity, AtlasVertex newVertex, Object value) {
         newEntity.setAttribute(QUALIFIED_NAME, value);
         AtlasGraphUtilsV2.setEncodedProperty(newVertex, QUALIFIED_NAME, value);
+    }
+
+    protected void setName(AtlasEntity newEntity, AtlasVertex newVertex, Object value) {
+        newEntity.setAttribute(NAME, value);
+        AtlasGraphUtilsV2.setEncodedProperty(newVertex, NAME, value);
     }
 
     protected ModelResponse replicateModelVersion(AtlasRelatedObjectId relatedObjectId, long epoch) throws AtlasBaseException {
@@ -105,19 +106,34 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         AtlasEntity copyModelVersion = entityRetriever.toAtlasEntity(copyModelVertex);
         copyAllAttributes(existingModelVersionEntityWithExtInfo.getEntity(), copyModelVersion, epoch);
         setModelDates(copyModelVersion, copyModelVertex, epoch);
-        String modelQualifiedName = (String) existingModelVersionEntityWithExtInfo.getEntity().getAttribute(QUALIFIED_NAME) + epoch;
-        setQualifiedName(copyModelVersion, copyModelVertex, modelQualifiedName);
+        // ex :  "default/dm/1234/modelName/v1";
+        String existingModelVersionQualifiedName = ((String) existingModelVersionEntityWithExtInfo.getEntity().getAttribute(QUALIFIED_NAME));
+        int lastIndex = existingModelVersionQualifiedName.lastIndexOf("/");
+
+        // v1
+        String existingVersion = existingModelVersionQualifiedName.substring(lastIndex + 1);
+        int existingVersionNumber = Integer.parseInt(existingVersion.substring(1));
+
+        // default/dm/1234/modelName
+        String modelName = existingModelVersionQualifiedName.substring(0, lastIndex);
+
+        String modelVersion = "v" + (++existingVersionNumber);
+
+        String modelVersionQualifiedName = modelName + "/" + modelVersion;
+
+        setName(copyModelVersion, copyModelVertex, modelVersion);
+        setQualifiedName(copyModelVersion, copyModelVertex, modelVersionQualifiedName);
         setModelExpiredAtDates(existingModelVersionEntityWithExtInfo.getEntity(), existingModelVersionVertex, epoch);
         return new ModelResponse(existingModelVersionEntityWithExtInfo.getEntity(), copyModelVersion, existingModelVersionVertex, copyModelVertex);
     }
 
-    protected ModelResponse replicateModelEntity(AtlasEntity existingEntity, AtlasVertex existingEntityVertex, String modelVersionQualifiedName, long epoch) throws AtlasBaseException {
+    protected ModelResponse replicateModelEntity(AtlasEntity existingEntity, AtlasVertex existingEntityVertex, String entityQualifiedNamePrefix, long epoch) throws AtlasBaseException {
         AtlasVertex copyEntityVertex = entityGraphMapper.createVertex(existingEntity);
         AtlasEntity copyEntity = entityRetriever.toAtlasEntity(copyEntityVertex);
         copyAllAttributes(existingEntity, copyEntity, epoch);
         // copyEntity.setRelationshipAttributes(entity.getRelationshipAttributes());
         setModelDates(copyEntity, copyEntityVertex, epoch);
-        String entityQualifiedName = modelVersionQualifiedName + "/" + existingEntity.getAttribute(NAME);
+        String entityQualifiedName = entityQualifiedNamePrefix + "/" + epoch;
         setQualifiedName(copyEntity, copyEntityVertex, entityQualifiedName);
         setModelDates(copyEntity, copyEntityVertex, epoch);
         setModelExpiredAtDates(existingEntity, existingEntityVertex, epoch);
@@ -130,7 +146,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         copyAllAttributes(existingAttribute, copyAttributeEntity, epoch);
         // copyEntity.setRelationshipAttributes(entity.getRelationshipAttributes());
         setModelDates(copyAttributeEntity, copyAttributeVertex, epoch);
-        String attributeQualifiedName = entityQualifiedName + "/" + existingAttribute.getAttribute(NAME);
+        String attributeQualifiedName = entityQualifiedName + "/" + existingAttribute.getAttribute(NAME) + "/" + epoch;
         setQualifiedName(copyAttributeEntity, copyAttributeVertex, attributeQualifiedName);
         setModelDates(copyAttributeEntity, copyAttributeVertex, epoch);
         setModelExpiredAtDates(existingAttribute, existingAttributeVertex, epoch);
@@ -140,6 +156,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
     protected void createModelVersionModelEntityRelationship(AtlasVertex modelVersionVertex,
                                                              AtlasVertex modelEntityVertex) throws AtlasBaseException {
         AtlasRelationship modelVersionEntityRelation = new AtlasRelationship("d_m_version_d_m_entities");
+        modelVersionEntityRelation.setStatus(AtlasRelationship.Status.ACTIVE);
         modelVersionEntityRelation.setEnd1(new AtlasObjectId(
                 GraphHelper.getGuid(modelVersionVertex),
                 GraphHelper.getTypeName(modelVersionVertex)));
@@ -149,31 +166,39 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         atlasRelationshipStore.create(modelVersionEntityRelation);
     }
 
-    protected void createModelVersionModelEntityRelationship(AtlasVertex modelVersionVertex, String removeEntityGuid,
+    protected void createModelVersionModelEntityRelationship(AtlasVertex modelVersionVertex,
                                                              List<AtlasRelatedObjectId> existingEntities) {
         AtlasRelationship modelVersionEntityRelation = new AtlasRelationship("d_m_version_d_m_entities");
+        modelVersionEntityRelation.setStatus(AtlasRelationship.Status.ACTIVE);
         modelVersionEntityRelation.setEnd1(new AtlasObjectId(
                 GraphHelper.getGuid(modelVersionVertex),
                 GraphHelper.getTypeName(modelVersionVertex)));
-        for (AtlasRelatedObjectId entity : existingEntities) {
-            if (removeEntityGuid.equals(entity.getGuid())) {
+        for (AtlasRelatedObjectId existingEntity : existingEntities) {
+            if (
+                    ((int) (existingEntity.getAttributes().get(ATLAS_DM_BUSINESS_DATE)) > 0) ||
+                            ((int) (existingEntity.getAttributes().get(ATLAS_DM_SYSTEM_DATE)) > 0)
+            ) {
                 continue;
             }
             modelVersionEntityRelation.setEnd2(new AtlasObjectId(
-                    entity.getGuid(),
-                    entity.getTypeName()
+                    existingEntity.getGuid(),
+                    existingEntity.getTypeName()
             ));
         }
     }
 
-    protected void createModelEntityModelAttributeRelation(AtlasVertex entity, String removeAttributeGuid, List<AtlasRelatedObjectId> existingEntityAttributes) throws AtlasBaseException {
+    protected void createModelEntityModelAttributeRelation(AtlasVertex entity, List<AtlasRelatedObjectId> existingEntityAttributes) throws AtlasBaseException {
         AtlasRelationship modelEntityAttributeRelation = new AtlasRelationship("d_m_entity_d_m_attributes");
+        modelEntityAttributeRelation.setStatus(AtlasRelationship.Status.ACTIVE);
         modelEntityAttributeRelation.setEnd1(
                 new AtlasObjectId(
                         GraphHelper.getGuid(entity),
                         GraphHelper.getTypeName(entity)));
         for (AtlasRelatedObjectId existingEntityAttribute : existingEntityAttributes) {
-            if (removeAttributeGuid.equals(existingEntityAttribute.getGuid())) {
+            if (
+                    ((int) (existingEntityAttribute.getAttributes().get(ATLAS_DM_BUSINESS_DATE)) > 0) ||
+                            ((int) (existingEntityAttribute.getAttributes().get(ATLAS_DM_SYSTEM_DATE)) > 0)
+            ) {
                 continue;
             }
             modelEntityAttributeRelation.setEnd2(
@@ -186,6 +211,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
     protected void createModelEntityModelAttributeRelation(AtlasVertex entity, AtlasVertex attribute) throws AtlasBaseException {
         AtlasRelationship modelEntityAttributeRelation = new AtlasRelationship("d_m_entity_d_m_attributes");
+        modelEntityAttributeRelation.setStatus(AtlasRelationship.Status.ACTIVE);
         modelEntityAttributeRelation.setEnd1(
                 new AtlasObjectId(
                         GraphHelper.getGuid(entity),
@@ -204,6 +230,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.DATA_MODEL_NOT_EXIST);
         }
         AtlasRelationship modelVersionModelRelation = new AtlasRelationship("d_m_data_model_d_m_versions");
+        modelVersionModelRelation.setStatus(AtlasRelationship.Status.ACTIVE);
         modelVersionModelRelation.setEnd1(
                 new AtlasObjectId(
                         existingModel.getGuid(),
@@ -267,8 +294,10 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         replaceAttributes(destinationEntity.getRemoveRelationshipAttributes(), diffEntity.getRemoveRelationshipAttributes());
     }
 
-    protected void unsetExpiredDates(AtlasEntity entity) {
-        entity.setAttribute(MODEL_EXPIRED_AT_SYSTEM_DATE, 0);
-        entity.setAttribute(MODEL_EXPIRED_AT_BUSINESS_DATE, 0);
+    protected void unsetExpiredDates(AtlasEntity latestEntity, AtlasVertex latestVertex) {
+        latestEntity.setAttribute(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE, 0);
+        latestEntity.setAttribute(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE, 0);
+        AtlasGraphUtilsV2.setEncodedProperty(latestVertex, ATLAS_DM_EXPIRED_AT_SYSTEM_DATE, 0);
+        AtlasGraphUtilsV2.setEncodedProperty(latestVertex, ATLAS_DM_SYSTEM_DATE, 0);
     }
 }
