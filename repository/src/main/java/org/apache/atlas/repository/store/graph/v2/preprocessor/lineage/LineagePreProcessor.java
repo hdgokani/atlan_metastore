@@ -70,22 +70,34 @@ public class LineagePreProcessor implements PreProcessor {
     @Override
     public void processAttributes(AtlasStruct entityStruct, EntityMutationContext context,
                                   EntityMutations.EntityOperation operation) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("LineageProcessPreProcessor.processAttributes: pre processing {}, {}", entityStruct.getAttribute(QUALIFIED_NAME), operation);
+
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processAttributesForLineagePreprocessor");
+
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("LineageProcessPreProcessor.processAttributes: pre processing {}, {}", entityStruct.getAttribute(QUALIFIED_NAME), operation);
+            }
+
+            AtlasEntity entity = (AtlasEntity) entityStruct;
+            AtlasVertex vertex = context.getVertex(entity.getGuid());
+            ArrayList<String> connectionProcessQNs = getConnectionProcessQNsForTheGivenInputOutputs(entity);
+
+            switch (operation) {
+                case CREATE:
+                    processCreateLineageProcess(entity, connectionProcessQNs);
+                    break;
+                case UPDATE:
+                    processUpdateLineageProcess(entity, vertex, context, connectionProcessQNs);
+                    break;
+            }
+        }catch(Exception exp){
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Lineage preprocessor: " + exp);
+            }
+        }finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
 
-        AtlasEntity entity = (AtlasEntity) entityStruct;
-        AtlasVertex vertex = context.getVertex(entity.getGuid());
-        ArrayList<String> connectionProcessQNs = getConnectionProcessQNsForTheGivenInputOutputs(entity);
-
-        switch (operation) {
-            case CREATE:
-                processCreateLineageProcess(entity, connectionProcessQNs);
-                break;
-            case UPDATE:
-                processUpdateLineageProcess(entity, vertex, context, connectionProcessQNs);
-                break;
-        }
     }
 
     private void processCreateLineageProcess(AtlasEntity entity, ArrayList connectionProcessList) {
