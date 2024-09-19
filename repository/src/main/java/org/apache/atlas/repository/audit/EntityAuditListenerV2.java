@@ -875,7 +875,12 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                     Objects.isNull(classification) ||
                     Objects.isNull(entity.getGuid()) ||
                     Objects.isNull(classification.getEntityGuid())) {
-                LOG.info("Probable NPE prevented : Entity {}, classification : {}, entity : {}, entity.Guid : {}, classification.getEntityGuid : {}", entity.toString(), classification.toString(), entity.getGuid(), classification.getEntityGuid());
+                LOG.info("Probable NPE prevented : Entity {}, classification : {}, entity.Guid : {}, classification.getEntityGuid : {}",
+                        entity != null ? entity.toString() : "null",
+                        classification != null ? classification.toString() : "null",
+                        entity != null && entity.getGuid() != null ? entity.getGuid() : "null",
+                        classification != null && classification.getEntityGuid() != null ? classification.getEntityGuid() : "null");
+
                 continue;
             }
             if (entity.getGuid().equals(classification.getEntityGuid())) {
