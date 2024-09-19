@@ -1,6 +1,7 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.model;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
@@ -67,7 +68,7 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
-        long now = Instant.now().toEpochMilli();
+        long now = RequestContext.get().getRequestTime();
 
         AtlasEntity.AtlasEntityWithExtInfo existingEntityAttributeWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(vertexAttribute, false);
         List<AtlasRelatedObjectId> existingEntityObjects = (List<AtlasRelatedObjectId>) existingEntityAttributeWithExtInfo.getEntity().getRelationshipAttributes().get("dMEntities");
