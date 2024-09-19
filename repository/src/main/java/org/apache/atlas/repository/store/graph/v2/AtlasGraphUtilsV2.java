@@ -696,10 +696,11 @@ public class AtlasGraphUtilsV2 {
         return query.vertices().iterator();
     }
 
-    public static AtlasVertex findLatestEntityAttributeVerticesByType(String typename) {
+    public static AtlasVertex findLatestEntityAttributeVerticesByType(String typename, String dMQualifiedNamePrefix) {
         AtlasGraph graph= getGraphInstance();
         AtlasGraphQuery query = graph.query()
                 .has(ENTITY_TYPE_PROPERTY_KEY, typename)
+                .has(ATLAS_DM_QUALIFIED_NAME_PREFIX, dMQualifiedNamePrefix)
                 .has(MODEL_EXPIRED_AT_SYSTEM_DATE, 0)
                 .has(MODEL_EXPIRED_AT_BUSINESS_DATE, 0);
 
