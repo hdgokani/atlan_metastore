@@ -21,7 +21,6 @@ package org.apache.atlas.repository;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -202,6 +201,8 @@ public final class Constants {
     public static final String PROCESS_OUTPUTS = "__Process.outputs";
     public static final String PROCESS_INPUTS = "__Process.inputs";
 
+    public static String[] PROCESS_EDGE_LABELS = {PROCESS_OUTPUTS, PROCESS_INPUTS};
+
     /***
      * DataModel
      */
@@ -214,8 +215,11 @@ public final class Constants {
     public static final String ATLAS_DM_QUALIFIED_NAME_PREFIX = "dMQualifiedNamePrefix";
 
     public static final String ATLAS_DM_NAMESPACE = "dMDataModelNamespace";
+    public static  final String ATLAS_DM_EXPIRED_AT_SYSTEM_DATE = "dMDataModelExpiredAtSystemDate";
+    public static  final String ATLAS_DM_EXPIRED_AT_BUSINESS_DATE = "dMDataModelExpiredAtBusinessDate";
+    public static  final String ATLAS_DM_SYSTEM_DATE = "dMDataModelSystemDate";
+    public  static  final String ATLAS_DM_BUSINESS_DATE = "dMDataModelBusinessDate";
 
-    public static String[] PROCESS_EDGE_LABELS = {PROCESS_OUTPUTS, PROCESS_INPUTS};
 
     /**
      * The homeId field is used when saving into Atlas a copy of an object that is being imported from another
@@ -387,15 +391,6 @@ public final class Constants {
     public static final String DOMAIN_GUIDS_ATTR = "domainGUIDs";
     public static final String ASSET_POLICY_GUIDS  = "assetPolicyGUIDs";
     public static final String ASSET_POLICIES_COUNT  = "assetPoliciesCount";
-
-    /***
-     *  Model related constants
-     *
-     */
-    public static  final String MODEL_EXPIRED_AT_SYSTEM_DATE= "dMDataModelExpiredAtSystemDate";
-    public static  final String MODEL_EXPIRED_AT_BUSINESS_DATE= "dMDataModelExpiredAtBusinessDate";
-    public static  final String MODEL_SYSTEM_DATE= "dMDataModelSystemDate";
-    public  static  final String MODEL_BUSINESS_DATE= "dMDataModelBusinessDate";
 
 
 
