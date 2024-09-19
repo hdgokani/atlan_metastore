@@ -133,20 +133,20 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         copyAllAttributes(existingEntity, copyEntity, epoch);
         // copyEntity.setRelationshipAttributes(entity.getRelationshipAttributes());
         setModelDates(copyEntity, copyEntityVertex, epoch);
-        String entityQualifiedName = entityQualifiedNamePrefix + "/" + epoch;
+        String entityQualifiedName = entityQualifiedNamePrefix + "_" + epoch;
         setQualifiedName(copyEntity, copyEntityVertex, entityQualifiedName);
         setModelDates(copyEntity, copyEntityVertex, epoch);
         setModelExpiredAtDates(existingEntity, existingEntityVertex, epoch);
         return new ModelResponse(existingEntity, copyEntity, existingEntityVertex, copyEntityVertex);
     }
 
-    protected ModelResponse replicateModelAttribute(AtlasEntity existingAttribute, AtlasVertex existingAttributeVertex, String entityQualifiedName, long epoch) throws AtlasBaseException {
+    protected ModelResponse replicateModelAttribute(AtlasEntity existingAttribute, AtlasVertex existingAttributeVertex, String attributeQualifiedNamePrefix, long epoch) throws AtlasBaseException {
         AtlasVertex copyAttributeVertex = entityGraphMapper.createVertex(existingAttribute);
         AtlasEntity copyAttributeEntity = entityRetriever.toAtlasEntity(copyAttributeVertex);
         copyAllAttributes(existingAttribute, copyAttributeEntity, epoch);
         // copyEntity.setRelationshipAttributes(entity.getRelationshipAttributes());
         setModelDates(copyAttributeEntity, copyAttributeVertex, epoch);
-        String attributeQualifiedName = entityQualifiedName + "/" + existingAttribute.getAttribute(NAME) + "/" + epoch;
+        String attributeQualifiedName = attributeQualifiedNamePrefix + "_"  + epoch;
         setQualifiedName(copyAttributeEntity, copyAttributeVertex, attributeQualifiedName);
         setModelDates(copyAttributeEntity, copyAttributeVertex, epoch);
         setModelExpiredAtDates(existingAttribute, existingAttributeVertex, epoch);
