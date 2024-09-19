@@ -212,6 +212,8 @@ public final class Constants {
     public static final String ATLAS_DM_ATTRIBUTE_TYPE  = "DMAttribute";
     public static final String ATLAS_DM_DATA_MODEL = "DMDataModel";
 
+    public static final String ATLAS_DM_VERSION_TYPE  = "DMVersion";
+
     public static final String ATLAS_DM_QUALIFIED_NAME_PREFIX = "dMQualifiedNamePrefix";
 
     public static final String ATLAS_DM_NAMESPACE = "dMDataModelNamespace";
