@@ -1062,7 +1062,7 @@ public class EntityGraphMapper {
         }
 
         if (MapUtils.isNotEmpty(entity.getRelationshipAttributes())) {
-            MetricRecorder create_metric = RequestContext.get().startMetricRecord("mapRelationshipAttributes");
+            MetricRecorder metric = RequestContext.get().startMetricRecord("mapRelationshipAttributes");
 
             if (op.equals(CREATE)) {
                 MetricRecorder created_metric = RequestContext.get().startMetricRecord("mapRelationshipAttributes_create");
@@ -1074,7 +1074,7 @@ public class EntityGraphMapper {
 
                     mapAttribute(attribute, attrValue, vertex, op, context);
                 }
-                RequestContext.get().endMetricRecord(create_metric);
+                RequestContext.get().endMetricRecord(created_metric);
 
             } else if (op.equals(UPDATE) || op.equals(PARTIAL_UPDATE)) {
                 MetricRecorder update_metric = RequestContext.get().startMetricRecord("mapRelationshipAttributes_update");
@@ -1205,6 +1205,7 @@ public class EntityGraphMapper {
                 if (currentEdge != null && !currentEdge.equals(newEdge)) {
                     deleteDelegate.getHandler().deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), false, true, ctx.getReferringVertex());
                 }
+                RequestContext.get().endMetricRecord(metric);
 
                 return newEdge;
             }
@@ -1286,14 +1287,17 @@ public class EntityGraphMapper {
                 if (CATEGORY_PARENT_EDGE_LABEL.equals(edgeLabel)) {
                     addCatParentAttr(ctx, newEdge);
                 }
+                RequestContext.get().endMetricRecord(metric);
 
                 return newEdge;
             }
 
             case MAP:
+                RequestContext.get().endMetricRecord(metric);
                 return mapMapValue(ctx, context);
 
             case ARRAY:
+                RequestContext.get().endMetricRecord(metric);
                 if (isAppendOp){
                     return appendArrayValue(ctx, context);
                 }
@@ -1305,10 +1309,9 @@ public class EntityGraphMapper {
                 return mapArrayValue(ctx, context);
 
             default:
+                RequestContext.get().endMetricRecord(metric);
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_CATEGORY_INVALID, ctx.getAttrType().getTypeCategory().name());
         }
-
-        RequestContext.get().endMetricRecord(metric);
     }
 
     private String mapSoftRefValue(AttributeMutationContext ctx, EntityMutationContext context) {
