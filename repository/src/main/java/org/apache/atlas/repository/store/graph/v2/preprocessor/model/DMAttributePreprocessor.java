@@ -52,6 +52,7 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
 
         switch (operation) {
             case CREATE:
+                createDMAttribute(entity, vertex, context);
                 break;
             case UPDATE:
                 updateDMAttribute(entity, vertex, context);
@@ -166,6 +167,8 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
         // entity --- attributes of existingEntity relation
         createModelEntityModelAttributeRelation(modelENtityResponse.getCopyVertex(), existingAttributes);
 
+        // latest entity ---- new attribute relation
+        createModelEntityModelAttributeRelation(modelENtityResponse.getCopyVertex(), vertexAttribute);
 
         context.addCreated(latestModelVersionEntity.getGuid(), latestModelVersionEntity,
                 typeRegistry.getEntityTypeByName(ATLAS_DM_VERSION_TYPE), latestModelVersionVertex);
@@ -181,8 +184,7 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
     }
 
     private void updateDMAttribute(AtlasEntity entityAttribute, AtlasVertex vertexAttribute, EntityMutationContext context) throws AtlasBaseException {
-        if (!entityAttribute.getTypeName().equals(ATLAS_DM_ATTRIBUTE_TYPE) ||
-                CollectionUtils.isEmpty(context.getUpdatedEntities())) {
+        if (!entityAttribute.getTypeName().equals(ATLAS_DM_ATTRIBUTE_TYPE)) {
             return;
         }
 

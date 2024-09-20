@@ -192,7 +192,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
     }
 
     protected void createModelVersionModelEntityRelationship(AtlasVertex modelVersionVertex,
-                                                             List<AtlasRelatedObjectId> existingEntities) {
+                                                             List<AtlasRelatedObjectId> existingEntities) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(existingEntities)){
             return;
         }
@@ -202,9 +202,10 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                 GraphHelper.getGuid(modelVersionVertex),
                 GraphHelper.getTypeName(modelVersionVertex)));
         for (AtlasRelatedObjectId existingEntity : existingEntities) {
+            AtlasEntity entity = entityRetriever.toAtlasEntity(existingEntity.getGuid());
             if (
-                    ((int) (existingEntity.getAttributes().get(ATLAS_DM_BUSINESS_DATE)) > 0) ||
-                            ((int) (existingEntity.getAttributes().get(ATLAS_DM_SYSTEM_DATE)) > 0)
+                    ((int) (entity.getAttributes().get(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE)) > 0) ||
+                            ((int) (entity.getAttributes().get(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE)) > 0)
             ) {
                 continue;
             }
@@ -226,9 +227,10 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                         GraphHelper.getGuid(entity),
                         GraphHelper.getTypeName(entity)));
         for (AtlasRelatedObjectId existingEntityAttribute : existingEntityAttributes) {
+            AtlasEntity entityAttribute = entityRetriever.toAtlasEntity(existingEntityAttribute.getGuid());
             if (
-                    ((int) (existingEntityAttribute.getAttributes().get(ATLAS_DM_BUSINESS_DATE)) > 0) ||
-                            ((int) (existingEntityAttribute.getAttributes().get(ATLAS_DM_SYSTEM_DATE)) > 0)
+                    ((int) (entityAttribute.getAttributes().get(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE)) > 0) ||
+                            ((int) (entityAttribute.getAttributes().get(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE)) > 0)
             ) {
                 continue;
             }
@@ -331,15 +333,12 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
             return;
         }
         replaceAttributes(destinationEntity.getAttributes(), diffEntity.getAttributes());
-        replaceAttributes(destinationEntity.getRelationshipAttributes(), diffEntity.getRelationshipAttributes());
-        replaceAttributes(destinationEntity.getAppendRelationshipAttributes(), diffEntity.getAppendRelationshipAttributes());
-        replaceAttributes(destinationEntity.getRemoveRelationshipAttributes(), diffEntity.getRemoveRelationshipAttributes());
     }
 
     protected void unsetExpiredDates(AtlasEntity latestEntity, AtlasVertex latestVertex) {
         latestEntity.setAttribute(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE, 0);
         latestEntity.setAttribute(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE, 0);
         AtlasGraphUtilsV2.setEncodedProperty(latestVertex, ATLAS_DM_EXPIRED_AT_SYSTEM_DATE, 0);
-        AtlasGraphUtilsV2.setEncodedProperty(latestVertex, ATLAS_DM_SYSTEM_DATE, 0);
+        AtlasGraphUtilsV2.setEncodedProperty(latestVertex, ATLAS_DM_EXPIRED_AT_BUSINESS_DATE, 0);
     }
 }

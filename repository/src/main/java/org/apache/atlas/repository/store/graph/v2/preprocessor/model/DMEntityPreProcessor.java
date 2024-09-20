@@ -102,8 +102,8 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
             modelVersion = "v" + (++existingVersionNumber);
 
             for (AtlasRelatedObjectId modelVersionObj : existingModelVersions) {
-                if (((int) modelVersionObj.getAttributes().get(ATLAS_DM_BUSINESS_DATE) > 0) ||
-                        ((int) modelVersionObj.getAttributes().get(ATLAS_DM_SYSTEM_DATE) > 0)) {
+                if (((int) modelVersionObj.getAttributes().get(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE) > 0) ||
+                        ((int) modelVersionObj.getAttributes().get(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE) > 0)) {
                     continue;
                 }
                 existingModelVersionObj = modelVersionObj;
@@ -155,15 +155,16 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
     }
 
 
+    private void updateDMEntities(){
+
+    }
+
     private void updateDMEntity(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
        // lets say entity has attribute : versionQualifiedName
         // default/dm/1725359500/com.jpmc.ct.fri/RegulatoryReporting/entity1/epoch
         // query with qualifiedName : default/dm/1725359500/com.jpmc.ct.fri/RegulatoryReporting/entity1
 
         if (!entity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)) {
-            return;
-        }
-        if (CollectionUtils.isEmpty(context.getUpdatedEntities())) {
             return;
         }
 
@@ -176,7 +177,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
 
         long now = RequestContext.get().getRequestTime();
         AtlasEntity.AtlasEntityWithExtInfo existingEntity = entityRetriever.toAtlasEntityWithExtInfo(vertex, false);
-        AtlasRelatedObjectId existingModelVersion = (AtlasRelatedObjectId) existingEntity.getEntity().getRelationshipAttributes().get("dMVersions");
+        AtlasRelatedObjectId existingModelVersion = (AtlasRelatedObjectId) existingEntity.getEntity().getRelationshipAttributes().get("dMVersion");
         List<AtlasRelatedObjectId> existingEntityAttributes = (List<AtlasRelatedObjectId>) existingEntity.getEntity().getRelationshipAttributes().get("dMAttributes");
 
         if (existingModelVersion == null) {
