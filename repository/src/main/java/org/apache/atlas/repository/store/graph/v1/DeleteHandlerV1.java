@@ -350,6 +350,9 @@ public abstract class DeleteHandlerV1 {
 
     public boolean deleteEdgeReference(AtlasEdge edge, TypeCategory typeCategory, boolean isOwned, boolean forceDeleteStructTrait,
                                        AtlasRelationshipEdgeDirection relationshipDirection, AtlasVertex entityVertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("deleteEdgeReference");
+
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("Deleting {}, force = {}", string(edge), forceDeleteStructTrait);
         }
@@ -401,6 +404,8 @@ public abstract class DeleteHandlerV1 {
                 deleteEdge(edge, true, isInternalType);
             }
         }
+
+        RequestContext.get().endMetricRecord(metric);
 
         return !softDelete || forceDelete;
     }

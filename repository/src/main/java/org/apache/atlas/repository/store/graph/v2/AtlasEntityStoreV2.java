@@ -1565,6 +1565,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     private void executePreProcessor(EntityMutationContext context) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("executePreProcessor");
         AtlasEntityType entityType;
         List<PreProcessor> preProcessors;
 
@@ -1585,6 +1586,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 processor.processAttributes(entity, context, UPDATE);
             }
         }
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {

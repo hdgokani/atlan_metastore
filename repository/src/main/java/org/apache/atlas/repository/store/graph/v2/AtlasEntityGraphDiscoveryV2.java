@@ -76,13 +76,18 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
 
     @Override
     public EntityGraphDiscoveryContext discoverEntities() throws AtlasBaseException {
-        // walk through entities in stream and validate them; record entity references
-        discover();
+        MetricRecorder metric = RequestContext.get().startMetricRecord("discoverEntities");
+        try {
+            // walk through entities in stream and validate them; record entity references
+            discover();
 
-        // resolve entity references discovered in previous step
-        resolveReferences();
+            // resolve entity references discovered in previous step
+            resolveReferences();
 
-        return discoveryContext;
+            return discoveryContext;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
     }
 
     @Override
@@ -417,6 +422,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     }
 
     void walkEntityGraph(AtlasEntity entity) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("walkEntityGraph");
         if (entity == null) {
             return;
         }
@@ -430,6 +436,8 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         recordObjectReference(entity.getGuid(), entity.getGuid());
 
         visitEntity(type, entity);
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
 
@@ -450,6 +458,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     }
 
     private void processDynamicAttributes(AtlasEntity entity) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("processDynamicAttributes");
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
         if (entityType == null) {
@@ -484,5 +493,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
                 entity.setAttribute(attributeName,dynAttributeValue.toString());
             }
         }
+
+        RequestContext.get().endMetricRecord(metric);
     }
 }

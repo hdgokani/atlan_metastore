@@ -353,7 +353,7 @@ public class EntityGraphMapper {
         Collection<AtlasEntity> updatedEntities = context.getUpdatedEntities();
         Collection<AtlasEntity> appendEntities = context.getUpdatedEntitiesForAppendRelationshipAttribute();
         Collection<AtlasEntity> removeEntities = context.getEntitiesUpdatedWithRemoveRelationshipAttribute();
-
+        MetricRecorder created_metric = RequestContext.get().startMetricRecord("mapAttributesAndClassifications_created");
         if (CollectionUtils.isNotEmpty(createdEntities)) {
             for (AtlasEntity createdEntity : createdEntities) {
                 try {
@@ -406,10 +406,12 @@ public class EntityGraphMapper {
                 }
             }
         }
+        RequestContext.get().endMetricRecord(created_metric);
 
         EntityOperation updateType = isPartialUpdate ? PARTIAL_UPDATE : UPDATE;
 
         if (CollectionUtils.isNotEmpty(updatedEntities)) {
+            MetricRecorder updated_metric = RequestContext.get().startMetricRecord("mapAttributesAndClassifications_updated");
             for (AtlasEntity updatedEntity : updatedEntities) {
                 try {
                     reqContext.getDeletedEdgesIds().clear();
@@ -475,6 +477,7 @@ public class EntityGraphMapper {
                     throw baseException;
                 }
             }
+            RequestContext.get().endMetricRecord(updated_metric);
         } else {
 
             if (CollectionUtils.isNotEmpty(appendEntities)) {
@@ -524,6 +527,8 @@ public class EntityGraphMapper {
     }
 
     private void setSystemAttributesToEntity(AtlasVertex entityVertex, AtlasEntity createdEntity) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("setSystemAttributesToEntity");
+
 
         createdEntity.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
         createdEntity.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
@@ -538,6 +543,8 @@ public class EntityGraphMapper {
                 diffEntity.setUpdatedBy(createdEntity.getUpdatedBy());
             }
         }
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
 
@@ -949,6 +956,7 @@ public class EntityGraphMapper {
             List<String> userAutoUpdateAttributes = new ArrayList<>();
 
             if (op.equals(CREATE)) {
+                MetricRecorder created_metric = RequestContext.get().startMetricRecord("mapAttributes_create");
                 for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
                     Object attrValue = struct.getAttribute(attribute.getName());
                     Object attrOldValue = null;
@@ -971,8 +979,11 @@ public class EntityGraphMapper {
 
                     mapAttribute(attribute, attrValue, vertex, op, context);
                 }
+                RequestContext.get().endMetricRecord(created_metric);
 
             } else if (op.equals(UPDATE) || op.equals(PARTIAL_UPDATE)) {
+                MetricRecorder update_metric = RequestContext.get().startMetricRecord("mapAttributes_update");
+
                 for (String attrName : struct.getAttributes().keySet()) {
                     AtlasAttribute attribute = structType.getAttribute(attrName);
 
@@ -1010,6 +1021,8 @@ public class EntityGraphMapper {
                         LOG.warn("mapAttributes(): invalid attribute {}.{}. Ignored..", struct.getTypeName(), attrName);
                     }
                 }
+                RequestContext.get().endMetricRecord(update_metric);
+
             }
 
             updateModificationMetadata(vertex);
@@ -1025,6 +1038,8 @@ public class EntityGraphMapper {
     }
 
     private void addValuesToAutoUpdateAttributesList(AtlasAttribute attribute, List<String> userAutoUpdateAttributes, List<String> timestampAutoUpdateAttributes) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("addValuesToAutoUpdateAttributesList");
+
         HashMap<String, ArrayList> autoUpdateAttributes =  attribute.getAttributeDef().getAutoUpdateAttributes();
         if (autoUpdateAttributes != null) {
             List<String> userAttributes = autoUpdateAttributes.get("user");
@@ -1036,6 +1051,8 @@ public class EntityGraphMapper {
                 timestampAutoUpdateAttributes.addAll(timestampAttributes);
             }
         }
+        RequestContext.get().endMetricRecord(metric);
+
     }
 
     private void mapRelationshipAttributes(AtlasEntity entity, AtlasEntityType entityType, AtlasVertex vertex, EntityOperation op,
@@ -1045,9 +1062,11 @@ public class EntityGraphMapper {
         }
 
         if (MapUtils.isNotEmpty(entity.getRelationshipAttributes())) {
-            MetricRecorder metric = RequestContext.get().startMetricRecord("mapRelationshipAttributes");
+            MetricRecorder create_metric = RequestContext.get().startMetricRecord("mapRelationshipAttributes");
 
             if (op.equals(CREATE)) {
+                MetricRecorder created_metric = RequestContext.get().startMetricRecord("mapRelationshipAttributes_create");
+
                 for (String attrName : entityType.getRelationshipAttributes().keySet()) {
                     Object         attrValue    = entity.getRelationshipAttribute(attrName);
                     String         relationType = AtlasEntityUtil.getRelationshipType(attrValue);
@@ -1055,8 +1074,11 @@ public class EntityGraphMapper {
 
                     mapAttribute(attribute, attrValue, vertex, op, context);
                 }
+                RequestContext.get().endMetricRecord(create_metric);
 
             } else if (op.equals(UPDATE) || op.equals(PARTIAL_UPDATE)) {
+                MetricRecorder update_metric = RequestContext.get().startMetricRecord("mapRelationshipAttributes_update");
+
                 // relationship attributes mapping
                 for (String attrName : entityType.getRelationshipAttributes().keySet()) {
                     if (entity.hasRelationshipAttribute(attrName)) {
@@ -1067,6 +1089,7 @@ public class EntityGraphMapper {
                         mapAttribute(attribute, attrValue, vertex, op, context);
                     }
                 }
+                RequestContext.get().endMetricRecord(update_metric);
             }
             updateModificationMetadata(vertex);
 
@@ -1126,6 +1149,8 @@ public class EntityGraphMapper {
     }
 
     private void mapAttribute(AtlasAttribute attribute, Object attrValue, AtlasVertex vertex, EntityOperation op, EntityMutationContext context, boolean isAppendOp, boolean isRemoveOp) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttribute");
+
         boolean isDeletedEntity = context.isDeletedEntity(vertex);
         AtlasType         attrType     = attribute.getAttributeType();
         if (attrValue == null) {
@@ -1152,9 +1177,13 @@ public class EntityGraphMapper {
             AttributeMutationContext ctx = new AttributeMutationContext(op, vertex, attribute, attrValue);
             mapToVertexByTypeCategory(ctx, context, isAppendOp, isRemoveOp);
         }
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private Object mapToVertexByTypeCategory(AttributeMutationContext ctx, EntityMutationContext context, boolean isAppendOp, boolean isRemoveOp) throws AtlasBaseException {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("mapToVertexByTypeCategory");
+
         if (ctx.getOp() == CREATE && ctx.getValue() == null) {
             return null;
         }
@@ -1278,6 +1307,8 @@ public class EntityGraphMapper {
             default:
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_CATEGORY_INVALID, ctx.getAttrType().getTypeCategory().name());
         }
+
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private String mapSoftRefValue(AttributeMutationContext ctx, EntityMutationContext context) {
@@ -1455,6 +1486,8 @@ public class EntityGraphMapper {
 
     private Object mapPrimitiveValue(AtlasVertex vertex, AtlasAttribute attribute, Object valueFromEntity, boolean isDeletedEntity) {
         boolean isIndexableStrAttr = attribute.getAttributeDef().getIsIndexable() && attribute.getAttributeType() instanceof AtlasBuiltInTypes.AtlasStringType;
+        MetricRecorder metric = RequestContext.get().startMetricRecord("mapPrimitiveValue");
+
 
         Object ret = valueFromEntity;
 
@@ -1504,6 +1537,7 @@ public class EntityGraphMapper {
                 AtlasGraphUtilsV2.setEncodedProperty(vertex, uniqPropName, ret);
             }
         }
+        RequestContext.get().endMetricRecord(metric);
 
         return ret;
     }
