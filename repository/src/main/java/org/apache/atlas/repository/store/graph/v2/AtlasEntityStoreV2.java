@@ -1587,6 +1587,24 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 processor.processAttributes(entity, context, UPDATE);
             }
         }
+
+        List<AtlasEntity> copyOfAppendRelationshipAttributes = new ArrayList<>(context.getUpdatedEntitiesForAppendRelationshipAttribute());
+        for (AtlasEntity entity: copyOfAppendRelationshipAttributes) {
+            entityType = context.getType(entity.getGuid());
+            preProcessors = getPreProcessor(entityType.getTypeName());
+            for(PreProcessor processor : preProcessors){
+                processor.processAttributes(entity, context, UPDATE);
+            }
+        }
+
+        List<AtlasEntity> copyOfRemoveRelationshipAttributes = new ArrayList<>(context.getEntitiesUpdatedWithRemoveRelationshipAttribute());
+        for (AtlasEntity entity: copyOfRemoveRelationshipAttributes) {
+            entityType = context.getType(entity.getGuid());
+            preProcessors = getPreProcessor(entityType.getTypeName());
+            for(PreProcessor processor : preProcessors){
+                processor.processAttributes(entity, context, UPDATE);
+            }
+        }
     }
 
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
@@ -1600,11 +1618,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         Map<String, String> referencedGuids = discoveryContext.getReferencedGuids();
         for (Map.Entry<String, String> element : referencedGuids.entrySet()) {
             String guid = element.getKey();
+
+            // guid negative
+            // entity == userInput
             AtlasEntity entity = entityStream.getByGuid(guid);
 
             if (entity != null) { // entity would be null if guid is not in the stream but referenced by an entity in the stream
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
+                // entity pass in user request with attributes
                 if (entityType == null) {
                     throw new AtlasBaseException(element.getValue(), AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
                 }
@@ -1642,8 +1664,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         context.addUpdated(guid, entity, entityType, vertex);
 
                     } else {
+
                         graphDiscoverer.validateAndNormalize(entity);
 
+
+                    //    Handle create flow here
                         //Create vertices which do not exist in the repository
                         if (RequestContext.get().isImportInProgress() && AtlasTypeUtil.isAssignedGuid(entity.getGuid())) {
                             vertex = entityGraphMapper.createVertexWithGuid(entity, entity.getGuid());
@@ -1944,6 +1969,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private AtlasVertex getResolvedEntityVertex(EntityGraphDiscoveryContext context, AtlasEntity entity) throws AtlasBaseException {
         AtlasObjectId objectId = getAtlasObjectId(entity);
         AtlasVertex   ret      = context.getResolvedEntityVertex(entity.getGuid());
+
 
         if (ret != null) {
             context.addResolvedIdByUniqAttribs(objectId, ret);

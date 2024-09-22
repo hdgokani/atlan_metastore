@@ -107,15 +107,15 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
 
         validateLabels(entity.getLabels());
 
-        // entity is user input
+
         type.validateValue(entity, entity.getTypeName(), messages);
 
-        // set guid here
+
 
         // DMEntity and DMAttributeType are requested for update
         // by dMQualifiedNamePrefix which is not a unique attribute
         // This can return multiple entity/attribute that match this prefix vale
-        // we have to return latest entity/attribute
+      //   we have to return latest entity/attribute
         if (entity.getTypeName().equals(Constants.ATLAS_DM_ENTITY_TYPE) ||
                 entity.getTypeName().equals(Constants.ATLAS_DM_ATTRIBUTE_TYPE)){
 
@@ -123,14 +123,11 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
             if (qualifiedNamePrefix.isEmpty()){
                 throw new AtlasBaseException(AtlasErrorCode.QUALIFIED_NAME_PREFIX_NOT_EXIST);
             }
-            AtlasVertex vertex = AtlasGraphUtilsV2.findLatestEntityAttributeVerticesByType(entity.getTypeName(), qualifiedNamePrefix);
-
-            String guidFromVertex = AtlasGraphUtilsV2.getIdFromVertex(vertex);
-
-
-            if (guidFromVertex.isEmpty()){
+           // AtlasVertex vertex = AtlasGraphUtilsV2.findLatestEntityAttributeVerticesByType(entity.getTypeName(), qualifiedNamePrefix);
+            AtlasVertex vertex= discoveryContext.getResolvedEntityVertex(entity.getGuid());
+            if (vertex == null) {
                 // no entity exists with this qualifiedName, set qualifiedName and let entity be created
-                entity.setAttribute(Constants.QUALIFIED_NAME, qualifiedNamePrefix + Instant.now().toEpochMilli());
+               entity.setAttribute(Constants.QUALIFIED_NAME, qualifiedNamePrefix + "_" + RequestContext.get().getRequestTime());
                 return;
             }
 
