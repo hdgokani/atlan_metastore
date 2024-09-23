@@ -24,7 +24,6 @@ import org.apache.commons.collections.MapUtils;
 import org.mockito.internal.util.collections.ListUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
@@ -41,6 +40,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
     protected EntityGraphMapper entityGraphMapper;
     protected AtlasRelationshipStore atlasRelationshipStore;
+
 
     public AbstractModelPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, EntityGraphMapper entityGraphMapper, AtlasRelationshipStore atlasRelationshipStore) {
         this.typeRegistry = typeRegistry;
@@ -102,7 +102,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
     protected void setQualifiedName(AtlasEntity newEntity, AtlasVertex newVertex, Object value) {
         newEntity.setAttribute(QUALIFIED_NAME, value);
-        // AtlasGraphUtilsV2.setEncodedProperty(newVertex, QUALIFIED_NAME, value);
+         AtlasGraphUtilsV2.setEncodedProperty(newVertex, QUALIFIED_NAME, value);
     }
 
     protected void setName(AtlasEntity newEntity, AtlasVertex newVertex, Object value) {
@@ -143,9 +143,10 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         // get active model version
         for (AtlasRelatedObjectId modelVersionObj : existingModelVersions) {
             AtlasEntity modelVersionEntity = entityRetriever.toAtlasEntity(modelVersionObj.getGuid());
+            Date expiredAtBusinessDate = (Date) modelVersionEntity.getAttributes().get(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE);
+            Date expiredAtSystemDate = (Date) modelVersionEntity.getAttributes().get(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE);
 
-            if (modelVersionEntity.getAttributes().get(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE) != null ||
-                    modelVersionEntity.getAttributes().get(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE) != null) {
+            if (expiredAtBusinessDate.getTime() > 0 || expiredAtSystemDate.getTime() > 0) {
                 continue;
             }
             existingModelVersionObj = modelVersionObj;
@@ -220,16 +221,16 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                 GraphHelper.getTypeName(modelVersionVertex)));
         for (AtlasRelatedObjectId existingEntity : existingEntities) {
             AtlasEntity entity = entityRetriever.toAtlasEntity(existingEntity.getGuid());
-            if (
-                    (entity.getAttributes().get(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE) != null) ||
-                            (entity.getAttributes().get(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE) != null)
-            ) {
+            Date expiredAtBusinessDate = (Date) entity.getAttributes().get(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE);
+            Date expiredAtSystemDate = (Date) entity.getAttributes().get(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE);
+            if (expiredAtBusinessDate.getTime() > 0 || expiredAtSystemDate.getTime() > 0) {
                 continue;
             }
             modelVersionEntityRelation.setEnd2(new AtlasObjectId(
                     existingEntity.getGuid(),
                     existingEntity.getTypeName()
             ));
+            atlasRelationshipStore.create(modelVersionEntityRelation);
         }
     }
 
@@ -245,10 +246,9 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                         GraphHelper.getTypeName(entity)));
         for (AtlasRelatedObjectId existingEntityAttribute : existingEntityAttributes) {
             AtlasEntity entityAttribute = entityRetriever.toAtlasEntity(existingEntityAttribute.getGuid());
-            if (
-                    (entityAttribute.getAttributes().get(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE) != null) ||
-                            (entityAttribute.getAttributes().get(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE) != null)
-            ) {
+            Date expiredAtBusinessDate = (Date) entityAttribute.getAttributes().get(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE);
+            Date expiredAtSystemDate = (Date) entityAttribute.getAttributes().get(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE);
+            if (expiredAtBusinessDate.getTime() > 0 || expiredAtSystemDate.getTime() > 0) {
                 continue;
             }
             modelEntityAttributeRelation.setEnd2(
