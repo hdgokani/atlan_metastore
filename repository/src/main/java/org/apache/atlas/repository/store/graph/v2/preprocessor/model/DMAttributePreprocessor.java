@@ -28,10 +28,16 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 
 public class DMAttributePreprocessor extends AbstractModelPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractModelPreProcessor.class);
+    Set<String> allowedRelationshipNames;
 
 
     public DMAttributePreprocessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, EntityGraphMapper entityGraphMapper, AtlasRelationshipStore atlasRelationshipStore) {
         super(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore);
+        allowedRelationshipNames = new HashSet<>();
+        allowedRelationshipNames.add("dMMappedFromAttributes");
+        allowedRelationshipNames.add("dMMappedToAttributes");
+        allowedRelationshipNames.add("dMRelatedFromAttributes");
+        allowedRelationshipNames.add("dMRelatedToAttributes");
     }
 
 
@@ -201,7 +207,7 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
                     entityQualifiedNamePrefix,
                     now
             );
-            if (modelENtityResponse.getExistingEntity()!=null && modelENtityResponse.getExistingEntity().getRelationshipAttributes()!=null){
+            if (modelENtityResponse.getExistingEntity() != null && modelENtityResponse.getExistingEntity().getRelationshipAttributes() != null) {
                 existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getAttributes().get("dMAttributes");
             }
         } else {

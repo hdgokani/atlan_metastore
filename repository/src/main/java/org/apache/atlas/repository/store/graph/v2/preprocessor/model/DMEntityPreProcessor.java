@@ -25,6 +25,7 @@ import org.elasticsearch.common.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
 
@@ -33,10 +34,16 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 
 public class DMEntityPreProcessor extends AbstractModelPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractModelPreProcessor.class);
+    Set<String> allowedRelationshipNames;
 
 
     public DMEntityPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, EntityGraphMapper entityGraphMapper, AtlasRelationshipStore atlasRelationshipStore) {
         super(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore);
+        allowedRelationshipNames = new HashSet<>();
+        allowedRelationshipNames.add("dMMappedToEntities");
+        allowedRelationshipNames.add("dMMappedFromEntities");
+        allowedRelationshipNames.add("dMRelatedFromEntities");
+        allowedRelationshipNames.add("dMRelatedToEntities");
     }
 
 
@@ -57,10 +64,6 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         switch (operation) {
             case CREATE:
                 createDMEntity(entity, vertex, context);
-                // modelVersion --->modelName
-                // entity ---> modelVersion
-                // attribute ---> entityName
-
                 break;
             case UPDATE:
                 updateDMEntities(entity, vertex, context);
@@ -124,7 +127,6 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
             List<AtlasRelatedObjectId> existingEntities = (List<AtlasRelatedObjectId>) modelVersionResponse.getExistingEntity()
                     .getRelationshipAttributes()
                     .get("dMEntities");
-
             // modelVersion --- entitiesOfExistingModelVersion
             createModelVersionModelEntityRelationship(latestModelVersionVertex, existingEntities);
 
@@ -170,7 +172,6 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
                 }
 
                 if (appendAttributes.get(attribute) instanceof LinkedHashMap) {
-
                     LinkedHashMap<String, Object> attributeList = (LinkedHashMap<String, Object>) appendAttributes.get(attribute);
                     guid = (String) attributeList.get("guid");
                     if (!Strings.isEmpty(guid)) {
