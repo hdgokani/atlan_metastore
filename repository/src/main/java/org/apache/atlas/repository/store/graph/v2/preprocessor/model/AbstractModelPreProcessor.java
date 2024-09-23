@@ -21,9 +21,11 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.ListUtils;
 import org.apache.commons.collections.MapUtils;
+import org.elasticsearch.common.Strings;
 import org.mockito.internal.util.collections.ListUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
@@ -102,7 +104,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
     protected void setQualifiedName(AtlasEntity newEntity, AtlasVertex newVertex, Object value) {
         newEntity.setAttribute(QUALIFIED_NAME, value);
-         AtlasGraphUtilsV2.setEncodedProperty(newVertex, QUALIFIED_NAME, value);
+        AtlasGraphUtilsV2.setEncodedProperty(newVertex, QUALIFIED_NAME, value);
     }
 
     protected void setName(AtlasEntity newEntity, AtlasVertex newVertex, Object value) {
@@ -320,17 +322,38 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
             destination.setClassifications(new ArrayList<>()); // Set empty list if source classifications are null or empty
         }
 
-        if (source.getAppendRelationshipAttributes() != null) {
-            destination.setAppendRelationshipAttributes(new HashMap<>(source.getAppendRelationshipAttributes()));
-        } else {
-            destination.setAppendRelationshipAttributes(new HashMap<>()); // Set empty map if source append relationship attributes are null
+        Set<String> allowedRelations = allowedRelationshipsForEntityType(source.getTypeName());
+
+        Map<String, Object> destinationRelationAttributes = new HashMap<>();
+        if (source.getRelationshipAttributes() != null) {
+            Map<String, Object> sourceAttributes = source.getRelationshipAttributes();
+            for (String attribute : sourceAttributes.keySet()) {
+                if (allowedRelations.contains(attribute)) {
+                    destinationRelationAttributes.put(attribute, sourceAttributes.get(attribute));
+                }
+            }
         }
 
-        if (source.getRemoveRelationshipAttributes() != null) {
-            destination.setRemoveRelationshipAttributes(new HashMap<>(source.getRemoveRelationshipAttributes()));
-        } else {
-            destination.setRemoveRelationshipAttributes(new HashMap<>());
+        LinkedHashMap<String, Object> destinationAppendAttributes = new LinkedHashMap<>();
+        if (source.getAppendRelationshipAttributes() != null) {
+            LinkedHashMap<String, Object> sourceAttributes = (LinkedHashMap<String, Object>) source.getAppendRelationshipAttributes();
+            for (String attribute : sourceAttributes.keySet()) {
+                if (allowedRelations.contains(attribute)) {
+                    destinationAppendAttributes.put(attribute, sourceAttributes.get(attribute));
+                }
+            }
         }
+
+        LinkedHashMap<String, Object> destinationRemoveAttributes = new LinkedHashMap<>();
+        if (source.getRemoveRelationshipAttributes() != null) {
+            LinkedHashMap<String, Object> sourceAttributes = (LinkedHashMap<String, Object>) source.getRemoveRelationshipAttributes();
+            for (String attribute : sourceAttributes.keySet()) {
+                if (allowedRelations.contains(attribute)) {
+                    destinationRemoveAttributes.put(attribute, sourceAttributes.get(attribute));
+                }
+            }
+        }
+
     }
 
 
@@ -378,5 +401,24 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         latestEntity.setAttribute(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE, 0);
         AtlasGraphUtilsV2.setEncodedProperty(latestVertex, ATLAS_DM_EXPIRED_AT_SYSTEM_DATE, 0);
         AtlasGraphUtilsV2.setEncodedProperty(latestVertex, ATLAS_DM_EXPIRED_AT_BUSINESS_DATE, 0);
+    }
+
+    private Set<String> allowedRelationshipsForEntityType(String entityType) {
+        Set<String> allowedRelationships = new HashSet<>();
+        switch (entityType) {
+            case ATLAS_DM_ENTITY_TYPE:
+                allowedRelationships.add("dMMappedToEntities");
+                allowedRelationships.add("dMMappedFromEntities");
+                allowedRelationships.add("dMRelatedFromEntities");
+                allowedRelationships.add("dMRelatedToEntities");
+                break;
+            case ATLAS_DM_ATTRIBUTE_TYPE:
+                allowedRelationships.add("dMMappedFromAttributes");
+                allowedRelationships.add("dMMappedToAttributes");
+                allowedRelationships.add("dMRelatedFromAttributes");
+                allowedRelationships.add("dMRelatedToAttributes");
+                break;
+        }
+        return allowedRelationships;
     }
 }
