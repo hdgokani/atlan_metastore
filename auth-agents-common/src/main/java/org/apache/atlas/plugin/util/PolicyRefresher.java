@@ -117,7 +117,7 @@ public class PolicyRefresher extends Thread {
 			this.atlasConfig = ApplicationProperties.get();
 			this.auditRepository = new ESBasedAuditRepository(atlasConfig);
 			this.auditRepository.start();
-			this.enableDeltaBasedRefresh = this.atlasConfig.getBoolean(DELTA_BASED_REFRESH, false);
+			this.enableDeltaBasedRefresh = false; // this.atlasConfig.getBoolean(DELTA_BASED_REFRESH, false);
 		} catch (AtlasException e) {
 			LOG.error("PolicyDelta: Error while reading atlas configuration", e);
 			this.enableDeltaBasedRefresh = false;
