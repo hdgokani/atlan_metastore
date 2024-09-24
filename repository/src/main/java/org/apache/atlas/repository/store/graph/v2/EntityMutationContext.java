@@ -101,6 +101,9 @@ public class EntityMutationContext {
         entitiesUpdatedWithAppendRelationshipAttribute.remove(entity);
     }
 
+    public void removeUpdatedWithDeleteRelationshipAttributes(AtlasEntity entity){
+        entitiesUpdatedWithRemoveRelationshipAttribute.remove(entity);
+    }
 
     public void addEntityToRestore(AtlasVertex vertex) {
         if (entitiesToRestore == null) {

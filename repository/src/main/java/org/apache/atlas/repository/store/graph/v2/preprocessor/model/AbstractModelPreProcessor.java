@@ -148,7 +148,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
             Date expiredAtBusinessDate = (Date) modelVersionEntity.getAttributes().get(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE);
             Date expiredAtSystemDate = (Date) modelVersionEntity.getAttributes().get(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE);
 
-            if (expiredAtBusinessDate.getTime() > 0 || expiredAtSystemDate.getTime() > 0) {
+            if (expiredAtBusinessDate != null && expiredAtBusinessDate.getTime() > 0 || expiredAtSystemDate != null && expiredAtSystemDate.getTime() > 0) {
                 continue;
             }
             existingModelVersionObj = modelVersionObj;
@@ -225,7 +225,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
             AtlasEntity entity = entityRetriever.toAtlasEntity(existingEntity.getGuid());
             Date expiredAtBusinessDate = (Date) entity.getAttributes().get(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE);
             Date expiredAtSystemDate = (Date) entity.getAttributes().get(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE);
-            if (expiredAtBusinessDate.getTime() > 0 || expiredAtSystemDate.getTime() > 0) {
+            if (expiredAtBusinessDate != null && expiredAtBusinessDate.getTime() > 0 || expiredAtSystemDate != null && expiredAtSystemDate.getTime() > 0) {
                 continue;
             }
             modelVersionEntityRelation.setEnd2(new AtlasObjectId(
@@ -250,7 +250,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
             AtlasEntity entityAttribute = entityRetriever.toAtlasEntity(existingEntityAttribute.getGuid());
             Date expiredAtBusinessDate = (Date) entityAttribute.getAttributes().get(ATLAS_DM_EXPIRED_AT_SYSTEM_DATE);
             Date expiredAtSystemDate = (Date) entityAttribute.getAttributes().get(ATLAS_DM_EXPIRED_AT_BUSINESS_DATE);
-            if (expiredAtBusinessDate.getTime() > 0 || expiredAtSystemDate.getTime() > 0) {
+            if (expiredAtBusinessDate != null && expiredAtBusinessDate.getTime() > 0 || expiredAtSystemDate != null && expiredAtSystemDate.getTime() > 0) {
                 continue;
             }
             modelEntityAttributeRelation.setEnd2(
@@ -403,7 +403,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         AtlasGraphUtilsV2.setEncodedProperty(latestVertex, ATLAS_DM_EXPIRED_AT_BUSINESS_DATE, 0);
     }
 
-    private Set<String> allowedRelationshipsForEntityType(String entityType) {
+    protected Set<String> allowedRelationshipsForEntityType(String entityType) {
         Set<String> allowedRelationships = new HashSet<>();
         switch (entityType) {
             case ATLAS_DM_ENTITY_TYPE:
