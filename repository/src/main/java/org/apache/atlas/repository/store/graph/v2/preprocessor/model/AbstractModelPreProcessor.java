@@ -118,6 +118,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
     protected ModelResponse createEntity(String qualifiedName, String entityType, String namespace, EntityMutationContext context) throws AtlasBaseException {
         String guid = UUID.randomUUID().toString();
         AtlasEntity entity = new AtlasEntity(entityType);
+        entity.setAttribute(NAME, qualifiedName.substring(qualifiedName.lastIndexOf('/') + 1));
         entity.setAttribute(VERSION_PROPERTY_KEY, 0);
         entity.setAttribute(QUALIFIED_NAME, qualifiedName);
         entity.setAttribute(ATLAS_DM_NAMESPACE, namespace);
