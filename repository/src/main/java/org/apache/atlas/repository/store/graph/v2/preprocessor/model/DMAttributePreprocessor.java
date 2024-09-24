@@ -20,24 +20,16 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.isNameInvalid;
 
 public class DMAttributePreprocessor extends AbstractModelPreProcessor {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractModelPreProcessor.class);
-    Set<String> allowedRelationshipNames;
-
+    private static final Logger LOG = LoggerFactory.getLogger(DMAttributePreprocessor.class);
 
     public DMAttributePreprocessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, EntityGraphMapper entityGraphMapper, AtlasRelationshipStore atlasRelationshipStore) {
         super(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore);
-        allowedRelationshipNames = new HashSet<>();
-        allowedRelationshipNames.add("dMMappedFromAttributes");
-        allowedRelationshipNames.add("dMMappedToAttributes");
-        allowedRelationshipNames.add("dMRelatedFromAttributes");
-        allowedRelationshipNames.add("dMRelatedToAttributes");
     }
 
 
@@ -162,11 +154,7 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
                         modelGuid,
                         entityRetriever.getEntityVertex(modelGuid));
 
-        /***
-         * debug why its already not there in context
-         */
-        resolveReferences(entityAttribute, context);
-
+        entityAttribute.setRelationshipAttributes(processRelationshipAttributesForAttribute(entityAttribute, entityAttribute.getRelationshipAttributes(), context));
     }
 
     private void updateDMAttributes(AtlasEntity entityAttribute, AtlasVertex vertexAttribute, EntityMutationContext context) throws AtlasBaseException {
@@ -174,208 +162,18 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
 
         // case when a mapping is added
         if (entityAttribute.getAppendRelationshipAttributes() != null) {
-            Map<String, Object> appendRelationshipAttributes = processAppendRemoveRelationshipAttributes(entityAttribute, entityAttribute.getAppendRelationshipAttributes(), context);
+            Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForAttribute(entityAttribute, entityAttribute.getAppendRelationshipAttributes(), context);
             modelResponseParentEntity.getCopyEntity().setAppendRelationshipAttributes(appendRelationshipAttributes);
             context.removeUpdatedWithRelationshipAttributes(entityAttribute);
             context.setUpdatedWithRelationshipAttributes(modelResponseParentEntity.getCopyEntity());
         }
 
         if (entityAttribute.getRemoveRelationshipAttributes() != null) {
-            Map<String, Object> appendRelationshipAttributes = processAppendRemoveRelationshipAttributes(entityAttribute, entityAttribute.getAppendRelationshipAttributes(), context);
+            Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForAttribute(entityAttribute, entityAttribute.getAppendRelationshipAttributes(), context);
             modelResponseParentEntity.getCopyEntity().setRemoveRelationshipAttributes(appendRelationshipAttributes);
             context.removeUpdatedWithDeleteRelationshipAttributes(entityAttribute);
             context.setUpdatedWithRemoveRelationshipAttributes(modelResponseParentEntity.getCopyEntity());
         }
     }
 
-    private Map<String, Object> processAppendRemoveRelationshipAttributes(AtlasEntity entity, Map<String, Object> relationshipAttributes, EntityMutationContext context) throws AtlasBaseException {
-        Map<String, Object> appendAttributesDestination = new HashMap<>();
-        if (relationshipAttributes != null) {
-            Map<String, Object> appendAttributesSource = (Map<String, Object>) relationshipAttributes;
-            ;
-            ModelResponse modelResponseRelatedEntity = null;
-            String guid = "";
-            Set<String> allowedRelations = allowedRelationshipsForEntityType(entity.getTypeName());
-
-            for (String attribute : appendAttributesSource.keySet()) {
-
-                if (appendAttributesSource.get(attribute) instanceof List) {
-
-                    if (!allowedRelations.contains(attribute)) {
-                        continue;
-                    }
-                    List<Map<String, Object>> destList = new ArrayList<>();
-                    Map<String, Object> destMap = null;
-
-                    List<Map<String, Object>> attributeList = (List<Map<String, Object>>) appendAttributesSource.get(attribute);
-
-                    for (Map<String, Object> relationAttribute : attributeList) {
-                        guid = (String) relationAttribute.get("guid");
-
-                        // update end2
-                        modelResponseRelatedEntity = updateDMAttribute(
-                                entityRetriever.toAtlasEntity(guid),
-                                entityRetriever.getEntityVertex(guid),
-                                context);
-                        //relationAttribute.put("guid", modelResponseRelatedEntity.getCopyEntity());
-                        destMap = new HashMap<>(relationAttribute);
-                        guid = modelResponseRelatedEntity.getCopyEntity().getGuid();
-                        destMap.put("guid", guid);
-                        //destMap.put(QUALIFIED_NAME, )
-                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getCopyVertex());
-                        destList.add(destMap);
-                    }
-                    appendAttributesDestination.put(attribute, destList);
-                } else {
-                    if (appendAttributesSource.get(attribute) instanceof Map) {
-                        LinkedHashMap<String, Object> attributeList = (LinkedHashMap<String, Object>) appendAttributesSource.get(attribute);
-                        guid = (String) attributeList.get("guid");
-
-                        // update end2
-                        modelResponseRelatedEntity = updateDMAttribute(
-                                entityRetriever.toAtlasEntity(guid),
-                                entityRetriever.getEntityVertex(guid),
-                                context);
-
-                        Map<String, Object> destMap = new HashMap<>(attributeList);
-                        destMap.put("guid", guid);
-                        guid = modelResponseRelatedEntity.getCopyEntity().getGuid();
-                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getCopyVertex());
-                        appendAttributesDestination.put(attribute, destMap);
-                    }
-                }
-            }
-        }
-        return appendAttributesDestination;
-    }
-
-
-    private ModelResponse updateDMAttribute(AtlasEntity entityAttribute, AtlasVertex vertexAttribute, EntityMutationContext context) throws AtlasBaseException {
-        if (!entityAttribute.getTypeName().equals(ATLAS_DM_ATTRIBUTE_TYPE)) {
-            return new ModelResponse(entityAttribute, vertexAttribute);
-        }
-
-        String attributeName = (String) entityAttribute.getAttribute(NAME);
-
-        if (StringUtils.isEmpty(attributeName) || isNameInvalid(attributeName)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
-        }
-
-        long now = RequestContext.get().getRequestTime();
-
-
-        // get entity qualifiedName with qualifiedNamePrefix
-        String attributeQualifiedNamePrefix = (String) entityAttribute.getAttributes().get(ATLAS_DM_QUALIFIED_NAME_PREFIX);
-        int lastIndex = attributeQualifiedNamePrefix.lastIndexOf("/");
-        String entityQualifiedNamePrefix = attributeQualifiedNamePrefix.substring(0, lastIndex);
-        String namespace = (String) entityAttribute.getAttributes().get(ATLAS_DM_NAMESPACE);
-        String modelVersion = "v2";
-
-        ModelResponse modelENtityResponse = null;
-        AtlasVertex latestEntityVertex = AtlasGraphUtilsV2.findLatestEntityAttributeVerticesByType(ATLAS_DM_ENTITY_TYPE, entityQualifiedNamePrefix);
-
-        // get model qualifiedName with qualifiedNamePrefix
-        lastIndex = entityQualifiedNamePrefix.lastIndexOf("/");
-        String modelQualifiedName = entityQualifiedNamePrefix.substring(0, lastIndex);
-        Map<String, Object> attrValues = new HashMap<>();
-        attrValues.put(QUALIFIED_NAME, modelQualifiedName);
-
-        String modelGuid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(
-                typeRegistry.getEntityTypeByName(ATLAS_DM_DATA_MODEL),
-                attrValues);
-
-        List<AtlasRelatedObjectId> existingAttributes = null;
-
-        if (latestEntityVertex != null) {
-            modelENtityResponse = replicateModelEntity(
-                    entityRetriever.toAtlasEntity(latestEntityVertex),
-                    latestEntityVertex,
-                    entityQualifiedNamePrefix,
-                    now
-            );
-            if (modelENtityResponse.getExistingEntity() != null && modelENtityResponse.getExistingEntity().getRelationshipAttributes() != null) {
-                existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getAttributes().get("dMAttributes");
-            }
-        } else {
-            modelENtityResponse = createEntity(
-                    attributeQualifiedNamePrefix + "_" + now,
-                    ATLAS_DM_ATTRIBUTE_TYPE,
-                    namespace,
-                    context
-            );
-        }
-
-        ModelResponse modelVersionResponse = replicateModelVersion(modelGuid, modelQualifiedName, now);
-
-        if (modelVersionResponse.getCopyEntity() == null) {
-            modelVersionResponse = createEntity(
-                    (modelQualifiedName + "/" + modelVersion),
-                    ATLAS_DM_VERSION_TYPE,
-                    namespace,
-                    context);
-        }
-        AtlasEntity latestModelVersionEntity = modelVersionResponse.getCopyEntity();
-        AtlasVertex latestModelVersionVertex = modelVersionResponse.getCopyVertex();
-
-        List<AtlasRelatedObjectId> existingEntities = null;
-
-        if (modelVersionResponse.getExistingEntity() != null && modelVersionResponse.getExistingEntity().getRelationshipAttributes() != null) {
-            existingEntities = (List<AtlasRelatedObjectId>) modelVersionResponse.getExistingEntity().getRelationshipAttributes().get("dMEntities");
-        }
-
-        AtlasEntity existingEntityAttributeWithExtInfo = entityRetriever.toAtlasEntityWithExtInfo(entityAttribute.getGuid(), false).getEntity();
-
-        // create attribute a1 ---> a1'
-        ModelResponse modelAttributeResponse = replicateModelAttribute(
-                existingEntityAttributeWithExtInfo,
-                entityRetriever.getEntityVertex(entityAttribute.getGuid()),
-                attributeQualifiedNamePrefix,
-                now);
-
-        AtlasVertex copyAttributeVertex = modelAttributeResponse.getCopyVertex();
-        AtlasEntity copyAttribute = modelAttributeResponse.getCopyEntity();
-        applyDiffs(entityAttribute, copyAttribute, ATLAS_DM_ATTRIBUTE_TYPE);
-        unsetExpiredDates(copyAttribute, copyAttributeVertex);
-
-        // create model-modelVersion relationship
-        createModelModelVersionRelation(modelGuid, latestModelVersionEntity.getGuid());
-
-        // create modelVersion-entity relationship [with new entity]
-        createModelVersionModelEntityRelationship(latestModelVersionVertex, modelENtityResponse.getCopyVertex());
-
-        // create modelVersion-entity relationship [with existing entities]
-        createModelVersionModelEntityRelationship(latestModelVersionVertex, existingEntities);
-
-
-        // create entity - attribute relation [with new attribute]
-        createModelEntityModelAttributeRelation(modelENtityResponse.getCopyVertex(), copyAttributeVertex);
-
-        // create entity - attribute relation [with existing attributes]
-        createModelEntityModelAttributeRelation(modelENtityResponse.getCopyVertex(), existingAttributes);
-
-        AtlasEntityType attributeType = typeRegistry.getEntityTypeByName(entityAttribute.getTypeName());
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(modelENtityResponse.getCopyEntity().getTypeName());
-        AtlasEntityType modelVersionType = typeRegistry.getEntityTypeByName(latestModelVersionEntity.getTypeName());
-
-        context.addCreated(copyAttribute.getGuid(), copyAttribute, attributeType, copyAttributeVertex);
-        context.addCreated(modelENtityResponse.getCopyEntity().getGuid(), modelENtityResponse.getCopyEntity(),
-                entityType, modelENtityResponse.getCopyVertex());
-        context.addCreated(latestModelVersionEntity.getGuid(),
-                latestModelVersionEntity, modelVersionType, latestModelVersionVertex);
-
-        context.removeUpdated(entityAttribute.getGuid(), entityAttribute,
-                entityType, vertexAttribute);
-
-        // resolve references
-        context.getDiscoveryContext().
-                addResolvedGuid(
-                        modelGuid,
-                        entityRetriever.getEntityVertex(modelGuid));
-
-        /***
-         * debug why its already not there in context
-         */
-        resolveReferences(entityAttribute, context);
-        return  new ModelResponse(copyAttribute, copyAttributeVertex);
-    }
 }
