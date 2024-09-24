@@ -105,7 +105,7 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
         } else {
             modelENtityResponse = createEntity(
                     attributeQualifiedNamePrefix + "_" + now,
-                    ATLAS_DM_ATTRIBUTE_TYPE,
+                    ATLAS_DM_ENTITY_TYPE,
                     namespace,
                     context
             );

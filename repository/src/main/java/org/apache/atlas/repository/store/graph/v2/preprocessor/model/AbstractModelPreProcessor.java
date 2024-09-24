@@ -330,12 +330,13 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
     }
 
     private void copyRelationshipAttributes(Map<String, Object> sourceAttributes, AtlasEntity destination, String entityType) {
-        if (MapUtils.isNotEmpty(sourceAttributes)) {
+        if (MapUtils.isEmpty(sourceAttributes)) {
             return;
         }
 
         Map<String, Object> destinationAttributes = new HashMap<>();
         Set<String> allowedRelations = allowedRelationshipsForEntityType(entityType);
+
         for (String attribute : sourceAttributes.keySet()) {
             if (allowedRelations.contains(attribute)) {
                 destinationAttributes.put(attribute, sourceAttributes.get(attribute));
@@ -404,6 +405,14 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                 allowedRelationships.add("dMMappedToAttributes");
                 allowedRelationships.add("dMRelatedFromAttributes");
                 allowedRelationships.add("dMRelatedToAttributes");
+                break;
+            case ATLAS_DM_ENTITY_ASSOCIATION_TYPE:
+                allowedRelationships.add("dMEntityTo");
+                allowedRelationships.add("dMEntityFrom");
+                break;
+            case ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE:
+                allowedRelationships.add("dMAttributeTo");
+                allowedRelationships.add("dMAttributeFrom");
                 break;
         }
         return allowedRelationships;
