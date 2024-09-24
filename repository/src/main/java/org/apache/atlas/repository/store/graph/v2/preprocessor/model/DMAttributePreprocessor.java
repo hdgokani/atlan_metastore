@@ -58,7 +58,7 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
                 createDMAttribute(entity, vertex, context);
                 break;
             case UPDATE:
-                updateDMAttribute(entity, vertex, context);
+                updateDMAttributes(entity, vertex, context);
         }
     }
 
@@ -162,11 +162,97 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
                         modelGuid,
                         entityRetriever.getEntityVertex(modelGuid));
 
+        /***
+         * debug why its already not there in context
+         */
+        resolveReferences(entityAttribute, context);
+
     }
 
-    private void updateDMAttribute(AtlasEntity entityAttribute, AtlasVertex vertexAttribute, EntityMutationContext context) throws AtlasBaseException {
+    private void updateDMAttributes(AtlasEntity entityAttribute, AtlasVertex vertexAttribute, EntityMutationContext context) throws AtlasBaseException {
+        ModelResponse modelResponseParentEntity = updateDMAttribute(entityAttribute, vertexAttribute, context);
+
+        // case when a mapping is added
+        if (entityAttribute.getAppendRelationshipAttributes() != null) {
+            Map<String, Object> appendRelationshipAttributes = processAppendRemoveRelationshipAttributes(entityAttribute, entityAttribute.getAppendRelationshipAttributes(), context);
+            modelResponseParentEntity.getCopyEntity().setAppendRelationshipAttributes(appendRelationshipAttributes);
+            context.removeUpdatedWithRelationshipAttributes(entityAttribute);
+            context.setUpdatedWithRelationshipAttributes(modelResponseParentEntity.getCopyEntity());
+        }
+
+        if (entityAttribute.getRemoveRelationshipAttributes() != null) {
+            Map<String, Object> appendRelationshipAttributes = processAppendRemoveRelationshipAttributes(entityAttribute, entityAttribute.getAppendRelationshipAttributes(), context);
+            modelResponseParentEntity.getCopyEntity().setRemoveRelationshipAttributes(appendRelationshipAttributes);
+            context.removeUpdatedWithDeleteRelationshipAttributes(entityAttribute);
+            context.setUpdatedWithRemoveRelationshipAttributes(modelResponseParentEntity.getCopyEntity());
+        }
+    }
+
+    private Map<String, Object> processAppendRemoveRelationshipAttributes(AtlasEntity entity, Map<String, Object> relationshipAttributes, EntityMutationContext context) throws AtlasBaseException {
+        Map<String, Object> appendAttributesDestination = new HashMap<>();
+        if (relationshipAttributes != null) {
+            Map<String, Object> appendAttributesSource = (Map<String, Object>) relationshipAttributes;
+            ;
+            ModelResponse modelResponseRelatedEntity = null;
+            String guid = "";
+            Set<String> allowedRelations = allowedRelationshipsForEntityType(entity.getTypeName());
+
+            for (String attribute : appendAttributesSource.keySet()) {
+
+                if (appendAttributesSource.get(attribute) instanceof List) {
+
+                    if (!allowedRelations.contains(attribute)) {
+                        continue;
+                    }
+                    List<Map<String, Object>> destList = new ArrayList<>();
+                    Map<String, Object> destMap = null;
+
+                    List<Map<String, Object>> attributeList = (List<Map<String, Object>>) appendAttributesSource.get(attribute);
+
+                    for (Map<String, Object> relationAttribute : attributeList) {
+                        guid = (String) relationAttribute.get("guid");
+
+                        // update end2
+                        modelResponseRelatedEntity = updateDMAttribute(
+                                entityRetriever.toAtlasEntity(guid),
+                                entityRetriever.getEntityVertex(guid),
+                                context);
+                        //relationAttribute.put("guid", modelResponseRelatedEntity.getCopyEntity());
+                        destMap = new HashMap<>(relationAttribute);
+                        guid = modelResponseRelatedEntity.getCopyEntity().getGuid();
+                        destMap.put("guid", guid);
+                        //destMap.put(QUALIFIED_NAME, )
+                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getCopyVertex());
+                        destList.add(destMap);
+                    }
+                    appendAttributesDestination.put(attribute, destList);
+                } else {
+                    if (appendAttributesSource.get(attribute) instanceof Map) {
+                        LinkedHashMap<String, Object> attributeList = (LinkedHashMap<String, Object>) appendAttributesSource.get(attribute);
+                        guid = (String) attributeList.get("guid");
+
+                        // update end2
+                        modelResponseRelatedEntity = updateDMAttribute(
+                                entityRetriever.toAtlasEntity(guid),
+                                entityRetriever.getEntityVertex(guid),
+                                context);
+
+                        Map<String, Object> destMap = new HashMap<>(attributeList);
+                        destMap.put("guid", guid);
+                        guid = modelResponseRelatedEntity.getCopyEntity().getGuid();
+                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getCopyVertex());
+                        appendAttributesDestination.put(attribute, destMap);
+                    }
+                }
+            }
+        }
+        return appendAttributesDestination;
+    }
+
+
+    private ModelResponse updateDMAttribute(AtlasEntity entityAttribute, AtlasVertex vertexAttribute, EntityMutationContext context) throws AtlasBaseException {
         if (!entityAttribute.getTypeName().equals(ATLAS_DM_ATTRIBUTE_TYPE)) {
-            return;
+            return new ModelResponse(entityAttribute, vertexAttribute);
         }
 
         String attributeName = (String) entityAttribute.getAttribute(NAME);
@@ -285,5 +371,11 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
                 addResolvedGuid(
                         modelGuid,
                         entityRetriever.getEntityVertex(modelGuid));
+
+        /***
+         * debug why its already not there in context
+         */
+        resolveReferences(entityAttribute, context);
+        return  new ModelResponse(copyAttribute, copyAttributeVertex);
     }
 }

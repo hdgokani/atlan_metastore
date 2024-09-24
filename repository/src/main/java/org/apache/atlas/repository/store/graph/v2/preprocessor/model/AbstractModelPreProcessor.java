@@ -176,7 +176,6 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         AtlasVertex copyEntityVertex = entityGraphMapper.createVertex(existingEntity);
         AtlasEntity copyEntity = entityRetriever.toAtlasEntity(copyEntityVertex);
         copyAllAttributes(existingEntity, copyEntity, epoch);
-        // copyEntity.setRelationshipAttributes(entity.getRelationshipAttributes());
         setModelDates(copyEntity, copyEntityVertex, epoch);
         String entityQualifiedName = entityQualifiedNamePrefix + "_" + epoch;
         setQualifiedName(copyEntity, copyEntityVertex, entityQualifiedName);
@@ -420,5 +419,36 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                 break;
         }
         return allowedRelationships;
+    }
+    protected void resolveReferences(AtlasEntity entity, EntityMutationContext context) {
+        if (entity.getRelationshipAttributes() != null) {
+            Map<String, Object> appendAttributesSource = (Map<String, Object>) entity.getRelationshipAttributes();
+            ModelResponse modelResponseRelatedEntity = null;
+            String guid = "";
+            Set<String> allowedRelations = allowedRelationshipsForEntityType(entity.getTypeName());
+
+            for (String attribute : appendAttributesSource.keySet()) {
+
+                if (appendAttributesSource.get(attribute) instanceof List) {
+
+                    if (!allowedRelations.contains(attribute)) {
+                        continue;
+                    }
+                    List<Map<String, Object>> attributeList = (List<Map<String, Object>>) appendAttributesSource.get(attribute);
+
+                    for (Map<String, Object> relationAttribute : attributeList) {
+                        guid = (String) relationAttribute.get("guid");
+                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getCopyVertex());
+                    }
+                } else {
+                    if (appendAttributesSource.get(attribute) instanceof Map) {
+                        LinkedHashMap<String, Object> attributeList = (LinkedHashMap<String, Object>) appendAttributesSource.get(attribute);
+                        guid = (String) attributeList.get("guid");
+                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getCopyVertex());
+                    }
+                }
+            }
+        }
+
     }
 }

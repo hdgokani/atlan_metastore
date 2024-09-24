@@ -9,7 +9,6 @@ import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
-import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -151,7 +150,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         }
 
         if (entity.getRemoveRelationshipAttributes() != null) {
-            Map<String, Object> appendRelationshipAttributes = processAppendRemoveRelationshipAttributes(entity, entity.getAppendRelationshipAttributes(), context);
+            Map<String, Object> appendRelationshipAttributes = processAppendRemoveRelationshipAttributes(entity, entity.getRemoveRelationshipAttributes(), context);
             modelResponseParentEntity.getCopyEntity().setRemoveRelationshipAttributes(appendRelationshipAttributes);
             context.removeUpdatedWithDeleteRelationshipAttributes(entity);
             context.setUpdatedWithRemoveRelationshipAttributes(modelResponseParentEntity.getCopyEntity());
@@ -314,38 +313,6 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         resolveReferences(entity, context);
 
         return new ModelResponse(copyEntity, copyEntityVertex);
-    }
-
-    private void resolveReferences(AtlasEntity entity, EntityMutationContext context) {
-        if (entity.getRelationshipAttributes() != null) {
-            Map<String, Object> appendAttributesSource = (Map<String, Object>) entity.getRelationshipAttributes();
-            ModelResponse modelResponseRelatedEntity = null;
-            String guid = "";
-            Set<String> allowedRelations = allowedRelationshipsForEntityType(entity.getTypeName());
-
-            for (String attribute : appendAttributesSource.keySet()) {
-
-                if (appendAttributesSource.get(attribute) instanceof List) {
-
-                    if (!allowedRelations.contains(attribute)) {
-                        continue;
-                    }
-                    List<Map<String, Object>> attributeList = (List<Map<String, Object>>) appendAttributesSource.get(attribute);
-
-                    for (Map<String, Object> relationAttribute : attributeList) {
-                        guid = (String) relationAttribute.get("guid");
-                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getCopyVertex());
-                    }
-                } else {
-                    if (appendAttributesSource.get(attribute) instanceof Map) {
-                        LinkedHashMap<String, Object> attributeList = (LinkedHashMap<String, Object>) appendAttributesSource.get(attribute);
-                        guid = (String) attributeList.get("guid");
-                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getCopyVertex());
-                    }
-                }
-            }
-        }
-
     }
 }
 
