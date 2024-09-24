@@ -214,8 +214,10 @@ public final class Constants {
 
     public static final String ATLAS_DM_VERSION_TYPE  = "DMVersion";
 
-    public static final String ATLAS_DM_QUALIFIED_NAME_PREFIX = "dMQualifiedNamePrefix";
+    public static final String ATLAS_DM_ENTITY_ASSOCIATION_TYPE= "DMEntityAssociation";
+    public static final String ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE= "DMAttributeAssociation";
 
+    public static final String ATLAS_DM_QUALIFIED_NAME_PREFIX = "dMQualifiedNamePrefix";
     public static final String ATLAS_DM_NAMESPACE = "dMDataModelNamespace";
     public static  final String ATLAS_DM_EXPIRED_AT_SYSTEM_DATE = "dMDataModelExpiredAtSystemDate";
     public static  final String ATLAS_DM_EXPIRED_AT_BUSINESS_DATE = "dMDataModelExpiredAtBusinessDate";
