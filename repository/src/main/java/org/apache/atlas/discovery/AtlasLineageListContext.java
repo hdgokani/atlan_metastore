@@ -25,6 +25,7 @@ public final class AtlasLineageListContext {
     private boolean                             hasMoreUpdated;
     private String                              lineageType = "DatasetProcessLineage";
     private Boolean                             immediateNeighbours;
+    private String                              lineageType = "DatasetProcessLineage";
 
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageListRequest.getGuid();

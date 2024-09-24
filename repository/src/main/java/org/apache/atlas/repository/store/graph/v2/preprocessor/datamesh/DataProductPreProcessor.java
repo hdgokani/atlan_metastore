@@ -3,6 +3,9 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -101,6 +104,12 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
 
+        // Check if authorized to create entities
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
+                "create entity: type=", entity.getTypeName());
+
+        entity.setCustomAttributes(customAttributes);
+
         productExists(productName, parentDomainQualifiedName, null);
 
         createDaapVisibilityPolicy(entity, vertex);
@@ -119,6 +128,9 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         }
 
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
+        entity.setAttribute(QUALIFIED_NAME, vertexQnName);
+        // Check if authorized to update entities
+        AtlasAuthorizationUtils.verifyUpdateEntityAccess(typeRegistry, new AtlasEntityHeader(entity),"update entity: type=" + entity.getTypeName());
 
         AtlasEntity storedProduct = entityRetriever.toAtlasEntity(vertex);
         AtlasRelatedObjectId currentParentDomainObjectId = (AtlasRelatedObjectId) storedProduct.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE);
@@ -166,7 +178,6 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             if (!productCurrentName.equals(productNewName)) {
                 productExists(productNewName, currentParentDomainQualifiedName, storedProduct.getGuid());
             }
-            entity.setAttribute(QUALIFIED_NAME, vertexQnName);
         }
 
         if (isDaapVisibilityChanged) {
@@ -190,6 +201,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         try {
             String productName = (String) product.getAttribute(NAME);
+            LinkedHashMap<String, Object> updatedAttributes = new LinkedHashMap<>();
 
             LOG.info("Moving dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
 
@@ -203,8 +215,12 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             }
 
             product.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
-            product.setAttribute(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
+            product.setAttribute(PreProcessorUtils.PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
             product.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
+
+            updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
+            updatedAttributes.put(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
+            updatedAttributes.put(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
 
             Iterator<AtlasEdge> existingParentEdges = productVertex.getEdges(AtlasEdgeDirection.IN, DATA_PRODUCT_EDGE_LABEL).iterator();
             if (existingParentEdges.hasNext()) {
@@ -216,7 +232,13 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             String updatedResource = "entity:"+ updatedQualifiedName;
             this.updatedPolicyResources.put(currentResource, updatedResource);
 
+            for (Map.Entry<String, Object> entry : updatedAttributes.entrySet()) {
+                RequestContext.get().getDifferentialEntitiesMap()
+                        .get(product.getGuid()).setAttribute(entry.getKey(), entry.getValue());
+            }
+
             LOG.info("Moved dataProduct {} to Domain {}", productName, targetDomainQualifiedName);
+
 
         } finally {
             RequestContext.get().endMetricRecord(recorder);

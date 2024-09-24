@@ -56,6 +56,7 @@ public final class Constants {
     public static final String GUID_PROPERTY_KEY                = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "guid");
     public static final String RELATIONSHIP_GUID_PROPERTY_KEY   = encodePropertyKey(RELATIONSHIP_PROPERTY_KEY_PREFIX + GUID_PROPERTY_KEY);
     public static final String HISTORICAL_GUID_PROPERTY_KEY     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "historicalGuids");
+    public static final String QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "qualifiedNameHierarchy");
     public static final String FREETEXT_REQUEST_HANDLER         = "/freetext";
     public static final String TERMS_REQUEST_HANDLER            = "/terms";
     public static final String ES_API_ALIASES                   = "/_aliases";
@@ -156,6 +157,10 @@ public final class Constants {
     public static final String INPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.inputPortDataProducts";
     public static final String OUTPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.outputPortDataProducts";
 
+    public static final String UD_RELATIONSHIP_EDGE_LABEL = "__Referenceable.userDefRelationshipTo";
+    public static final String UD_RELATIONSHIP_END_NAME_FROM = "userDefRelationshipFrom";
+    public static final String UD_RELATIONSHIP_END_NAME_TO = "userDefRelationshipTo";
+
     /**
      * SQL property keys.
      */
@@ -175,6 +180,8 @@ public final class Constants {
     public static final String POLICY_ENTITY_TYPE         = "AuthPolicy";
     public static final String SERVICE_ENTITY_TYPE        = "AuthService";
     public static final String REL_POLICY_TO_ACCESS_CONTROL  = "access_control_policies";
+
+    public static final String POLICY_SERVICE_NAME_ABAC  = "atlas_abac";
 
     /**
      * Resource
@@ -262,6 +269,7 @@ public final class Constants {
     public static final String INDEX_PREFIX = "janusgraph_";
 
     public static final String VERTEX_INDEX_NAME = INDEX_PREFIX + VERTEX_INDEX;
+    public static final String EDGE_INDEX_NAME = INDEX_PREFIX + EDGE_INDEX;
 
     public static final String NAME                                    = "name";
     public static final String QUALIFIED_NAME                          = "qualifiedName";
@@ -271,6 +279,7 @@ public final class Constants {
     public static final String INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH  = "atlas.graph.index.search.tags.max-query-str-length";
     public static final String INDEX_SEARCH_VERTEX_PREFIX_PROPERTY     = "atlas.graph.index.search.vertex.prefix";
     public static final String INDEX_SEARCH_VERTEX_PREFIX_DEFAULT      = "$v$";
+    public static final String DOMAIN_GUIDS                            = "domainGUIDs";
 
     public static final String ATTR_TENANT_ID = "tenantId";
     public static final String DEFAULT_TENANT_ID = "default";
@@ -351,7 +360,7 @@ public final class Constants {
     public static final String TASK_TIME_TAKEN_IN_SECONDS   = encodePropertyKey(TASK_PREFIX + "timeTakenInSeconds");
     public static final String TASK_CLASSIFICATION_ID       = encodePropertyKey(TASK_PREFIX + "classificationId");
     public static final String TASK_ENTITY_GUID             = encodePropertyKey(TASK_PREFIX + "entityGuid");
-    public static final String TASK_CLASSIFICATION_NAME    = encodePropertyKey(TASK_PREFIX + "classificationName");
+    public static final String TASK_CLASSIFICATION_TYPENAME = encodePropertyKey(TASK_PREFIX + "classificationTypeName");
     public static final String ACTIVE_STATE_VALUE           = "ACTIVE";
 
     /**
@@ -370,10 +379,11 @@ public final class Constants {
     public static final String IMPALA_SOURCE      = "impala";
     public static final String STORM_SOURCE       = "storm";
     public static final String FILE_SPOOL_SOURCE  = "file_spool";
+    public static final String DOMAIN_GUIDS_ATTR = "domainGUIDs";
     public static final String ASSET_POLICY_GUIDS  = "assetPolicyGUIDs";
+
+    public static final String NON_COMPLIANT_ASSET_POLICY_GUIDS  = "nonCompliantAssetPolicyGUIDs";
     public static final String ASSET_POLICIES_COUNT  = "assetPoliciesCount";
-
-
 
     /*
      * All supported file-format extensions for Bulk Imports through file upload
