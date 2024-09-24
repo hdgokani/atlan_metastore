@@ -1963,7 +1963,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 preProcessors.add(new DMEntityAssociationPreProcessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
                 break;
             case ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE:
-                preProcessors.add(new DMEntityAssociationPreProcessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
+                preProcessors.add(new DMAttributePreprocessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
         }
 
         //  The default global pre-processor for all AssetTypes
