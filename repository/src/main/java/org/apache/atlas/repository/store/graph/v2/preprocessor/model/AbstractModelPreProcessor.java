@@ -124,6 +124,9 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         entity.setAttribute(ATLAS_DM_NAMESPACE, namespace);
         entity.setAttribute(ATLAS_DM_BUSINESS_DATE, RequestContext.get().getRequestTime());
         entity.setAttribute(ATLAS_DM_SYSTEM_DATE, RequestContext.get().getRequestTime());
+        if (entityType.equals(ATLAS_DM_ENTITY_TYPE) || entityType.equals(ATLAS_DM_ATTRIBUTE_TYPE)) {
+            entity.setAttribute(ATLAS_DM_QUALIFIED_NAME_PREFIX, qualifiedName.substring(0, qualifiedName.lastIndexOf('/')));
+        }
         AtlasVertex versionVertex = entityGraphMapper.createVertexWithGuid(entity, guid);
         context.getDiscoveryContext().addResolvedGuid(guid, versionVertex);
         entity.setGuid(guid);
@@ -662,7 +665,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         int lastIndex = attributeQualifiedNamePrefix.lastIndexOf("/");
         String entityQualifiedNamePrefix = attributeQualifiedNamePrefix.substring(0, lastIndex);
         String namespace = (String) entityAttribute.getAttributes().get(ATLAS_DM_NAMESPACE);
-        String modelVersion = "v2";
+        String modelVersion = "v1";
 
         ModelResponse modelENtityResponse = null;
         AtlasVertex latestEntityVertex = AtlasGraphUtilsV2.findLatestEntityAttributeVerticesByType(ATLAS_DM_ENTITY_TYPE, entityQualifiedNamePrefix);
@@ -686,13 +689,14 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                     entityQualifiedNamePrefix,
                     now
             );
+            modelVersion = "v2";
             if (modelENtityResponse.getExistingEntity() != null && modelENtityResponse.getExistingEntity().getRelationshipAttributes() != null) {
                 existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getAttributes().get("dMAttributes");
             }
         } else {
             modelENtityResponse = createEntity(
-                    attributeQualifiedNamePrefix + "_" + now,
-                    ATLAS_DM_ATTRIBUTE_TYPE,
+                    entityQualifiedNamePrefix + "_" + now,
+                    ATLAS_DM_ENTITY_TYPE,
                     namespace,
                     context
             );

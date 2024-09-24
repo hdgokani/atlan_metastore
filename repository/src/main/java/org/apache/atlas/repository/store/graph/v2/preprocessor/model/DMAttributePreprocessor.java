@@ -75,7 +75,9 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
         int lastIndex = attributeQualifiedNamePrefix.lastIndexOf("/");
         String entityQualifiedNamePrefix = attributeQualifiedNamePrefix.substring(0, lastIndex);
         String namespace = (String) entityAttribute.getAttributes().get(ATLAS_DM_NAMESPACE);
-        String modelVersion = "v2";
+        String modelVersion = "v1";
+
+        entityAttribute.setAttribute(NAME, attributeQualifiedNamePrefix + "_" + now);
 
         ModelResponse modelENtityResponse = null;
         AtlasVertex latestEntityVertex = AtlasGraphUtilsV2.findLatestEntityAttributeVerticesByType(ATLAS_DM_ENTITY_TYPE, entityQualifiedNamePrefix);
@@ -91,6 +93,7 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
 
         List<AtlasRelatedObjectId> existingAttributes = null;
 
+        //
         if (latestEntityVertex != null) {
             modelENtityResponse = replicateModelEntity(
                     entityRetriever.toAtlasEntity(latestEntityVertex),
@@ -98,13 +101,13 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
                     entityQualifiedNamePrefix,
                     now
             );
-
+            modelVersion = "v2";
             if (modelENtityResponse.getExistingEntity() != null && modelENtityResponse.getExistingEntity().getRelationshipAttributes() != null) {
                 existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getRelationshipAttributes().get("dMAttributes");
             }
         } else {
             modelENtityResponse = createEntity(
-                    attributeQualifiedNamePrefix + "_" + now,
+                    entityQualifiedNamePrefix + "_" + now,
                     ATLAS_DM_ENTITY_TYPE,
                     namespace,
                     context
