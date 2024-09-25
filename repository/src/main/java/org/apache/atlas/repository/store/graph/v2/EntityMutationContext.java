@@ -30,8 +30,8 @@ public class EntityMutationContext {
     private final EntityGraphDiscoveryContext context;
     private final List<AtlasEntity> entitiesCreated = new ArrayList<>();
     private final List<AtlasEntity> entitiesUpdated = new ArrayList<>();
-    private final List<AtlasEntity> entitiesUpdatedWithAppendRelationshipAttribute = new ArrayList<>();
-    private final List<AtlasEntity> entitiesUpdatedWithRemoveRelationshipAttribute = new ArrayList<>();
+    private List<AtlasEntity> entitiesUpdatedWithAppendRelationshipAttribute = new ArrayList<>();
+    private List<AtlasEntity> entitiesUpdatedWithRemoveRelationshipAttribute = new ArrayList<>();
     private final Map<String, AtlasEntityType> entityVsType = new HashMap<>();
     private final Map<String, AtlasVertex> entityVsVertex = new HashMap<>();
     private final Map<String, String> guidAssignments = new HashMap<>();
@@ -59,11 +59,11 @@ public class EntityMutationContext {
         }
     }
 
-    public void setUpdatedWithRelationshipAttributes(AtlasEntity entity){
+    public void setUpdatedWithRelationshipAttributes(AtlasEntity entity) {
         entitiesUpdatedWithAppendRelationshipAttribute.add(entity);
     }
 
-    public void setUpdatedWithRemoveRelationshipAttributes(AtlasEntity entity){
+    public void setUpdatedWithRemoveRelationshipAttributes(AtlasEntity entity) {
         entitiesUpdatedWithRemoveRelationshipAttribute.add(entity);
     }
 
@@ -97,12 +97,24 @@ public class EntityMutationContext {
         }
     }
 
-    public void removeUpdatedWithRelationshipAttributes(AtlasEntity entity){
-        entitiesUpdatedWithAppendRelationshipAttribute.remove(entity);
+    public void removeUpdatedWithRelationshipAttributes(AtlasEntity entity) {
+        Iterator<AtlasEntity> entities = entitiesUpdatedWithAppendRelationshipAttribute.iterator();
+        while (entities.hasNext()) {
+            String guid = entities.next().getGuid();
+            if (guid.equals(entity.getGuid())) {
+                entities.remove();
+            }
+        }
     }
 
-    public void removeUpdatedWithDeleteRelationshipAttributes(AtlasEntity entity){
-        entitiesUpdatedWithRemoveRelationshipAttribute.remove(entity);
+    public void removeUpdatedWithDeleteRelationshipAttributes(AtlasEntity entity) {
+        Iterator<AtlasEntity> entities = entitiesUpdatedWithRemoveRelationshipAttribute.iterator();
+        while (entities.hasNext()) {
+            String guid = entities.next().getGuid();
+            if (guid.equals(entity.getGuid())) {
+                entities.remove();
+            }
+        }
     }
 
     public void addEntityToRestore(AtlasVertex vertex) {
