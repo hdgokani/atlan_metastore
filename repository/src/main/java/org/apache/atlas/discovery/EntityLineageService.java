@@ -235,8 +235,13 @@ public class EntityLineageService implements AtlasLineageService {
             this.isDataProduct = isDataProduct;
         }
 
-        public boolean CheckIfAssetTypeIsProcess(){
-            if(isDataSet || isConnection || isDataProduct){
+        public boolean CheckIfLineageRequestIsForAssetTypeProcess(String lineageType){
+
+            if(lineageType.equals(PRODUCT_ASSET_LINEAGE)){
+                return !isDataProduct;
+            }
+
+            if(isDataSet || isConnection){
                 return false;
             }
             return true;
@@ -355,7 +360,7 @@ public class EntityLineageService implements AtlasLineageService {
         AtomicInteger outputEntitiesTraversed = new AtomicInteger(0);
         AtomicInteger traversalOrder = new AtomicInteger(1);
 
-        if (!entityValidationResult.CheckIfAssetTypeIsProcess()) {
+        if (!entityValidationResult.CheckIfLineageRequestIsForAssetTypeProcess(lineageType)) {
             AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
             if (direction == AtlasLineageOnDemandInfo.LineageDirection.INPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH)
                 traverseEdgesOnDemand(datasetVertex, true, depth, level, new HashSet<>(), atlasLineageOnDemandContext, ret, guid, inputEntitiesTraversed, traversalOrder);
@@ -527,7 +532,7 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasVertex baseVertex = AtlasGraphUtilsV2.findByGuid(this.graph, baseGuid);
         EntityValidationResult entityValidationResult = validateAndGetEntityTypeMap(baseGuid);
 
-        boolean isNotConnecterVertex =  entityValidationResult.CheckIfAssetTypeIsProcess();
+        boolean isNotConnecterVertex =  entityValidationResult.CheckIfLineageRequestIsForAssetTypeProcess(lineageType);
         enqueueNeighbours(baseVertex, entityValidationResult, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
         int currentDepth = 0;
         int currentLevel = isNotConnecterVertex? 0: 1;
@@ -598,7 +603,7 @@ public class EntityLineageService implements AtlasLineageService {
         String lineageInputLabel = RequestContext.get().getLineageInputLabel();
         String lineageOutputLabel = RequestContext.get().getLineageOutputLabel();
         String lineageType = lineageListContext.getLineageType();
-        boolean isConnecterVertex =  !entityValidationResult.CheckIfAssetTypeIsProcess();
+        boolean isConnecterVertex =  !entityValidationResult.CheckIfLineageRequestIsForAssetTypeProcess(lineageType);
         if (!isConnecterVertex)
             edges = currentVertex.getEdges(IN, isInputDirection(lineageListContext) ? lineageOutputLabel : lineageInputLabel).iterator();
         else
