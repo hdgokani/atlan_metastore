@@ -168,8 +168,8 @@ public class EntityGraphMapper {
     };
 
     private static final boolean ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES = AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES.getBoolean();
-    private static final boolean CLASSIFICATION_PROPAGATION_DEFAULT                  = AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean();
-    private static final boolean RESTRICT_PROPAGATION_THROUGH_LINEAGE_DEFAULT        = false;
+    private static final boolean CLASSIFICATION_PROPAGATION_DEFAULT = AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean();
+    private static final boolean RESTRICT_PROPAGATION_THROUGH_LINEAGE_DEFAULT = false;
 
     private static final boolean RESTRICT_PROPAGATION_THROUGH_HIERARCHY_DEFAULT        = false;
     public static final int CLEANUP_BATCH_SIZE = 200000;
@@ -2256,8 +2256,11 @@ public class EntityGraphMapper {
         List<AtlasRelatedObjectId> customRelationships = (List<AtlasRelatedObjectId>) ctx.getValue();
 
         if (CollectionUtils.isNotEmpty(customRelationships)) {
-            for (AtlasRelatedObjectId relatedObjectId : customRelationships) {
-                validateCustomRelationshipAttributeValueCase(relatedObjectId.getRelationshipAttributes().getAttributes());
+            for (AtlasObjectId objectId : customRelationships) {
+                if (objectId instanceof AtlasRelatedObjectId) {
+                    AtlasRelatedObjectId relatedObjectId = (AtlasRelatedObjectId) objectId;
+                    validateCustomRelationshipAttributeValueCase(relatedObjectId.getRelationshipAttributes().getAttributes());
+                }
             }
         }
     }
