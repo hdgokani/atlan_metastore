@@ -95,6 +95,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
             String namespace = (String) entity.getAttributes().get(ATLAS_DM_NAMESPACE);
             modelVersionResponse = createEntity(
                     (modelQualifiedName + "/" + "v1"),
+                    "v1",
                     ATLAS_DM_VERSION_TYPE,
                     namespace,
                     context);
