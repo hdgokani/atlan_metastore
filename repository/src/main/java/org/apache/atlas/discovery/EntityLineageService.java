@@ -603,8 +603,8 @@ public class EntityLineageService implements AtlasLineageService {
         String lineageInputLabel = RequestContext.get().getLineageInputLabel();
         String lineageOutputLabel = RequestContext.get().getLineageOutputLabel();
         String lineageType = lineageListContext.getLineageType();
-        boolean isConnecterVertex =  !entityValidationResult.CheckIfConnectorVertex(lineageType);
-        if (!isConnecterVertex)
+        boolean isConnectorVertex =  entityValidationResult.CheckIfConnectorVertex(lineageType);
+        if (isConnectorVertex)
             edges = currentVertex.getEdges(IN, isInputDirection(lineageListContext) ? lineageOutputLabel : lineageInputLabel).iterator();
         else
             edges = currentVertex.getEdges(OUT, isInputDirection(lineageListContext) ? lineageInputLabel : lineageOutputLabel).iterator();
@@ -615,7 +615,7 @@ public class EntityLineageService implements AtlasLineageService {
             if (!lineageListContext.evaluateTraversalFilter(currentEdge))
                 continue;
             AtlasVertex neighbourVertex;
-            if (!isConnecterVertex)
+            if (isConnectorVertex)
                 neighbourVertex = currentEdge.getOutVertex();
             else
                 neighbourVertex = currentEdge.getInVertex();
