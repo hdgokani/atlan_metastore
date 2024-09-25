@@ -2268,7 +2268,9 @@ public class EntityGraphMapper {
             for (AtlasObjectId objectId : customRelationships) {
                 if (objectId instanceof AtlasRelatedObjectId) {
                     AtlasRelatedObjectId relatedObjectId = (AtlasRelatedObjectId) objectId;
-                    validateCustomRelationshipAttributeValueCase(relatedObjectId.getRelationshipAttributes().getAttributes());
+                    if (relatedObjectId.getRelationshipAttributes() != null) {
+                        validateCustomRelationshipAttributeValueCase(relatedObjectId.getRelationshipAttributes().getAttributes());
+                    }
                 }
             }
         }
