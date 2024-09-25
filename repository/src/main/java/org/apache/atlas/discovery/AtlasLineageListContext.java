@@ -23,8 +23,9 @@ public final class AtlasLineageListContext {
     private int                                 currentEntityCounter;
     private boolean                             depthLimitReached;
     private boolean                             hasMoreUpdated;
-    private String                              lineageType = "DatasetProcessLineage";
     private Boolean                             immediateNeighbours;
+    private String                              lineageType = "DatasetProcessLineage";
+
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageListRequest.getGuid();
         this.size = lineageListRequest.getSize();
