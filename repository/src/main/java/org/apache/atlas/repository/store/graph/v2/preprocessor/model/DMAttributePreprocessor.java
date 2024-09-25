@@ -104,8 +104,13 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
                 existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getRelationshipAttributes().get("dMAttributes");
             }
         } else {
+            int lastSlashIndex = entityQualifiedNamePrefix.lastIndexOf("/");
+
+            // Extract the substring after the last "/"
+            String name = entityQualifiedNamePrefix.substring(lastSlashIndex + 1);
             modelENtityResponse = createEntity(
                     entityQualifiedNamePrefix + "_" + now,
+                    name,
                     ATLAS_DM_ENTITY_TYPE,
                     namespace,
                     context
@@ -117,6 +122,7 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
         if (modelVersionResponse.getCopyEntity() == null) {
             modelVersionResponse = createEntity(
                     (modelQualifiedName + "/" + modelVersion),
+                    modelVersion,
                     ATLAS_DM_VERSION_TYPE,
                     namespace,
                     context);
@@ -160,20 +166,17 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
 
     private void updateDMAttributes(AtlasEntity entityAttribute, AtlasVertex vertexAttribute, EntityMutationContext context) throws AtlasBaseException {
         ModelResponse modelResponseParentEntity = updateDMAttribute(entityAttribute, vertexAttribute, context);
-
         // case when a mapping is added
         if (entityAttribute.getAppendRelationshipAttributes() != null) {
             Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForAttribute(entityAttribute, entityAttribute.getAppendRelationshipAttributes(), context);
-            modelResponseParentEntity.getCopyEntity().setAppendRelationshipAttributes(appendRelationshipAttributes);
+            modelResponseParentEntity.getCopyEntity().setAppendRelationshipAttributes(new HashMap<>(appendRelationshipAttributes));
             context.removeUpdatedWithRelationshipAttributes(entityAttribute);
-            context.setUpdatedWithRelationshipAttributes(modelResponseParentEntity.getCopyEntity());
         }
 
         if (entityAttribute.getRemoveRelationshipAttributes() != null) {
             Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForAttribute(entityAttribute, entityAttribute.getRemoveRelationshipAttributes(), context);
             modelResponseParentEntity.getCopyEntity().setRemoveRelationshipAttributes(appendRelationshipAttributes);
             context.removeUpdatedWithDeleteRelationshipAttributes(entityAttribute);
-            context.setUpdatedWithRemoveRelationshipAttributes(modelResponseParentEntity.getCopyEntity());
         }
     }
 
