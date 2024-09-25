@@ -109,17 +109,33 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         AtlasGraphUtilsV2.setEncodedProperty(newVertex, QUALIFIED_NAME, value);
     }
 
-    protected ModelResponse createEntity(String qualifiedName, String entityType, String namespace, EntityMutationContext context) throws AtlasBaseException {
+    protected void setName(AtlasEntity newEntity, AtlasVertex newVertex, Object value) {
+        newEntity.setAttribute(NAME, value);
+        AtlasGraphUtilsV2.setEncodedProperty(newVertex, NAME, value);
+    }
+
+    protected void setQualifiedNamePrefix(AtlasEntity newEntity, AtlasVertex newVertex, Object value) {
+        newEntity.setAttribute(ATLAS_DM_QUALIFIED_NAME_PREFIX, value);
+        AtlasGraphUtilsV2.setEncodedProperty(newVertex, ATLAS_DM_QUALIFIED_NAME_PREFIX, value);
+    }
+
+    protected void setNamespace(AtlasEntity newEntity, AtlasVertex newVertex, Object value) {
+        newEntity.setAttribute(ATLAS_DM_NAMESPACE, value);
+        AtlasGraphUtilsV2.setEncodedProperty(newVertex, ATLAS_DM_NAMESPACE, value);
+    }
+
+    protected ModelResponse createEntity(String qualifiedName, String name, String entityType, String namespace, EntityMutationContext context) throws AtlasBaseException {
         String guid = UUID.randomUUID().toString();
         AtlasEntity entity = new AtlasEntity(entityType);
-        entity.setAttribute(NAME, qualifiedName.substring(qualifiedName.lastIndexOf('/') + 1));
+        entity.setAttribute(NAME, name);
         entity.setAttribute(VERSION_PROPERTY_KEY, 0);
         entity.setAttribute(QUALIFIED_NAME, qualifiedName);
         entity.setAttribute(ATLAS_DM_NAMESPACE, namespace);
         entity.setAttribute(ATLAS_DM_BUSINESS_DATE, RequestContext.get().getRequestTime());
         entity.setAttribute(ATLAS_DM_SYSTEM_DATE, RequestContext.get().getRequestTime());
         if (entityType.equals(ATLAS_DM_ENTITY_TYPE) || entityType.equals(ATLAS_DM_ATTRIBUTE_TYPE)) {
-            entity.setAttribute(ATLAS_DM_QUALIFIED_NAME_PREFIX, qualifiedName.substring(0, qualifiedName.lastIndexOf('/')));
+            String prefix = qualifiedName.substring(0, qualifiedName.indexOf("_"));
+            entity.setAttribute(ATLAS_DM_QUALIFIED_NAME_PREFIX, prefix);
         }
         AtlasVertex versionVertex = entityGraphMapper.createVertexWithGuid(entity, guid);
         context.getDiscoveryContext().addResolvedGuid(guid, versionVertex);
@@ -166,6 +182,8 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         copyAllAttributes(existingModelVersionEntity, copyModelVersion, now);
         setModelDates(copyModelVersion, copyModelVertex, now);
         setQualifiedName(copyModelVersion, copyModelVertex, modelQualifiedName + "/" + modelVersion);
+        setName(copyModelVersion, copyModelVertex, modelVersion);
+        setNamespace(copyModelVersion, copyModelVertex, dataModel.getEntity().getAttribute(ATLAS_DM_NAMESPACE));
         setModelExpiredAtDates(existingModelVersionEntity, existingModelVersionVertex, now);
         return new ModelResponse(existingModelVersionEntity, copyModelVersion, existingModelVersionVertex, copyModelVertex);
     }
@@ -177,6 +195,9 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         String entityQualifiedName = entityQualifiedNamePrefix + "_" + epoch;
         setQualifiedName(copyEntity, copyEntityVertex, entityQualifiedName);
         setModelDates(copyEntity, copyEntityVertex, epoch);
+        setName(copyEntity, copyEntityVertex, existingEntity.getAttribute(NAME));
+        setNamespace(copyEntity, copyEntityVertex, existingEntity.getAttribute(ATLAS_DM_NAMESPACE));
+        setQualifiedNamePrefix(copyEntity, copyEntityVertex, existingEntity.getAttribute(ATLAS_DM_QUALIFIED_NAME_PREFIX));
         setModelExpiredAtDates(existingEntity, existingEntityVertex, epoch);
         return new ModelResponse(existingEntity, copyEntity, existingEntityVertex, copyEntityVertex);
     }
@@ -188,6 +209,9 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         String attributeQualifiedName = attributeQualifiedNamePrefix + "_" + epoch;
         setQualifiedName(copyAttributeEntity, copyAttributeVertex, attributeQualifiedName);
         setModelDates(copyAttributeEntity, copyAttributeVertex, epoch);
+        setName(copyAttributeEntity, copyAttributeVertex, existingAttribute.getAttribute(NAME));
+        setNamespace(copyAttributeEntity, copyAttributeVertex, existingAttribute.getAttribute(ATLAS_DM_NAMESPACE));
+        setQualifiedNamePrefix(copyAttributeEntity, copyAttributeVertex, existingAttribute.getAttribute(ATLAS_DM_QUALIFIED_NAME_PREFIX));
         setModelExpiredAtDates(existingAttribute, existingAttributeVertex, epoch);
         return new ModelResponse(existingAttribute, copyAttributeEntity, existingAttributeVertex, copyAttributeVertex);
     }
@@ -318,17 +342,28 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
         String entityType = source.getTypeName();
 
-        copyRelationshipAttributes(source.getRelationshipAttributes(), destination, entityType);
-        copyRelationshipAttributes(source.getAppendRelationshipAttributes(), destination, entityType);
-        copyRelationshipAttributes(source.getRemoveRelationshipAttributes(), destination, entityType);
-    }
-
-    private void copyRelationshipAttributes(Map<String, Object> sourceAttributes, AtlasEntity destination, String entityType) {
-        if (MapUtils.isEmpty(sourceAttributes)) {
-            return;
+        if (MapUtils.isNotEmpty(source.getRelationshipAttributes())) {
+            Map<String, Object> relationAttributes = copyRelationshipAttributes(source.getRelationshipAttributes(), destination, entityType);
+            destination.setRelationshipAttributes(relationAttributes);
+        }
+        if (MapUtils.isNotEmpty(source.getAppendRelationshipAttributes())) {
+            Map<String, Object> relationAttributes = copyRelationshipAttributes(source.getAppendRelationshipAttributes(), destination, entityType);
+            destination.setAppendRelationshipAttributes(relationAttributes);
+        }
+        if (MapUtils.isNotEmpty(source.getRemoveRelationshipAttributes())) {
+            Map<String, Object> relationAttributes = copyRelationshipAttributes(source.getRemoveRelationshipAttributes(), destination, entityType);
+            destination.setRemoveRelationshipAttributes(relationAttributes);
         }
 
+    }
+
+    private Map<String, Object> copyRelationshipAttributes(Map<String, Object> sourceAttributes, AtlasEntity destination, String entityType) {
         Map<String, Object> destinationAttributes = new HashMap<>();
+
+        if (MapUtils.isEmpty(sourceAttributes)) {
+            return destinationAttributes;
+        }
+
         Set<String> allowedRelations = allowedRelationshipsForEntityType(entityType);
 
         for (String attribute : sourceAttributes.keySet()) {
@@ -336,7 +371,8 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                 destinationAttributes.put(attribute, sourceAttributes.get(attribute));
             }
         }
-        destination.setAttributes(destinationAttributes);
+
+        return destinationAttributes;
     }
 
     public static void replaceAttributes(Map<String, Object> existingAttributes, Map<String, Object> diffAttributes) {
@@ -450,6 +486,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
             String namespace = (String) entity.getAttributes().get(ATLAS_DM_NAMESPACE);
             modelVersionResponse = createEntity(
                     (modelQualifiedName + "/" + modelVersion),
+                    modelVersion,
                     ATLAS_DM_VERSION_TYPE,
                     namespace,
                     context);
@@ -684,8 +721,11 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                 existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getAttributes().get("dMAttributes");
             }
         } else {
+            int lastSlashIndex = entityQualifiedNamePrefix.lastIndexOf("/");
+            String entityName = entityQualifiedNamePrefix.substring(lastSlashIndex + 1);
             modelENtityResponse = createEntity(
                     entityQualifiedNamePrefix + "_" + now,
+                    entityName,
                     ATLAS_DM_ENTITY_TYPE,
                     namespace,
                     context
@@ -697,6 +737,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         if (modelVersionResponse.getCopyEntity() == null) {
             modelVersionResponse = createEntity(
                     (modelQualifiedName + "/" + modelVersion),
+                    modelVersion,
                     ATLAS_DM_VERSION_TYPE,
                     namespace,
                     context);
