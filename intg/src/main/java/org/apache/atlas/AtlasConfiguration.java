@@ -88,7 +88,7 @@ public enum AtlasConfiguration {
     TASKS_QUEUE_SIZE("atlas.tasks.queue.size", 1000),
     SESSION_TIMEOUT_SECS("atlas.session.timeout.secs", -1),
     UPDATE_COMPOSITE_INDEX_STATUS("atlas.update.composite.index.status", true),
-    TASKS_GRAPH_COMMIT_CHUNK_SIZE("atlas.tasks.graph.commit.chunk.size", 100),
+    TASKS_GRAPH_COMMIT_CHUNK_SIZE("atlas.tasks.graph.commit.chunk.size", 250),
     MAX_NUMBER_OF_RETRIES("atlas.tasks.graph.retry.count", 3),
     GRAPH_TRAVERSAL_PARALLELISM("atlas.graph.traverse.bucket.size",10),
     LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", true),
@@ -113,7 +113,9 @@ public enum AtlasConfiguration {
 
     INDEXSEARCH_ASYNC_SEARCH_KEEP_ALIVE_TIME_IN_SECONDS("atlas.indexsearch.async.search.keep.alive.time.in.seconds", 300),
 
-    ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false);
+    ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false),
+
+    ATLAS_UD_RELATIONSHIPS_MAX_COUNT("atlas.ud.relationship.max.count", 100);
 
 
     private static final Configuration APPLICATION_PROPERTIES;
