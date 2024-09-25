@@ -77,8 +77,6 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
         String namespace = (String) entityAttribute.getAttributes().get(ATLAS_DM_NAMESPACE);
         String modelVersion = "v1";
 
-        entityAttribute.setAttribute(NAME, attributeQualifiedNamePrefix + "_" + now);
-
         ModelResponse modelENtityResponse = null;
         AtlasVertex latestEntityVertex = AtlasGraphUtilsV2.findLatestEntityAttributeVerticesByType(ATLAS_DM_ENTITY_TYPE, entityQualifiedNamePrefix);
         lastIndex = entityQualifiedNamePrefix.lastIndexOf("/");
@@ -172,7 +170,7 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
         }
 
         if (entityAttribute.getRemoveRelationshipAttributes() != null) {
-            Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForAttribute(entityAttribute, entityAttribute.getAppendRelationshipAttributes(), context);
+            Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForAttribute(entityAttribute, entityAttribute.getRemoveRelationshipAttributes(), context);
             modelResponseParentEntity.getCopyEntity().setRemoveRelationshipAttributes(appendRelationshipAttributes);
             context.removeUpdatedWithDeleteRelationshipAttributes(entityAttribute);
             context.setUpdatedWithRemoveRelationshipAttributes(modelResponseParentEntity.getCopyEntity());

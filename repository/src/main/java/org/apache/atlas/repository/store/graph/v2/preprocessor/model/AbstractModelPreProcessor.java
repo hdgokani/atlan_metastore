@@ -109,12 +109,6 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         AtlasGraphUtilsV2.setEncodedProperty(newVertex, QUALIFIED_NAME, value);
     }
 
-    protected void setName(AtlasEntity newEntity, AtlasVertex newVertex, Object value) {
-        newEntity.setAttribute(NAME, value);
-        AtlasGraphUtilsV2.setEncodedProperty(newVertex, NAME, value);
-    }
-
-
     protected ModelResponse createEntity(String qualifiedName, String entityType, String namespace, EntityMutationContext context) throws AtlasBaseException {
         String guid = UUID.randomUUID().toString();
         AtlasEntity entity = new AtlasEntity(entityType);
@@ -130,7 +124,6 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         AtlasVertex versionVertex = entityGraphMapper.createVertexWithGuid(entity, guid);
         context.getDiscoveryContext().addResolvedGuid(guid, versionVertex);
         entity.setGuid(guid);
-        context.addCreated(guid, entity, typeRegistry.getEntityTypeByName(entityType), versionVertex);
         return new ModelResponse(entity, versionVertex);
     }
 
@@ -172,7 +165,6 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         AtlasEntity copyModelVersion = entityRetriever.toAtlasEntity(copyModelVertex);
         copyAllAttributes(existingModelVersionEntity, copyModelVersion, now);
         setModelDates(copyModelVersion, copyModelVertex, now);
-        setName(copyModelVersion, copyModelVertex, modelVersion);
         setQualifiedName(copyModelVersion, copyModelVertex, modelQualifiedName + "/" + modelVersion);
         setModelExpiredAtDates(existingModelVersionEntity, existingModelVersionVertex, now);
         return new ModelResponse(existingModelVersionEntity, copyModelVersion, existingModelVersionVertex, copyModelVertex);
@@ -182,7 +174,6 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         AtlasVertex copyEntityVertex = entityGraphMapper.createVertex(existingEntity);
         AtlasEntity copyEntity = entityRetriever.toAtlasEntity(copyEntityVertex);
         copyAllAttributes(existingEntity, copyEntity, epoch);
-        setModelDates(copyEntity, copyEntityVertex, epoch);
         String entityQualifiedName = entityQualifiedNamePrefix + "_" + epoch;
         setQualifiedName(copyEntity, copyEntityVertex, entityQualifiedName);
         setModelDates(copyEntity, copyEntityVertex, epoch);
@@ -194,7 +185,6 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         AtlasVertex copyAttributeVertex = entityGraphMapper.createVertex(existingAttribute);
         AtlasEntity copyAttributeEntity = entityRetriever.toAtlasEntity(copyAttributeVertex);
         copyAllAttributes(existingAttribute, copyAttributeEntity, epoch);
-        setModelDates(copyAttributeEntity, copyAttributeVertex, epoch);
         String attributeQualifiedName = attributeQualifiedNamePrefix + "_" + epoch;
         setQualifiedName(copyAttributeEntity, copyAttributeVertex, attributeQualifiedName);
         setModelDates(copyAttributeEntity, copyAttributeVertex, epoch);
@@ -654,7 +644,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         String attributeName = (String) entityAttribute.getAttribute(NAME);
 
         if (StringUtils.isEmpty(attributeName) || isNameInvalid(attributeName)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME, attributeName);
         }
 
         long now = RequestContext.get().getRequestTime();

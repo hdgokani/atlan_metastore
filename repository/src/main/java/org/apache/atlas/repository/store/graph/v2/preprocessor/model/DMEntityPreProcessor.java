@@ -76,8 +76,6 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         String qualifiedNamePrefix = (String) entity.getAttributes().get(ATLAS_DM_QUALIFIED_NAME_PREFIX);
         int lastIndex = qualifiedNamePrefix.lastIndexOf("/");
         String modelQualifiedName = qualifiedNamePrefix.substring(0, lastIndex);
-        entity.setAttribute(NAME, qualifiedNamePrefix + "_" + now);
-
         Map<String, Object> attrValues = new HashMap<>();
         attrValues.put(QUALIFIED_NAME, modelQualifiedName);
 
