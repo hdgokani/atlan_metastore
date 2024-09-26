@@ -7,7 +7,6 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
@@ -19,11 +18,8 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.ListUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
-import org.elasticsearch.common.Strings;
-import org.mockito.internal.util.collections.ListUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,42 +49,6 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         this.atlasRelationshipStore = atlasRelationshipStore;
     }
 
-    protected static class ModelResponse {
-
-        private AtlasEntity existingEntity;
-        private AtlasEntity copyEntity;
-        private AtlasVertex existingVertex;
-        private AtlasVertex copyVertex;
-
-        public ModelResponse(AtlasEntity existingEntity, AtlasEntity copyEntity,
-                                AtlasVertex existingVertex, AtlasVertex copyVertex) {
-            this.existingEntity = existingEntity;
-            this.copyEntity = copyEntity;
-            this.existingVertex = existingVertex;
-            this.copyVertex = copyVertex;
-        }
-
-        public ModelResponse(AtlasEntity copyEntity, AtlasVertex copyVertex) {
-            this.copyEntity = copyEntity;
-            this.copyVertex = copyVertex;
-        }
-
-        public AtlasEntity getExistingEntity() {
-            return existingEntity;
-        }
-
-        public AtlasEntity getCopyEntity() {
-            return copyEntity;
-        }
-
-        public AtlasVertex getExistingVertex() {
-            return existingVertex;
-        }
-
-        public AtlasVertex getCopyVertex() {
-            return copyVertex;
-        }
-    }
 
     protected void setModelDates(AtlasEntity newEntity, AtlasVertex newVertex, Object value) {
         newEntity.setAttribute(ATLAS_DM_SYSTEM_DATE, value);
@@ -143,7 +103,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         return new ModelResponse(entity, versionVertex);
     }
 
-    protected ModelResponse replicateModelVersion(String modelGuid, String modelQualifiedName, long now) throws AtlasBaseException {
+    public ModelResponse replicateModelVersion(String modelGuid, String modelQualifiedName, long now) throws AtlasBaseException {
         AtlasEntity.AtlasEntityWithExtInfo dataModel = entityRetriever.toAtlasEntityWithExtInfo(modelGuid, false);
         List<AtlasRelatedObjectId> existingModelVersions = (List<AtlasRelatedObjectId>) dataModel.getEntity().getRelationshipAttributes().get("dMVersions");
 
@@ -294,7 +254,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
     }
 
 
-    protected void createModelModelVersionRelation(String modelGuid, String latestModelVersionGuid) throws AtlasBaseException {
+    public void createModelModelVersionRelation(String modelGuid, String latestModelVersionGuid) throws AtlasBaseException {
         AtlasRelationship modelVersionModelRelation = new AtlasRelationship("d_m_data_model_d_m_versions");
         modelVersionModelRelation.setStatus(AtlasRelationship.Status.ACTIVE);
         modelVersionModelRelation.setEnd1(
@@ -486,7 +446,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         ModelResponse modelVersionResponse = replicateModelVersion(modelGuid, modelQualifiedName, now);
 
         // model is not replicated successfully
-        if (modelVersionResponse.getCopyEntity() == null) {
+        if (modelVersionResponse.getReplicaEntity() == null) {
             String namespace = (String) entity.getAttributes().get(ATLAS_DM_NAMESPACE);
             modelVersionResponse = createEntity(
                     (modelQualifiedName + "/" + modelVersion),
@@ -496,14 +456,14 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                     context);
         }
 
-        AtlasEntity latestModelVersionEntity = modelVersionResponse.getCopyEntity();
-        AtlasVertex latestModelVersionVertex = modelVersionResponse.getCopyVertex();
+        AtlasEntity latestModelVersionEntity = modelVersionResponse.getReplicaEntity();
+        AtlasVertex latestModelVersionVertex = modelVersionResponse.getReplicaVertex();
         AtlasEntity existingVersion = modelVersionResponse.getExistingEntity();
 
         // create entity e1 ---> e1'
         ModelResponse modelEntityResponse = replicateModelEntity(existingEntity.getEntity(), vertex, qualifiedNamePrefix, now);
-        AtlasVertex copyEntityVertex = modelEntityResponse.getCopyVertex();
-        AtlasEntity copyEntity = modelEntityResponse.getCopyEntity();
+        AtlasVertex copyEntityVertex = modelEntityResponse.getReplicaVertex();
+        AtlasEntity copyEntity = modelEntityResponse.getReplicaEntity();
         applyDiffs(entity, copyEntity, ATLAS_DM_ENTITY_TYPE);
         unsetExpiredDates(copyEntity, copyEntityVertex);
 
@@ -527,7 +487,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
          */
         // previousEntity and previousModelVersion
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-        AtlasEntityType modelVersionType = typeRegistry.getEntityTypeByName(modelVersionResponse.getCopyEntity().getTypeName());
+        AtlasEntityType modelVersionType = typeRegistry.getEntityTypeByName(modelVersionResponse.getReplicaEntity().getTypeName());
 
         context.addCreated(copyEntity.getGuid(), copyEntity, entityType, copyEntityVertex);
         context.addCreated(latestModelVersionEntity.getGuid(), latestModelVersionEntity, modelVersionType, latestModelVersionVertex);
@@ -576,10 +536,10 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                                 context);
                         //relationAttribute.put("guid", modelResponseRelatedEntity.getCopyEntity());
                         destMap = new HashMap<>(relationAttribute);
-                        guid = modelResponseRelatedEntity.getCopyEntity().getGuid();
+                        guid = modelResponseRelatedEntity.getReplicaEntity().getGuid();
                         destMap.put("guid", guid);
                         //destMap.put(QUALIFIED_NAME, )
-                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getCopyVertex());
+                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getReplicaVertex());
                         destList.add(destMap);
                     }
                     appendAttributesDestination.put(attribute, destList);
@@ -596,8 +556,8 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
                         Map<String, Object> destMap = new HashMap<>(attributeList);
                         destMap.put("guid", guid);
-                        guid = modelResponseRelatedEntity.getCopyEntity().getGuid();
-                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getCopyVertex());
+                        guid = modelResponseRelatedEntity.getReplicaEntity().getGuid();
+                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getReplicaVertex());
                         appendAttributesDestination.put(attribute, destMap);
                     }
                 }
@@ -647,10 +607,10 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                                 context);
                         //relationAttribute.put("guid", modelResponseRelatedEntity.getCopyEntity());
                         destMap = new HashMap<>(relationAttribute);
-                        guid = modelResponseRelatedEntity.getCopyEntity().getGuid();
+                        guid = modelResponseRelatedEntity.getReplicaEntity().getGuid();
                         destMap.put("guid", guid);
                         //destMap.put(QUALIFIED_NAME, )
-                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getCopyVertex());
+                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getReplicaVertex());
                         destList.add(destMap);
                     }
                     appendAttributesDestination.put(attribute, destList);
@@ -667,8 +627,8 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
                         Map<String, Object> destMap = new HashMap<>(attributeList);
                         destMap.put("guid", guid);
-                        guid = modelResponseRelatedEntity.getCopyEntity().getGuid();
-                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getCopyVertex());
+                        guid = modelResponseRelatedEntity.getReplicaEntity().getGuid();
+                        context.getDiscoveryContext().addResolvedGuid(guid, modelResponseRelatedEntity.getReplicaVertex());
                         appendAttributesDestination.put(attribute, destMap);
                     }
                 }
@@ -738,7 +698,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
         ModelResponse modelVersionResponse = replicateModelVersion(modelGuid, modelQualifiedName, now);
 
-        if (modelVersionResponse.getCopyEntity() == null) {
+        if (modelVersionResponse.getReplicaEntity() == null) {
             modelVersionResponse = createEntity(
                     (modelQualifiedName + "/" + modelVersion),
                     modelVersion,
@@ -746,8 +706,8 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                     namespace,
                     context);
         }
-        AtlasEntity latestModelVersionEntity = modelVersionResponse.getCopyEntity();
-        AtlasVertex latestModelVersionVertex = modelVersionResponse.getCopyVertex();
+        AtlasEntity latestModelVersionEntity = modelVersionResponse.getReplicaEntity();
+        AtlasVertex latestModelVersionVertex = modelVersionResponse.getReplicaVertex();
 
         List<AtlasRelatedObjectId> existingEntities = null;
 
@@ -764,8 +724,8 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                 attributeQualifiedNamePrefix,
                 now);
 
-        AtlasVertex copyAttributeVertex = modelAttributeResponse.getCopyVertex();
-        AtlasEntity copyAttribute = modelAttributeResponse.getCopyEntity();
+        AtlasVertex copyAttributeVertex = modelAttributeResponse.getReplicaVertex();
+        AtlasEntity copyAttribute = modelAttributeResponse.getReplicaEntity();
         applyDiffs(entityAttribute, copyAttribute, ATLAS_DM_ATTRIBUTE_TYPE);
         unsetExpiredDates(copyAttribute, copyAttributeVertex);
 
@@ -773,25 +733,25 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         createModelModelVersionRelation(modelGuid, latestModelVersionEntity.getGuid());
 
         // create modelVersion-entity relationship [with new entity]
-        createModelVersionModelEntityRelationship(latestModelVersionVertex, modelENtityResponse.getCopyVertex());
+        createModelVersionModelEntityRelationship(latestModelVersionVertex, modelENtityResponse.getReplicaVertex());
 
         // create modelVersion-entity relationship [with existing entities]
         createModelVersionModelEntityRelationship(latestModelVersionVertex, existingEntities);
 
 
         // create entity - attribute relation [with new attribute]
-        createModelEntityModelAttributeRelation(modelENtityResponse.getCopyVertex(), copyAttributeVertex);
+        createModelEntityModelAttributeRelation(modelENtityResponse.getReplicaVertex(), copyAttributeVertex);
 
         // create entity - attribute relation [with existing attributes]
-        createModelEntityModelAttributeRelation(modelENtityResponse.getCopyVertex(), existingAttributes);
+        createModelEntityModelAttributeRelation(modelENtityResponse.getReplicaVertex(), existingAttributes);
 
         AtlasEntityType attributeType = typeRegistry.getEntityTypeByName(entityAttribute.getTypeName());
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(modelENtityResponse.getCopyEntity().getTypeName());
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(modelENtityResponse.getReplicaEntity().getTypeName());
         AtlasEntityType modelVersionType = typeRegistry.getEntityTypeByName(latestModelVersionEntity.getTypeName());
 
         context.addCreated(copyAttribute.getGuid(), copyAttribute, attributeType, copyAttributeVertex);
-        context.addCreated(modelENtityResponse.getCopyEntity().getGuid(), modelENtityResponse.getCopyEntity(),
-                entityType, modelENtityResponse.getCopyVertex());
+        context.addCreated(modelENtityResponse.getReplicaEntity().getGuid(), modelENtityResponse.getReplicaEntity(),
+                entityType, modelENtityResponse.getReplicaVertex());
         context.addCreated(latestModelVersionEntity.getGuid(),
                 latestModelVersionEntity, modelVersionType, latestModelVersionVertex);
 
