@@ -543,7 +543,7 @@ public class EntityLineageService implements AtlasLineageService {
 
         EntityValidationResult entityValidationResult = validateAndGetEntityTypeMap(baseGuid);
 
-        boolean isNotConnecterVertex =  entityValidationResult.CheckIfConnectorVertex(lineageType);
+        boolean isNotConnecterVertex =  !entityValidationResult.CheckIfConnectorVertex(lineageType);
         enqueueNeighbours(baseVertex, entityValidationResult, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
 
         int currentDepth = 0;
@@ -617,7 +617,7 @@ public class EntityLineageService implements AtlasLineageService {
         String lineageOutputLabel = RequestContext.get().getLineageOutputLabel();
         String lineageType = lineageListContext.getLineageType();
         boolean isConnectorVertex =  entityValidationResult.CheckIfConnectorVertex(lineageType);
-        if (isConnectorVertex)
+        if (!isConnectorVertex)
             edges = currentVertex.getEdges(IN, isInputDirection(lineageListContext) ? lineageOutputLabel : lineageInputLabel).iterator();
         else
             edges = currentVertex.getEdges(OUT, isInputDirection(lineageListContext) ? lineageInputLabel : lineageOutputLabel).iterator();
@@ -628,7 +628,7 @@ public class EntityLineageService implements AtlasLineageService {
             if (!lineageListContext.evaluateTraversalFilter(currentEdge))
                 continue;
             AtlasVertex neighbourVertex;
-            if (isConnectorVertex)
+            if (!isConnectorVertex)
                 neighbourVertex = currentEdge.getOutVertex();
             else
                 neighbourVertex = currentEdge.getInVertex();
