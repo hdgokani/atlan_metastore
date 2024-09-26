@@ -193,8 +193,8 @@ public class EntityLineageService implements AtlasLineageService {
         RequestContext.get().setLineageOutputLabel(LINEAGE_MAP.get(lineageOnDemandRequest.getLineageType())[1]);
 
         AtlasLineageOnDemandContext atlasLineageOnDemandContext = new AtlasLineageOnDemandContext(lineageOnDemandRequest, atlasTypeRegistry);
-        HashMap<String, Boolean> dataTypeMap = validateAndGetEntityTypeMap(guid);
-        AtlasLineageOnDemandInfo ret = getLineageInfoOnDemand(guid, atlasLineageOnDemandContext, dataTypeMap);
+        EntityValidationResult entityValidationResult = validateAndGetEntityTypeMap(guid);
+        AtlasLineageOnDemandInfo ret = getLineageInfoOnDemand(guid, atlasLineageOnDemandContext, entityValidationResult);
         appendLineageOnDemandPayload(ret, lineageOnDemandRequest);
         // filtering out on-demand relations which has input & output nodes within the limit
         cleanupRelationsOnDemand(ret);
@@ -220,24 +220,60 @@ public class EntityLineageService implements AtlasLineageService {
         return ret;
     }
 
-    private HashMap<String, Boolean> validateAndGetEntityTypeMap(String guid) throws AtlasBaseException {
+    public class EntityValidationResult {
+        public final boolean isProcess;
+        public final boolean isDataSet;
+        public final boolean isConnection;
+        public final boolean isConnectionProcess;
+        public final boolean isDataProduct;
+
+        public EntityValidationResult(boolean isProcess, boolean isDataSet, boolean isConnection, boolean isConnectionProcess, boolean isDataProduct) {
+            this.isProcess = isProcess;
+            this.isDataSet = isDataSet;
+            this.isConnection = isConnection;
+            this.isConnectionProcess = isConnectionProcess;
+            this.isDataProduct = isDataProduct;
+        }
+
+        public boolean CheckIfConnectorVertex(String lineageType){
+
+            if(lineageType.equals(PRODUCT_ASSET_LINEAGE)){
+                return !isDataProduct;
+            }
+
+            if(isDataSet || isConnection){
+                return false;
+            }
+            return true;
+        }
+    }
+
+    private EntityValidationResult validateAndGetEntityTypeMap(String guid) throws AtlasBaseException {
         String  typeName = entityRetriever.getEntityVertex(guid).getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
         AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(typeName);
         if (entityType == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, typeName);
         }
-        HashMap<String, Boolean> dataTypeMap = new HashMap<>();
+
         boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
         boolean isDataProduct = entityType.getTypeName().equals(DATA_PRODUCT_ENTITY_TYPE);
-        dataTypeMap.put(IS_DATA_PRODUCT, isDataProduct);
-        dataTypeMap.put(IS_DATASET, !isProcess);
+        boolean isConnectionProcess = false;
+        boolean isDataSet  = false;
+        boolean isConnection = false;
         if (!isProcess) {
-            boolean isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
-            if (!isDataSet) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, typeName);
+            isConnectionProcess = entityType.getTypeAndAllSuperTypes().contains(CONNECTION_PROCESS_ENTITY_TYPE);
+            if(!isConnectionProcess){
+                isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
+                if (!isDataSet) {
+                    isConnection = entityType.getTypeAndAllSuperTypes().contains(CONNECTION_ENTITY_TYPE);
+                    if(!isConnection){
+                        throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, typeName);
+                    }
+                }
             }
         }
-        return dataTypeMap;
+
+        return new EntityValidationResult(isProcess, isDataSet, isConnection, isConnectionProcess, isDataProduct);
     }
 
     private LineageOnDemandConstraints getLineageConstraints(String guid, LineageOnDemandBaseParams defaultParams) {
@@ -302,7 +338,8 @@ public class EntityLineageService implements AtlasLineageService {
         }
     }
 
-    private AtlasLineageOnDemandInfo getLineageInfoOnDemand(String guid, AtlasLineageOnDemandContext atlasLineageOnDemandContext, HashMap<String, Boolean> dataTypeMap) throws AtlasBaseException {
+
+    private AtlasLineageOnDemandInfo getLineageInfoOnDemand(String guid, AtlasLineageOnDemandContext atlasLineageOnDemandContext, EntityValidationResult entityValidationResult) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getLineageInfoOnDemand");
         String lineageInputLabel = RequestContext.get().getLineageInputLabel();
         String lineageOutputLabel = RequestContext.get().getLineageOutputLabel();
@@ -323,34 +360,28 @@ public class EntityLineageService implements AtlasLineageService {
         AtomicInteger outputEntitiesTraversed = new AtomicInteger(0);
         AtomicInteger traversalOrder = new AtomicInteger(1);
 
-        boolean isConnecterVertex;
-
-
-        isConnecterVertex =  lineageType.equals(PRODUCT_ASSET_LINEAGE)
-                ? !dataTypeMap.get(IS_DATA_PRODUCT)
-                : !dataTypeMap.get(IS_DATASET);
-
-        if (!isConnecterVertex) {
-                AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
-                if (direction == AtlasLineageOnDemandInfo.LineageDirection.INPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH)
-                    traverseEdgesOnDemand(datasetVertex, true, depth, level, new HashSet<>(), atlasLineageOnDemandContext, ret, guid, inputEntitiesTraversed, traversalOrder);
-                if (direction == AtlasLineageOnDemandInfo.LineageDirection.OUTPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH)
-                    traverseEdgesOnDemand(datasetVertex, false, depth, level, new HashSet<>(), atlasLineageOnDemandContext, ret, guid, outputEntitiesTraversed, traversalOrder);
-                AtlasEntityHeader baseEntityHeader = entityRetriever.toAtlasEntityHeader(datasetVertex, atlasLineageOnDemandContext.getAttributes());
-                setGraphTraversalMetadata(level, traversalOrder, baseEntityHeader);
-                ret.getGuidEntityMap().put(guid, baseEntityHeader);
-            } else {
-                AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
-                // make one hop to the next dataset vertices from process vertex and traverse with 'depth = depth - 1'
-                if (direction == AtlasLineageOnDemandInfo.LineageDirection.INPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH) {
-                    Iterator<AtlasEdge> processEdges = processVertex.getEdges(AtlasEdgeDirection.OUT, lineageInputLabel).iterator();
-                    traverseEdgesOnDemand(processEdges, true, depth, level, atlasLineageOnDemandContext, ret, processVertex, guid, inputEntitiesTraversed, traversalOrder);
-                }
-                if (direction == AtlasLineageOnDemandInfo.LineageDirection.OUTPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH) {
-                    Iterator<AtlasEdge> processEdges = processVertex.getEdges(AtlasEdgeDirection.OUT, lineageOutputLabel).iterator();
-                    traverseEdgesOnDemand(processEdges, false, depth, level, atlasLineageOnDemandContext, ret, processVertex, guid, outputEntitiesTraversed, traversalOrder);
-                }
+        if (!entityValidationResult.CheckIfConnectorVertex(lineageType)) {
+            AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
+            if (direction == AtlasLineageOnDemandInfo.LineageDirection.INPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH)
+                traverseEdgesOnDemand(datasetVertex, true, depth, level, new HashSet<>(), atlasLineageOnDemandContext, ret, guid, inputEntitiesTraversed, traversalOrder);
+            if (direction == AtlasLineageOnDemandInfo.LineageDirection.OUTPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH)
+                traverseEdgesOnDemand(datasetVertex, false, depth, level, new HashSet<>(), atlasLineageOnDemandContext, ret, guid, outputEntitiesTraversed, traversalOrder);
+            AtlasEntityHeader baseEntityHeader = entityRetriever.toAtlasEntityHeader(datasetVertex, atlasLineageOnDemandContext.getAttributes());
+            setGraphTraversalMetadata(level, traversalOrder, baseEntityHeader);
+            ret.getGuidEntityMap().put(guid, baseEntityHeader);
+        } else {
+            AtlasVertex processVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
+            // make one hop to the next dataset vertices from process vertex and traverse with 'depth = depth - 1'
+            if (direction == AtlasLineageOnDemandInfo.LineageDirection.INPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH) {
+                Iterator<AtlasEdge> processEdges = processVertex.getEdges(AtlasEdgeDirection.OUT, lineageInputLabel).iterator();
+                traverseEdgesOnDemand(processEdges, true, depth, level, atlasLineageOnDemandContext, ret, processVertex, guid, inputEntitiesTraversed, traversalOrder);
             }
+            if (direction == AtlasLineageOnDemandInfo.LineageDirection.OUTPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH) {
+                Iterator<AtlasEdge> processEdges = processVertex.getEdges(AtlasEdgeDirection.OUT, lineageOutputLabel).iterator();
+                traverseEdgesOnDemand(processEdges, false, depth, level, atlasLineageOnDemandContext, ret, processVertex, guid, outputEntitiesTraversed, traversalOrder);
+            }
+        }
+
         RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
     }
@@ -499,12 +530,10 @@ public class EntityLineageService implements AtlasLineageService {
 
 
         AtlasVertex baseVertex = AtlasGraphUtilsV2.findByGuid(this.graph, baseGuid);
-        HashMap<String, Boolean> dataTypeMap = validateAndGetEntityTypeMap(baseGuid);
+        EntityValidationResult entityValidationResult = validateAndGetEntityTypeMap(baseGuid);
 
-        boolean isNotConnecterVertex =  lineageType.equals(PRODUCT_ASSET_LINEAGE)
-                ? dataTypeMap.get(IS_DATA_PRODUCT)
-                : dataTypeMap.get(IS_DATASET);
-        enqueueNeighbours(baseVertex, dataTypeMap, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
+        boolean isNotConnecterVertex =  entityValidationResult.CheckIfConnectorVertex(lineageType);
+        enqueueNeighbours(baseVertex, entityValidationResult, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
         int currentDepth = 0;
         int currentLevel = isNotConnecterVertex? 0: 1;
 
@@ -530,20 +559,20 @@ public class EntityLineageService implements AtlasLineageService {
                 if (Objects.isNull(currentVertex))
                     throw new AtlasBaseException("Found null vertex during lineage graph traversal for guid: " + currentGUID);
 
-                HashMap<String, Boolean> currentEntityDataTypeMap = validateAndGetEntityTypeMap(currentGUID);
+                EntityValidationResult entityValidationResult1 = validateAndGetEntityTypeMap(currentGUID);
                 if (!lineageListContext.evaluateVertexFilter(currentVertex)) {
-                    enqueueNeighbours(currentVertex, currentEntityDataTypeMap, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
+                    enqueueNeighbours(currentVertex, entityValidationResult1, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
                     continue;
                 }
                 if (checkOffsetAndSkipEntity(lineageListContext, ret)) {
                     skippedVertices.add(currentGUID);
-                    enqueueNeighbours(currentVertex, currentEntityDataTypeMap, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
+                    enqueueNeighbours(currentVertex, entityValidationResult1, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
                     continue;
                 }
 
                 lineageListContext.incrementEntityCount();
                 // Get the neighbors for the current node
-                enqueueNeighbours(currentVertex, currentEntityDataTypeMap, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
+                enqueueNeighbours(currentVertex, entityValidationResult1, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
 
                 // Add the current node and its neighbors to the result
                 appendToResult(currentVertex, lineageListContext, ret, currentLevel);
@@ -567,19 +596,15 @@ public class EntityLineageService implements AtlasLineageService {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void enqueueNeighbours(AtlasVertex currentVertex, HashMap<String, Boolean> dataTypeMap,
-                                   AtlasLineageListContext lineageListContext, Queue<String> traversalQueue,
-                                   Set<String> visitedVertices, Set<String> skippedVertices,
-                                   Map<String, List<String>> lineageParentsForEntityMap, Map<String, List<String>> lineageChildrenForEntityMap) {
+    private void enqueueNeighbours(AtlasVertex currentVertex, EntityValidationResult entityValidationResult, AtlasLineageListContext lineageListContext,
+                                   Queue<String> traversalQueue, Set<String> visitedVertices, Set<String> skippedVertices, Map<String, List<String>> lineageParentsForEntityMap, Map<String, List<String>> lineageChildrenForEntityMap) {
         AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdges = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdges");
         Iterator<AtlasEdge> edges;
         String lineageInputLabel = RequestContext.get().getLineageInputLabel();
         String lineageOutputLabel = RequestContext.get().getLineageOutputLabel();
         String lineageType = lineageListContext.getLineageType();
-        boolean isConnecterVertex =  lineageType.equals(PRODUCT_ASSET_LINEAGE)
-                ? !dataTypeMap.get(IS_DATA_PRODUCT)
-                : !dataTypeMap.get(IS_DATASET);
-        if (!isConnecterVertex)
+        boolean isConnectorVertex =  entityValidationResult.CheckIfConnectorVertex(lineageType);
+        if (isConnectorVertex)
             edges = currentVertex.getEdges(IN, isInputDirection(lineageListContext) ? lineageOutputLabel : lineageInputLabel).iterator();
         else
             edges = currentVertex.getEdges(OUT, isInputDirection(lineageListContext) ? lineageInputLabel : lineageOutputLabel).iterator();
@@ -590,7 +615,7 @@ public class EntityLineageService implements AtlasLineageService {
             if (!lineageListContext.evaluateTraversalFilter(currentEdge))
                 continue;
             AtlasVertex neighbourVertex;
-            if (!isConnecterVertex)
+            if (isConnectorVertex)
                 neighbourVertex = currentEdge.getOutVertex();
             else
                 neighbourVertex = currentEdge.getInVertex();
