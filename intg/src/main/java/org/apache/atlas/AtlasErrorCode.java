@@ -297,7 +297,9 @@ public enum AtlasErrorCode {
     DATA_MODEL_NOT_EXIST(400, "ATLAS-400-00-117", "DataModel {0} does not exist"),
     QUALIFIED_NAME_PREFIX_NOT_EXIST(400, "ATLAS-400-00-118", "dMQualifiedNamePrefix is mandatory for DMEntity/DMAttribute"),
     NO_TYPE_EXISTS_FOR_QUALIFIED_NAME_PREFIX (400,"ATLAS-400-00-119", "No DMEntity/DMAttribute exists for dMQualifiedNamePrefix : {0}"),
-    NAME_NAMESPACE_NOT_EXIST (400, "ATLAS-400-00-120", "name/namespace are mandatory for DMEntity/DMAttribute");
+    NAME_NAMESPACE_NOT_EXIST (400, "ATLAS-400-00-120", "name/namespace are mandatory for DMEntity/DMAttribute"),
+    QUALIFIED_NAME_PREFIX_OR_TYPE_NOT_FOUND(400, "ATLAS-400-00-121", "qualifiedName/entityType are mandatory"),
+    INVALID_ENTITY_TYPE(400, "ATLAS-400-00-122", "Invalid entity type");
     private String errorCode;
     private String errorMessage;
     private Response.Status httpCode;
