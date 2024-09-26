@@ -18,12 +18,14 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.isNameInvalid;
 
+@Component
 public class DMEntityPreProcessor extends AbstractModelPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DMEntityPreProcessor.class);
 
@@ -91,7 +93,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         ModelResponse modelVersionResponse = replicateModelVersion(modelGuid, modelQualifiedName, now);
 
         // create modelVersion
-        if (modelVersionResponse.getCopyEntity() == null) {
+        if (modelVersionResponse.getReplicaEntity() == null) {
             String namespace = (String) entity.getAttributes().get(ATLAS_DM_NAMESPACE);
             modelVersionResponse = createEntity(
                     (modelQualifiedName + "/" + "v1"),
@@ -101,8 +103,8 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
                     context);
         }
 
-        AtlasEntity latestModelVersionEntity = modelVersionResponse.getCopyEntity();
-        AtlasVertex latestModelVersionVertex = modelVersionResponse.getCopyVertex();
+        AtlasEntity latestModelVersionEntity = modelVersionResponse.getReplicaEntity();
+        AtlasVertex latestModelVersionVertex = modelVersionResponse.getReplicaVertex();
 
 
         // model --- modelVersion relation
@@ -137,16 +139,16 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         // case when a mapping is added
         if (entity.getAppendRelationshipAttributes() != null) {
             Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForEntity(entity, entity.getAppendRelationshipAttributes(), context);
-            modelResponseParentEntity.getCopyEntity().setAppendRelationshipAttributes(appendRelationshipAttributes);
+            modelResponseParentEntity.getReplicaEntity().setAppendRelationshipAttributes(appendRelationshipAttributes);
             context.removeUpdatedWithRelationshipAttributes(entity);
-            context.setUpdatedWithRelationshipAttributes(modelResponseParentEntity.getCopyEntity());
+            context.setUpdatedWithRelationshipAttributes(modelResponseParentEntity.getReplicaEntity());
         }
 
         if (entity.getRemoveRelationshipAttributes() != null) {
             Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForEntity(entity, entity.getRemoveRelationshipAttributes(), context);
-            modelResponseParentEntity.getCopyEntity().setRemoveRelationshipAttributes(appendRelationshipAttributes);
+            modelResponseParentEntity.getReplicaEntity().setRemoveRelationshipAttributes(appendRelationshipAttributes);
             context.removeUpdatedWithDeleteRelationshipAttributes(entity);
-            context.setUpdatedWithRemoveRelationshipAttributes(modelResponseParentEntity.getCopyEntity());
+            context.setUpdatedWithRemoveRelationshipAttributes(modelResponseParentEntity.getReplicaEntity());
         }
     }
 }

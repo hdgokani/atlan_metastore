@@ -79,8 +79,8 @@ public class DMEntityAssociationPreProcessor extends AbstractModelPreProcessor {
         long now = RequestContext.get().getRequestTime();
 
         ModelResponse modelResponse = replicateDMAssociation(entity, vertex, now);
-        AtlasEntity copyEntity = modelResponse.getCopyEntity();
-        AtlasVertex copyVertex = modelResponse.getCopyVertex();
+        AtlasEntity copyEntity = modelResponse.getReplicaEntity();
+        AtlasVertex copyVertex = modelResponse.getReplicaVertex();
         applyDiffs(entity, copyEntity, ATLAS_DM_ENTITY_ASSOCIATION_TYPE);
         unsetExpiredDates(copyEntity, copyVertex);
 
@@ -88,16 +88,16 @@ public class DMEntityAssociationPreProcessor extends AbstractModelPreProcessor {
         // case when a mapping is added
         if (entity.getAppendRelationshipAttributes() != null) {
             Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForEntity(entity, entity.getAppendRelationshipAttributes(), context);
-            modelResponse.getCopyEntity().setAppendRelationshipAttributes(appendRelationshipAttributes);
+            modelResponse.getReplicaEntity().setAppendRelationshipAttributes(appendRelationshipAttributes);
             context.removeUpdatedWithRelationshipAttributes(entity);
-            context.setUpdatedWithRelationshipAttributes(modelResponse.getCopyEntity());
+            context.setUpdatedWithRelationshipAttributes(modelResponse.getReplicaEntity());
         }
 
         if (entity.getRemoveRelationshipAttributes() != null) {
             Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForEntity(entity, entity.getRemoveRelationshipAttributes(), context);
-            modelResponse.getCopyEntity().setRemoveRelationshipAttributes(appendRelationshipAttributes);
+            modelResponse.getReplicaEntity().setRemoveRelationshipAttributes(appendRelationshipAttributes);
             context.removeUpdatedWithDeleteRelationshipAttributes(entity);
-            context.setUpdatedWithRemoveRelationshipAttributes(modelResponse.getCopyEntity());
+            context.setUpdatedWithRemoveRelationshipAttributes(modelResponse.getReplicaEntity());
         }
     }
 }

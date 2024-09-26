@@ -13,7 +13,6 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -119,7 +118,7 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
 
         List<AtlasRelatedObjectId> existingEntities = null;
         ModelResponse modelVersionResponse = replicateModelVersion(modelGuid, modelQualifiedName, now);
-        if (modelVersionResponse.getCopyEntity() == null) {
+        if (modelVersionResponse.getReplicaEntity() == null) {
             modelVersionResponse = createEntity(
                     (modelQualifiedName + "/" + modelVersion),
                     modelVersion,
@@ -127,15 +126,15 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
                     namespace,
                     context);
         }
-        AtlasEntity latestModelVersionEntity = modelVersionResponse.getCopyEntity();
-        AtlasVertex latestModelVersionVertex = modelVersionResponse.getCopyVertex();
+        AtlasEntity latestModelVersionEntity = modelVersionResponse.getReplicaEntity();
+        AtlasVertex latestModelVersionVertex = modelVersionResponse.getReplicaVertex();
 
 
         // model --- modelVersion relation
         createModelModelVersionRelation(modelGuid, latestModelVersionEntity.getGuid());
 
         // modelVersion --- entity relation
-        createModelVersionModelEntityRelationship(latestModelVersionVertex, modelENtityResponse.getCopyVertex());
+        createModelVersionModelEntityRelationship(latestModelVersionVertex, modelENtityResponse.getReplicaVertex());
 
         // modelVersion --- entitiesOfExistingModelVersion
         if (modelVersionResponse.getExistingEntity() != null && modelVersionResponse.getExistingEntity().getRelationshipAttributes() != null) {
@@ -144,16 +143,16 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
         }
 
         // entity --- attributes of existingEntity relation
-        createModelEntityModelAttributeRelation(modelENtityResponse.getCopyVertex(), existingAttributes);
+        createModelEntityModelAttributeRelation(modelENtityResponse.getReplicaVertex(), existingAttributes);
 
         // latest entity ---- new attribute relation
-        createModelEntityModelAttributeRelation(modelENtityResponse.getCopyVertex(), vertexAttribute);
+        createModelEntityModelAttributeRelation(modelENtityResponse.getReplicaVertex(), vertexAttribute);
 
         context.addCreated(latestModelVersionEntity.getGuid(), latestModelVersionEntity,
                 typeRegistry.getEntityTypeByName(ATLAS_DM_VERSION_TYPE), latestModelVersionVertex);
 
-        context.addCreated(modelENtityResponse.getCopyEntity().getGuid(), modelENtityResponse.getCopyEntity(),
-                typeRegistry.getEntityTypeByName(ATLAS_DM_ENTITY_TYPE), modelENtityResponse.getCopyVertex());
+        context.addCreated(modelENtityResponse.getReplicaEntity().getGuid(), modelENtityResponse.getReplicaEntity(),
+                typeRegistry.getEntityTypeByName(ATLAS_DM_ENTITY_TYPE), modelENtityResponse.getReplicaVertex());
 
         // resolve references
         context.getDiscoveryContext().
@@ -169,13 +168,13 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
         // case when a mapping is added
         if (entityAttribute.getAppendRelationshipAttributes() != null) {
             Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForAttribute(entityAttribute, entityAttribute.getAppendRelationshipAttributes(), context);
-            modelResponseParentEntity.getCopyEntity().setAppendRelationshipAttributes(new HashMap<>(appendRelationshipAttributes));
+            modelResponseParentEntity.getReplicaEntity().setAppendRelationshipAttributes(new HashMap<>(appendRelationshipAttributes));
             context.removeUpdatedWithRelationshipAttributes(entityAttribute);
         }
 
         if (entityAttribute.getRemoveRelationshipAttributes() != null) {
             Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForAttribute(entityAttribute, entityAttribute.getRemoveRelationshipAttributes(), context);
-            modelResponseParentEntity.getCopyEntity().setRemoveRelationshipAttributes(appendRelationshipAttributes);
+            modelResponseParentEntity.getReplicaEntity().setRemoveRelationshipAttributes(appendRelationshipAttributes);
             context.removeUpdatedWithDeleteRelationshipAttributes(entityAttribute);
         }
     }
