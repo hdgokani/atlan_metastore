@@ -76,6 +76,8 @@ import java.util.*;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
 import static org.apache.atlas.authorize.AtlasPrivilege.*;
+import static org.apache.atlas.repository.Constants.ATTR_CONTRACT;
+import static org.apache.atlas.repository.Constants.ATTR_CONTRACT_JSON;
 
 
 /**
@@ -99,6 +101,8 @@ public class EntityREST {
         add("rawQueryText");
         add("variablesSchemaBase64");
         add("visualBuilderSchemaBase64");
+        add(ATTR_CONTRACT);
+        add(ATTR_CONTRACT_JSON);
     }};
 
 
@@ -895,7 +899,7 @@ public class EntityREST {
                                                  @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
                                                  @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-        RequestContext.get().setEnableCache(false);
+
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" +
@@ -1871,6 +1875,29 @@ public class EntityREST {
         }
     }
 
+    @POST
+    @Path("/guid/bulk/repairindex")
+    public void repairEntityIndexBulk(Set<String> guids) throws AtlasBaseException {
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_REPAIR_INDEX), "Admin Repair Index");
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairEntityIndexBulk(" + guids.size() + ")");
+            }
+            RepairIndex repairIndex = new RepairIndex();
+            repairIndex.setupGraph();
+
+            repairIndex.restoreByIds(guids);
+        } catch (Exception e) {
+            LOG.error("Exception while repairEntityIndexBulk ", e);
+            throw new AtlasBaseException(e);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
 
     @POST
     @Path("/repairindex/{typename}")

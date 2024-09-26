@@ -28,10 +28,16 @@ public class IndexSearchParams extends SearchParams {
     * */
     private boolean allowDeletedRelations;
     private boolean accessControlExclusive;
+    private boolean includeRelationshipAttributes;
 
     @Override
     public String getQuery() {
         return queryString;
+    }
+
+    @Override
+    public void setQuery(String query) {
+        this.queryString = query;
     }
 
     public Map getDsl() {
@@ -79,6 +85,14 @@ public class IndexSearchParams extends SearchParams {
         this.relationAttributes = relationAttributes;
     }
 
+    public boolean isIncludeRelationshipAttributes() {
+        return includeRelationshipAttributes;
+    }
+
+    public void setIncludeRelationshipAttributes(boolean includeRelationshipAttributes) {
+        this.includeRelationshipAttributes = includeRelationshipAttributes;
+    }
+
     @Override
     public String toString() {
         return "IndexSearchParams{" +
@@ -88,7 +102,9 @@ public class IndexSearchParams extends SearchParams {
                 ", queryString='" + queryString + '\'' +
                 ", allowDeletedRelations=" + allowDeletedRelations +
                 ", accessControlExclusive=" + accessControlExclusive +
+                ", includeRelationshipAttributes=" + includeRelationshipAttributes +
                 ", utmTags="+ getUtmTags() +
+                ", enableFullRestriction="+ enableFullRestriction +
                 '}';
     }
 }
