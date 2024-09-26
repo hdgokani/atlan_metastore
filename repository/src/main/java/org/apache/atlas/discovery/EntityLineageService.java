@@ -97,6 +97,7 @@ public class EntityLineageService implements AtlasLineageService {
     public static final HashMap<String, String[]> LINEAGE_MAP = new HashMap<String, String[]>(){{
         put(DATASET_PROCESS_LINEAGE, new String[]{PROCESS_INPUTS_EDGE, PROCESS_OUTPUTS_EDGE});
         put(PRODUCT_ASSET_LINEAGE, new String[]{OUTPUT_PORT_EDGE, INPUT_PORT_EDGE});
+        put(CONNECTION_PROCESS_LINEAGE, new String[]{CONNECTION_PROCESS_INPUTS_EDGE, CONNECTION_PROCESS_OUTPUTS_EDGE});
     }};
     private static final String COLUMNS = "columns";
     private static final boolean LINEAGE_USING_GREMLIN = AtlasConfiguration.LINEAGE_USING_GREMLIN.getBoolean();
@@ -107,6 +108,7 @@ public class EntityLineageService implements AtlasLineageService {
     public static final String IS_DATASET = "isDataset";
     public static final String PRODUCT_ASSET_LINEAGE = "ProductAssetLineage";
     public static final String DATASET_PROCESS_LINEAGE = "DatasetProcessLineage";
+    public static final String CONNECTION_PROCESS_LINEAGE = "ConnectionProcessLineage";
 
     private final AtlasGraph graph;
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
