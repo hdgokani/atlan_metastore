@@ -60,7 +60,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         private AtlasVertex existingVertex;
         private AtlasVertex copyVertex;
 
-        protected ModelResponse(AtlasEntity existingEntity, AtlasEntity copyEntity,
+        public ModelResponse(AtlasEntity existingEntity, AtlasEntity copyEntity,
                                 AtlasVertex existingVertex, AtlasVertex copyVertex) {
             this.existingEntity = existingEntity;
             this.copyEntity = copyEntity;
@@ -68,7 +68,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
             this.copyVertex = copyVertex;
         }
 
-        protected ModelResponse(AtlasEntity copyEntity, AtlasVertex copyVertex) {
+        public ModelResponse(AtlasEntity copyEntity, AtlasVertex copyVertex) {
             this.copyEntity = copyEntity;
             this.copyVertex = copyVertex;
         }
@@ -477,6 +477,10 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
         AtlasVertex modelVertex = AtlasGraphUtilsV2.findByUniqueAttributes(
                 typeRegistry.getEntityTypeByName(ATLAS_DM_DATA_MODEL), attrValues);
+
+        if (modelVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.DATA_MODEL_NOT_EXIST);
+        }
 
         String modelGuid = AtlasGraphUtilsV2.getIdFromVertex(modelVertex);
         ModelResponse modelVersionResponse = replicateModelVersion(modelGuid, modelQualifiedName, now);
