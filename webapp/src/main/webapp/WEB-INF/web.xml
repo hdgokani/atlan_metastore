@@ -122,7 +122,7 @@
 
     <filter-mapping>
         <filter-name>gzipFilter</filter-name>
-        <url-pattern>/*</url-pattern>
+        <url-pattern>/api/atlas/*/lineage/*</url-pattern>
     </filter-mapping>
 
     <listener>
