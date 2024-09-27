@@ -1038,7 +1038,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 LOG.debug("Performing ES relationship search for the params ({})", searchParams);
             }
 
-            indexQuery = graph.elasticsearchQuery(EDGE_INDEX_NAME);
+            indexQuery = graph.elasticsearchQuery("janusgraph_edge_index");
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQueryEdge");
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
             if (indexQueryResult == null) {
