@@ -148,7 +148,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         return new ModelResponse(existingModelVersionEntity, copyModelVersion, existingModelVersionVertex, copyModelVertex);
     }
 
-    protected ModelResponse replicateModelEntity(AtlasEntity existingEntity, AtlasVertex existingEntityVertex, String entityQualifiedNamePrefix, long epoch) throws AtlasBaseException {
+    public ModelResponse replicateModelEntity(AtlasEntity existingEntity, AtlasVertex existingEntityVertex, String entityQualifiedNamePrefix, long epoch) throws AtlasBaseException {
         AtlasVertex copyEntityVertex = entityGraphMapper.createVertex(existingEntity);
         AtlasEntity copyEntity = entityRetriever.toAtlasEntity(copyEntityVertex);
         copyAllAttributes(existingEntity, copyEntity, epoch);
@@ -176,7 +176,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         return new ModelResponse(existingAttribute, copyAttributeEntity, existingAttributeVertex, copyAttributeVertex);
     }
 
-    protected void createModelVersionModelEntityRelationship(AtlasVertex modelVersionVertex,
+    public void createModelVersionModelEntityRelationship(AtlasVertex modelVersionVertex,
                                                              AtlasVertex modelEntityVertex) throws AtlasBaseException {
         AtlasRelationship modelVersionEntityRelation = new AtlasRelationship("d_m_version_d_m_entities");
         modelVersionEntityRelation.setStatus(AtlasRelationship.Status.ACTIVE);
