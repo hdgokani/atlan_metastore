@@ -3063,7 +3063,7 @@ public class EntityGraphMapper {
                                     deletedClassifications.add(classification);
                                     deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
                                 }
-                                catch (IllegalStateException e){
+                                catch (IllegalStateException | AtlasBaseException e){
                                     e.printStackTrace();
                                 }
                             }
