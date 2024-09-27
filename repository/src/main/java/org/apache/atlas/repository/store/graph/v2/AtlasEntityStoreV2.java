@@ -1589,21 +1589,34 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
         }
 
+
         List<AtlasEntity> copyOfAppendRelationshipAttributes = new ArrayList<>(context.getUpdatedEntitiesForAppendRelationshipAttribute());
         for (AtlasEntity entity : copyOfAppendRelationshipAttributes) {
             entityType = context.getType(entity.getGuid());
-            preProcessors = getPreProcessor(entityType.getTypeName());
-            for (PreProcessor processor : preProcessors) {
-                processor.processAttributes(entity, context, UPDATE);
+            if( entityType.getTypeName().equals(ATLAS_DM_ENTITY_TYPE) ||
+                    entityType.getTypeName().equals(ATLAS_DM_ATTRIBUTE_TYPE) ||
+                    entityType.getTypeName().equals(ATLAS_DM_ENTITY_ASSOCIATION_TYPE) ||
+                    entity.getTypeName().equals(ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE)
+            ){
+                preProcessors = getPreProcessor(entityType.getTypeName());
+                for (PreProcessor processor : preProcessors) {
+                    processor.processAttributes(entity, context, UPDATE);
+                }
             }
         }
 
         List<AtlasEntity> copyOfRemoveRelationshipAttributes = new ArrayList<>(context.getEntitiesUpdatedWithRemoveRelationshipAttribute());
         for (AtlasEntity entity : copyOfRemoveRelationshipAttributes) {
             entityType = context.getType(entity.getGuid());
-            preProcessors = getPreProcessor(entityType.getTypeName());
-            for (PreProcessor processor : preProcessors) {
-                processor.processAttributes(entity, context, UPDATE);
+            if( entityType.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)
+                    || entityType.getTypeName().equals(ATLAS_DM_ATTRIBUTE_TYPE) ||
+                    entityType.getTypeName().equals(ATLAS_DM_ENTITY_ASSOCIATION_TYPE) ||
+                    entity.getTypeName().equals(ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE)
+            ){
+                preProcessors = getPreProcessor(entityType.getTypeName());
+                for (PreProcessor processor : preProcessors) {
+                    processor.processAttributes(entity, context, UPDATE);
+                }
             }
         }
     }
