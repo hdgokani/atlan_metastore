@@ -114,7 +114,6 @@
         <url-pattern>/api/atlas/admin/status</url-pattern>
     </filter-mapping>
 
-
     <filter>
         <filter-name>gzipFilter</filter-name>
         <filter-class>org.apache.atlas.web.filters.GzipCompressionFilter</filter-class>
