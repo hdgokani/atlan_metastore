@@ -72,6 +72,9 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.Stakehol
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.model.DMAttributePreprocessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.model.DMEntityAssociationPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.model.DMEntityPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.ReadmePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
@@ -1655,11 +1658,29 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         List<AtlasEntity> copyOfUpdated = new ArrayList<>(context.getUpdatedEntities());
-        for (AtlasEntity entity: copyOfUpdated) {
+        for (AtlasEntity entity : copyOfUpdated) {
+            entityType = context.getType(entity.getGuid());
+            preProcessors = getPreProcessor(entityType.getTypeName());
+            for (PreProcessor processor : preProcessors) {
+                processor.processAttributes(entity, context, UPDATE);
+            }
+        }
+
+        List<AtlasEntity> copyOfAppendRelationshipAttributes = new ArrayList<>(context.getUpdatedEntitiesForAppendRelationshipAttribute());
+        for (AtlasEntity entity : copyOfAppendRelationshipAttributes) {
             entityType = context.getType(entity.getGuid());
             preProcessors = getPreProcessor(entityType.getTypeName());
             for(PreProcessor processor : preProcessors){
                 LOG.debug("Executing preprocessor {} for entity {}", processor.getClass().getName(), entity.getGuid());
+                processor.processAttributes(entity, context, UPDATE);
+            }
+        }
+
+        List<AtlasEntity> copyOfRemoveRelationshipAttributes = new ArrayList<>(context.getEntitiesUpdatedWithRemoveRelationshipAttribute());
+        for (AtlasEntity entity : copyOfRemoveRelationshipAttributes) {
+            entityType = context.getType(entity.getGuid());
+            preProcessors = getPreProcessor(entityType.getTypeName());
+            for (PreProcessor processor : preProcessors) {
                 processor.processAttributes(entity, context, UPDATE);
             }
         }
@@ -2006,6 +2027,17 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             case PROCESS_ENTITY_TYPE:
                 preProcessors.add(new LineagePreProcessor(typeRegistry, entityRetriever, graph, this));
+            case ATLAS_DM_ENTITY_TYPE:
+                preProcessors.add(new DMEntityPreProcessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
+                break;
+            case ATLAS_DM_ATTRIBUTE_TYPE:
+                preProcessors.add(new DMAttributePreprocessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
+                break;
+            case ATLAS_DM_ENTITY_ASSOCIATION_TYPE:
+                preProcessors.add(new DMEntityAssociationPreProcessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
+                break;
+            case ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE:
+                preProcessors.add(new DMAttributePreprocessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
         }
 
         //  The default global pre-processor for all AssetTypes
