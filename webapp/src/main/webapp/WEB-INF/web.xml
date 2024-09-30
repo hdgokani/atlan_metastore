@@ -122,11 +122,8 @@
 
     <filter-mapping>
         <filter-name>gzipFilter</filter-name>
-        <url-pattern>/api/atlas/v2/lineage</url-pattern>
-        <url-pattern>/api/atlas/v2/lineage/*</url-pattern>
-        <url-pattern>/api/atlas/v1/lineage</url-pattern>
-        <url-pattern>/api/atlas/v1/lineage/*</url-pattern>
         <url-pattern>/api/meta/lineage/*</url-pattern>
+        <url-pattern>/api/meta/search/*</url-pattern>
     </filter-mapping>
 
     <listener>
