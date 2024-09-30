@@ -33,6 +33,6 @@ public class GzipCompressionFilter implements Filter {
 
     @Override
     public void destroy() {
-        
+        LOG.info("GzipCompressionFilter destroyed");
     }
 }
