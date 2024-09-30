@@ -15,6 +15,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper {
 
     public GzipResponseWrapper(HttpServletResponse response) throws IOException {
         super(response);
+        response.setHeader("Content-Encoding", "gzip");
     }
 
     @Override
