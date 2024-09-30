@@ -126,6 +126,7 @@
         <url-pattern>/api/atlas/v2/lineage/*</url-pattern>
         <url-pattern>/api/atlas/v1/lineage</url-pattern>
         <url-pattern>/api/atlas/v1/lineage/*</url-pattern>
+        <url-pattern>/api/meta/lineage/*</url-pattern>
     </filter-mapping>
 
     <listener>
