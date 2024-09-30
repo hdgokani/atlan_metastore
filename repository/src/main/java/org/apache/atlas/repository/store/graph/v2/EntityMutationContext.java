@@ -21,6 +21,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.model.ModelResponse;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.commons.lang.StringUtils;
 
@@ -37,6 +38,10 @@ public class EntityMutationContext {
     private final Map<String, String> guidAssignments = new HashMap<>();
     private List<AtlasVertex> entitiesToDelete = null;
     private List<AtlasVertex> entitiesToRestore = null;
+
+    private Map<String, ModelResponse> modelVersionCache = new HashMap<>();
+
+    private Map<String, String> modelCache = new HashMap<>();
 
     private Set<String> removedLineageRelations = new HashSet<>();
 
@@ -136,6 +141,22 @@ public class EntityMutationContext {
     public void cacheEntity(String guid, AtlasVertex vertex, AtlasEntityType entityType) {
         entityVsType.put(guid, entityType);
         entityVsVertex.put(guid, vertex);
+    }
+
+    public void cacheModelVersion(String modelQualifiedName, ModelResponse modelVersionResponse) {
+        modelVersionCache.putIfAbsent(modelQualifiedName, modelVersionResponse);
+    }
+
+    public ModelResponse getModelVersion(String modelQualifiedName) {
+        return modelVersionCache.get(modelQualifiedName);
+    }
+
+    public void cacheModel(String modelQualifiedName, String modelGuid) {
+        modelCache.putIfAbsent(modelQualifiedName, modelGuid);
+    }
+
+    public String getModel(String modelQualifiedName) {
+        return modelCache.get(modelQualifiedName);
     }
 
     public EntityGraphDiscoveryContext getDiscoveryContext() {
