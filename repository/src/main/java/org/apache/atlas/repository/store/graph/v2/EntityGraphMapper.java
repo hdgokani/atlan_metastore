@@ -2253,8 +2253,13 @@ public class EntityGraphMapper {
         List<AtlasRelatedObjectId> customRelationships = (List<AtlasRelatedObjectId>) ctx.getValue();
 
         if (CollectionUtils.isNotEmpty(customRelationships)) {
-            for (AtlasRelatedObjectId relatedObjectId : customRelationships) {
-                validateCustomRelationshipAttributeValueCase(relatedObjectId.getRelationshipAttributes().getAttributes());
+            for (AtlasObjectId objectId : customRelationships) {
+                if (objectId instanceof AtlasRelatedObjectId) {
+                    AtlasRelatedObjectId relatedObjectId = (AtlasRelatedObjectId) objectId;
+                    if (relatedObjectId.getRelationshipAttributes() != null) {
+                        validateCustomRelationshipAttributeValueCase(relatedObjectId.getRelationshipAttributes().getAttributes());
+                    }
+                }
             }
         }
     }
@@ -2265,11 +2270,20 @@ public class EntityGraphMapper {
         }
 
         for (String key : attributes.keySet()) {
-            if (key.equals("toType") || key.equals("fromType")) {
+            if (key.equals("toTypeLabel") || key.equals("fromTypeLabel")) {
                 String value = (String) attributes.get(key);
-                char init = value.charAt(0);
-                String sub = value.substring(1);
-                attributes.put(key, Character.toUpperCase(init) + sub.toLowerCase());
+
+                if (StringUtils.isNotEmpty(value)) {
+                    StringBuilder finalValue = new StringBuilder();
+
+                    finalValue.append(Character.toUpperCase(value.charAt(0)));
+                    String sub = value.substring(1);
+                    if (StringUtils.isNotEmpty(sub)) {
+                        finalValue.append(sub.toLowerCase());
+                    }
+
+                    attributes.put(key, finalValue.toString());
+                }
             }
         }
     }
