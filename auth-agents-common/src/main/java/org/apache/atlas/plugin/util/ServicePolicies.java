@@ -20,6 +20,7 @@
 package org.apache.atlas.plugin.util;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -40,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -390,7 +392,7 @@ public class ServicePolicies implements java.io.Serializable {
 		return ret;
 	}
 
-	public static ServicePolicies applyDelta(final ServicePolicies servicePolicies, RangerPolicyEngineImpl policyEngine) {
+	public static ServicePolicies  applyDelta(final ServicePolicies servicePolicies, RangerPolicyEngineImpl policyEngine) {
 		ServicePolicies ret = copyHeader(servicePolicies);
 
 		List<RangerPolicy> oldResourcePolicies = policyEngine.getResourcePolicies();

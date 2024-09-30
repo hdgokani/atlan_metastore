@@ -157,6 +157,10 @@ public final class Constants {
     public static final String INPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.inputPortDataProducts";
     public static final String OUTPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.outputPortDataProducts";
 
+    public static final String UD_RELATIONSHIP_EDGE_LABEL = "__Referenceable.userDefRelationshipTo";
+    public static final String UD_RELATIONSHIP_END_NAME_FROM = "userDefRelationshipFrom";
+    public static final String UD_RELATIONSHIP_END_NAME_TO = "userDefRelationshipTo";
+
     /**
      * SQL property keys.
      */
@@ -176,6 +180,8 @@ public final class Constants {
     public static final String POLICY_ENTITY_TYPE         = "AuthPolicy";
     public static final String SERVICE_ENTITY_TYPE        = "AuthService";
     public static final String REL_POLICY_TO_ACCESS_CONTROL  = "access_control_policies";
+
+    public static final String POLICY_SERVICE_NAME_ABAC  = "atlas_abac";
 
     /**
      * Resource
@@ -202,6 +208,33 @@ public final class Constants {
     public static final String PROCESS_INPUTS = "__Process.inputs";
 
     public static String[] PROCESS_EDGE_LABELS = {PROCESS_OUTPUTS, PROCESS_INPUTS};
+
+    public static final String PROCESS_ENTITY_TYPE = "Process";
+
+    public static final String CONNECTION_PROCESS_ENTITY_TYPE = "ConnectionProcess";
+    public static final String PARENT_CONNECTION_PROCESS_QUALIFIED_NAME = "parentConnectionProcessQualifiedName";
+
+    /***
+     * DataModel
+     */
+
+    public static final String ATLAS_DM_ENTITY_TYPE  = "DMEntity";
+
+    public static final String ATLAS_DM_ATTRIBUTE_TYPE  = "DMAttribute";
+    public static final String ATLAS_DM_DATA_MODEL = "DMDataModel";
+
+    public static final String ATLAS_DM_VERSION_TYPE  = "DMVersion";
+
+    public static final String ATLAS_DM_ENTITY_ASSOCIATION_TYPE= "DMEntityAssociation";
+    public static final String ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE= "DMAttributeAssociation";
+
+    public static final String ATLAS_DM_QUALIFIED_NAME_PREFIX = "dMQualifiedNamePrefix";
+    public static final String ATLAS_DM_NAMESPACE = "dMDataModelNamespace";
+    public static  final String ATLAS_DM_EXPIRED_AT_SYSTEM_DATE = "dMDataModelExpiredAtSystemDate";
+    public static  final String ATLAS_DM_EXPIRED_AT_BUSINESS_DATE = "dMDataModelExpiredAtBusinessDate";
+    public static  final String ATLAS_DM_SYSTEM_DATE = "dMDataModelSystemDate";
+    public  static  final String ATLAS_DM_BUSINESS_DATE = "dMDataModelBusinessDate";
+
 
     /**
      * The homeId field is used when saving into Atlas a copy of an object that is being imported from another
@@ -261,9 +294,11 @@ public final class Constants {
     public static final String INDEX_PREFIX = "janusgraph_";
 
     public static final String VERTEX_INDEX_NAME = INDEX_PREFIX + VERTEX_INDEX;
+    public static final String EDGE_INDEX_NAME = INDEX_PREFIX + EDGE_INDEX;
 
     public static final String NAME                                    = "name";
     public static final String QUALIFIED_NAME                          = "qualifiedName";
+    public static final String CONNECTION_QUALIFIED_NAME               = "connectionQualifiedName";
     public static final String TYPE_NAME_PROPERTY_KEY                  = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
     public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE        = "atlas.graph.index.search.max-result-set-size";
     public static final String INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH = "atlas.graph.index.search.types.max-query-str-length";
@@ -372,6 +407,8 @@ public final class Constants {
     public static final String FILE_SPOOL_SOURCE  = "file_spool";
     public static final String DOMAIN_GUIDS_ATTR = "domainGUIDs";
     public static final String ASSET_POLICY_GUIDS  = "assetPolicyGUIDs";
+
+    public static final String NON_COMPLIANT_ASSET_POLICY_GUIDS  = "nonCompliantAssetPolicyGUIDs";
     public static final String ASSET_POLICIES_COUNT  = "assetPoliciesCount";
 
     /*

@@ -91,8 +91,14 @@ public class RequestContext {
     private boolean     allowDeletedRelationsIndexsearch = false;
     private boolean     includeMeanings = true;
     private boolean     includeClassifications = true;
+    private boolean     includeRelationshipAttributes;
 
     private boolean     includeClassificationNames = false;
+
+
+
+    private String     lineageInputLabel = "";
+    private String     lineageOutputLabel = "";
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
@@ -102,7 +108,6 @@ public class RequestContext {
     private boolean skipAuthorizationCheck = false;
     private Set<String> deletedEdgesIdsForResetHasLineage = new HashSet<>(0);
     private String requestUri;
-    private boolean cacheEnabled;
 
     private boolean delayTagNotifications = false;
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
@@ -156,6 +161,7 @@ public class RequestContext {
         this.onlyCAUpdateEntities.clear();
         this.onlyBAUpdateEntities.clear();
         this.relationAttrsForSearch.clear();
+        this.includeRelationshipAttributes = false;
         this.queuedTasks.clear();
         this.newElementsCreatedMap.clear();
         this.removedElementsMap.clear();
@@ -210,10 +216,33 @@ public class RequestContext {
         }
     }
 
+    public boolean isIncludeRelationshipAttributes() {
+        return includeRelationshipAttributes;
+    }
+
+    public void setIncludeRelationshipAttributes(boolean includeRelationshipAttributes) {
+        this.includeRelationshipAttributes = includeRelationshipAttributes;
+    }
+
     public Map<String, List<Object>> getRemovedElementsMap() {
         return removedElementsMap;
     }
 
+    public String getLineageInputLabel() {
+        return lineageInputLabel;
+    }
+
+    public void setLineageInputLabel(String lineageInputLabel) {
+        this.lineageInputLabel = lineageInputLabel;
+    }
+
+    public String getLineageOutputLabel() {
+        return lineageOutputLabel;
+    }
+
+    public void setLineageOutputLabel(String lineageOutputLabel) {
+        this.lineageOutputLabel = lineageOutputLabel;
+    }
     public Map<String, List<Object>> getNewElementsCreatedMap() {
         return newElementsCreatedMap;
     }
@@ -715,14 +744,6 @@ public class RequestContext {
 
     public String getRequestUri() {
         return this.requestUri;
-    }
-
-    public void setEnableCache(boolean cacheEnabled) {
-        this.cacheEnabled = cacheEnabled;
-    }
-
-    public boolean isCacheEnabled() {
-        return this.cacheEnabled;
     }
 
     public boolean isIncludeClassificationNames() {
