@@ -376,5 +376,5 @@ public interface AtlasEntityStore {
 
     void unlinkBusinessPolicy(String policyId, Set<String> unlinkGuids) throws AtlasBaseException;
 
-    void moveBusinessPolicy(Set<String> policyId, String assetId, String type) throws AtlasBaseException;
+    void moveBusinessPolicies(Set<String> policyId, String assetId, String type) throws AtlasBaseException;
 }

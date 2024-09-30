@@ -3133,7 +3133,8 @@ public class EntityGraphMapper {
     public void cleanUpClassificationPropagation(String classificationName, int batchLimit) throws AtlasBaseException {
         int CLEANUP_MAX = batchLimit <= 0 ? CLEANUP_BATCH_SIZE : batchLimit * CLEANUP_BATCH_SIZE;
         int cleanedUpCount = 0;
-
+        final int CHUNK_SIZE_TEMP = 50;
+        long classificationEdgeCount = 0;
         Iterator<AtlasVertex> tagVertices = GraphHelper.getClassificationVertices(graph, classificationName, CLEANUP_BATCH_SIZE);
         List<AtlasVertex> tagVerticesProcessed = new ArrayList<>(0);
         List<AtlasVertex> currentAssetVerticesBatch = new ArrayList<>(0);
@@ -3161,7 +3162,7 @@ public class EntityGraphMapper {
                 int offset = 0;
                 do {
                     try {
-                        int toIndex = Math.min((offset + CHUNK_SIZE), currentAssetsBatchSize);
+                        int toIndex = Math.min((offset + CHUNK_SIZE_TEMP), currentAssetsBatchSize);
                         List<AtlasVertex> entityVertices = currentAssetVerticesBatch.subList(offset, toIndex);
                         List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
                         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
@@ -3169,10 +3170,16 @@ public class EntityGraphMapper {
                         for (AtlasVertex vertex : entityVertices) {
                             List<AtlasClassification> deletedClassifications = new ArrayList<>();
                             List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
+                            classificationEdgeCount += classificationEdges.size();
                             for (AtlasEdge edge : classificationEdges) {
-                                AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
-                                deletedClassifications.add(classification);
-                                deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                                try {
+                                    AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
+                                    deletedClassifications.add(classification);
+                                    deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                                }
+                                catch (IllegalStateException | AtlasBaseException e){
+                                    e.printStackTrace();
+                                }
                             }
 
                             AtlasEntity entity = repairClassificationMappings(vertex);
@@ -3182,8 +3189,10 @@ public class EntityGraphMapper {
 
                         transactionInterceptHelper.intercept();
 
-                        offset += CHUNK_SIZE;
+                        offset += CHUNK_SIZE_TEMP;
                     } finally {
+                        LOG.info("For offset {} , classificationEdge were : {}", offset, classificationEdgeCount);
+                        classificationEdgeCount = 0;
                         LOG.info("Cleaned up {} entities for classification {}", offset, classificationName);
                     }
 
@@ -5035,28 +5044,37 @@ public class EntityGraphMapper {
         existingValues.forEach(existingValue -> vertex.removePropertyValue(DOMAIN_GUIDS_ATTR, existingValue));
         vertex.setProperty(DOMAIN_GUIDS_ATTR, meshEntityId);
     }
-    public AtlasVertex moveBusinessPolicy(Set<String> policyIds, String assetId, String type) throws AtlasBaseException {
+    public AtlasVertex moveBusinessPolicies(Set<String> policyIds, String assetId, String type) throws AtlasBaseException {
         // Retrieve the AtlasVertex for the given assetId
         AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(graph, assetId);
 
-        if(assetVertex == null){
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "asset not found");
+        if (assetVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Asset with guid not found");
         }
 
         // Get the sets of governed and non-compliant policy GUIDs
         Set<String> governedPolicies = assetVertex.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
         Set<String> nonCompliantPolicies = assetVertex.getMultiValuedSetProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, String.class);
 
-        // Determine if the type is governed or non-compliant and move policies accordingly
+        // Determine if the type is governed or non-compliant
         boolean isGoverned = MoveBusinessPolicyRequest.Type.GOVERNED.getDescription().equals(type);
 
+        Set<String> currentPolicies = isGoverned ? new HashSet<>(governedPolicies) : new HashSet<>(nonCompliantPolicies);
+        policyIds.removeAll(currentPolicies);
+
+        // Check if the asset already has the given policy IDs
+        if (policyIds.isEmpty()) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Asset already has the given policy id");
+        }
+
+        // Move policies to the appropriate set
         policyIds.forEach(policyId -> {
             if (isGoverned) {
                 assetVertex.setProperty(ASSET_POLICY_GUIDS, policyId);
-                AtlasGraphUtilsV2.removeItemFromListPropertyValue(assetVertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
+                removeItemFromListPropertyValue(assetVertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
             } else {
                 assetVertex.setProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
-                AtlasGraphUtilsV2.removeItemFromListPropertyValue(assetVertex, ASSET_POLICY_GUIDS, policyId);
+                removeItemFromListPropertyValue(assetVertex, ASSET_POLICY_GUIDS, policyId);
             }
         });
 
