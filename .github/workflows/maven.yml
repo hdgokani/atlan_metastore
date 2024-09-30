@@ -27,7 +27,6 @@ on:
       - master
       - staging
       - lineageondemand
-      - gziplineage
 
 jobs:
   build:
