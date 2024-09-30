@@ -28,15 +28,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.model.instance.AtlasRelationship;
-import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -3162,9 +3154,14 @@ public class EntityGraphMapper {
                             List<AtlasClassification> deletedClassifications = new ArrayList<>();
                             List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
                             for (AtlasEdge edge : classificationEdges) {
-                                AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
-                                deletedClassifications.add(classification);
-                                deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                                try {
+                                    AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
+                                    deletedClassifications.add(classification);
+                                    deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                                }
+                                catch (IllegalStateException | AtlasBaseException e){
+                                    e.printStackTrace();
+                                }
                             }
 
                             AtlasEntity entity = repairClassificationMappings(vertex);
@@ -4816,6 +4813,62 @@ public class EntityGraphMapper {
     private void updateDomainAttribute(AtlasVertex vertex, Set<String> existingValues, String meshEntityId){
         existingValues.forEach(existingValue -> vertex.removePropertyValue(DOMAIN_GUIDS_ATTR, existingValue));
         vertex.setProperty(DOMAIN_GUIDS_ATTR, meshEntityId);
+    }
+    public AtlasVertex moveBusinessPolicies(Set<String> policyIds, String assetId, String type) throws AtlasBaseException {
+        // Retrieve the AtlasVertex for the given assetId
+        AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(graph, assetId);
+
+        if (assetVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Asset with guid not found");
+        }
+
+        // Get the sets of governed and non-compliant policy GUIDs
+        Set<String> governedPolicies = assetVertex.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
+        Set<String> nonCompliantPolicies = assetVertex.getMultiValuedSetProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, String.class);
+
+        // Determine if the type is governed or non-compliant
+        boolean isGoverned = MoveBusinessPolicyRequest.Type.GOVERNED.getDescription().equals(type);
+        Set<String> currentPolicies = isGoverned ? new HashSet<>(governedPolicies) : new HashSet<>(nonCompliantPolicies);
+        policyIds.removeAll(currentPolicies);
+
+        // Check if the asset already has the given policy IDs
+        if (policyIds.isEmpty()) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Asset already has the given policy id");
+        }
+
+        // Move policies to the appropriate set
+        policyIds.forEach(policyId -> {
+            if (isGoverned) {
+                assetVertex.setProperty(ASSET_POLICY_GUIDS, policyId);
+                removeItemFromListPropertyValue(assetVertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
+            } else {
+                assetVertex.setProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
+                removeItemFromListPropertyValue(assetVertex, ASSET_POLICY_GUIDS, policyId);
+            }
+        });
+
+        // Update the sets after processing
+        if (isGoverned) {
+            governedPolicies.addAll(policyIds);
+            nonCompliantPolicies.removeAll(policyIds);
+        } else {
+            nonCompliantPolicies.addAll(policyIds);
+            governedPolicies.removeAll(policyIds);
+        }
+
+        // Update the modification metadata
+        updateModificationMetadata(assetVertex);
+
+        // Create a differential AtlasEntity to reflect the changes
+        AtlasEntity diffEntity = new AtlasEntity(assetVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+        setEntityCommonAttributes(assetVertex, diffEntity);
+        diffEntity.setAttribute(ASSET_POLICY_GUIDS, governedPolicies);
+        diffEntity.setAttribute(NON_COMPLIANT_ASSET_POLICY_GUIDS, nonCompliantPolicies);
+
+        // Cache the differential entity for further processing
+        RequestContext.get().cacheDifferentialEntity(diffEntity);
+
+        return assetVertex;
     }
 
     private void cacheDifferentialEntity(AtlasVertex ev, Set<String> existingValues) {
