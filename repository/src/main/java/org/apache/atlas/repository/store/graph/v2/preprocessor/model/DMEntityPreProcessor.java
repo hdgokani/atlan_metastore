@@ -1,5 +1,6 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor.model;
 
+import com.esotericsoftware.minlog.Log;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -79,7 +80,9 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         String qualifiedNamePrefix = (String) entity.getAttributes().get(ATLAS_DM_QUALIFIED_NAME_PREFIX);
         int lastIndex = qualifiedNamePrefix.lastIndexOf("/");
         String modelQualifiedName = qualifiedNamePrefix.substring(0, lastIndex);
+
         String modelGuid = context.getModel(modelQualifiedName);
+        LOG.info("model retrieved from cache: " + StringUtils.isEmpty(modelGuid));
 
         if (StringUtils.isEmpty(context.getModel(modelQualifiedName))) {
             Map<String, Object> attrValues = new HashMap<>();
@@ -92,11 +95,13 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
             }
             modelGuid = AtlasGraphUtilsV2.getIdFromVertex(modelVertex);
             context.cacheModel(modelQualifiedName, modelGuid);
+            Log.info("cached model", modelQualifiedName);
         }
 
         ModelResponse modelVersionResponse = context.getModelVersion(modelQualifiedName);
+        LOG.info("model version retrieved from cache: " + (modelVersionResponse == null));
 
-        if (context.getModelVersion(modelQualifiedName) == null) {
+        if (modelVersionResponse == null) {
             modelVersionResponse = replicateModelVersion(modelGuid, modelQualifiedName, now);
 
             // create modelVersion
@@ -109,15 +114,15 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
                         namespace,
                         context);
             }
+            // model --- modelVersion relation
+            createModelModelVersionRelation(modelGuid, modelVersionResponse.getReplicaEntity().getGuid());
             context.cacheModelVersion(modelQualifiedName, modelVersionResponse);
+            Log.info("cached model version", modelQualifiedName);
         }
 
         AtlasEntity latestModelVersionEntity = modelVersionResponse.getReplicaEntity();
         AtlasVertex latestModelVersionVertex = modelVersionResponse.getReplicaVertex();
 
-
-        // model --- modelVersion relation
-        createModelModelVersionRelation(modelGuid, latestModelVersionEntity.getGuid());
 
         // modelVersion --- entity relation
         createModelVersionModelEntityRelationship(latestModelVersionVertex, vertex);

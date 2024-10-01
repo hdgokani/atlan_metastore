@@ -182,7 +182,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         modelVersionEntityRelation.setEnd2(new AtlasObjectId(
                 GraphHelper.getGuid(modelEntityVertex),
                 GraphHelper.getTypeName(modelEntityVertex)));
-        atlasRelationshipStore.create(modelVersionEntityRelation);
+        atlasRelationshipStore.getOrCreate(modelVersionEntityRelation);
     }
 
     protected void createModelVersionModelEntityRelationship(AtlasVertex modelVersionVertex,
@@ -206,7 +206,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                     existingEntity.getGuid(),
                     existingEntity.getTypeName()
             ));
-            atlasRelationshipStore.create(modelVersionEntityRelation);
+            atlasRelationshipStore.getOrCreate(modelVersionEntityRelation);
         }
     }
 
@@ -231,7 +231,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                     new AtlasObjectId(
                             existingEntityAttribute.getGuid(),
                             existingEntityAttribute.getTypeName()));
-            atlasRelationshipStore.create(modelEntityAttributeRelation);
+            atlasRelationshipStore.getOrCreate(modelEntityAttributeRelation);
         }
     }
 
@@ -246,7 +246,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                 new AtlasObjectId(
                         GraphHelper.getGuid(attribute),
                         GraphHelper.getTypeName(attribute)));
-        atlasRelationshipStore.create(modelEntityAttributeRelation);
+        atlasRelationshipStore.getOrCreate(modelEntityAttributeRelation);
     }
 
 
@@ -258,7 +258,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                         modelGuid, ATLAS_DM_DATA_MODEL));
         modelVersionModelRelation.setEnd2(
                 new AtlasObjectId(latestModelVersionGuid, ATLAS_DM_VERSION_TYPE));
-        atlasRelationshipStore.create(modelVersionModelRelation);
+        atlasRelationshipStore.getOrCreate(modelVersionModelRelation);
     }
 
     protected void copyAllAttributes(AtlasEntity source, AtlasEntity destination, long epochNow) {
@@ -426,29 +426,40 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         String modelQualifiedName = qualifiedNamePrefix.substring(0, lastIndex);
         String modelVersion = "v1";
 
+        String modelGuid = context.getModel(modelQualifiedName);
 
-        Map<String, Object> attrValues = new HashMap<>();
-        attrValues.put(QUALIFIED_NAME, modelQualifiedName);
+        if (StringUtils.isEmpty(modelGuid)) {
+            Map<String, Object> attrValues = new HashMap<>();
+            attrValues.put(QUALIFIED_NAME, modelQualifiedName);
 
-        AtlasVertex modelVertex = AtlasGraphUtilsV2.findByUniqueAttributes(
-                typeRegistry.getEntityTypeByName(ATLAS_DM_DATA_MODEL), attrValues);
+            AtlasVertex modelVertex = AtlasGraphUtilsV2.findByUniqueAttributes(
+                    typeRegistry.getEntityTypeByName(ATLAS_DM_DATA_MODEL), attrValues);
 
-        if (modelVertex == null) {
-            throw new AtlasBaseException(AtlasErrorCode.DATA_MODEL_NOT_EXIST);
+            if (modelVertex == null) {
+                throw new AtlasBaseException(AtlasErrorCode.DATA_MODEL_NOT_EXIST);
+            }
+            modelGuid = AtlasGraphUtilsV2.getIdFromVertex(modelVertex);
+            context.cacheModel(modelQualifiedName, modelGuid);
         }
 
-        String modelGuid = AtlasGraphUtilsV2.getIdFromVertex(modelVertex);
-        ModelResponse modelVersionResponse = replicateModelVersion(modelGuid, modelQualifiedName, now);
 
-        // model is not replicated successfully
-        if (modelVersionResponse.getReplicaEntity() == null) {
-            String namespace = (String) entity.getAttributes().get(ATLAS_DM_NAMESPACE);
-            modelVersionResponse = createEntity(
-                    (modelQualifiedName + "/" + modelVersion),
-                    modelVersion,
-                    ATLAS_DM_VERSION_TYPE,
-                    namespace,
-                    context);
+        ModelResponse modelVersionResponse = context.getModelVersion(modelQualifiedName);
+
+        if (modelVersionResponse == null) {
+
+            modelVersionResponse = replicateModelVersion(modelGuid, modelQualifiedName, now);
+
+            // model is not replicated successfully
+            if (modelVersionResponse.getReplicaEntity() == null) {
+                String namespace = (String) entity.getAttributes().get(ATLAS_DM_NAMESPACE);
+                modelVersionResponse = createEntity(
+                        (modelQualifiedName + "/" + modelVersion),
+                        modelVersion,
+                        ATLAS_DM_VERSION_TYPE,
+                        namespace,
+                        context);
+            }
+            context.cacheModelVersion(modelQualifiedName, modelVersionResponse);
         }
 
         AtlasEntity latestModelVersionEntity = modelVersionResponse.getReplicaEntity();
@@ -499,7 +510,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         context.getDiscoveryContext().
                 addResolvedGuid(
                         modelGuid,
-                        modelVertex);
+                        entityRetriever.getEntityVertex(modelGuid));
 
         return new ModelResponse(copyEntity, copyEntityVertex);
     }
