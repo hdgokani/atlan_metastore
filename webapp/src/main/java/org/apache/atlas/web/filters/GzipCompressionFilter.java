@@ -21,7 +21,7 @@ public class GzipCompressionFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
-        HttpServletRequest httpRequest = (HttpServletRequest) response;
+        HttpServletRequest httpRequest = (HttpServletRequest) request;
 
         // Check if the client accepts gzip encoding
         String acceptEncoding = httpRequest.getHeader("Accept-Encoding");
