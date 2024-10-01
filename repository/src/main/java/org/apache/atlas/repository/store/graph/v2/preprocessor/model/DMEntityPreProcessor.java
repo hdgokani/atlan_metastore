@@ -82,7 +82,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         String modelQualifiedName = qualifiedNamePrefix.substring(0, lastIndex);
 
         String modelGuid = context.getModel(modelQualifiedName);
-        LOG.info("model retrieved from cache: " + StringUtils.isEmpty(modelGuid));
+        LOG.info("model retrieved from cache: " + StringUtils.isNotEmpty(modelGuid));
 
         if (StringUtils.isEmpty(modelGuid)) {
             Map<String, Object> attrValues = new HashMap<>();
@@ -99,7 +99,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         }
 
         ModelResponse modelVersionResponse = context.getModelVersion(modelQualifiedName);
-        LOG.info("model version retrieved from cache: " + (modelVersionResponse == null));
+        LOG.info("model version retrieved from cache: " + !(modelVersionResponse == null));
 
         if (modelVersionResponse == null) {
             modelVersionResponse = replicateModelVersion(modelGuid, modelQualifiedName, now);

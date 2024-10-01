@@ -100,7 +100,9 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
         List<AtlasRelatedObjectId> existingAttributes = null;
 
         //
-        if (latestEntityVertex != null) {
+        if (latestEntityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.DATA_ENTITY_NOT_EXIST);
+        }
             modelENtityResponse = replicateModelEntity(
                     entityRetriever.toAtlasEntity(latestEntityVertex),
                     latestEntityVertex,
@@ -111,19 +113,6 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
             if (modelENtityResponse.getExistingEntity() != null && modelENtityResponse.getExistingEntity().getRelationshipAttributes() != null) {
                 existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getRelationshipAttributes().get("dMAttributes");
             }
-        } else {
-            int lastSlashIndex = entityQualifiedNamePrefix.lastIndexOf("/");
-
-            // Extract the substring after the last "/"
-            String name = entityQualifiedNamePrefix.substring(lastSlashIndex + 1);
-            modelENtityResponse = createEntity(
-                    entityQualifiedNamePrefix + "_" + now,
-                    name,
-                    ATLAS_DM_ENTITY_TYPE,
-                    namespace,
-                    context
-            );
-        }
 
         List<AtlasRelatedObjectId> existingEntities = null;
         ModelResponse modelVersionResponse = context.getModelVersion(modelQualifiedName);
