@@ -3,10 +3,7 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.model;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
@@ -48,7 +45,6 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         this.entityGraphMapper = entityGraphMapper;
         this.atlasRelationshipStore = atlasRelationshipStore;
     }
-
 
     protected void setModelDates(AtlasEntity newEntity, AtlasVertex newVertex, Object value) {
         newEntity.setAttribute(ATLAS_DM_SYSTEM_DATE, value);
@@ -177,7 +173,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
     }
 
     public void createModelVersionModelEntityRelationship(AtlasVertex modelVersionVertex,
-                                                             AtlasVertex modelEntityVertex) throws AtlasBaseException {
+                                                          AtlasVertex modelEntityVertex) throws AtlasBaseException {
         AtlasRelationship modelVersionEntityRelation = new AtlasRelationship("d_m_version_d_m_entities");
         modelVersionEntityRelation.setStatus(AtlasRelationship.Status.ACTIVE);
         modelVersionEntityRelation.setEnd1(new AtlasObjectId(
@@ -422,7 +418,6 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
         long now = RequestContext.get().getRequestTime();
         AtlasEntity.AtlasEntityWithExtInfo existingEntity = entityRetriever.toAtlasEntityWithExtInfo(vertex, false);
-        List<AtlasRelatedObjectId> existingEntityAttributes = (List<AtlasRelatedObjectId>) existingEntity.getEntity().getRelationshipAttributes().get("dMAttributes");
 
 
         // get model qualifiedName with qualifiedNamePrefix
@@ -474,12 +469,16 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         createModelVersionModelEntityRelationship(latestModelVersionVertex, copyEntityVertex);
 
         // create modelVersion-modelEntity relation with old entities which are not expired
-        if (existingVersion != null) {
+        if (existingVersion != null && MapUtils.isNotEmpty(existingVersion.getRelationshipAttributes())) {
             List<AtlasRelatedObjectId> existingEntities = (List<AtlasRelatedObjectId>) existingVersion.getRelationshipAttributes().get("dMEntities");
             createModelVersionModelEntityRelationship(latestModelVersionVertex, existingEntities);
         }
-        //  create modelEntity-modelAttributeRelationship
-        createModelEntityModelAttributeRelation(copyEntityVertex, existingEntityAttributes);
+
+        if (MapUtils.isNotEmpty(existingEntity.getEntity().getRelationshipAttributes())) {
+            List<AtlasRelatedObjectId> existingEntityAttributes = (List<AtlasRelatedObjectId>) existingEntity.getEntity().getRelationshipAttributes().get("dMAttributes");
+            //  create modelEntity-modelAttributeRelationship
+            createModelEntityModelAttributeRelation(copyEntityVertex, existingEntityAttributes);
+        }
 
 
         /**
@@ -768,5 +767,3 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
     }
 
 }
-
-
