@@ -38,6 +38,7 @@ import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -1687,7 +1688,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         if (RequestContext.get().isImportInProgress() && AtlasTypeUtil.isAssignedGuid(entity.getGuid())) {
                             vertex = entityGraphMapper.createVertexWithGuid(entity, entity.getGuid());
                         } else {
-                            vertex = entityGraphMapper.createVertex(entity);
+                          vertex = entityGraphMapper.createVertex(entity);
                         }
 
                         discoveryContext.addResolvedGuid(guid, vertex);
@@ -1697,6 +1698,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         String generatedGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
 
                         entity.setGuid(generatedGuid);
+
+                        if (entity.getTypeName().equals(ATLAS_DM_DATA_MODEL)){
+                            AtlasGraphUtilsV2.setProperty(vertex, QUALIFIED_NAME, entity.getAttribute(QUALIFIED_NAME));
+                            context.cacheModel((String) entity.getAttribute(QUALIFIED_NAME), generatedGuid);
+                        }else if (entity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)){
+
+                        }
 
                         requestContext.recordEntityGuidUpdate(entity, guid);
 
