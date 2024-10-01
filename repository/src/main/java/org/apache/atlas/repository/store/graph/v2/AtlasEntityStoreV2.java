@@ -1669,11 +1669,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         List<AtlasEntity> copyOfAppendRelationshipAttributes = new ArrayList<>(context.getUpdatedEntitiesForAppendRelationshipAttribute());
         for (AtlasEntity entity : copyOfAppendRelationshipAttributes) {
             entityType = context.getType(entity.getGuid());
-            if( entityType.getTypeName().equals(ATLAS_DM_ENTITY_TYPE) ||
-                    entityType.getTypeName().equals(ATLAS_DM_ATTRIBUTE_TYPE) ||
-                    entityType.getTypeName().equals(ATLAS_DM_ENTITY_ASSOCIATION_TYPE) ||
-                    entity.getTypeName().equals(ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE)
-            ){
+            if (dataModelEntityTypes().contains(entityType)) {
                 preProcessors = getPreProcessor(entityType.getTypeName());
                 for (PreProcessor processor : preProcessors) {
                     processor.processAttributes(entity, context, UPDATE);
@@ -1684,11 +1680,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         List<AtlasEntity> copyOfRemoveRelationshipAttributes = new ArrayList<>(context.getEntitiesUpdatedWithRemoveRelationshipAttribute());
         for (AtlasEntity entity : copyOfRemoveRelationshipAttributes) {
             entityType = context.getType(entity.getGuid());
-            if( entityType.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)
-                    || entityType.getTypeName().equals(ATLAS_DM_ATTRIBUTE_TYPE) ||
-                    entityType.getTypeName().equals(ATLAS_DM_ENTITY_ASSOCIATION_TYPE) ||
-                    entity.getTypeName().equals(ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE)
-            ){
+            if( dataModelEntityTypes().contains(entityType)){
                 preProcessors = getPreProcessor(entityType.getTypeName());
                 for (PreProcessor processor : preProcessors) {
                     processor.processAttributes(entity, context, UPDATE);
@@ -1697,6 +1689,14 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
+    private Set dataModelEntityTypes() {
+        Set<String> dataModelEntityTypes = new HashSet<>();
+        dataModelEntityTypes.add(ATLAS_DM_ENTITY_TYPE);
+        dataModelEntityTypes.add(ATLAS_DM_ATTRIBUTE_TYPE);
+        dataModelEntityTypes.add(ATLAS_DM_ENTITY_ASSOCIATION_TYPE);
+        dataModelEntityTypes.add(ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE);
+        return dataModelEntityTypes;
+    }
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("preCreateOrUpdate");
 
