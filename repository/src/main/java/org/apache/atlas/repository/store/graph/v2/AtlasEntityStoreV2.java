@@ -1706,10 +1706,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         RequestContext              requestContext   = RequestContext.get();
 
         Map<String, String> referencedGuids = discoveryContext.getReferencedGuids();
+        List<String> entityGuids = new ArrayList<>(referencedGuids.keySet());
+        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(entityGuids);
         for (Map.Entry<String, String> element : referencedGuids.entrySet()) {
             String guid = element.getKey();
             AtlasEntity entity = entityStream.getByGuid(guid);
-            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
 
             if (entity != null) { // entity would be null if guid is not in the stream but referenced by an entity in the stream
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
