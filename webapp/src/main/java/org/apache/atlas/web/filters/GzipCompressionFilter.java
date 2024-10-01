@@ -4,9 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.zip.GZIPOutputStream;
 
 public class GzipCompressionFilter implements Filter {
 
@@ -21,8 +21,11 @@ public class GzipCompressionFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
+        HttpServletRequest httpRequest = (HttpServletRequest) response;
 
-        if (httpResponse.getHeader("Content-Encoding") == null) {
+        // Check if the client accepts gzip encoding
+        String acceptEncoding = httpRequest.getHeader("Accept-Encoding");
+        if (acceptEncoding != null && acceptEncoding.contains("gzip") && httpResponse.getHeader("Content-Encoding") == null) {
             GzipResponseWrapper gzipResponseWrapper = new GzipResponseWrapper(httpResponse);
             chain.doFilter(request, gzipResponseWrapper);
             gzipResponseWrapper.close();
