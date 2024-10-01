@@ -84,16 +84,16 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         String modelGuid = context.getModel(modelQualifiedName);
         LOG.info("model retrieved from cache: " + StringUtils.isEmpty(modelGuid));
 
-        if (StringUtils.isEmpty(context.getModel(modelQualifiedName))) {
+        if (StringUtils.isEmpty(modelGuid)) {
             Map<String, Object> attrValues = new HashMap<>();
             attrValues.put(QUALIFIED_NAME, modelQualifiedName);
-            AtlasVertex modelVertex = AtlasGraphUtilsV2.findByUniqueAttributes(
-                    typeRegistry.getEntityTypeByName(ATLAS_DM_DATA_MODEL), attrValues);
+            modelGuid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(
+                    typeRegistry.getEntityTypeByName(ATLAS_DM_DATA_MODEL),
+                    attrValues);
 
-            if (modelVertex == null) {
+            if (StringUtils.isEmpty(modelGuid)){
                 throw new AtlasBaseException(AtlasErrorCode.DATA_MODEL_NOT_EXIST);
             }
-            modelGuid = AtlasGraphUtilsV2.getIdFromVertex(modelVertex);
             context.cacheModel(modelQualifiedName, modelGuid);
             Log.info("cached model", modelQualifiedName);
         }
