@@ -688,7 +688,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
             context.cacheModel(modelQualifiedName, modelGuid);
         }
 
-        AtlasVertex latestEntityVertex= null;
+        AtlasVertex latestEntityVertex;
         ModelResponse modelENtityResponse = context.getModelEntity(entityQualifiedNamePrefix);
 
         if (modelENtityResponse == null) {
@@ -759,7 +759,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
         // create entity - attribute relation [with existing attributes]
         if (modelENtityResponse.getExistingEntity() != null && modelENtityResponse.getExistingEntity().getRelationshipAttributes() != null) {
-            List<AtlasRelatedObjectId>  existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getAttributes().get("dMAttributes");
+            List<AtlasRelatedObjectId>  existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getRelationshipAttributes().get("dMAttributes");
             createModelEntityModelAttributeRelation(latestEntityVertex, existingAttributes);
         }
 
