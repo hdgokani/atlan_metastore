@@ -668,10 +668,6 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         String entityQualifiedNamePrefix = attributeQualifiedNamePrefix.substring(0, lastIndex);
         String namespace = (String) entityAttribute.getAttributes().get(ATLAS_DM_NAMESPACE);
         String modelVersion = "v1";
-
-        ModelResponse modelENtityResponse = null;
-        AtlasVertex latestEntityVertex = AtlasGraphUtilsV2.findLatestEntityAttributeVerticesByType(ATLAS_DM_ENTITY_TYPE, entityQualifiedNamePrefix);
-
         // get model qualifiedName with qualifiedNamePrefix
         lastIndex = entityQualifiedNamePrefix.lastIndexOf("/");
         String modelQualifiedName = entityQualifiedNamePrefix.substring(0, lastIndex);
@@ -692,17 +688,26 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
             context.cacheModel(modelQualifiedName, modelGuid);
         }
 
-        List<AtlasRelatedObjectId> existingAttributes = null;
+        AtlasVertex latestEntityVertex= null;
+        ModelResponse modelENtityResponse = context.getModelEntity(entityQualifiedNamePrefix);
 
-        if (latestEntityVertex == null) {
-            throw new AtlasBaseException(AtlasErrorCode.DATA_ENTITY_NOT_EXIST);
-        }
-        modelENtityResponse = replicateModelEntity(
+        if (modelENtityResponse == null) {
+            latestEntityVertex = AtlasGraphUtilsV2.findLatestEntityAttributeVerticesByType(ATLAS_DM_ENTITY_TYPE, entityQualifiedNamePrefix);
+
+            if (latestEntityVertex == null) {
+                throw new AtlasBaseException(AtlasErrorCode.DATA_ENTITY_NOT_EXIST);
+            }
+            modelENtityResponse = replicateModelEntity(
                     entityRetriever.toAtlasEntity(latestEntityVertex),
                     latestEntityVertex,
                     entityQualifiedNamePrefix,
                     now
             );
+        }else {
+            latestEntityVertex = modelENtityResponse.getReplicaVertex();
+        }
+
+        List<AtlasRelatedObjectId> existingAttributes = null;
             modelVersion = "v2";
             if (modelENtityResponse.getExistingEntity() != null && modelENtityResponse.getExistingEntity().getRelationshipAttributes() != null) {
                 existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getAttributes().get("dMAttributes");
@@ -732,7 +737,6 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         AtlasVertex latestModelVersionVertex = modelVersionResponse.getReplicaVertex();
 
         List<AtlasRelatedObjectId> existingEntities = null;
-
         if (modelVersionResponse.getExistingEntity() != null && modelVersionResponse.getExistingEntity().getRelationshipAttributes() != null) {
             existingEntities = (List<AtlasRelatedObjectId>) modelVersionResponse.getExistingEntity().getRelationshipAttributes().get("dMEntities");
         }
@@ -752,17 +756,17 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         unsetExpiredDates(copyAttribute, copyAttributeVertex);
 
         // create modelVersion-entity relationship [with new entity]
-        createModelVersionModelEntityRelationship(latestModelVersionVertex, modelENtityResponse.getReplicaVertex());
+        createModelVersionModelEntityRelationship(latestModelVersionVertex, latestEntityVertex);
 
         // create modelVersion-entity relationship [with existing entities]
         createModelVersionModelEntityRelationship(latestModelVersionVertex, existingEntities);
 
 
         // create entity - attribute relation [with new attribute]
-        createModelEntityModelAttributeRelation(modelENtityResponse.getReplicaVertex(), copyAttributeVertex);
+        createModelEntityModelAttributeRelation(latestEntityVertex, copyAttributeVertex);
 
         // create entity - attribute relation [with existing attributes]
-        createModelEntityModelAttributeRelation(modelENtityResponse.getReplicaVertex(), existingAttributes);
+        createModelEntityModelAttributeRelation(latestEntityVertex, existingAttributes);
 
         AtlasEntityType attributeType = typeRegistry.getEntityTypeByName(entityAttribute.getTypeName());
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(modelENtityResponse.getReplicaEntity().getTypeName());
@@ -770,7 +774,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
         context.addCreated(copyAttribute.getGuid(), copyAttribute, attributeType, copyAttributeVertex);
         context.addCreated(modelENtityResponse.getReplicaEntity().getGuid(), modelENtityResponse.getReplicaEntity(),
-                entityType, modelENtityResponse.getReplicaVertex());
+                entityType, latestEntityVertex);
         context.addCreated(latestModelVersionEntity.getGuid(),
                 latestModelVersionEntity, modelVersionType, latestModelVersionVertex);
 
