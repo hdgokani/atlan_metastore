@@ -74,11 +74,12 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
         int lastIndex = attributeQualifiedNamePrefix.lastIndexOf("/");
         String entityQualifiedNamePrefix = attributeQualifiedNamePrefix.substring(0, lastIndex);
         String namespace = (String) entityAttribute.getAttributes().get(ATLAS_DM_NAMESPACE);
-        String modelVersion = "v1";
+        String modelVersion = "v2";
 
         lastIndex = entityQualifiedNamePrefix.lastIndexOf("/");
         String modelQualifiedName = entityQualifiedNamePrefix.substring(0, lastIndex);
         String modelGuid = context.getModel(modelQualifiedName);
+        LOG.info("model retrieved from cache: " + StringUtils.isNotEmpty(modelGuid));
 
         if (StringUtils.isEmpty(modelGuid)){
             Map<String, Object> attrValues = new HashMap<>();
@@ -95,7 +96,6 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
 
         ModelResponse modelENtityResponse = context.getModelEntity(entityQualifiedNamePrefix);
         AtlasVertex latestEntityVertex;
-        List<AtlasRelatedObjectId> existingAttributes = null;
 
         if (modelENtityResponse == null) {
             latestEntityVertex = AtlasGraphUtilsV2.findLatestEntityAttributeVerticesByType(ATLAS_DM_ENTITY_TYPE, entityQualifiedNamePrefix);
@@ -112,12 +112,8 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
             latestEntityVertex = modelENtityResponse.getReplicaVertex();
         }
 
-            modelVersion = "v2";
-            if (modelENtityResponse.getExistingEntity() != null && modelENtityResponse.getExistingEntity().getRelationshipAttributes() != null) {
-                existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getRelationshipAttributes().get("dMAttributes");
-            }
-
         ModelResponse modelVersionResponse = context.getModelVersion(modelQualifiedName);
+        LOG.info("model version retrieved from cache: " + (modelVersionResponse != null));
 
         if (modelVersionResponse == null) {
             modelVersionResponse = replicateModelVersion(modelGuid, modelQualifiedName, now);
@@ -150,7 +146,10 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
         }
 
         // entity --- attributes of existingEntity relation
-        createModelEntityModelAttributeRelation(latestEntityVertex, existingAttributes);
+        if (modelENtityResponse.getExistingEntity() != null && modelENtityResponse.getExistingEntity().getRelationshipAttributes() != null) {
+            List<AtlasRelatedObjectId>  existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getRelationshipAttributes().get("dMAttributes");
+            createModelEntityModelAttributeRelation(latestEntityVertex, existingAttributes);
+        }
 
         // latest entity ---- new attribute relation
         createModelEntityModelAttributeRelation(latestEntityVertex, vertexAttribute);

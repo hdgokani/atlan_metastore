@@ -99,7 +99,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         }
 
         ModelResponse modelVersionResponse = context.getModelVersion(modelQualifiedName);
-        LOG.info("model version retrieved from cache: " + !(modelVersionResponse == null));
+        LOG.info("model version retrieved from cache: " + (modelVersionResponse != null));
 
         if (modelVersionResponse == null) {
             modelVersionResponse = replicateModelVersion(modelGuid, modelQualifiedName, now);
@@ -114,6 +114,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
                         namespace,
                         context);
             }
+
             // model --- modelVersion relation
             createModelModelVersionRelation(modelGuid, modelVersionResponse.getReplicaEntity().getGuid());
             context.cacheModelVersion(modelQualifiedName, modelVersionResponse);
@@ -127,13 +128,11 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         // modelVersion --- entity relation
         createModelVersionModelEntityRelationship(latestModelVersionVertex, vertex);
 
-        if (modelVersionResponse.getExistingEntity() != null
-                && MapUtils.isNotEmpty(modelVersionResponse.getExistingEntity().getRelationshipAttributes())) {
-            List<AtlasRelatedObjectId> existingEntities =
-                    (List<AtlasRelatedObjectId>) modelVersionResponse.getExistingEntity()
+        // modelVersion --- entitiesOfExistingModelVersion
+        if (modelVersionResponse.getExistingEntity() != null && MapUtils.isNotEmpty(modelVersionResponse.getExistingEntity().getRelationshipAttributes())) {
+            List<AtlasRelatedObjectId> existingEntities = (List<AtlasRelatedObjectId>) modelVersionResponse.getExistingEntity()
                             .getRelationshipAttributes()
                             .get("dMEntities");
-            // modelVersion --- entitiesOfExistingModelVersion
             createModelVersionModelEntityRelationship(latestModelVersionVertex, existingEntities);
 
         }
