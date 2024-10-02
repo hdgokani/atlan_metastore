@@ -43,6 +43,8 @@ public class EntityMutationContext {
 
     private Map<String, String> modelCache = new HashMap<>();
 
+    private Map<String, ModelResponse> modelEntityCache = new HashMap<>();
+
     private Set<String> removedLineageRelations = new HashSet<>();
 
     public EntityMutationContext(final EntityGraphDiscoveryContext context) {
@@ -271,5 +273,13 @@ public class EntityMutationContext {
 
     public void addRemovedLineageRelations(Set<String> removedLineageRelations) {
         this.removedLineageRelations.addAll(removedLineageRelations);
+    }
+
+    public ModelResponse getModelEntity(String entityQualifiedNamePrefix) {
+        return modelEntityCache.get(entityQualifiedNamePrefix);
+    }
+
+    public void cacheModelEntity(String qualifiedNamePrefix, ModelResponse modelEntity) {
+        modelEntityCache.putIfAbsent(qualifiedNamePrefix, modelEntity);
     }
 }
