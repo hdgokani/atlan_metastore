@@ -71,6 +71,7 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreP
 import org.apache.atlas.repository.store.graph.v2.preprocessor.model.DMAttributePreprocessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.model.DMEntityAssociationPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.model.DMEntityPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.model.ModelResponse;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.ReadmePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
@@ -1703,7 +1704,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                             AtlasGraphUtilsV2.setProperty(vertex, QUALIFIED_NAME, entity.getAttribute(QUALIFIED_NAME));
                             context.cacheModel((String) entity.getAttribute(QUALIFIED_NAME), generatedGuid);
                         }else if (entity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)){
-
+                             context.cacheModelEntity((String) entity.getAttribute(ATLAS_DM_QUALIFIED_NAME_PREFIX), new ModelResponse(entity, vertex));
                         }
 
                         requestContext.recordEntityGuidUpdate(entity, guid);
