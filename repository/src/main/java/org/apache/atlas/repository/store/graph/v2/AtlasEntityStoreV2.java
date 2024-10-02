@@ -68,10 +68,7 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.Stakehol
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.model.DMAttributePreprocessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.model.DMEntityAssociationPreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.model.DMEntityPreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.model.ModelResponse;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.model.*;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.ReadmePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
@@ -1985,7 +1982,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 preProcessors.add(new DMEntityAssociationPreProcessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
                 break;
             case ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE:
-                preProcessors.add(new DMAttributePreprocessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
+                preProcessors.add(new DMAttributeAssociationPreprocessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
         }
 
         //  The default global pre-processor for all AssetTypes
