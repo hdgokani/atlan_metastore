@@ -23,7 +23,7 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 
 public class DMEntityAssociationPreProcessor extends AbstractModelPreProcessor {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DMAttributePreprocessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DMEntityAssociationPreProcessor.class);
 
     public DMEntityAssociationPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, EntityGraphMapper entityGraphMapper, AtlasRelationshipStore atlasRelationshipStore) {
         super(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore);
@@ -47,6 +47,7 @@ public class DMEntityAssociationPreProcessor extends AbstractModelPreProcessor {
                 break;
             case UPDATE:
                 updateDMEntityAssociation(entity, vertex, context);
+                break;
         }
     }
 
@@ -84,6 +85,12 @@ public class DMEntityAssociationPreProcessor extends AbstractModelPreProcessor {
         applyDiffs(entity, copyEntity, MODEL_ENTITY_ASSOCIATION);
         unsetExpiredDates(copyEntity, copyVertex);
 
+
+        // case when a mapping is added
+        if (entity.getRelationshipAttributes() != null) {
+            Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForEntity(entity, entity.getRelationshipAttributes(), context);
+            modelResponse.getReplicaEntity().setRelationshipAttributes(appendRelationshipAttributes);
+        }
 
         // case when a mapping is added
         if (entity.getAppendRelationshipAttributes() != null) {

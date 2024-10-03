@@ -133,7 +133,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         if (modelVersionResponse.getExistingEntity() != null && MapUtils.isNotEmpty(modelVersionResponse.getExistingEntity().getRelationshipAttributes())) {
             List<AtlasRelatedObjectId> existingEntities = (List<AtlasRelatedObjectId>) modelVersionResponse.getExistingEntity()
                             .getRelationshipAttributes()
-                            .get("dMEntities");
+                            .get(MODEL_VERSION_ENTITIES);
             createModelVersionModelEntityRelationship(latestModelVersionVertex, entity, existingEntities, context);
 
         }

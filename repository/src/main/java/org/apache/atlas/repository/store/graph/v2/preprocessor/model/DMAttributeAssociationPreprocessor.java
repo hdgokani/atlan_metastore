@@ -22,7 +22,7 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.isNameInvalid;
 
 public class DMAttributeAssociationPreprocessor extends AbstractModelPreProcessor{
-    private static final Logger LOG = LoggerFactory.getLogger(DMAttributePreprocessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DMAttributeAssociationPreprocessor.class);
 
     public DMAttributeAssociationPreprocessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, EntityGraphMapper entityGraphMapper, AtlasRelationshipStore atlasRelationshipStore) {
         super(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore);
@@ -83,6 +83,11 @@ public class DMAttributeAssociationPreprocessor extends AbstractModelPreProcesso
         applyDiffs(entity, copyEntity, MODEL_ATTRIBUTE_ASSOCIATION);
         unsetExpiredDates(copyEntity, copyVertex);
 
+        // case when a mapping is added
+        if (entity.getRelationshipAttributes() != null) {
+            Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForAttribute(entity, entity.getRemoveRelationshipAttributes(), context);
+            modelResponse.getReplicaEntity().setRelationshipAttributes(appendRelationshipAttributes);
+        }
 
         // case when a mapping is added
         if (entity.getAppendRelationshipAttributes() != null) {

@@ -140,13 +140,13 @@ public class DMAttributePreprocessor extends AbstractModelPreProcessor {
 
         // modelVersion --- entitiesOfExistingModelVersion
         if (modelVersionResponse.getExistingEntity() != null && modelVersionResponse.getExistingEntity().getRelationshipAttributes() != null) {
-            List<AtlasRelatedObjectId> existingEntities = (List<AtlasRelatedObjectId>) modelVersionResponse.getExistingEntity().getRelationshipAttributes().get("dMEntities");
+            List<AtlasRelatedObjectId> existingEntities = (List<AtlasRelatedObjectId>) modelVersionResponse.getExistingEntity().getRelationshipAttributes().get(MODEL_VERSION_ENTITIES);
             createModelVersionModelEntityRelationship(latestModelVersionVertex, modelENtityResponse.getExistingEntity(), existingEntities, context);
         }
 
         // entity --- attributes of existingEntity relation
         if (modelENtityResponse.getExistingEntity() != null && modelENtityResponse.getExistingEntity().getRelationshipAttributes() != null) {
-            List<AtlasRelatedObjectId>  existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getRelationshipAttributes().get("dMAttributes");
+            List<AtlasRelatedObjectId>  existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getRelationshipAttributes().get(MODEL_ENTITY_ATTRIBUTES);
             createModelEntityModelAttributeRelation(modelENtityResponse.getReplicaVertex(), null, existingAttributes, context);
         }
 

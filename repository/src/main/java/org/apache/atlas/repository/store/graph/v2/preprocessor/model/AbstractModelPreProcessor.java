@@ -29,7 +29,6 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 public abstract class AbstractModelPreProcessor implements PreProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractModelPreProcessor.class);
-    private static final String ATTRIBUTE_TYPE = "DMAttribute";
 
     protected final AtlasTypeRegistry typeRegistry;
 
@@ -101,7 +100,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
     public ModelResponse replicateModelVersion(String modelGuid, String modelQualifiedName, long now) throws AtlasBaseException {
         AtlasEntity.AtlasEntityWithExtInfo dataModel = entityRetriever.toAtlasEntityWithExtInfo(modelGuid, false);
-        List<AtlasRelatedObjectId> existingModelVersions = (List<AtlasRelatedObjectId>) dataModel.getEntity().getRelationshipAttributes().get("dMVersions");
+        List<AtlasRelatedObjectId> existingModelVersions = (List<AtlasRelatedObjectId>) dataModel.getEntity().getRelationshipAttribute(RELATED_MODEL_VERSIONS);
 
         String modelVersion = "v1";
         AtlasRelatedObjectId existingModelVersionObj = null;
@@ -174,7 +173,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
     public void createModelVersionModelEntityRelationship(AtlasVertex modelVersionVertex,
                                                           AtlasVertex modelEntityVertex) throws AtlasBaseException {
-        AtlasRelationship modelVersionEntityRelation = new AtlasRelationship("d_m_version_d_m_entities");
+        AtlasRelationship modelVersionEntityRelation = new AtlasRelationship(MODEL_VERSIONS_MODEL_VERSION_ENTITY_RELATION);
         modelVersionEntityRelation.setStatus(AtlasRelationship.Status.ACTIVE);
         modelVersionEntityRelation.setEnd1(new AtlasObjectId(
                 GraphHelper.getGuid(modelVersionVertex),
@@ -190,7 +189,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         if (CollectionUtils.isEmpty(existingEntities)) {
             return;
         }
-        AtlasRelationship modelVersionEntityRelation = new AtlasRelationship("d_m_version_d_m_entities");
+        AtlasRelationship modelVersionEntityRelation = new AtlasRelationship(MODEL_VERSIONS_MODEL_VERSION_ENTITY_RELATION);
         modelVersionEntityRelation.setStatus(AtlasRelationship.Status.ACTIVE);
         modelVersionEntityRelation.setEnd1(new AtlasObjectId(
                 GraphHelper.getGuid(modelVersionVertex),
@@ -201,7 +200,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
             if (currentEntity != null && entity.getGuid().equals(currentEntity.getGuid())) {
                 continue;
             }
-            if (context.getModelEntitiesToBeUpdated().contains(entity.getAttribute(MODEL_QUALIFIED_NAME_PATTERN))){
+            if (context.getModelEntitiesToBeUpdated().contains((String) entity.getAttribute(MODEL_QUALIFIED_NAME_PATTERN))){
                 continue;
             }
             Date expiredAtBusinessDate = (Date) entity.getAttributes().get(MODEL_EXPIRED_AT_SYSTEM_DATE);
@@ -221,7 +220,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         if (CollectionUtils.isEmpty(existingEntityAttributes)) {
             return;
         }
-        AtlasRelationship modelEntityAttributeRelation = new AtlasRelationship("d_m_entity_d_m_attributes");
+        AtlasRelationship modelEntityAttributeRelation = new AtlasRelationship(MODEL_ENTITY_MODEL_ATTRIBUTES_RELATION );
         modelEntityAttributeRelation.setStatus(AtlasRelationship.Status.ACTIVE);
         modelEntityAttributeRelation.setEnd1(
                 new AtlasObjectId(
@@ -234,7 +233,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
                 continue;
             }
 
-            if (context.getModelAttributesToBeUpdated().contains(entityAttribute.getAttribute(MODEL_QUALIFIED_NAME_PATTERN))){
+            if (context.getModelAttributesToBeUpdated().contains((String) entityAttribute.getAttribute(MODEL_QUALIFIED_NAME_PATTERN))){
                 continue;
             }
             Date expiredAtBusinessDate = (Date) entityAttribute.getAttributes().get(MODEL_EXPIRED_AT_SYSTEM_DATE);
@@ -251,7 +250,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
     }
 
     protected void createModelEntityModelAttributeRelation(AtlasVertex entity, AtlasVertex attribute) throws AtlasBaseException {
-        AtlasRelationship modelEntityAttributeRelation = new AtlasRelationship("d_m_entity_d_m_attributes");
+        AtlasRelationship modelEntityAttributeRelation = new AtlasRelationship(MODEL_ENTITY_MODEL_ATTRIBUTES_RELATION );
         modelEntityAttributeRelation.setStatus(AtlasRelationship.Status.ACTIVE);
         modelEntityAttributeRelation.setEnd1(
                 new AtlasObjectId(
@@ -266,7 +265,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
 
     public void createModelModelVersionRelation(String modelGuid, String latestModelVersionGuid) throws AtlasBaseException {
-        AtlasRelationship modelVersionModelRelation = new AtlasRelationship("d_m_data_model_d_m_versions");
+        AtlasRelationship modelVersionModelRelation = new AtlasRelationship(MODEL_MODEL_VERSION_RELATION);
         modelVersionModelRelation.setStatus(AtlasRelationship.Status.ACTIVE);
         modelVersionModelRelation.setEnd1(
                 new AtlasObjectId(
@@ -396,24 +395,24 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
         Set<String> allowedRelationships = new HashSet<>();
         switch (entityType) {
             case MODEL_ENTITY:
-                allowedRelationships.add("dMMappedToEntities");
-                allowedRelationships.add("dMMappedFromEntities");
-                allowedRelationships.add("dMRelatedFromEntities");
-                allowedRelationships.add("dMRelatedToEntities");
+                allowedRelationships.add(MODEL_ENTITY_MAPPED_TO_ENTITIES);
+                allowedRelationships.add(MODEL_ENTITY_MAPPED_FROM_ENTITIES);
+                allowedRelationships.add(MODEL_ENTITY_RELATED_FROM_ENTITIES);
+                allowedRelationships.add(MODEL_ENTITY_RELATED_TO_ENTITIES);
                 break;
             case MODEL_ATTRIBUTE:
-                allowedRelationships.add("dMMappedFromAttributes");
-                allowedRelationships.add("dMMappedToAttributes");
-                allowedRelationships.add("dMRelatedFromAttributes");
-                allowedRelationships.add("dMRelatedToAttributes");
+                allowedRelationships.add(MODEL_ATTRIBUTE_MAPPED_FROM_ATTRIBUTES );
+                allowedRelationships.add(MODEL_ATTRIBUTE_MAPPED_TO_ATTRIBUTES);
+                allowedRelationships.add(MODEL_ATTRIBUTE_RELATED_FROM_ATTRIBUTES);
+                allowedRelationships.add(MODEL_ATTRIBUTE_RELATED_TO_ATTRIBUTES);
                 break;
             case MODEL_ENTITY_ASSOCIATION:
-                allowedRelationships.add("dMEntityTo");
-                allowedRelationships.add("dMEntityFrom");
+                allowedRelationships.add(MODEL_ENTITY_ASSOCIATION_TO);
+                allowedRelationships.add(MODEL_ENTITY_ASSOCIATION_FROM);
                 break;
             case MODEL_ATTRIBUTE_ASSOCIATION:
-                allowedRelationships.add("dMAttributeTo");
-                allowedRelationships.add("dMAttributeFrom");
+                allowedRelationships.add(MODEL_ATTRIBUTE_ASSOCIATION_FROM );
+                allowedRelationships.add(MODEL_ATTRIBUTE_ASSOCIATION_TO);
                 break;
         }
         return allowedRelationships;
@@ -497,13 +496,13 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
         // create modelVersion-modelEntity relation with old entities which are not expired
         if (existingVersion != null && MapUtils.isNotEmpty(existingVersion.getRelationshipAttributes())) {
-            List<AtlasRelatedObjectId> existingEntities = (List<AtlasRelatedObjectId>) existingVersion.getRelationshipAttributes().get("dMEntities");
+            List<AtlasRelatedObjectId> existingEntities = (List<AtlasRelatedObjectId>) existingVersion.getRelationshipAttributes().get(MODEL_VERSION_ENTITIES);
             createModelVersionModelEntityRelationship(latestModelVersionVertex, entity, existingEntities, context);
         }
 
         //  create modelEntity - existing modelAttributeRelationship
         if (MapUtils.isNotEmpty(existingEntity.getEntity().getRelationshipAttributes())) {
-            List<AtlasRelatedObjectId> existingEntityAttributes = (List<AtlasRelatedObjectId>) existingEntity.getEntity().getRelationshipAttributes().get("dMAttributes");
+            List<AtlasRelatedObjectId> existingEntityAttributes = (List<AtlasRelatedObjectId>) existingEntity.getEntity().getRelationshipAttributes().get(MODEL_ENTITY_ATTRIBUTES);
             createModelEntityModelAttributeRelation(copyEntityVertex, null, existingEntityAttributes, context);
         }
 
@@ -765,7 +764,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
         // create modelVersion-entity relationship [with existing entities]
         if (modelVersionResponse.getExistingEntity() != null && modelVersionResponse.getExistingEntity().getRelationshipAttributes() != null) {
-            List<AtlasRelatedObjectId> existingEntities = (List<AtlasRelatedObjectId>) modelVersionResponse.getExistingEntity().getRelationshipAttributes().get("dMEntities");
+            List<AtlasRelatedObjectId> existingEntities = (List<AtlasRelatedObjectId>) modelVersionResponse.getExistingEntity().getRelationshipAttributes().get(MODEL_VERSION_ENTITIES);
             createModelVersionModelEntityRelationship(latestModelVersionVertex, modelENtityResponse.getExistingEntity() , existingEntities, context);
         }
 
@@ -776,7 +775,7 @@ public abstract class AbstractModelPreProcessor implements PreProcessor {
 
         // create entity - attribute relation [with existing attributes]
         if (modelENtityResponse.getExistingEntity() != null && modelENtityResponse.getExistingEntity().getRelationshipAttributes() != null) {
-            List<AtlasRelatedObjectId>  existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getRelationshipAttributes().get("dMAttributes");
+            List<AtlasRelatedObjectId>  existingAttributes = (List<AtlasRelatedObjectId>) modelENtityResponse.getExistingEntity().getRelationshipAttributes().get(MODEL_ENTITY_ATTRIBUTES);
             createModelEntityModelAttributeRelation(modelENtityResponse.getReplicaVertex(), existingEntityAttributeWithExtInfo, existingAttributes, context);
         }
 
