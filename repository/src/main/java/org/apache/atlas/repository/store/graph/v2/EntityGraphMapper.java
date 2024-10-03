@@ -2229,6 +2229,7 @@ public class EntityGraphMapper {
         if (CollectionUtils.isNotEmpty(createdElements)) {
             List<String> addedGuids = createdElements.stream().map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
             addedGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(toVertex, internalAttr, guid));
+            LOG.info("Added guids for product as port: {}", addedGuids);
         }
 
         if (CollectionUtils.isNotEmpty(deletedElements)) {
