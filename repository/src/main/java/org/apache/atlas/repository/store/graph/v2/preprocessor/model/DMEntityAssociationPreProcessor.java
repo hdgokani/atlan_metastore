@@ -51,7 +51,7 @@ public class DMEntityAssociationPreProcessor extends AbstractModelPreProcessor {
     }
 
     private void createDMEntityAssociation(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
-        if (!entity.getTypeName().equals(ATLAS_DM_ENTITY_ASSOCIATION_TYPE)) {
+        if (!entity.getTypeName().equals(MODEL_ENTITY_ASSOCIATION)) {
             return;
         }
 
@@ -65,7 +65,7 @@ public class DMEntityAssociationPreProcessor extends AbstractModelPreProcessor {
                 processRelationshipAttributesForEntity(entity, entity.getRelationshipAttributes(), context));
     }
     private void updateDMEntityAssociation(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
-        if (!entity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)) {
+        if (!entity.getTypeName().equals(MODEL_ENTITY)) {
             return;
         }
 
@@ -81,7 +81,7 @@ public class DMEntityAssociationPreProcessor extends AbstractModelPreProcessor {
         ModelResponse modelResponse = replicateDMAssociation(entity, vertex, now);
         AtlasEntity copyEntity = modelResponse.getReplicaEntity();
         AtlasVertex copyVertex = modelResponse.getReplicaVertex();
-        applyDiffs(entity, copyEntity, ATLAS_DM_ENTITY_ASSOCIATION_TYPE);
+        applyDiffs(entity, copyEntity, MODEL_ENTITY_ASSOCIATION);
         unsetExpiredDates(copyEntity, copyVertex);
 
 

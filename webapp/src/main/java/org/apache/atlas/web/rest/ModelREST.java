@@ -183,13 +183,13 @@ public class ModelREST {
 
             String modelQualifiedName;
 
-            if (entityType.equals(ATLAS_DM_ENTITY_TYPE)) {
+            if (entityType.equals(MODEL_ENTITY)) {
                 int lastIndex = qualifiedNamePrefix.lastIndexOf("/");
                 modelQualifiedName = qualifiedNamePrefix.substring(0, lastIndex);
                 String entityGuid = AtlasGraphUtilsV2.getIdFromVertex(latestEntityVertex);
                 replicateModelVersionAndExcludeEntity(modelQualifiedName, entityGuid, entityMutationContext);
 
-            } else if (entityType.equals(ATLAS_DM_ATTRIBUTE_TYPE)) {
+            } else if (entityType.equals(MODEL_ATTRIBUTE)) {
                 int lastIndex = qualifiedNamePrefix.lastIndexOf("/");
                 String entityQualifiedNamePrefix = qualifiedNamePrefix.substring(0, lastIndex);
                 String attributeGuid = AtlasGraphUtilsV2.getIdFromVertex(latestEntityVertex);
@@ -211,7 +211,7 @@ public class ModelREST {
 
         // get entity
         // replicate entity
-        AtlasVertex latestEntityVertex = AtlasGraphUtilsV2.findLatestEntityAttributeVerticesByType(ATLAS_DM_ENTITY_TYPE, entityQualifiedNamePrefix);
+        AtlasVertex latestEntityVertex = AtlasGraphUtilsV2.findLatestEntityAttributeVerticesByType(MODEL_ENTITY, entityQualifiedNamePrefix);
         AtlasEntity latestEntity = graphRetriever.toAtlasEntity(latestEntityVertex);
 
         if (latestEntityVertex == null) {
@@ -243,7 +243,7 @@ public class ModelREST {
 
         entityMutationContext.addCreated(replicaEntity.getGuid(),
                 replicaEntity,
-                typeRegistry.getEntityTypeByName(ATLAS_DM_ENTITY_TYPE),
+                typeRegistry.getEntityTypeByName(MODEL_ENTITY),
                 replicaVertex);
 
     }
@@ -253,7 +253,7 @@ public class ModelREST {
         attrValues.put(QUALIFIED_NAME, modelQualifiedName);
 
         AtlasVertex modelVertex = AtlasGraphUtilsV2.findByUniqueAttributes(
-                typeRegistry.getEntityTypeByName(ATLAS_DM_DATA_MODEL), attrValues);
+                typeRegistry.getEntityTypeByName(MODEL_DATA_MODEL), attrValues);
 
         if (modelVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.DATA_MODEL_NOT_EXIST);
@@ -274,7 +274,7 @@ public class ModelREST {
         entityPreProcessor.createModelModelVersionRelation(modelGuid, modelVersionGuid);
 
         entityMutationContext.addCreated(modelVersionGuid, replicaModelVersionEntity,
-                typeRegistry.getEntityTypeByName(ATLAS_DM_VERSION_TYPE), replicaModelVersionVertex);
+                typeRegistry.getEntityTypeByName(MODEL_VERSION), replicaModelVersionVertex);
 
         entityMutationContext.getDiscoveryContext().addResolvedGuid(modelGuid, modelVertex);
         return modelResponse;

@@ -63,7 +63,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
     }
 
     private void createDMEntity(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
-        if (!entity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)) {
+        if (!entity.getTypeName().equals(MODEL_ENTITY)) {
             return;
         }
         if (CollectionUtils.isEmpty(context.getCreatedEntities())) {
@@ -78,7 +78,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         long now = RequestContext.get().getRequestTime();
 
         // get model qualifiedName with qualifiedNamePrefix
-        String qualifiedNamePrefix = (String) entity.getAttributes().get(ATLAS_DM_QUALIFIED_NAME_PREFIX);
+        String qualifiedNamePrefix = (String) entity.getAttributes().get(MODEL_QUALIFIED_NAME_PATTERN);
         int lastIndex = qualifiedNamePrefix.lastIndexOf("/");
         String modelQualifiedName = qualifiedNamePrefix.substring(0, lastIndex);
 
@@ -89,7 +89,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
             Map<String, Object> attrValues = new HashMap<>();
             attrValues.put(QUALIFIED_NAME, modelQualifiedName);
             modelGuid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(
-                    typeRegistry.getEntityTypeByName(ATLAS_DM_DATA_MODEL),
+                    typeRegistry.getEntityTypeByName(MODEL_DATA_MODEL),
                     attrValues);
 
             if (StringUtils.isEmpty(modelGuid)){
@@ -107,11 +107,11 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
 
             // create modelVersion
             if (modelVersionResponse.getReplicaEntity() == null) {
-                String namespace = (String) entity.getAttributes().get(ATLAS_DM_NAMESPACE);
+                String namespace = (String) entity.getAttributes().get(MODEL_NAMESPACE);
                 modelVersionResponse = createEntity(
                         (modelQualifiedName + "/" + "v1"),
                         "v1",
-                        ATLAS_DM_VERSION_TYPE,
+                        MODEL_VERSION,
                         namespace,
                         context);
             }
@@ -138,7 +138,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
 
         }
 
-        AtlasEntityType modelVersionType = typeRegistry.getEntityTypeByName(ATLAS_DM_VERSION_TYPE);
+        AtlasEntityType modelVersionType = typeRegistry.getEntityTypeByName(MODEL_VERSION);
 
         context.addCreated(latestModelVersionEntity.getGuid(), latestModelVersionEntity,
                 modelVersionType, latestModelVersionVertex);
