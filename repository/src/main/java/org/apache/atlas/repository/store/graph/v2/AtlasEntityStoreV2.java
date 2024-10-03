@@ -38,6 +38,7 @@ import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -72,9 +73,7 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.Stakehol
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.model.DMAttributePreprocessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.model.DMEntityAssociationPreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.model.DMEntityPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.model.*;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.ReadmePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
@@ -1645,6 +1644,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasEntityType entityType;
         List<PreProcessor> preProcessors;
 
+        List<AtlasEntity> mergedChanges = new ArrayList<>();
+        mergedChanges.addAll(new ArrayList<>(context.getUpdatedEntities()));
+        mergedChanges.addAll(new ArrayList<>(context.getCreatedEntities()));
+        createExclusionSet(mergedChanges, context);
+
         List<AtlasEntity> copyOfCreated = new ArrayList<>(context.getCreatedEntities());
         for (AtlasEntity entity : copyOfCreated) {
             entityType = context.getType(entity.getGuid());
@@ -1685,6 +1689,20 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 for (PreProcessor processor : preProcessors) {
                     processor.processAttributes(entity, context, UPDATE);
                 }
+            }
+        }
+    }
+
+    private void createExclusionSet(Collection<AtlasEntity> updatedEntities, EntityMutationContext entityMutationContext) {
+        for (AtlasEntity entity : updatedEntities) {
+            String qualifiedNamePrefix = (String) entity.getAttribute(ATLAS_DM_QUALIFIED_NAME_PREFIX);
+            if (entity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)) {
+                entityMutationContext.updateModelEntitiesSet(qualifiedNamePrefix);
+            } else if (entity.getTypeName().equals(ATLAS_DM_ATTRIBUTE_TYPE)) {
+                entityMutationContext.updateModelAttributesSet(qualifiedNamePrefix);
+                int lastIndex = qualifiedNamePrefix.lastIndexOf("/");
+                String entityQualifiedNamePrefix = qualifiedNamePrefix.substring(0, lastIndex);
+                entityMutationContext.updateModelEntitiesSet(entityQualifiedNamePrefix);
             }
         }
     }
@@ -1756,7 +1774,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         if (RequestContext.get().isImportInProgress() && AtlasTypeUtil.isAssignedGuid(entity.getGuid())) {
                             vertex = entityGraphMapper.createVertexWithGuid(entity, entity.getGuid());
                         } else {
-                            vertex = entityGraphMapper.createVertex(entity);
+                          vertex = entityGraphMapper.createVertex(entity);
                         }
 
                         discoveryContext.addResolvedGuid(guid, vertex);
@@ -1766,6 +1784,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         String generatedGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
 
                         entity.setGuid(generatedGuid);
+
+                        if (entity.getTypeName().equals(ATLAS_DM_DATA_MODEL)){
+                            AtlasGraphUtilsV2.setProperty(vertex, QUALIFIED_NAME, entity.getAttribute(QUALIFIED_NAME));
+                            context.cacheModel((String) entity.getAttribute(QUALIFIED_NAME), generatedGuid);
+                        }else if (entity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)){
+                             context.cacheModelEntity((String) entity.getAttribute(ATLAS_DM_QUALIFIED_NAME_PREFIX), new ModelResponse(entity, vertex));
+                        }
 
                         requestContext.recordEntityGuidUpdate(entity, guid);
 
@@ -2048,7 +2073,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 preProcessors.add(new DMEntityAssociationPreProcessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
                 break;
             case ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE:
-                preProcessors.add(new DMAttributePreprocessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
+                preProcessors.add(new DMAttributeAssociationPreprocessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
         }
 
         //  The default global pre-processor for all AssetTypes

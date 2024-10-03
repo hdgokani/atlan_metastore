@@ -14,6 +14,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -82,7 +83,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         String modelQualifiedName = qualifiedNamePrefix.substring(0, lastIndex);
 
         String modelGuid = context.getModel(modelQualifiedName);
-        LOG.info("model retrieved from cache: " + StringUtils.isEmpty(modelGuid));
+        LOG.info("model retrieved from cache: " + StringUtils.isNotEmpty(modelGuid));
 
         if (StringUtils.isEmpty(modelGuid)) {
             Map<String, Object> attrValues = new HashMap<>();
@@ -99,7 +100,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         }
 
         ModelResponse modelVersionResponse = context.getModelVersion(modelQualifiedName);
-        LOG.info("model version retrieved from cache: " + (modelVersionResponse == null));
+        LOG.info("model version retrieved from cache: " + (modelVersionResponse != null));
 
         if (modelVersionResponse == null) {
             modelVersionResponse = replicateModelVersion(modelGuid, modelQualifiedName, now);
@@ -114,6 +115,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
                         namespace,
                         context);
             }
+
             // model --- modelVersion relation
             createModelModelVersionRelation(modelGuid, modelVersionResponse.getReplicaEntity().getGuid());
             context.cacheModelVersion(modelQualifiedName, modelVersionResponse);
@@ -127,18 +129,28 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
         // modelVersion --- entity relation
         createModelVersionModelEntityRelationship(latestModelVersionVertex, vertex);
 
-        if (modelVersionResponse.getExistingEntity() != null
-                && MapUtils.isNotEmpty(modelVersionResponse.getExistingEntity().getRelationshipAttributes())) {
-            List<AtlasRelatedObjectId> existingEntities =
-                    (List<AtlasRelatedObjectId>) modelVersionResponse.getExistingEntity()
+        // modelVersion --- entitiesOfExistingModelVersion
+        if (modelVersionResponse.getExistingEntity() != null && MapUtils.isNotEmpty(modelVersionResponse.getExistingEntity().getRelationshipAttributes())) {
+            List<AtlasRelatedObjectId> existingEntities = (List<AtlasRelatedObjectId>) modelVersionResponse.getExistingEntity()
                             .getRelationshipAttributes()
                             .get("dMEntities");
-            // modelVersion --- entitiesOfExistingModelVersion
-            createModelVersionModelEntityRelationship(latestModelVersionVertex, existingEntities);
+            createModelVersionModelEntityRelationship(latestModelVersionVertex, entity, existingEntities, context);
 
         }
+
+        AtlasEntityType modelVersionType = typeRegistry.getEntityTypeByName(ATLAS_DM_VERSION_TYPE);
+
         context.addCreated(latestModelVersionEntity.getGuid(), latestModelVersionEntity,
-                typeRegistry.getEntityTypeByName(ATLAS_DM_VERSION_TYPE), latestModelVersionVertex);
+                modelVersionType, latestModelVersionVertex);
+
+        if (modelVersionResponse.getExistingEntity() != null) {
+            context.removeUpdated(modelVersionResponse.getExistingEntity().getGuid(),
+                    modelVersionResponse.getExistingEntity(), modelVersionType,
+                    modelVersionResponse.getExistingVertex());
+            context.addUpdated(modelVersionResponse.getExistingEntity().getGuid(),
+                    modelVersionResponse.getExistingEntity(), modelVersionType,
+                    modelVersionResponse.getExistingVertex());
+        }
         // resolve references
         context.getDiscoveryContext().
                 addResolvedGuid(
@@ -151,6 +163,11 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
 
     private void updateDMEntities(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
         ModelResponse modelResponseParentEntity = updateDMEntity(entity, vertex, context);
+
+        if (entity.getRelationshipAttributes() != null) {
+            Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForEntity(entity, entity.getRelationshipAttributes(), context);
+            modelResponseParentEntity.getReplicaEntity().setRelationshipAttributes(appendRelationshipAttributes);
+        }
 
         // case when a mapping is added
         if (entity.getAppendRelationshipAttributes() != null) {
