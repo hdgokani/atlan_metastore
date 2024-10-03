@@ -234,6 +234,15 @@ public final class Constants {
     public static final String MODEL_ENTITY_RELATED_TO_ENTITIES = "modelEntityRelatedToEntities";
     public static final String MODEL_ATTRIBUTE_RELATED_FROM_ATTRIBUTES = "modelAttributeRelatedFromAttributes";
     public static final String MODEL_ATTRIBUTE_RELATED_TO_ATTRIBUTES = "modelAttributeRelatedToAttributes";
+    public static String MODEL_ENTITY_ASSOCIATION_TO = "modelEntityAssociationTo";
+    public static String MODEL_ENTITY_ASSOCIATION_FROM = "modelEntityAssociationFrom";
+    public static  String MODEL_ATTRIBUTE_ASSOCIATION_FROM = "modelAttributeAssociationFrom";
+    public static String MODEL_ATTRIBUTE_ASSOCIATION_TO = "modelAttributeAssociationTo";
+
+
+
+
+
 
 
 
