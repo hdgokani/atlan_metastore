@@ -134,7 +134,7 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
             List<AtlasRelatedObjectId> existingEntities = (List<AtlasRelatedObjectId>) modelVersionResponse.getExistingEntity()
                             .getRelationshipAttributes()
                             .get("dMEntities");
-            createModelVersionModelEntityRelationship(latestModelVersionVertex, entity, existingEntities);
+            createModelVersionModelEntityRelationship(latestModelVersionVertex, entity, existingEntities, context);
 
         }
 
@@ -163,6 +163,11 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
 
     private void updateDMEntities(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
         ModelResponse modelResponseParentEntity = updateDMEntity(entity, vertex, context);
+
+        if (entity.getRelationshipAttributes() != null) {
+            Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForEntity(entity, entity.getRelationshipAttributes(), context);
+            modelResponseParentEntity.getReplicaEntity().setRelationshipAttributes(appendRelationshipAttributes);
+        }
 
         // case when a mapping is added
         if (entity.getAppendRelationshipAttributes() != null) {

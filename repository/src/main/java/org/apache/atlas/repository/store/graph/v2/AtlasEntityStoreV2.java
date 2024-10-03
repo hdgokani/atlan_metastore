@@ -1570,6 +1570,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasEntityType entityType;
         List<PreProcessor> preProcessors;
 
+        List<AtlasEntity> mergedChanges = new ArrayList<>();
+        mergedChanges.addAll(new ArrayList<>(context.getUpdatedEntities()));
+        mergedChanges.addAll(new ArrayList<>(context.getCreatedEntities()));
+        createExclusionSet(mergedChanges, context);
+
         List<AtlasEntity> copyOfCreated = new ArrayList<>(context.getCreatedEntities());
         for (AtlasEntity entity : copyOfCreated) {
             entityType = context.getType(entity.getGuid());
@@ -1608,6 +1613,20 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 for (PreProcessor processor : preProcessors) {
                     processor.processAttributes(entity, context, UPDATE);
                 }
+            }
+        }
+    }
+
+    private void createExclusionSet(Collection<AtlasEntity> updatedEntities, EntityMutationContext entityMutationContext) {
+        for (AtlasEntity entity : updatedEntities) {
+            String qualifiedNamePrefix = (String) entity.getAttribute(ATLAS_DM_QUALIFIED_NAME_PREFIX);
+            if (entity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)) {
+                entityMutationContext.updateModelEntitiesSet(qualifiedNamePrefix);
+            } else if (entity.getTypeName().equals(ATLAS_DM_ATTRIBUTE_TYPE)) {
+                entityMutationContext.updateModelAttributesSet(qualifiedNamePrefix);
+                int lastIndex = qualifiedNamePrefix.lastIndexOf("/");
+                String entityQualifiedNamePrefix = qualifiedNamePrefix.substring(0, lastIndex);
+                entityMutationContext.updateModelEntitiesSet(entityQualifiedNamePrefix);
             }
         }
     }

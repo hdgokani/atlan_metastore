@@ -44,6 +44,8 @@ public class EntityMutationContext {
     private Map<String, String> modelCache = new HashMap<>();
 
     private Map<String, ModelResponse> modelEntityCache = new HashMap<>();
+    private Set<String> modelEntitiesToBeUpdated= new HashSet<>();
+    private Set<String> modelAttributesToBeUpdated= new HashSet<>();
 
     private Set<String> removedLineageRelations = new HashSet<>();
 
@@ -97,10 +99,10 @@ public class EntityMutationContext {
             entityVsType.remove(entity.getGuid(), type);
             entityVsVertex.remove(entity.getGuid(), atlasVertex);
 
-//            if (!StringUtils.equals(internalGuid, entity.getGuid())) {
-//                guidAssignments.put(internalGuid, entity.getGuid());
-//                entityVsVertex.put(internalGuid, atlasVertex);
-//            }
+            if (StringUtils.equals(internalGuid, entity.getGuid())) {
+                guidAssignments.remove(internalGuid, entity.getGuid());
+                entityVsVertex.remove(internalGuid, atlasVertex);
+            }
         }
     }
 
@@ -281,5 +283,29 @@ public class EntityMutationContext {
 
     public void cacheModelEntity(String qualifiedNamePrefix, ModelResponse modelEntity) {
         modelEntityCache.putIfAbsent(qualifiedNamePrefix, modelEntity);
+    }
+
+    public Set<String> getModelEntitiesToBeUpdated() {
+        return modelEntitiesToBeUpdated;
+    }
+
+    public void setModelEntitiesToBeUpdated(Set<String> modelEntitiesToBeUpdated) {
+        this.modelEntitiesToBeUpdated = modelEntitiesToBeUpdated;
+    }
+
+    public Set<String> getModelAttributesToBeUpdated() {
+        return modelAttributesToBeUpdated;
+    }
+
+    public void setModelAttributesToBeUpdated(Set<String> modelAttributesToBeUpdated) {
+        this.modelAttributesToBeUpdated = modelAttributesToBeUpdated;
+    }
+
+    public void updateModelEntitiesSet(String qualifiedNamePrefix){
+        modelEntitiesToBeUpdated.add(qualifiedNamePrefix);
+    }
+
+    public void updateModelAttributesSet(String qualifiedNamePrefix){
+        modelAttributesToBeUpdated.add(qualifiedNamePrefix);
     }
 }
