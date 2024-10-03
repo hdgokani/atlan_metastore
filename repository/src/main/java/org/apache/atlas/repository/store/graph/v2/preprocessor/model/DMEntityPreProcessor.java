@@ -14,6 +14,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -133,11 +134,23 @@ public class DMEntityPreProcessor extends AbstractModelPreProcessor {
             List<AtlasRelatedObjectId> existingEntities = (List<AtlasRelatedObjectId>) modelVersionResponse.getExistingEntity()
                             .getRelationshipAttributes()
                             .get("dMEntities");
-            createModelVersionModelEntityRelationship(latestModelVersionVertex, existingEntities);
+            createModelVersionModelEntityRelationship(latestModelVersionVertex, entity, existingEntities);
 
         }
+
+        AtlasEntityType modelVersionType = typeRegistry.getEntityTypeByName(ATLAS_DM_VERSION_TYPE);
+
         context.addCreated(latestModelVersionEntity.getGuid(), latestModelVersionEntity,
-                typeRegistry.getEntityTypeByName(ATLAS_DM_VERSION_TYPE), latestModelVersionVertex);
+                modelVersionType, latestModelVersionVertex);
+
+        if (modelVersionResponse.getExistingEntity() != null) {
+            context.removeUpdated(modelVersionResponse.getExistingEntity().getGuid(),
+                    modelVersionResponse.getExistingEntity(), modelVersionType,
+                    modelVersionResponse.getExistingVertex());
+            context.addUpdated(modelVersionResponse.getExistingEntity().getGuid(),
+                    modelVersionResponse.getExistingEntity(), modelVersionType,
+                    modelVersionResponse.getExistingVertex());
+        }
         // resolve references
         context.getDiscoveryContext().
                 addResolvedGuid(
