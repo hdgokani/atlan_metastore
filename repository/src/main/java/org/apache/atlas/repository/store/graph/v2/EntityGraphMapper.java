@@ -3411,7 +3411,7 @@ public class EntityGraphMapper {
                 deletePropagatedClassification(entityGuid, classificationName, associatedEntityGuid);
             }
         } finally {
-            RequestContext.get().endMetricRecord("deleteClassification");
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 
