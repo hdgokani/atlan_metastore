@@ -1706,6 +1706,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         RequestContext              requestContext   = RequestContext.get();
 
         Map<String, String> referencedGuids = discoveryContext.getReferencedGuids();
+        LOG.info("Total entities: {}", referencedGuids);
         for (Map.Entry<String, String> element : referencedGuids.entrySet()) {
             String guid = element.getKey();
             AtlasEntity entity = entityStream.getByGuid(guid);
