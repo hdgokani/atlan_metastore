@@ -53,14 +53,17 @@ public class IDBasedEntityResolver implements EntityResolver {
         if (context == null) {
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "IDBasedEntityResolver.resolveEntityReferences(): context is null");
         }
-
+        LOG.info("Resolving entity references");
         EntityStream entityStream = context.getEntityStream();
+        LOG.info("Resolving entity references: {}", entityStream.hasNext());
 
         Map<String, String> referencedGuids = context.getReferencedGuids();
         List<String> entityGuids = new ArrayList<>(referencedGuids.keySet());
         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(entityGuids);
+        LOG.info("Resolving entity references: {}", referencedGuids.size());
         for (Map.Entry<String, String> element : referencedGuids.entrySet()) {
             String guid = element.getKey();
+            LOG.info("Resolving entity reference: {}", guid);
             boolean isAssignedGuid = AtlasTypeUtil.isAssignedGuid(guid);
             AtlasVertex vertex = isAssignedGuid ? AtlasGraphUtilsV2.findByGuid(this.graph, guid) : null;
 
