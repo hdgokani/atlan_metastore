@@ -367,31 +367,36 @@ public class EntityGraphRetriever {
     }
 
     public AtlasClassification toAtlasClassification(AtlasVertex classificationVertex) throws AtlasBaseException {
-        AtlasClassification ret                = null;
-        String              classificationName = getTypeName(classificationVertex);
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("toAtlasClassification");
+        try {
+            AtlasClassification ret                = null;
+            String              classificationName = getTypeName(classificationVertex);
 
-        if (StringUtils.isEmpty(classificationName)) {
-            LOG.warn("Ignoring invalid classification vertex: {}", AtlasGraphUtilsV2.toString(classificationVertex));
-        } else {
-            ret = new AtlasClassification(classificationName);
+            if (StringUtils.isEmpty(classificationName)) {
+                LOG.warn("Ignoring invalid classification vertex: {}", AtlasGraphUtilsV2.toString(classificationVertex));
+            } else {
+                ret = new AtlasClassification(classificationName);
 
-            ret.setEntityGuid(AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
-            ret.setEntityStatus(getClassificationEntityStatus(classificationVertex));
-            ret.setPropagate(isPropagationEnabled(classificationVertex));
-            ret.setRemovePropagationsOnEntityDelete(getRemovePropagations(classificationVertex));
-            ret.setRestrictPropagationThroughLineage(getRestrictPropagationThroughLineage(classificationVertex));
-            ret.setRestrictPropagationThroughHierarchy(getRestrictPropagationThroughHierarchy(classificationVertex));
+                ret.setEntityGuid(AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
+                ret.setEntityStatus(getClassificationEntityStatus(classificationVertex));
+                ret.setPropagate(isPropagationEnabled(classificationVertex));
+                ret.setRemovePropagationsOnEntityDelete(getRemovePropagations(classificationVertex));
+                ret.setRestrictPropagationThroughLineage(getRestrictPropagationThroughLineage(classificationVertex));
+                ret.setRestrictPropagationThroughHierarchy(getRestrictPropagationThroughHierarchy(classificationVertex));
 
-            String strValidityPeriods = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
+                String strValidityPeriods = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
 
-            if (strValidityPeriods != null) {
-                ret.setValidityPeriods(AtlasJson.fromJson(strValidityPeriods, TIME_BOUNDARIES_LIST_TYPE));
+                if (strValidityPeriods != null) {
+                    ret.setValidityPeriods(AtlasJson.fromJson(strValidityPeriods, TIME_BOUNDARIES_LIST_TYPE));
+                }
+
+                mapAttributes(classificationVertex, ret, null);
             }
 
-            mapAttributes(classificationVertex, ret, null);
+            return ret;
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
-
-        return ret;
     }
 
     public AtlasVertex getReferencedEntityVertex(AtlasEdge edge, AtlasRelationshipEdgeDirection relationshipDirection, AtlasVertex parentVertex) throws AtlasBaseException {
