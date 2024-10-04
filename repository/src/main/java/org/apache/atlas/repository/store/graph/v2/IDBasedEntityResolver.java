@@ -81,11 +81,11 @@ public class IDBasedEntityResolver implements EntityResolver {
     //                -------
 
                     if (
-                            ((entity.getAttributes().get(Constants.QUALIFIED_NAME) == null) && (entity.getAttributes().get(Constants.ATLAS_DM_QUALIFIED_NAME_PREFIX)!=null))
+                            ((entity.getAttributes().get(Constants.QUALIFIED_NAME) == null) && (entity.getAttributes().get(Constants.MODEL_QUALIFIED_NAME_PATTERN)!=null))
                                     &&
-                                    ((entity.getTypeName().equals(Constants.ATLAS_DM_ENTITY_TYPE)) || (entity.getTypeName().equals(Constants.ATLAS_DM_ATTRIBUTE_TYPE)))) {
+                                    ((entity.getTypeName().equals(Constants.MODEL_ENTITY)) || (entity.getTypeName().equals(Constants.MODEL_ATTRIBUTE)))) {
 
-                        String qualifiedNamePrefix = (String) entity.getAttributes().get(Constants.ATLAS_DM_QUALIFIED_NAME_PREFIX);
+                        String qualifiedNamePrefix = (String) entity.getAttributes().get(Constants.MODEL_QUALIFIED_NAME_PATTERN);
                         if (qualifiedNamePrefix.isEmpty()){
                             throw new AtlasBaseException(AtlasErrorCode.QUALIFIED_NAME_PREFIX_NOT_EXIST);
                         }
