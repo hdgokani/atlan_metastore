@@ -217,23 +217,44 @@ public final class Constants {
     /***
      * DataModel
      */
+    public static final String MODEL_ENTITY = "ModelEntity";
+    public static final String MODEL_ATTRIBUTE = "ModelAttribute";
+    public static final String MODEL_DATA_MODEL = "ModelDataModel";
+    public static final String MODEL_VERSION = "ModelVersion";
+    public static final String MODEL_ENTITY_ASSOCIATION = "ModelEntityAssociation";
+    public static final String MODEL_ATTRIBUTE_ASSOCIATION = "ModelAttributeAssociation";
+    public static final String MODEL_QUALIFIED_NAME_PATTERN = "modelVersionAgnosticQualifiedName";
+    public static final String MODEL_NAMESPACE = "modelNamespace";
+    public static final String MODEL_EXPIRED_AT_SYSTEM_DATE = "modelExpiredAtSystemDate";
+    public static final String MODEL_EXPIRED_AT_BUSINESS_DATE = "modelExpiredAtBusinessDate";
+    public static final String MODEL_SYSTEM_DATE = "modelSystemDate";
+    public static final String MODEL_BUSINESS_DATE = "modelBusinessDate";
+    public static final String MODEL_MODEL_VERSION_RELATION = "model_data_model_model_versions";
+    public static final String RELATED_DATA_MODEL = "modelDataModel";
+    public static final String RELATED_MODEL_VERSIONS = "modelVersions";
+    public static final String MODEL_VERSIONS_MODEL_VERSION_ENTITY_RELATION = "model_versions_model_version_entities";
+    public static final String MODEL_VERSION_ENTITIES = "modelVersionEntities";
+    public static final String MODEL_ENTITY_MAPPED_FROM_ENTITIES = "modelEntityMappedFromEntities";
+    public static final String MODEL_ENTITY_MAPPED_TO_ENTITIES = "modelEntityMappedToEntities";
+    public static final String MODEL_ENTITY_MODEL_ATTRIBUTES_RELATION = "model_attribute_entities_model_entity_attributes";
+    public static final String MODEL_ENTITY_ATTRIBUTES = "modelEntityAttributes";
+    public static final String MODEL_ATTRIBUTE_ENTITIES = "modelAttributeEntities";
+    public static final String MODEL_ATTRIBUTE_MAPPED_TO_ATTRIBUTES = "modelAttributeMappedToAttributes";
+    public static final String MODEL_ATTRIBUTE_MAPPED_FROM_ATTRIBUTES = "modelAttributeMappedFromAttributes";
+    public static final String MODEL_ENTITY_RELATED_FROM_ENTITIES = "modelEntityRelatedFromEntities";
+    public static final String MODEL_ENTITY_RELATED_TO_ENTITIES = "modelEntityRelatedToEntities";
+    public static final String MODEL_ATTRIBUTE_RELATED_FROM_ATTRIBUTES = "modelAttributeRelatedFromAttributes";
+    public static final String MODEL_ATTRIBUTE_RELATED_TO_ATTRIBUTES = "modelAttributeRelatedToAttributes";
+    public static String MODEL_ENTITY_ASSOCIATION_TO = "modelEntityAssociationTo";
+    public static String MODEL_ENTITY_ASSOCIATION_FROM = "modelEntityAssociationFrom";
+    public static  String MODEL_ATTRIBUTE_ASSOCIATION_FROM = "modelAttributeAssociationFrom";
+    public static String MODEL_ATTRIBUTE_ASSOCIATION_TO = "modelAttributeAssociationTo";
 
-    public static final String ATLAS_DM_ENTITY_TYPE  = "DMEntity";
 
-    public static final String ATLAS_DM_ATTRIBUTE_TYPE  = "DMAttribute";
-    public static final String ATLAS_DM_DATA_MODEL = "DMDataModel";
 
-    public static final String ATLAS_DM_VERSION_TYPE  = "DMVersion";
 
-    public static final String ATLAS_DM_ENTITY_ASSOCIATION_TYPE= "DMEntityAssociation";
-    public static final String ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE= "DMAttributeAssociation";
 
-    public static final String ATLAS_DM_QUALIFIED_NAME_PREFIX = "dMQualifiedNamePrefix";
-    public static final String ATLAS_DM_NAMESPACE = "dMDataModelNamespace";
-    public static  final String ATLAS_DM_EXPIRED_AT_SYSTEM_DATE = "dMDataModelExpiredAtSystemDate";
-    public static  final String ATLAS_DM_EXPIRED_AT_BUSINESS_DATE = "dMDataModelExpiredAtBusinessDate";
-    public static  final String ATLAS_DM_SYSTEM_DATE = "dMDataModelSystemDate";
-    public  static  final String ATLAS_DM_BUSINESS_DATE = "dMDataModelBusinessDate";
+
 
 
     /**

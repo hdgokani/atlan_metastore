@@ -1695,10 +1695,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private void createExclusionSet(Collection<AtlasEntity> updatedEntities, EntityMutationContext entityMutationContext) {
         for (AtlasEntity entity : updatedEntities) {
-            String qualifiedNamePrefix = (String) entity.getAttribute(ATLAS_DM_QUALIFIED_NAME_PREFIX);
-            if (entity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)) {
+            String qualifiedNamePrefix = (String) entity.getAttribute(MODEL_QUALIFIED_NAME_PATTERN);
+            if (entity.getTypeName().equals(MODEL_ENTITY)) {
                 entityMutationContext.updateModelEntitiesSet(qualifiedNamePrefix);
-            } else if (entity.getTypeName().equals(ATLAS_DM_ATTRIBUTE_TYPE)) {
+            } else if (entity.getTypeName().equals(MODEL_ATTRIBUTE)) {
                 entityMutationContext.updateModelAttributesSet(qualifiedNamePrefix);
                 int lastIndex = qualifiedNamePrefix.lastIndexOf("/");
                 String entityQualifiedNamePrefix = qualifiedNamePrefix.substring(0, lastIndex);
@@ -1709,10 +1709,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private Set dataModelEntityTypes() {
         Set<String> dataModelEntityTypes = new HashSet<>();
-        dataModelEntityTypes.add(ATLAS_DM_ENTITY_TYPE);
-        dataModelEntityTypes.add(ATLAS_DM_ATTRIBUTE_TYPE);
-        dataModelEntityTypes.add(ATLAS_DM_ENTITY_ASSOCIATION_TYPE);
-        dataModelEntityTypes.add(ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE);
+        dataModelEntityTypes.add(MODEL_ENTITY);
+        dataModelEntityTypes.add(MODEL_ATTRIBUTE);
+        dataModelEntityTypes.add(MODEL_ENTITY_ASSOCIATION);
+        dataModelEntityTypes.add(MODEL_ATTRIBUTE_ASSOCIATION);
         return dataModelEntityTypes;
     }
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
@@ -1785,11 +1785,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                         entity.setGuid(generatedGuid);
 
-                        if (entity.getTypeName().equals(ATLAS_DM_DATA_MODEL)){
+                        if (entity.getTypeName().equals(MODEL_DATA_MODEL)){
                             AtlasGraphUtilsV2.setProperty(vertex, QUALIFIED_NAME, entity.getAttribute(QUALIFIED_NAME));
                             context.cacheModel((String) entity.getAttribute(QUALIFIED_NAME), generatedGuid);
-                        }else if (entity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)){
-                             context.cacheModelEntity((String) entity.getAttribute(ATLAS_DM_QUALIFIED_NAME_PREFIX), new ModelResponse(entity, vertex));
+                        }else if (entity.getTypeName().equals(MODEL_ENTITY)){
+                             context.cacheModelEntity((String) entity.getAttribute(MODEL_QUALIFIED_NAME_PATTERN), new ModelResponse(entity, vertex));
                         }
 
                         requestContext.recordEntityGuidUpdate(entity, guid);
@@ -2063,16 +2063,16 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             case PROCESS_ENTITY_TYPE:
                 preProcessors.add(new LineagePreProcessor(typeRegistry, entityRetriever, graph, this));
-            case ATLAS_DM_ENTITY_TYPE:
+            case MODEL_ENTITY:
                 preProcessors.add(new DMEntityPreProcessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
                 break;
-            case ATLAS_DM_ATTRIBUTE_TYPE:
+            case MODEL_ATTRIBUTE:
                 preProcessors.add(new DMAttributePreprocessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
                 break;
-            case ATLAS_DM_ENTITY_ASSOCIATION_TYPE:
+            case MODEL_ENTITY_ASSOCIATION:
                 preProcessors.add(new DMEntityAssociationPreProcessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
                 break;
-            case ATLAS_DM_ATTRIBUTE_ASSOCIATION_TYPE:
+            case MODEL_ATTRIBUTE_ASSOCIATION:
                 preProcessors.add(new DMAttributeAssociationPreprocessor(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore));
         }
 

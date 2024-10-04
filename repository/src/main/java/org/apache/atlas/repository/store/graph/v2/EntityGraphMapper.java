@@ -1625,7 +1625,7 @@ public class EntityGraphMapper {
 
             AtlasEntity dataModelEntity = entityRetriever.toAtlasEntity(guid);
             String entityType = dataModelEntity.getTypeName();
-            if (entityType.equals(ATLAS_DM_ENTITY_TYPE) || entityType.equals(ATLAS_DM_ATTRIBUTE_TYPE)) {
+            if (entityType.equals(MODEL_ENTITY) || entityType.equals(MODEL_ATTRIBUTE)) {
                 attributeVertex = entityRetriever.getEntityVertex(guid);
 
                 if (attributeVertex == null) {

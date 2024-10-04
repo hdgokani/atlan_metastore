@@ -42,11 +42,9 @@ import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.type.TemplateToken;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
-import org.apache.hadoop.util.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -116,10 +114,10 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         // by dMQualifiedNamePrefix which is not a unique attribute
         // This can return multiple entity/attribute that match this prefix vale
       //   we have to return latest entity/attribute
-        if (entity.getTypeName().equals(Constants.ATLAS_DM_ENTITY_TYPE) ||
-                entity.getTypeName().equals(Constants.ATLAS_DM_ATTRIBUTE_TYPE)){
+        if (entity.getTypeName().equals(Constants.MODEL_ENTITY) ||
+                entity.getTypeName().equals(Constants.MODEL_ATTRIBUTE)){
 
-            String qualifiedNamePrefix = (String) entity.getAttributes().get(Constants.ATLAS_DM_QUALIFIED_NAME_PREFIX);
+            String qualifiedNamePrefix = (String) entity.getAttributes().get(Constants.MODEL_QUALIFIED_NAME_PATTERN);
             if (qualifiedNamePrefix.isEmpty()){
                 throw new AtlasBaseException(AtlasErrorCode.QUALIFIED_NAME_PREFIX_NOT_EXIST);
             }
@@ -521,10 +519,10 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     }
 
     private void validateAttributesForDataModel(AtlasEntity entity) throws AtlasBaseException {
-        if (entity.getTypeName().equals(Constants.ATLAS_DM_ENTITY_TYPE) ||
-                entity.getTypeName().equals(Constants.ATLAS_DM_ATTRIBUTE_TYPE)) {
-            if (entity.getAttributes().get(Constants.ATLAS_DM_QUALIFIED_NAME_PREFIX) == null ||
-                    entity.getAttributes().get(Constants.ATLAS_DM_QUALIFIED_NAME_PREFIX) == "") {
+        if (entity.getTypeName().equals(Constants.MODEL_ENTITY) ||
+                entity.getTypeName().equals(Constants.MODEL_ATTRIBUTE)) {
+            if (entity.getAttributes().get(Constants.MODEL_QUALIFIED_NAME_PATTERN) == null ||
+                    entity.getAttributes().get(Constants.MODEL_QUALIFIED_NAME_PATTERN) == "") {
               throw new AtlasBaseException(AtlasErrorCode.QUALIFIED_NAME_PREFIX_NOT_EXIST);
             }
         }

@@ -23,7 +23,7 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 
 public class DMEntityAssociationPreProcessor extends AbstractModelPreProcessor {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DMAttributePreprocessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DMEntityAssociationPreProcessor.class);
 
     public DMEntityAssociationPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, EntityGraphMapper entityGraphMapper, AtlasRelationshipStore atlasRelationshipStore) {
         super(typeRegistry, entityRetriever, entityGraphMapper, atlasRelationshipStore);
@@ -47,11 +47,12 @@ public class DMEntityAssociationPreProcessor extends AbstractModelPreProcessor {
                 break;
             case UPDATE:
                 updateDMEntityAssociation(entity, vertex, context);
+                break;
         }
     }
 
     private void createDMEntityAssociation(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
-        if (!entity.getTypeName().equals(ATLAS_DM_ENTITY_ASSOCIATION_TYPE)) {
+        if (!entity.getTypeName().equals(MODEL_ENTITY_ASSOCIATION)) {
             return;
         }
 
@@ -65,7 +66,7 @@ public class DMEntityAssociationPreProcessor extends AbstractModelPreProcessor {
                 processRelationshipAttributesForEntity(entity, entity.getRelationshipAttributes(), context));
     }
     private void updateDMEntityAssociation(AtlasEntity entity, AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
-        if (!entity.getTypeName().equals(ATLAS_DM_ENTITY_TYPE)) {
+        if (!entity.getTypeName().equals(MODEL_ENTITY)) {
             return;
         }
 
@@ -81,9 +82,15 @@ public class DMEntityAssociationPreProcessor extends AbstractModelPreProcessor {
         ModelResponse modelResponse = replicateDMAssociation(entity, vertex, now);
         AtlasEntity copyEntity = modelResponse.getReplicaEntity();
         AtlasVertex copyVertex = modelResponse.getReplicaVertex();
-        applyDiffs(entity, copyEntity, ATLAS_DM_ENTITY_ASSOCIATION_TYPE);
+        applyDiffs(entity, copyEntity, MODEL_ENTITY_ASSOCIATION);
         unsetExpiredDates(copyEntity, copyVertex);
 
+
+        // case when a mapping is added
+        if (entity.getRelationshipAttributes() != null) {
+            Map<String, Object> appendRelationshipAttributes = processRelationshipAttributesForEntity(entity, entity.getRelationshipAttributes(), context);
+            modelResponse.getReplicaEntity().setRelationshipAttributes(appendRelationshipAttributes);
+        }
 
         // case when a mapping is added
         if (entity.getAppendRelationshipAttributes() != null) {
