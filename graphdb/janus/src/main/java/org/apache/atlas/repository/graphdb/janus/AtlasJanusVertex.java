@@ -22,12 +22,14 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.stream.StreamSupport;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -66,10 +68,14 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
 
     @Override
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> getEdges(AtlasEdgeDirection dir, String edgeLabel) {
-
-        Direction d = AtlasJanusObjectFactory.createDirection(dir);
-        Iterator<Edge> edges = getWrappedElement().edges(d, edgeLabel);
-        return graph.wrapEdges(edges);
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getEdges");
+        try {
+            Direction d = AtlasJanusObjectFactory.createDirection(dir);
+            Iterator<Edge> edges = getWrappedElement().edges(d, edgeLabel);
+            return graph.wrapEdges(edges);
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
     }
 
     @Override
