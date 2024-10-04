@@ -212,7 +212,7 @@ public final class Constants {
     public static final String MODEL_VERSION = "ModelVersion";
     public static final String MODEL_ENTITY_ASSOCIATION = "ModelEntityAssociation";
     public static final String MODEL_ATTRIBUTE_ASSOCIATION = "ModelAttributeAssociation";
-    public static final String MODEL_QUALIFIED_NAME_PATTERN = "modelQualifiedNamePattern";
+    public static final String MODEL_QUALIFIED_NAME_PATTERN = "modelVersionAgnosticQualifiedName";
     public static final String MODEL_NAMESPACE = "modelNamespace";
     public static final String MODEL_EXPIRED_AT_SYSTEM_DATE = "modelExpiredAtSystemDate";
     public static final String MODEL_EXPIRED_AT_BUSINESS_DATE = "modelExpiredAtBusinessDate";
