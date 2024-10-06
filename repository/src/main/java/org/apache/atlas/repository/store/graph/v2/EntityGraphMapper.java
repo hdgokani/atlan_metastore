@@ -4208,7 +4208,7 @@ public class EntityGraphMapper {
                     //Sending audit request for all entities at once
                     entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification));
                 }
-                RequestContext.get().endMetricRecord(removedPropagations);
+                RequestContext.get().endMetricRecord(metricRecorderEntity);
             }
 
             AtlasPerfTracer.log(perf);
