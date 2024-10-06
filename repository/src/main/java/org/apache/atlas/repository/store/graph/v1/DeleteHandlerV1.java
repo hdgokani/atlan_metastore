@@ -1499,6 +1499,7 @@ public abstract class DeleteHandlerV1 {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("resetHasLineageOnInputOutputDelete");
 
         for (AtlasEdge atlasEdge : removedEdges) {
+            AtlasPerfMetrics.MetricRecorder edgeMetricRecorder = RequestContext.get().startMetricRecord("resetHasLineageOnInputOutputDelete_edge");
 
             boolean isOutputEdge = PROCESS_OUTPUTS.equals(atlasEdge.getLabel());
 
@@ -1516,6 +1517,7 @@ public abstract class DeleteHandlerV1 {
                 boolean activeEdgeFound = false;
 
                 while (edgeIterator.hasNext()) {
+                    AtlasPerfMetrics.MetricRecorder edgeIteratorMetricRecorder1 = RequestContext.get().startMetricRecord("resetHasLineageOnInputOutputDelete_edgeIterator1");
                     AtlasEdge edge = edgeIterator.next();
                     if (getStatus(edge) == ACTIVE && !removedEdges.contains(edge)) {
                         AtlasVertex relatedAssetVertex = edge.getInVertex();
@@ -1525,6 +1527,7 @@ public abstract class DeleteHandlerV1 {
                             break;
                         }
                     }
+                    RequestContext.get().endMetricRecord(edgeIteratorMetricRecorder1);
                 }
 
                 if (!activeEdgeFound) {
@@ -1535,15 +1538,19 @@ public abstract class DeleteHandlerV1 {
                     Iterator<AtlasEdge> processEdgeIterator = processVertex.getEdges(AtlasEdgeDirection.BOTH, oppositeEdgeLabel).iterator();
 
                     while (processEdgeIterator.hasNext()) {
+                        AtlasPerfMetrics.MetricRecorder edgeIteratorMetricRecorder2 = RequestContext.get().startMetricRecord("resetHasLineageOnInputOutputDelete_edgeIterator2");
                         AtlasEdge edge = processEdgeIterator.next();
 
                         if (!removedEdges.contains(edge)) {
                             AtlasVertex relatedAssetVertex = edge.getInVertex();
                             updateAssetHasLineageStatus(relatedAssetVertex, edge, removedEdges);
                         }
+                        RequestContext.get().endMetricRecord(edgeIteratorMetricRecorder2);
                     }
                 }
             }
+
+            RequestContext.get().endMetricRecord(edgeMetricRecorder);
         }
         RequestContext.get().endMetricRecord(metricRecorder);
     }

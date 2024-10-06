@@ -68,10 +68,14 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
 
     @Override
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> getEdges(AtlasEdgeDirection dir, String edgeLabel) {
-
-        Direction d = AtlasJanusObjectFactory.createDirection(dir);
-        Iterator<Edge> edges = getWrappedElement().edges(d, edgeLabel);
-        return graph.wrapEdges(edges);
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getEdges");
+        try {
+            Direction d = AtlasJanusObjectFactory.createDirection(dir);
+            Iterator<Edge> edges = getWrappedElement().edges(d, edgeLabel);
+            return graph.wrapEdges(edges);
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
     }
 
     @Override

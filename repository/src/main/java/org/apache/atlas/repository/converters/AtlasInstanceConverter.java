@@ -296,28 +296,31 @@ public class AtlasInstanceConverter {
     }
 
     public AtlasEntity getAndCacheEntity(String guid, boolean ignoreRelationshipAttributes) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getAndCacheEntity");
-        RequestContext context = RequestContext.get();
-        AtlasEntity    entity  = context.getEntity(guid);
+        AtlasPerfMetrics.MetricRecorder metricRecorder  = RequestContext.get().startMetricRecord("getAndCacheEntity");
+        try {
+            RequestContext context = RequestContext.get();
+            AtlasEntity    entity  = context.getEntity(guid);
 
-        if (entity == null) {
-            if (ignoreRelationshipAttributes) {
-                entity = entityGraphRetrieverIgnoreRelationshipAttrs.toAtlasEntity(guid);
-            } else {
-                entity = entityGraphRetriever.toAtlasEntity(guid);
-            }
+            if (entity == null) {
+                if (ignoreRelationshipAttributes) {
+                    entity = entityGraphRetrieverIgnoreRelationshipAttrs.toAtlasEntity(guid);
+                } else {
+                    entity = entityGraphRetriever.toAtlasEntity(guid);
+                }
 
-            if (entity != null) {
-                context.cache(entity);
+                if (entity != null) {
+                    context.cache(entity);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Cache miss -> GUID = {}", guid);
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Cache miss -> GUID = {}", guid);
+                    }
                 }
             }
-        }
-        RequestContext.get().endMetricRecord(recorder);
 
-        return entity;
+            return entity;
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
     }
 
     public AtlasEntity getEntity(String guid, boolean ignoreRelationshipAttributes) throws AtlasBaseException {
