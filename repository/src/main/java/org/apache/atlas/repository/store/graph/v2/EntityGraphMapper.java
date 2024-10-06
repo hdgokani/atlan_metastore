@@ -3869,6 +3869,7 @@ public class EntityGraphMapper {
             }
 
             if (MapUtils.isNotEmpty(removedPropagations)) {
+                AtlasPerfMetrics.MetricRecorder metricRecorderEntity = RequestContext.get().startMetricRecord("updateClassifications_removeProp");
                 for (AtlasClassification classification : removedPropagations.keySet()) {
                     List<AtlasVertex> propagatedVertices = removedPropagations.get(classification);
                     List<AtlasEntity> propagatedEntities = updateClassificationText(classification, propagatedVertices);
@@ -3876,6 +3877,7 @@ public class EntityGraphMapper {
                     //Sending audit request for all entities at once
                     entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification));
                 }
+                RequestContext.get().endMetricRecord(removedPropagations);
             }
 
             AtlasPerfTracer.log(perf);
