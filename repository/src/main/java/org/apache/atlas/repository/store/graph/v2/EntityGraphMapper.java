@@ -3126,7 +3126,7 @@ public class EntityGraphMapper {
     }
 
 
-    public void cleanUpClassificationPropagation(String classificationName, int batchLimit) throws AtlasBaseException {
+    public void cleanUpClassificationPropagation(String classificationName, int batchLimit) {
         int CLEANUP_MAX = batchLimit <= 0 ? CLEANUP_BATCH_SIZE : batchLimit * CLEANUP_BATCH_SIZE;
         int cleanedUpCount = 0;
         final int CHUNK_SIZE_TEMP = 50;
@@ -3178,9 +3178,13 @@ public class EntityGraphMapper {
                                 }
                             }
 
-                            AtlasEntity entity = repairClassificationMappings(vertex);
+                            try {
+                                AtlasEntity entity = repairClassificationMappings(vertex);
+                                entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
+                            } catch (IllegalStateException | AtlasBaseException e) {
+                                e.printStackTrace();
+                            }
 
-                            entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
                         }
 
                         transactionInterceptHelper.intercept();
