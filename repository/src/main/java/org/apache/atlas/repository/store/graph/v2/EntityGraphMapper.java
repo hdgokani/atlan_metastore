@@ -3854,10 +3854,8 @@ public class EntityGraphMapper {
             if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
                 notificationVertices.addAll(entitiesToPropagateTo);
             }
-            LOG.info("Sending notificsstion for {} vertices", notificationVertices.size());
 
             for (AtlasVertex vertex : notificationVertices) {
-                AtlasPerfMetrics.MetricRecorder metricRecorderEntity = RequestContext.get().startMetricRecord("updateClassifications_entity");
                 String      entityGuid = graphHelper.getGuid(vertex);
                 AtlasEntity entity     = instanceConverter.getAndCacheEntity(entityGuid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
 
@@ -3865,7 +3863,6 @@ public class EntityGraphMapper {
                     vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
                     entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassifications);
                 }
-                RequestContext.get().endMetricRecord(metricRecorderEntity);
             }
 
             if (MapUtils.isNotEmpty(removedPropagations)) {

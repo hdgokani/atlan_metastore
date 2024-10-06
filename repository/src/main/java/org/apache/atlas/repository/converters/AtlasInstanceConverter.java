@@ -36,7 +36,6 @@ import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.repository.converters.AtlasFormatConverter.ConverterContext;
@@ -301,31 +300,26 @@ public class AtlasInstanceConverter {
     }
 
     public AtlasEntity getAndCacheEntity(String guid, boolean ignoreRelationshipAttributes) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder  = RequestContext.get().startMetricRecord("getAndCacheEntity");
-        try {
-            RequestContext context = RequestContext.get();
-            AtlasEntity    entity  = context.getEntity(guid);
+        RequestContext context = RequestContext.get();
+        AtlasEntity    entity  = context.getEntity(guid);
 
-            if (entity == null) {
-                if (ignoreRelationshipAttributes) {
-                    entity = entityGraphRetrieverIgnoreRelationshipAttrs.toAtlasEntity(guid);
-                } else {
-                    entity = entityGraphRetriever.toAtlasEntity(guid);
-                }
-
-                if (entity != null) {
-                    context.cache(entity);
-
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Cache miss -> GUID = {}", guid);
-                    }
-                }
+        if (entity == null) {
+            if (ignoreRelationshipAttributes) {
+                entity = entityGraphRetrieverIgnoreRelationshipAttrs.toAtlasEntity(guid);
+            } else {
+                entity = entityGraphRetriever.toAtlasEntity(guid);
             }
 
-            return entity;
-        } finally {
-            RequestContext.get().endMetricRecord(metricRecorder);
+            if (entity != null) {
+                context.cache(entity);
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Cache miss -> GUID = {}", guid);
+                }
+            }
         }
+
+        return entity;
     }
 
     public AtlasEntity getEntity(String guid, boolean ignoreRelationshipAttributes) throws AtlasBaseException {

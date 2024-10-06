@@ -209,34 +209,29 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
 
     @Override
     public void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications) throws AtlasBaseException {
-        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("onClassificationUpdatedToEntity");
-        try {
-            doFullTextMapping(entity.getGuid());
+        doFullTextMapping(entity.getGuid());
 
-            if (isV2EntityNotificationEnabled) {
-                for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
-                    listener.onClassificationsUpdated(entity, updatedClassifications);
+        if (isV2EntityNotificationEnabled) {
+            for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+                listener.onClassificationsUpdated(entity, updatedClassifications);
+            }
+        } else {
+            if (instanceConverter != null) {
+                Referenceable entityRef = toReferenceable(entity.getGuid());
+                List<Struct>  traits    = toStruct(updatedClassifications);
+
+                if (entityRef == null || CollectionUtils.isEmpty(traits)) {
+                    return;
                 }
-            } else {
-                if (instanceConverter != null) {
-                    Referenceable entityRef = toReferenceable(entity.getGuid());
-                    List<Struct>  traits    = toStruct(updatedClassifications);
 
-                    if (entityRef == null || CollectionUtils.isEmpty(traits)) {
-                        return;
-                    }
-
-                    for (EntityChangeListener listener : entityChangeListeners) {
-                        try {
-                            listener.onTraitsUpdated(entityRef, traits);
-                        } catch (AtlasException e) {
-                            throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitUpdate");
-                        }
+                for (EntityChangeListener listener : entityChangeListeners) {
+                    try {
+                        listener.onTraitsUpdated(entityRef, traits);
+                    } catch (AtlasException e) {
+                        throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitUpdate");
                     }
                 }
             }
-        } finally {
-            RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 
