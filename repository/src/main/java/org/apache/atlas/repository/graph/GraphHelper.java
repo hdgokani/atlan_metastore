@@ -360,21 +360,26 @@ public final class GraphHelper {
     }
 
     public static AtlasVertex getClassificationVertex(AtlasVertex entityVertex, String classificationName) {
-        AtlasVertex ret   = null;
-        Iterable    edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL)
-                                                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, false)
-                                                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, classificationName).edges();
-        if (edges != null) {
-            Iterator<AtlasEdge> iterator = edges.iterator();
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getClassificationVertex");
+        try {
+            AtlasVertex ret   = null;
+            Iterable    edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL)
+                    .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, false)
+                    .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, classificationName).edges();
+            if (edges != null) {
+                Iterator<AtlasEdge> iterator = edges.iterator();
 
-            if (iterator.hasNext()) {
-                AtlasEdge edge = iterator.next();
+                if (iterator.hasNext()) {
+                    AtlasEdge edge = iterator.next();
 
-                ret = (edge != null) ? edge.getInVertex() : null;
+                    ret = (edge != null) ? edge.getInVertex() : null;
+                }
             }
-        }
 
-        return ret;
+            return ret;
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
     }
     public static Iterator<AtlasVertex> getClassificationVertices(AtlasGraph graph, String classificationName, int size) {
         Iterable classificationVertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices(size);

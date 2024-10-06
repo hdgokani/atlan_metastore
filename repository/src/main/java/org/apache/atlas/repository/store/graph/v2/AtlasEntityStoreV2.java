@@ -2054,21 +2054,27 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     private void validateAndNormalize(AtlasClassification classification) throws AtlasBaseException {
-        AtlasClassificationType type = typeRegistry.getClassificationTypeByName(classification.getTypeName());
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("validateAndNormalize");
 
-        if (type == null) {
-            throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classification.getTypeName());
-        }
+        try {
+           AtlasClassificationType type = typeRegistry.getClassificationTypeByName(classification.getTypeName());
 
-        List<String> messages = new ArrayList<>();
+           if (type == null) {
+               throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classification.getTypeName());
+           }
 
-        type.validateValue(classification, classification.getTypeName(), messages);
+           List<String> messages = new ArrayList<>();
 
-        if (!messages.isEmpty()) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, messages);
-        }
+           type.validateValue(classification, classification.getTypeName(), messages);
 
-        type.getNormalizedValue(classification);
+           if (!messages.isEmpty()) {
+               throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, messages);
+           }
+
+           type.getNormalizedValue(classification);
+       } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+       }
     }
 
     /**
@@ -2078,32 +2084,37 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
      * @param classifications list of classifications to be associated
      */
     private void validateEntityAssociations(String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
-        List<String>    entityClassifications = getClassificationNames(guid);
-        String          entityTypeName        = AtlasGraphUtilsV2.getTypeNameFromGuid(graph, guid);
-        AtlasEntityType entityType            = typeRegistry.getEntityTypeByName(entityTypeName);
-        Set<String> processedTagTypeNames = new HashSet<>();
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("validateEntityAssociations");
+        try {
+            List<String>    entityClassifications = getClassificationNames(guid);
+            String          entityTypeName        = AtlasGraphUtilsV2.getTypeNameFromGuid(graph, guid);
+            AtlasEntityType entityType            = typeRegistry.getEntityTypeByName(entityTypeName);
+            Set<String> processedTagTypeNames = new HashSet<>();
 
-        List <AtlasClassification> copyList = new ArrayList<>(classifications);
-        for (AtlasClassification classification : copyList) {
+            List <AtlasClassification> copyList = new ArrayList<>(classifications);
+            for (AtlasClassification classification : copyList) {
 
-            if (processedTagTypeNames.contains(classification.getTypeName())){
-                classifications.remove(classification);
-            } else {
-                String newClassification = classification.getTypeName();
-                processedTagTypeNames.add(newClassification);
+                if (processedTagTypeNames.contains(classification.getTypeName())){
+                    classifications.remove(classification);
+                } else {
+                    String newClassification = classification.getTypeName();
+                    processedTagTypeNames.add(newClassification);
 
-                if (CollectionUtils.isNotEmpty(entityClassifications) && entityClassifications.contains(newClassification)) {
-                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "entity: " + guid +
-                            ", already associated with classification: " + newClassification);
-                }
+                    if (CollectionUtils.isNotEmpty(entityClassifications) && entityClassifications.contains(newClassification)) {
+                        throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "entity: " + guid +
+                                ", already associated with classification: " + newClassification);
+                    }
 
-                // for each classification, check whether there are entities it should be restricted to
-                AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(newClassification);
+                    // for each classification, check whether there are entities it should be restricted to
+                    AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(newClassification);
 
-                if (!classificationType.canApplyToEntityType(entityType)) {
-                    throw new AtlasBaseException(AtlasErrorCode.INVALID_ENTITY_FOR_CLASSIFICATION, guid, entityTypeName, newClassification);
+                    if (!classificationType.canApplyToEntityType(entityType)) {
+                        throw new AtlasBaseException(AtlasErrorCode.INVALID_ENTITY_FOR_CLASSIFICATION, guid, entityTypeName, newClassification);
+                    }
                 }
             }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 

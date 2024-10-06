@@ -155,6 +155,7 @@ public class ClassificationAssociator {
         }
 
         public void setClassifications(Map<String, AtlasEntityHeader> map) throws AtlasBaseException {
+            AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("setClassifications");
             RequestContext.get().setDelayTagNotifications(true);
 
             for (String guid  : map.keySet()) {
@@ -234,18 +235,25 @@ public class ClassificationAssociator {
 
             RequestContext.get().endMetricRecord(recorder);
             RequestContext.get().setDelayTagNotifications(false);
+
+            RequestContext.get().endMetricRecord(metric);
         }
 
         private void commitChanges(String entityGuid, String typeName, Map<String, List<AtlasClassification>> operationListMap) throws AtlasBaseException {
-            if (MapUtils.isEmpty(operationListMap)) {
-                return;
+            AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("commitChanges");
+            try {
+                if (MapUtils.isEmpty(operationListMap)) {
+                    return;
+                }
+
+                deleteClassifications(entityGuid, typeName, operationListMap.get(PROCESS_DELETE));
+                updateClassifications(entityGuid, typeName, operationListMap.get(PROCESS_UPDATE));
+                addClassifications(entityGuid, typeName, operationListMap.get(PROCESS_ADD));
+
+                operationListMap.clear();
+            }finally {
+                RequestContext.get().endMetricRecord(metricRecorder);
             }
-
-            deleteClassifications(entityGuid, typeName, operationListMap.get(PROCESS_DELETE));
-            updateClassifications(entityGuid, typeName, operationListMap.get(PROCESS_UPDATE));
-            addClassifications(entityGuid, typeName, operationListMap.get(PROCESS_ADD));
-
-            operationListMap.clear();
         }
 
         private Map<String, List<AtlasClassification>> computeChanges(AtlasEntityHeader incomingEntityHeader, AtlasEntityHeader entityToBeUpdated) throws AtlasBaseException {
@@ -281,47 +289,63 @@ public class ClassificationAssociator {
         }
 
         private void addClassifications(String entityGuid, String typeName, List<AtlasClassification> list) throws AtlasBaseException {
-            if (CollectionUtils.isEmpty(list)) {
-                return;
-            }
-            String classificationNames = getClassificationNames(list);
+            AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addClassifications");
             try {
-                entitiesStore.addClassifications(entityGuid, list);
-            } catch (AtlasBaseException e) {
-                LOG.error("Failed to add classifications {}, entity with guid {}", classificationNames, entityGuid);
-                throw e;
+                if (CollectionUtils.isEmpty(list)) {
+                    return;
+                }
+                String classificationNames = getClassificationNames(list);
+                try {
+                    entitiesStore.addClassifications(entityGuid, list);
+                } catch (AtlasBaseException e) {
+                    LOG.error("Failed to add classifications {}, entity with guid {}", classificationNames, entityGuid);
+                    throw e;
+                }
+            } finally {
+                RequestContext.get().endMetricRecord(metricRecorder);
             }
         }
 
         private void updateClassifications(String entityGuid, String typeName, List<AtlasClassification> list) throws AtlasBaseException {
-            if (CollectionUtils.isEmpty(list)) {
-                return;
-            }
-            String classificationNames = getClassificationNames(list);
+            AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateClassifications");
             try {
-                entitiesStore.updateClassifications(entityGuid, list);
-            } catch (AtlasBaseException e) {
-                LOG.error("Failed to update classifications {}, entity with guid {}", classificationNames, entityGuid);
-                throw e;
+                if (CollectionUtils.isEmpty(list)) {
+                    return;
+                }
+                String classificationNames = getClassificationNames(list);
+                try {
+                    entitiesStore.updateClassifications(entityGuid, list);
+                } catch (AtlasBaseException e) {
+                    LOG.error("Failed to update classifications {}, entity with guid {}", classificationNames, entityGuid);
+                    throw e;
+                }
+            } finally {
+                RequestContext.get().endMetricRecord(metricRecorder);
             }
         }
 
         private void deleteClassifications(String entityGuid, String typeName, List<AtlasClassification> list) throws AtlasBaseException {
-            if (CollectionUtils.isEmpty(list)) {
-                return;
-            }
-
-            for (AtlasClassification c : list) {
-                try {
-                    entitiesStore.deleteClassification(entityGuid, c.getTypeName());
-                } catch (AtlasBaseException e) {
-                    LOG.error("Failed to remove classification association between {}, entity with guid {}", c.getTypeName(), c.getEntityGuid());
-                    throw e;
+            AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("deleteClassifications");
+            try {
+                if (CollectionUtils.isEmpty(list)) {
+                    return;
                 }
+
+                for (AtlasClassification c : list) {
+                    try {
+                        entitiesStore.deleteClassification(entityGuid, c.getTypeName());
+                    } catch (AtlasBaseException e) {
+                        LOG.error("Failed to remove classification association between {}, entity with guid {}", c.getTypeName(), c.getEntityGuid());
+                        throw e;
+                    }
+                }
+            } finally {
+                RequestContext.get().endMetricRecord(metricRecorder);
             }
         }
 
         AtlasEntityHeader getByUniqueAttributes(AtlasEntityType entityType, String qualifiedName, Map<String, Object> attrValues) {
+            AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getByUniqueAttributes");
             try {
                 AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, attrValues);
                 if (vertex == null) {
@@ -335,6 +359,8 @@ public class ClassificationAssociator {
             } catch (Exception ex) {
                 LOG.error("{}:{} could not be processed!", entityType, qualifiedName, ex);
                 return null;
+            } finally {
+                RequestContext.get().endMetricRecord(metricRecorder);
             }
         }
 
