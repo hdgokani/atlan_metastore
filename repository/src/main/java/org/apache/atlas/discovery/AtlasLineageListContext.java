@@ -8,6 +8,8 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.Predicate;
 import java.util.Set;
 
+import static org.apache.atlas.model.lineage.LineageListRequest.LINEAGE_TYPE_DATASET_PROCESS_LINEAGE;
+
 public final class AtlasLineageListContext {
     private String                              guid;
     private int                                 size;
@@ -23,7 +25,7 @@ public final class AtlasLineageListContext {
     private int                                 currentEntityCounter;
     private boolean                             depthLimitReached;
     private boolean                             hasMoreUpdated;
-    private String                              lineageType = "DatasetProcessLineage";
+    private String                              lineageType = LINEAGE_TYPE_DATASET_PROCESS_LINEAGE;
     private Boolean                             immediateNeighbours;
 
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {

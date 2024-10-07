@@ -14,6 +14,9 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.model.lineage.LineageListRequest.LINEAGE_TYPE_DATASET_PROCESS_LINEAGE;
+
+
 public class AtlasLineageOnDemandContext {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasLineageContext.class);
 
@@ -25,7 +28,7 @@ public class AtlasLineageOnDemandContext {
     private LineageOnDemandBaseParams               defaultParams;
 
 
-    private String                                  lineageType = "DatasetProcessLineage";
+    private String                                  lineageType = LINEAGE_TYPE_DATASET_PROCESS_LINEAGE;
 
     public AtlasLineageOnDemandContext(LineageOnDemandRequest lineageOnDemandRequest, AtlasTypeRegistry typeRegistry) {
         this.constraints        = lineageOnDemandRequest.getConstraints();

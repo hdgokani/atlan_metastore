@@ -13,6 +13,8 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 public class LineageListRequest {
+    public static final String LINEAGE_TYPE_DATASET_PROCESS_LINEAGE = "DatasetProcessLineage";
+    public static final String LINEAGE_TYPE_PRODUCT_ASSET_LINEAGE = "ProductAssetLineage";
     private String                          guid;
     private Integer                         size;
     private Integer                         from;
@@ -36,7 +38,7 @@ public class LineageListRequest {
     }
 
 
-    private String                         lineageType = "DatasetProcessLineage";
+    private String                         lineageType = LINEAGE_TYPE_DATASET_PROCESS_LINEAGE;
 
     public enum LineageDirection {INPUT, OUTPUT}
 
