@@ -3191,9 +3191,13 @@ public class EntityGraphMapper {
                                 }
                             }
 
-                            AtlasEntity entity = repairClassificationMappings(vertex);
+                            try {
+                                AtlasEntity entity = repairClassificationMappings(vertex);
+                                entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
+                            } catch (IllegalStateException | AtlasBaseException e) {
+                                e.printStackTrace();
+                            }
 
-                            entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
                         }
 
                         transactionInterceptHelper.intercept();
