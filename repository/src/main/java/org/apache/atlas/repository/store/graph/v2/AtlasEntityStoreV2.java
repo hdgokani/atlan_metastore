@@ -2301,7 +2301,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private AtlasEntityHeader extractEntityHeader(String guid, String qualifiedName, String typeName, boolean useClassificationsNames) throws AtlasBaseException {
         AtlasEntityHeader entityHeader = null;
-        RequestContext.get().setIncludeClassificationNames(useClassificationsNames);
 
         if (StringUtils.isNotEmpty(guid)) {
             entityHeader = useClassificationsNames ?
