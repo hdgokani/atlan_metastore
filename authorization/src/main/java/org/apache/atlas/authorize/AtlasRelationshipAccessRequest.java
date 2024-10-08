@@ -62,7 +62,7 @@ public class AtlasRelationshipAccessRequest extends AtlasAccessRequest {
     }
 
     public Set<AtlasClassification> getEnd1EntityClassifications() {
-        return super.getClassificationNames(end1Entity);
+        return super.getClassificationsFromNames(end1Entity);
     }
 
     public String getEnd1EntityId() {
@@ -74,7 +74,7 @@ public class AtlasRelationshipAccessRequest extends AtlasAccessRequest {
     }
 
     public Set<AtlasClassification> getEnd2EntityClassifications() {
-        return super.getClassificationNames(end2Entity);
+        return super.getClassificationsFromNames(end2Entity);
     }
 
     public String getEnd2EntityId() {
