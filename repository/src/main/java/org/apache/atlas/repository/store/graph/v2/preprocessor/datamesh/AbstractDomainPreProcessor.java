@@ -37,6 +37,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -72,7 +73,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
     private static final Set<String> STAKEHOLDER_ATTRIBUTES_FOR_SEARCH = new HashSet<>(Arrays.asList(ATTR_DOMAIN_QUALIFIED_NAMES, ATTR_DOMAIN_QUALIFIED_NAME));
     private static final Set<String> DOMAIN_GUID_ATTR = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
 
-    static final Set<String> PARENT_ATTRIBUTES            = new HashSet<>(Arrays.asList(SUPER_DOMAIN_QN_ATTR, PARENT_DOMAIN_QN_ATTR));
+    static final Set<String> PARENT_ATTRIBUTES            = new HashSet<>(Arrays.asList(SUPER_DOMAIN_QN_ATTR, PreProcessorUtils.PARENT_DOMAIN_QN_ATTR));
 
     static final Map<String, String> customAttributes = new HashMap<>();
 

@@ -121,6 +121,7 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
+import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -367,31 +368,36 @@ public class EntityGraphRetriever {
     }
 
     public AtlasClassification toAtlasClassification(AtlasVertex classificationVertex) throws AtlasBaseException {
-        AtlasClassification ret                = null;
-        String              classificationName = getTypeName(classificationVertex);
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("toAtlasClassification");
+        try {
+            AtlasClassification ret                = null;
+            String              classificationName = getTypeName(classificationVertex);
 
-        if (StringUtils.isEmpty(classificationName)) {
-            LOG.warn("Ignoring invalid classification vertex: {}", AtlasGraphUtilsV2.toString(classificationVertex));
-        } else {
-            ret = new AtlasClassification(classificationName);
+            if (StringUtils.isEmpty(classificationName)) {
+                LOG.warn("Ignoring invalid classification vertex: {}", AtlasGraphUtilsV2.toString(classificationVertex));
+            } else {
+                ret = new AtlasClassification(classificationName);
 
-            ret.setEntityGuid(AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
-            ret.setEntityStatus(getClassificationEntityStatus(classificationVertex));
-            ret.setPropagate(isPropagationEnabled(classificationVertex));
-            ret.setRemovePropagationsOnEntityDelete(getRemovePropagations(classificationVertex));
-            ret.setRestrictPropagationThroughLineage(getRestrictPropagationThroughLineage(classificationVertex));
-            ret.setRestrictPropagationThroughHierarchy(getRestrictPropagationThroughHierarchy(classificationVertex));
+                ret.setEntityGuid(AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
+                ret.setEntityStatus(getClassificationEntityStatus(classificationVertex));
+                ret.setPropagate(isPropagationEnabled(classificationVertex));
+                ret.setRemovePropagationsOnEntityDelete(getRemovePropagations(classificationVertex));
+                ret.setRestrictPropagationThroughLineage(getRestrictPropagationThroughLineage(classificationVertex));
+                ret.setRestrictPropagationThroughHierarchy(getRestrictPropagationThroughHierarchy(classificationVertex));
 
-            String strValidityPeriods = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
+                String strValidityPeriods = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
 
-            if (strValidityPeriods != null) {
-                ret.setValidityPeriods(AtlasJson.fromJson(strValidityPeriods, TIME_BOUNDARIES_LIST_TYPE));
+                if (strValidityPeriods != null) {
+                    ret.setValidityPeriods(AtlasJson.fromJson(strValidityPeriods, TIME_BOUNDARIES_LIST_TYPE));
+                }
+
+                mapAttributes(classificationVertex, ret, null);
             }
 
-            mapAttributes(classificationVertex, ret, null);
+            return ret;
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
-
-        return ret;
     }
 
     public AtlasVertex getReferencedEntityVertex(AtlasEdge edge, AtlasRelationshipEdgeDirection relationshipDirection, AtlasVertex parentVertex) throws AtlasBaseException {
@@ -1656,6 +1662,17 @@ public class EntityGraphRetriever {
                     }
                 } else {
                     ret = toAtlasObjectId(referenceVertex);
+                }
+            }
+
+            if (RequestContext.get().isIncludeRelationshipAttributes()) {
+                String relationshipTypeName = GraphHelper.getTypeName(edge);
+                boolean isRelationshipAttribute = typeRegistry.getRelationshipDefByName(relationshipTypeName) != null;
+                if (isRelationshipAttribute) {
+                    AtlasRelationship relationship = mapEdgeToAtlasRelationship(edge);
+                    Map<String, Object> relationshipAttributes = mapOf("typeName", relationshipTypeName);
+                    relationshipAttributes.put("attributes", relationship.getAttributes());
+                    ret.getAttributes().put("relationshipAttributes", relationshipAttributes);
                 }
             }
         }
