@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
@@ -33,6 +34,8 @@ import org.apache.atlas.type.AtlasTypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 
@@ -51,12 +54,17 @@ public class IDBasedEntityResolver implements EntityResolver {
         if (context == null) {
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "IDBasedEntityResolver.resolveEntityReferences(): context is null");
         }
-
+        LOG.info("Resolving entity references");
         EntityStream entityStream = context.getEntityStream();
+        LOG.info("Resolving entity references: {}", entityStream.hasNext());
 
         Map<String, String> referencedGuids = context.getReferencedGuids();
+        List<String> entityGuids = new ArrayList<>(referencedGuids.keySet());
+        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(entityGuids);
+        LOG.info("Resolving entity references: {}", referencedGuids.size());
         for (Map.Entry<String, String> element : referencedGuids.entrySet()) {
             String guid = element.getKey();
+            LOG.info("Resolving entity reference: {}", guid);
             boolean isAssignedGuid = AtlasTypeUtil.isAssignedGuid(guid);
             AtlasVertex vertex = isAssignedGuid ? AtlasGraphUtilsV2.findByGuid(this.graph, guid) : null;
 
