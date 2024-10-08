@@ -1465,7 +1465,7 @@ public abstract class DeleteHandlerV1 {
     }
 
 
-    public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) {
+    public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");
 
         for (AtlasVertex vertexToBeDeleted : vertices) {
