@@ -1495,7 +1495,7 @@ public abstract class DeleteHandlerV1 {
     }
 
 
-    public void resetHasLineageOnInputOutputDelete(Collection<AtlasEdge> removedEdges, AtlasVertex deletedVertex) {
+    public void resetHasLineageOnInputOutputDelete(Collection<AtlasEdge> removedEdges, AtlasVertex deletedVertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("resetHasLineageOnInputOutputDelete");
 
         for (AtlasEdge atlasEdge : removedEdges) {
@@ -1513,13 +1513,15 @@ public abstract class DeleteHandlerV1 {
             if (getStatus(processVertex) == ACTIVE && !processVertex.equals(deletedVertex)) {
                 String edgeLabel = isOutputEdge ? PROCESS_OUTPUTS : PROCESS_INPUTS;
 
-                Iterator<AtlasEdge> edgeIterator = processVertex.getEdges(AtlasEdgeDirection.BOTH, edgeLabel).iterator();
+              //  Iterator<AtlasEdge> edgeIterator = processVertex.getEdges(AtlasEdgeDirection.BOTH, edgeLabel).iterator();
+                Iterator<AtlasEdge> edgeIterator = GraphHelper.getActiveEdges(processVertex, edgeLabel, AtlasEdgeDirection.BOTH);
+
                 boolean activeEdgeFound = false;
 
                 while (edgeIterator.hasNext()) {
                     AtlasPerfMetrics.MetricRecorder edgeIteratorMetricRecorder1 = RequestContext.get().startMetricRecord("resetHasLineageOnInputOutputDelete_edgeIterator1");
                     AtlasEdge edge = edgeIterator.next();
-                    if (getStatus(edge) == ACTIVE && !removedEdges.contains(edge)) {
+                    if (!removedEdges.contains(edge)) {
                         AtlasVertex relatedAssetVertex = edge.getInVertex();
 
                         if (getStatus(relatedAssetVertex) == ACTIVE) {
@@ -1535,7 +1537,8 @@ public abstract class DeleteHandlerV1 {
 
                     String oppositeEdgeLabel = isOutputEdge ? PROCESS_INPUTS : PROCESS_OUTPUTS;
 
-                    Iterator<AtlasEdge> processEdgeIterator = processVertex.getEdges(AtlasEdgeDirection.BOTH, oppositeEdgeLabel).iterator();
+                    // Iterator<AtlasEdge> processEdgeIterator = processVertex.getEdges(AtlasEdgeDirection.BOTH, oppositeEdgeLabel).iterator();
+                    Iterator<AtlasEdge> processEdgeIterator = GraphHelper.getActiveEdges(processVertex, oppositeEdgeLabel, AtlasEdgeDirection.BOTH);
 
                     while (processEdgeIterator.hasNext()) {
                         AtlasPerfMetrics.MetricRecorder edgeIteratorMetricRecorder2 = RequestContext.get().startMetricRecord("resetHasLineageOnInputOutputDelete_edgeIterator2");
