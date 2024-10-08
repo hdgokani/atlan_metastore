@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.rest.DiscoveryREST;
@@ -19,12 +20,12 @@ public class ModelUtil {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.ModelUtil");
     private static final Logger LOG = LoggerFactory.getLogger(DiscoveryREST.class);
 
-    private static final String BUSINESS_DATE = "dMDataModelBusinessDate";
-    private static final String EXPIRED_BUSINESS_DATE = "dMDataModelExpiredAtBusinessDate";
+    private static final String BUSINESS_DATE = Constants.MODEL_BUSINESS_DATE;
+    private static final String EXPIRED_BUSINESS_DATE =  Constants.MODEL_EXPIRED_AT_BUSINESS_DATE;
     private static final String LESSER_THAN_EQUAL_TO = "lte";
-    private static final String SYSTEM_DATE = "dMDataModelSystemDate";
-    private static final String EXPIRED_SYSTEM_DATE = "dMDataModelExpiredAtSystemDate";
-    private static final String NAMESPACE = "dMDataModelNamespace";
+    private static final String SYSTEM_DATE = Constants.MODEL_SYSTEM_DATE;
+    private static final String EXPIRED_SYSTEM_DATE = Constants.MODEL_EXPIRED_AT_SYSTEM_DATE;
+    private static final String NAMESPACE = Constants.MODEL_NAMESPACE;
 
     /***
      * combines user query/dsl along with business parameters
