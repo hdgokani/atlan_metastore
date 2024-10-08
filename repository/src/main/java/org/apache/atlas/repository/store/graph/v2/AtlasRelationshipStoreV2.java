@@ -476,8 +476,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             AtlasRelationshipType relationType = typeRegistry.getRelationshipTypeByName(relationship.getTypeName());
 
 
-            AtlasEntityHeader end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
-            AtlasEntityHeader end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
+            AtlasEntityHeader end1Entity = entityRetriever.toAtlasEntityHeader(end1Vertex);
+            AtlasEntityHeader end2Entity = entityRetriever.toAtlasEntityHeader(end2Vertex);
 
             AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD,
                                                                                         relationship.getTypeName(), end1Entity, end2Entity));
@@ -532,8 +532,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasRelationshipType relationType = typeRegistry.getRelationshipTypeByName(relationship.getTypeName());
         AtlasVertex           end1Vertex   = relationshipEdge.getOutVertex();
         AtlasVertex           end2Vertex   = relationshipEdge.getInVertex();
-        AtlasEntityHeader     end1Entity   = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
-        AtlasEntityHeader     end2Entity   = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
+        AtlasEntityHeader     end1Entity   = entityRetriever.toAtlasEntityHeader(end1Vertex);
+        AtlasEntityHeader     end2Entity   = entityRetriever.toAtlasEntityHeader(end2Vertex);
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_UPDATE, relationship.getTypeName(), end1Entity, end2Entity));
 
