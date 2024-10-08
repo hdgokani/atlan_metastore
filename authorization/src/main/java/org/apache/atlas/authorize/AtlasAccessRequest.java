@@ -194,7 +194,7 @@ public class AtlasAccessRequest {
         return ret;
     }
 
-    public Set<AtlasClassification> getClassificationNames(AtlasEntityHeader entity) {
+    public Set<AtlasClassification> getClassificationsFromNames(AtlasEntityHeader entity) {
         final Set<AtlasClassification> ret = new HashSet<>();
         List<String> classificationNames = entity.getClassificationNames();
         if(CollectionUtils.isEmpty(classificationNames))

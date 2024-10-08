@@ -523,7 +523,6 @@ public abstract class DeleteHandlerV1 {
         if (relationshipDef == null) {
             return;
         }
-        RequestContext.get().setIncludeClassificationNames(true);
 
         end1Entity = entityRetriever.toAtlasEntityHeader(edge.getOutVertex());
         end2Entity = entityRetriever.toAtlasEntityHeader(edge.getInVertex());
