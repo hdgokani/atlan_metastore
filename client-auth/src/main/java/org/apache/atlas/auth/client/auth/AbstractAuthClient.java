@@ -38,7 +38,7 @@ public class AbstractAuthClient {
     private static final String BEARER = "Bearer ";
     private static final int TIMEOUT_IN_SEC = 60;
     private static final String INTEGRATION = "integration";
-    private static final String KEYCLOAK = "keycloak";
+    private static final String AUTH = "auth";
 
     protected final AuthConfig authConfig;
     protected final RetrofitKeycloakClient retrofitKeycloakClient;
@@ -84,10 +84,10 @@ public class AbstractAuthClient {
     Interceptor responseLoggingInterceptor = chain -> {
         Request request = chain.request();
         String rawPath = request.url().uri().getRawPath();
-        Timer.Sample timerSample = this.metricUtils.start(rawPath);
+        Timer.Sample timerSample = this.metricUtils.start(rawPath, false);
         okhttp3.Response response = chain.proceed(request);
         this.metricUtils.recordHttpTimer(timerSample, request.method(), rawPath, response.code(),
-                INTEGRATION, KEYCLOAK);
+                INTEGRATION, AUTH);
         return response;
     };
 

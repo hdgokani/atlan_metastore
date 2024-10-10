@@ -35,6 +35,7 @@ import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
@@ -156,18 +157,23 @@ public class FullTextMapperV2 implements IFullTextMapper {
 
     @Override
     public String getClassificationTextForEntity(AtlasEntity entity) throws AtlasBaseException {
-        String                   ret    = null;
+        AtlasPerfMetrics.MetricRecorder metricRecorderEntity = RequestContext.get().startMetricRecord("getClassificationTextForEntity");
+        try {
+            String                   ret    = null;
 
-        if (entity != null) {
-            StringBuilder sb = new StringBuilder();
-            map(entity, null, sb, new HashSet<String>(), true);
-            ret = sb.toString();
-        }
+            if (entity != null) {
+                StringBuilder sb = new StringBuilder();
+                map(entity, null, sb, new HashSet<String>(), true);
+                ret = sb.toString();
+            }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.info("FullTextMapperV2.getClassificationTextForEntity({}): {}", entity.getGuid(), ret);
+            if (LOG.isDebugEnabled()) {
+                LOG.info("FullTextMapperV2.getClassificationTextForEntity({}): {}", entity.getGuid(), ret);
+            }
+            return ret;
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorderEntity);
         }
-        return ret;
     }
 
     private void map(AtlasEntity entity, AtlasEntityExtInfo entityExtInfo, StringBuilder sb, Set<String> processedGuids, boolean isClassificationOnly) throws AtlasBaseException {
