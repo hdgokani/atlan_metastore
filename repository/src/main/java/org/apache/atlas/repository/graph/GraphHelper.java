@@ -997,7 +997,7 @@ public final class GraphHelper {
         }
 
         Iterable edges = query.edges();
-
+        LOG.info("Classification Vertices count is : {}", Lists.newArrayList(edges).size());
         if (edges != null) {
             Iterator<AtlasEdge> iterator = edges.iterator();
 
