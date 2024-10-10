@@ -22,6 +22,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import jline.internal.Log;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -389,12 +391,14 @@ public final class GraphHelper {
             LOG.info("classificationVertices are null");
             return null;
         }
+        LOG.info("Classification Vertices count is : {}", Lists.newArrayList(classificationVertices).size());
         return classificationVertices.iterator();
     }
 
     public static List<AtlasVertex> getAllAssetsWithClassificationVertex(AtlasVertex classificationVertice, int availableSlots) {
         HashSet<AtlasVertex> entityVerticesSet = new HashSet<>();
         try {
+            LOG.info("getting assets for classificationVertexId : {}", classificationVertice.getIdForDisplay());
             Iterable attachedVertices = classificationVertice.query()
                     .direction(AtlasEdgeDirection.IN)
                     .label(CLASSIFICATION_LABEL).vertices(availableSlots);
