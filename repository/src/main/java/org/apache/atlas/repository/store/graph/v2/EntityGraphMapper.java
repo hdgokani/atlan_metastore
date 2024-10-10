@@ -3193,7 +3193,7 @@ public class EntityGraphMapper {
                                     try {
                                         AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
                                         deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
-                                        LOG.info("Deleting classification edge between vertex {} and classification {}", GraphHelper.getGuid(vertex), classification.getTypeName());deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                                        LOG.info("Deleting classification edge between vertex {} and classification {}", GraphHelper.getGuid(vertex), classification.getTypeName());
                                         deletedClassifications.add(classification);
                                     } catch (IllegalStateException | AtlasBaseException e) {LOG.error("Error deleting classification edge for vertex {}: {}", GraphHelper.getGuid(vertex), e.getMessage());
                                         e.printStackTrace();
