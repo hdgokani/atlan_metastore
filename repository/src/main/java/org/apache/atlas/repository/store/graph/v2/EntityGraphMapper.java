@@ -174,7 +174,6 @@ public class EntityGraphMapper {
 
     private static final boolean RESTRICT_PROPAGATION_THROUGH_HIERARCHY_DEFAULT        = false;
     public static final int CLEANUP_BATCH_SIZE = 200000;
-    public static final int CLASSIFICATION_EDGE_BATCH_LIMIT = 100;
     private              boolean DEFERRED_ACTION_ENABLED                             = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
     private              boolean DIFFERENTIAL_AUDITS                                 = STORE_DIFFERENTIAL_AUDITS.getBoolean();
 
@@ -3145,8 +3144,8 @@ public class EntityGraphMapper {
     public void cleanUpClassificationPropagation(String classificationName, int batchLimit) {
         int CLEANUP_MAX = batchLimit <= 0 ? CLEANUP_BATCH_SIZE : batchLimit * CLEANUP_BATCH_SIZE;
         int cleanedUpCount = 0;
-        final int CHUNK_SIZE_TEMP = 50;
         long classificationEdgeCount = 0;
+        long classificationEdgeInMemoryCount = 0;
         Iterator<AtlasVertex> tagVertices = GraphHelper.getClassificationVertices(graph, classificationName, CLEANUP_BATCH_SIZE);
         List<AtlasVertex> tagVerticesProcessed = new ArrayList<>(0);
         List<AtlasVertex> currentAssetVerticesBatch = new ArrayList<>(0);
@@ -3174,7 +3173,7 @@ public class EntityGraphMapper {
                 int offset = 0;
                 do {
                     try {
-                        int toIndex = Math.min((offset + CHUNK_SIZE_TEMP), currentAssetsBatchSize);
+                        int toIndex = Math.min((offset + CHUNK_SIZE), currentAssetsBatchSize);
                         List<AtlasVertex> entityVertices = currentAssetVerticesBatch.subList(offset, toIndex);
                         LOG.info("Processing batch from offset {} to {}. Number of entity vertices in this batch: {}", offset, toIndex, entityVertices.size());
                         List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
@@ -3185,22 +3184,25 @@ public class EntityGraphMapper {
                             List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
                             LOG.info("Found {} classification edges for vertex {}", classificationEdges.size(), GraphHelper.getGuid(vertex));
                             classificationEdgeCount += classificationEdges.size();
-                            int batchSize = CLASSIFICATION_EDGE_BATCH_LIMIT;
+                            int batchSize = CHUNK_SIZE;
                             for (int i = 0; i < classificationEdges.size(); i += batchSize) {
                                 int end = Math.min(i + batchSize, classificationEdges.size());
                                 List<AtlasEdge> batch = classificationEdges.subList(i, end);
                                 for (AtlasEdge edge : batch) {
                                     try {
                                         AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
-                                        deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
-                                        LOG.info("Deleting classification edge between vertex {} and classification {}", GraphHelper.getGuid(vertex), classification.getTypeName());
                                         deletedClassifications.add(classification);
+                                        LOG.info("Deleting classification edge between vertex {} and classification {}", GraphHelper.getGuid(vertex), classification.getTypeName());
+                                        deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                                        classificationEdgeInMemoryCount++;
                                     } catch (IllegalStateException | AtlasBaseException e) {LOG.error("Error deleting classification edge for vertex {}: {}", GraphHelper.getGuid(vertex), e.getMessage());
                                         e.printStackTrace();
                                     }
                                 }
-                                transactionInterceptHelper.intercept();
-
+                                if(classificationEdgeInMemoryCount >= CHUNK_SIZE){
+                                    transactionInterceptHelper.intercept();
+                                    classificationEdgeInMemoryCount = 0;
+                                }
                             }
                             try {
                                 AtlasEntity entity = repairClassificationMappings(vertex);
@@ -3215,7 +3217,7 @@ public class EntityGraphMapper {
 
                         transactionInterceptHelper.intercept();
                         LOG.info("Finished processing batch from offset {} to {}", offset, toIndex);
-                        offset += CHUNK_SIZE_TEMP;
+                        offset += CHUNK_SIZE;
                     } finally {
                         LOG.info("For offset {} , classificationEdge were : {}", offset, classificationEdgeCount);
                         classificationEdgeCount = 0;
