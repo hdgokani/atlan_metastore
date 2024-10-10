@@ -3175,35 +3175,41 @@ public class EntityGraphMapper {
                     try {
                         int toIndex = Math.min((offset + CHUNK_SIZE_TEMP), currentAssetsBatchSize);
                         List<AtlasVertex> entityVertices = currentAssetVerticesBatch.subList(offset, toIndex);
+                        LOG.info("Processing batch from offset {} to {}. Number of entity vertices in this batch: {}", offset, toIndex, entityVertices.size());
                         List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
                         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
-
+                        LOG.info("Impacted GUIDs in this batch: {}", impactedGuids.size());
                         for (AtlasVertex vertex : entityVertices) {
                             List<AtlasClassification> deletedClassifications = new ArrayList<>();
                             List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
+                            LOG.info("Found {} classification edges for vertex {}", classificationEdges.size(), GraphHelper.getGuid(vertex));
                             classificationEdgeCount += classificationEdges.size();
                             for (AtlasEdge edge : classificationEdges) {
                                 try {
                                     AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
                                     deletedClassifications.add(classification);
+                                    LOG.info("Deleting classification edge between vertex {} and classification {}", GraphHelper.getGuid(vertex), classification.getTypeName());
                                     deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
                                 }
                                 catch (IllegalStateException | AtlasBaseException e){
+                                    LOG.error("Error deleting classification edge for vertex {}: {}", GraphHelper.getGuid(vertex), e.getMessage());
                                     e.printStackTrace();
                                 }
                             }
 
                             try {
                                 AtlasEntity entity = repairClassificationMappings(vertex);
+                                LOG.info("Notifying about deleted classifications for entity {}", GraphHelper.getGuid(vertex));
                                 entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
                             } catch (IllegalStateException | AtlasBaseException e) {
+                                LOG.error("Error during classification repair for vertex {}: {}", GraphHelper.getGuid(vertex), e.getMessage());
                                 e.printStackTrace();
                             }
 
                         }
 
                         transactionInterceptHelper.intercept();
-
+                        LOG.info("Finished processing batch from offset {} to {}", offset, toIndex);
                         offset += CHUNK_SIZE_TEMP;
                     } finally {
                         LOG.info("For offset {} , classificationEdge were : {}", offset, classificationEdgeCount);
@@ -3215,6 +3221,7 @@ public class EntityGraphMapper {
 
                 for (AtlasVertex classificationVertex : tagVerticesProcessed) {
                     try {
+                        LOG.info("Deleting classification vertex {}", GraphHelper.getGuid(classificationVertex));
                         deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
                     } catch (IllegalStateException e) {
                         e.printStackTrace();
@@ -3223,6 +3230,7 @@ public class EntityGraphMapper {
                 transactionInterceptHelper.intercept();
 
                 cleanedUpCount += currentAssetsBatchSize;
+                LOG.info("Total entities cleaned up for classification {}: {}", classificationName, cleanedUpCount);
                 currentAssetVerticesBatch.clear();
                 tagVerticesProcessed.clear();
             }
