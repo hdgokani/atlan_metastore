@@ -4003,15 +4003,16 @@ public class EntityGraphMapper {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityGraphMapper.updateClassifications");
             }
 
+
             String                    entityTypeName         = AtlasGraphUtilsV2.getTypeName(entityVertex);
             AtlasEntityType           entityType             = typeRegistry.getEntityTypeByName(entityTypeName);
             List<AtlasClassification> updatedClassifications = new ArrayList<>();
-        List<AtlasVertex>         entitiesToPropagateTo  = new ArrayList<>();
-        Set<AtlasVertex>          notificationVertices   = new HashSet<AtlasVertex>() {{ add(entityVertex); }};
+            List<AtlasVertex>         entitiesToPropagateTo  = new ArrayList<>();
+            Set<AtlasVertex>          notificationVertices   = new HashSet<AtlasVertex>() {{ add(entityVertex); }};
 
             Map<AtlasVertex, List<AtlasClassification>> addedPropagations   = null;
             Map<AtlasClassification, List<AtlasVertex>> removedPropagations = new HashMap<>();
-        String propagationType = null;
+            String propagationType = null;
 
             for (AtlasClassification classification : classifications) {
                 MetricRecorder metricRecorderClassification = RequestContext.get().startMetricRecord("updateClassifications_classification");
@@ -4195,38 +4196,32 @@ public class EntityGraphMapper {
                     }
                 }
 
-                updatedClassifications.add(currentClassification);
+            updatedClassifications.add(currentClassification);
+        }
 
-                RequestContext.get().endMetricRecord(metricRecorderClassification);
+        if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
+            notificationVertices.addAll(entitiesToPropagateTo);
+        }
+
+        for (AtlasVertex vertex : notificationVertices) {
+            String      entityGuid = graphHelper.getGuid(vertex);
+            AtlasEntity entity     = instanceConverter.getAndCacheEntity(entityGuid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
+
+            if (entity != null) {
+                vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
+                entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassifications);
             }
+        }
 
-            if (CollectionUtils.isNotEmpty(entitiesToPropagateTo)) {
-                notificationVertices.addAll(entitiesToPropagateTo);
+        if (MapUtils.isNotEmpty(removedPropagations)) {
+            for (AtlasClassification classification : removedPropagations.keySet()) {
+                List<AtlasVertex> propagatedVertices = removedPropagations.get(classification);
+                List<AtlasEntity> propagatedEntities = updateClassificationText(classification, propagatedVertices);
+
+                //Sending audit request for all entities at once
+                entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification));
             }
-            LOG.info("Sending notificsstion for {} vertices", notificationVertices.size());
-
-            for (AtlasVertex vertex : notificationVertices) {
-                AtlasPerfMetrics.MetricRecorder metricRecorderEntity = RequestContext.get().startMetricRecord("updateClassifications_entity");
-                String      entityGuid = graphHelper.getGuid(vertex);
-                AtlasEntity entity     = instanceConverter.getAndCacheEntity(entityGuid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
-
-                if (entity != null) {
-                    vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
-                    entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassifications);
-            }
-        RequestContext.get().endMetricRecord(metricRecorderEntity);}
-
-            if (MapUtils.isNotEmpty(removedPropagations)) {
-                AtlasPerfMetrics.MetricRecorder metricRecorderEntity = RequestContext.get().startMetricRecord("updateClassifications_removeProp");
-                for (AtlasClassification classification : removedPropagations.keySet()) {
-                    List<AtlasVertex> propagatedVertices = removedPropagations.get(classification);
-                    List<AtlasEntity> propagatedEntities = updateClassificationText(classification, propagatedVertices);
-
-                    //Sending audit request for all entities at once
-                    entityChangeNotifier.onClassificationsDeletedFromEntities(propagatedEntities, Collections.singletonList(classification));
-                }
-                RequestContext.get().endMetricRecord(metricRecorderEntity);
-            }
+        }
 
             AtlasPerfTracer.log(perf);
         } finally {
