@@ -410,7 +410,7 @@ public abstract class DeleteHandlerV1 {
             }
         }
 
-        return !softDelete || forceDelete;
+        return !softDelete || forceDelete || isCustomRelationship(edge);
     }
 
     public void addTagPropagation(AtlasEdge edge, PropagateTags propagateTags) throws AtlasBaseException {
