@@ -3180,6 +3180,12 @@ public class EntityGraphMapper {
                         LOG.info("Impacted GUIDs in this batch: {}", impactedGuids.size());
                         for (AtlasVertex vertex : entityVertices) {
                             List<AtlasClassification> deletedClassifications = new ArrayList<>();
+                            try {
+                                GraphTransactionInterceptor.lockObjectAndReleasePostCommit(getGuid(vertex));
+                            } catch (AtlasBaseException e) {
+                                LOG.error("Error in getting GUID for vertex : {}", vertex.getIdForDisplay());
+                                e.printStackTrace();
+                            }
                             List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
                             LOG.info("Found {} classification edges for vertex {}", classificationEdges.size(), GraphHelper.getGuid(vertex));
                             classificationEdgeCount += classificationEdges.size();
@@ -3187,12 +3193,6 @@ public class EntityGraphMapper {
                             for (int i = 0; i < classificationEdges.size(); i += batchSize) {
                                 int end = Math.min(i + batchSize, classificationEdges.size());
                                 List<AtlasEdge> batch = classificationEdges.subList(i, end);
-                                try {
-                                    GraphTransactionInterceptor.lockObjectAndReleasePostCommit(getGuid(vertex));
-                                } catch (AtlasBaseException e) {
-                                    LOG.error("Error in getting GUID for vertex : {}", vertex.getIdForDisplay());
-                                    e.printStackTrace();
-                                }
                                 for (AtlasEdge edge : batch) {
                                     try {
                                         AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
