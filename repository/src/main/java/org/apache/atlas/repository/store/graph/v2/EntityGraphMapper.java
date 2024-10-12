@@ -3176,16 +3176,13 @@ public class EntityGraphMapper {
                         int toIndex = Math.min((offset + CHUNK_SIZE), currentAssetsBatchSize);
                         List<AtlasVertex> entityVertices = currentAssetVerticesBatch.subList(offset, toIndex);
                         LOG.info("Processing batch from offset {} to {}. Number of entity vertices in this batch: {}", offset, toIndex, entityVertices.size());
-                        List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
+                        HashMap<AtlasVertex, String> impactedGuids = entityVertices.stream()
+                                .collect(Collectors.toMap(vertex -> vertex, GraphHelper::getGuid, (oldValue, newValue) -> oldValue, HashMap::new));
                         LOG.info("Impacted GUIDs in this batch: {}", impactedGuids.size());
                         for (AtlasVertex vertex : entityVertices) {
                             List<AtlasClassification> deletedClassifications = new ArrayList<>();
-                            try {
-                                GraphTransactionInterceptor.lockObjectAndReleasePostCommit(getGuid(vertex));
-                            } catch (AtlasBaseException e) {
-                                LOG.error("Error in getting GUID for vertex : {}", vertex.getIdForDisplay());
-                                e.printStackTrace();
-                            }
+                            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids.get(vertex));
+
                             List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
                             LOG.info("Found {} classification edges for vertex {}", classificationEdges.size(), GraphHelper.getGuid(vertex));
                             classificationEdgeCount += classificationEdges.size();
