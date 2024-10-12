@@ -3177,7 +3177,6 @@ public class EntityGraphMapper {
                         List<AtlasVertex> entityVertices = currentAssetVerticesBatch.subList(offset, toIndex);
                         LOG.info("Processing batch from offset {} to {}. Number of entity vertices in this batch: {}", offset, toIndex, entityVertices.size());
                         List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
-                        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
                         LOG.info("Impacted GUIDs in this batch: {}", impactedGuids.size());
                         for (AtlasVertex vertex : entityVertices) {
                             List<AtlasClassification> deletedClassifications = new ArrayList<>();
@@ -3188,6 +3187,12 @@ public class EntityGraphMapper {
                             for (int i = 0; i < classificationEdges.size(); i += batchSize) {
                                 int end = Math.min(i + batchSize, classificationEdges.size());
                                 List<AtlasEdge> batch = classificationEdges.subList(i, end);
+                                try {
+                                    GraphTransactionInterceptor.lockObjectAndReleasePostCommit(getGuid(vertex));
+                                } catch (AtlasBaseException e) {
+                                    LOG.error("Error in getting GUID for vertex : {}", vertex.getIdForDisplay());
+                                    e.printStackTrace();
+                                }
                                 for (AtlasEdge edge : batch) {
                                     try {
                                         AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
@@ -3201,7 +3206,6 @@ public class EntityGraphMapper {
                                 }
                                 if(classificationEdgeInMemoryCount >= CHUNK_SIZE){
                                     transactionInterceptHelper.intercept();
-                                    GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
                                     classificationEdgeInMemoryCount = 0;
                                 }
                             }
