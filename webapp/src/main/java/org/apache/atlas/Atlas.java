@@ -63,7 +63,7 @@ import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
  * Driver for running Metadata as a standalone server with embedded jetty server.
  */
 public final class Atlas {
-    private static final Logger LOG = LoggerFactory.getLogger(Atlas.class);
+    private static final Logger LOG = LoggerFactory.getLogger("slf4j-logger");
     private static final String APP_PATH = "app";
     private static final String APP_PORT = "port";
     private static final String ATLAS_HOME = "atlas.home";
@@ -74,6 +74,10 @@ public final class Atlas {
 
 
     private static EmbeddedServer server;
+
+    static {
+        installLogBridge();
+    }
 
     static {
         ShutdownHookManager.get().addShutdownHook(new Thread() {
@@ -155,7 +159,6 @@ public final class Atlas {
         }
 
         server = EmbeddedServer.newServer(appHost, appPort, appPath, enableTLS);
-        installLogBridge();
 
         server.start();
     }
