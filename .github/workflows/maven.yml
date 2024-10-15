@@ -24,6 +24,7 @@ on:
       - alpha
       - beta
       - development
+      - DG-1720-testing
       - master
       - lineageondemand
 
