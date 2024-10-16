@@ -26,6 +26,7 @@ on:
       - development
       - master
       - lineageondemand
+      - dg1831forring
 
 jobs:
   build:
