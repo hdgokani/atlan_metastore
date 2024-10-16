@@ -3175,11 +3175,9 @@ public class EntityGraphMapper {
                     try {
                         int toIndex = Math.min((offset + CHUNK_SIZE), currentAssetsBatchSize);
                         List<AtlasVertex> entityVertices = currentAssetVerticesBatch.subList(offset, toIndex);
-                        LOG.info("Processing batch from offset {} to {}. Number of entity vertices in this batch: {}", offset, toIndex, entityVertices.size());
                         for (AtlasVertex vertex : entityVertices) {
                             List<AtlasClassification> deletedClassifications = new ArrayList<>();
                             GraphTransactionInterceptor.lockObjectAndReleasePostCommit(graphHelper.getGuid(vertex));
-
                             List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
                             LOG.info("Found {} classification edges for vertex {}", classificationEdges.size(), GraphHelper.getGuid(vertex));
                             classificationEdgeCount += classificationEdges.size();
@@ -3194,7 +3192,7 @@ public class EntityGraphMapper {
                                         LOG.info("Deleting classification edge between vertex {} and classification {}", GraphHelper.getGuid(vertex), classification.getTypeName());
                                         deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
                                         classificationEdgeInMemoryCount++;
-                                    } catch (IllegalStateException | AtlasBaseException e) {LOG.error("Error deleting classification edge for vertex {}: {}", GraphHelper.getGuid(vertex), e.getMessage());
+                                    } catch (IllegalStateException | AtlasBaseException e) {
                                         e.printStackTrace();
                                     }
                                 }
@@ -3211,11 +3209,9 @@ public class EntityGraphMapper {
                                 LOG.error("Error during classification repair for vertex {}: {}", GraphHelper.getGuid(vertex), e.getMessage());
                                 e.printStackTrace();
                             }
-
                         }
 
                         transactionInterceptHelper.intercept();
-                        LOG.info("Finished processing batch from offset {} to {}", offset, toIndex);
                         offset += CHUNK_SIZE;
                     } finally {
                         LOG.info("For offset {} , classificationEdge were : {}", offset, classificationEdgeCount);
