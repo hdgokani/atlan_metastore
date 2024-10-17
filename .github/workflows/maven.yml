@@ -25,7 +25,7 @@ on:
       - beta
       - development
       - master
-      - lineageondemand
+      - dg-1720-t2
 
 jobs:
   build:
