@@ -74,6 +74,7 @@ public class RequestContext {
     private final Map<String, List<Object>> newElementsCreatedMap = new HashMap<>();
 
     private final Map<String, Set<AtlasRelationship>> relationshipMutationMap = new HashMap<>();
+    private final Set<String> edgeLabels = new HashSet<>();
 
     private String user;
     private Set<String> userGroups;
@@ -94,6 +95,11 @@ public class RequestContext {
     private boolean     includeRelationshipAttributes;
 
     private boolean     includeClassificationNames = false;
+
+
+
+    private String     lineageInputLabel = "";
+    private String     lineageOutputLabel = "";
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
@@ -103,7 +109,6 @@ public class RequestContext {
     private boolean skipAuthorizationCheck = false;
     private Set<String> deletedEdgesIdsForResetHasLineage = new HashSet<>(0);
     private String requestUri;
-    private boolean cacheEnabled;
 
     private boolean delayTagNotifications = false;
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
@@ -224,6 +229,21 @@ public class RequestContext {
         return removedElementsMap;
     }
 
+    public String getLineageInputLabel() {
+        return lineageInputLabel;
+    }
+
+    public void setLineageInputLabel(String lineageInputLabel) {
+        this.lineageInputLabel = lineageInputLabel;
+    }
+
+    public String getLineageOutputLabel() {
+        return lineageOutputLabel;
+    }
+
+    public void setLineageOutputLabel(String lineageOutputLabel) {
+        this.lineageOutputLabel = lineageOutputLabel;
+    }
     public Map<String, List<Object>> getNewElementsCreatedMap() {
         return newElementsCreatedMap;
     }
@@ -727,14 +747,6 @@ public class RequestContext {
         return this.requestUri;
     }
 
-    public void setEnableCache(boolean cacheEnabled) {
-        this.cacheEnabled = cacheEnabled;
-    }
-
-    public boolean isCacheEnabled() {
-        return this.cacheEnabled;
-    }
-
     public boolean isIncludeClassificationNames() {
         return includeClassificationNames;
     }
@@ -810,4 +822,13 @@ public class RequestContext {
     public void setLexoRankCache(Map<String, String> lexoRankCache) {
         this.lexoRankCache = lexoRankCache;
     }
+
+    public void addEdgeLabel(String processEdgeLabel) {
+        edgeLabels.add(processEdgeLabel);
+    }
+
+    public boolean isEdgeLabelAlreadyProcessed(String processEdgeLabel) {
+        return edgeLabels.contains(processEdgeLabel);
+    }
+
 }
