@@ -2,16 +2,16 @@
 <Configuration status="WARN">
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} trace_id: %X{trace_id} span_id: %X{span_id} trace_flags: %X{trace_flags} - %msg%n"/>
         </Console>
         <OpenTelemetry name="OpenTelemetryAppender"
-              captureMapMessageAttributes="true"
-              captureMarkerAttribute="true"
-              captureContextDataAttributes="*"
+                       captureMapMessageAttributes="true"
+                       captureMarkerAttribute="true"
+                       captureContextDataAttributes="*"
         />
     </Appenders>
     <Loggers>
-        <Root level="error">
+        <Root level="All">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="OpenTelemetryAppender"/>
             <AppenderRef ref="Console"/>

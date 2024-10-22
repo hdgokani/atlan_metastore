@@ -52,6 +52,16 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.logs.SdkLoggerProvider;
+import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
+import io.opentelemetry.sdk.resources.Resource;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.samplers.Sampler;
+import io.opentelemetry.semconv.ResourceAttributes;
+
 import static org.apache.atlas.repository.Constants.INDEX_PREFIX;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
 
@@ -67,6 +77,10 @@ public final class Atlas {
     private static final String ATLAS_LOG_DIR = "atlas.log.dir";
     public static final String ATLAS_SERVER_HTTPS_PORT = "atlas.server.https.port";
     public static final String ATLAS_SERVER_HTTP_PORT = "atlas.server.http.port";
+    private static final String OTEL_ENDPOINT= "http://localhost:4317";
+
+    private static final String OTEL_SERVICE_INDEX= "atlas-metastore";
+
 
 
     private static EmbeddedServer server;
@@ -154,8 +168,8 @@ public final class Atlas {
             LOG.info("Starting service {} in {}", "auditElasticsearch", Duration.between(start, Instant.now()).toMillis());
         }
 
-        server = EmbeddedServer.newServer(appHost, appPort, appPath, enableTLS);
         installLogBridge();
+        server = EmbeddedServer.newServer(appHost, appPort, appPath, enableTLS);
 
         server.start();
     }
@@ -246,6 +260,12 @@ public final class Atlas {
     }
 
     private static void installLogBridge() {
+
+        // Initialize OpenTelemetry as early as possible
+        OpenTelemetry openTelemetry = initializeOpenTelemetry();
+        // Install OpenTelemetry in log4j appender
+        io.opentelemetry.instrumentation.log4j.appender.v2_17.OpenTelemetryAppender.install(
+                openTelemetry);
         // Optionally remove existing handlers attached to j.u.l root logger
         SLF4JBridgeHandler.removeHandlersForRootLogger();  // (since SLF4J 1.6.5)
 
@@ -300,5 +320,30 @@ public final class Atlas {
                 throw e;
             }
         }
+    }
+
+    private static OpenTelemetry initializeOpenTelemetry() {
+        OpenTelemetrySdk sdk =
+                OpenTelemetrySdk.builder()
+                        .setTracerProvider(SdkTracerProvider.builder().setSampler(Sampler.alwaysOn()).build())
+                        .setLoggerProvider(
+                                SdkLoggerProvider.builder()
+                                        .setResource(
+                                                Resource.getDefault().toBuilder()
+                                                        .put(ResourceAttributes.SERVICE_NAME, OTEL_SERVICE_INDEX)
+                                                        .build())
+                                        .addLogRecordProcessor(
+                                                BatchLogRecordProcessor.builder(
+                                                                OtlpGrpcLogRecordExporter.builder()
+                                                                        .setEndpoint(OTEL_ENDPOINT)
+                                                                        .build())
+                                                        .build())
+                                        .build())
+                        .build();
+
+        // Add hook to close SDK, which flushes logs
+        Runtime.getRuntime().addShutdownHook(new Thread(sdk::close));
+
+        return sdk;
     }
 }
