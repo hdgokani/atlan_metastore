@@ -33,6 +33,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -374,4 +375,5 @@ public interface AtlasEntityStore {
     void unlinkBusinessPolicy(String policyId, Set<String> unlinkGuids) throws AtlasBaseException;
 
     void moveBusinessPolicies(Set<String> policyId, String assetId, String type) throws AtlasBaseException;
+    HashMap<String, Boolean> isAOutputPort(String dsl) throws AtlasBaseException;
 }

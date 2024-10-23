@@ -26,10 +26,12 @@ import org.apache.atlas.authorize.*;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.bulkimport.BulkImportResponse.ImportInfo;
+import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -103,6 +105,7 @@ import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.findByGuid;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE;
@@ -137,11 +140,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final ESAliasStore esAliasStore;
     private final IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier;
 
+    protected final AtlasDiscoveryService atlasDiscoveryService;
+
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
                               AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore,
-                              IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier) {
+                              IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier, AtlasDiscoveryService atlasDiscoveryService) {
 
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
@@ -155,6 +160,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.taskManagement = taskManagement;
         this.atlasRelationshipStore = atlasRelationshipStore;
         this.featureFlagStore = featureFlagStore;
+        this.atlasDiscoveryService = atlasDiscoveryService;
         this.esAliasStore = new ESAliasStore(graph, entityRetriever);
         this.atlasAlternateChangeNotifier = atlasAlternateChangeNotifier;
         try {
@@ -2894,5 +2900,31 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             // End the performance metric recording
             RequestContext.get().endMetricRecord(metric);
         }
+    }
+
+    public List<String> getAssetGuidsFromDSL(String dsl){
+        List<String> guids = new ArrayList<>();
+        try {
+            AtlasSearchResult searchResult = atlasDiscoveryService.searchUsingDslQuery(dsl, 20 , 0);
+            guids = searchResult.getEntities().stream().map(AtlasEntityHeader::getGuid).collect(Collectors.toList());
+            return guids;
+        } catch (AtlasBaseException e) {
+            LOG.error("An error occured while running dsl query to get asset GUIDs");
+            e.printStackTrace();
+        }
+        return guids;
+    }
+
+
+
+    public HashMap<String, Boolean> isAOutputPort(String dsl) {
+        HashMap<String, Boolean> res = new HashMap();
+        List<String> assetGuids = getAssetGuidsFromDSL(dsl);
+        for(String guid : assetGuids) {
+            AtlasVertex vertex = findByGuid(guid);
+            Iterable iter = vertex.getEdges(AtlasEdgeDirection.OUT, OUTPUT_PORT_PRODUCT_EDGE_LABEL);
+            res.put(guid, iter.iterator().hasNext());
+        }
+        return res;
     }
 }

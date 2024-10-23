@@ -24,8 +24,10 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
+import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -89,6 +91,7 @@ public abstract class DeleteHandlerV1 {
     static final     int        PENDING_TASK_QUERY_SIZE_LIMIT  = 20;
 
     protected final GraphHelper          graphHelper;
+    protected final AtlasDiscoveryService discoveryService;
     private   final AtlasTypeRegistry    typeRegistry;
     protected   final EntityGraphRetriever entityRetriever;
     private   final boolean              shouldUpdateInverseReferences;
@@ -98,7 +101,7 @@ public abstract class DeleteHandlerV1 {
     private   final TaskUtil             taskUtil;
 
 
-    public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
+    public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement, AtlasDiscoveryService discoveryService) {
         this.typeRegistry                  = typeRegistry;
         this.graphHelper                   = new GraphHelper(graph);
         this.entityRetriever               = new EntityGraphRetriever(graph, typeRegistry);
@@ -107,6 +110,7 @@ public abstract class DeleteHandlerV1 {
         this.taskManagement                = taskManagement;
         this.graph                         = graph;
         this.taskUtil                      = new TaskUtil(graph);
+        this.discoveryService              = discoveryService;
     }
 
     /**

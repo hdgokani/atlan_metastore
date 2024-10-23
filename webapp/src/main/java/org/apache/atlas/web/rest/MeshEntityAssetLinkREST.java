@@ -4,6 +4,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.LinkMeshEntityRequest;
+import org.apache.atlas.model.lineage.AtlasLineageRequest;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -16,6 +17,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import java.util.HashMap;
 
 @Path("mesh-asset-link")
 @Singleton
@@ -105,4 +107,31 @@ public class MeshEntityAssetLinkREST {
             AtlasPerfTracer.log(perf);
         }
     }
+
+    /**
+     * Returns how many assets are output ports
+     *
+     * @param  - AtlasLineageRequest
+     * @return HashMap
+     * @throws AtlasBaseException
+     * @HTTP 200 If DSL fetches correct assets and those assets exist
+     * @HTTP 400 Bad query parameters
+     */
+    @POST
+    @Path("/isOutputPort")
+    @Timed
+    public HashMap<String, Boolean> isOutputPort(String dsl) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MeshEntityAssetLinkREST.isOutputPort(" + dsl + ")");
+            }
+
+            return entitiesStore.isAOutputPort(dsl);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
 }
