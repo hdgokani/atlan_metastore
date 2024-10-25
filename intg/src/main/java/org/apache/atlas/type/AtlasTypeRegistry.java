@@ -94,7 +94,7 @@ public class AtlasTypeRegistry {
 
         AtlasType ret = registryData.allTypes.getTypeByName(typeName);
 
-        if (ret == null) {
+        if (ret == null ) {
             if (typeName.startsWith(ATLAS_TYPE_ARRAY_PREFIX) && typeName.endsWith(ATLAS_TYPE_ARRAY_SUFFIX)) {
                 int    startIdx        = ATLAS_TYPE_ARRAY_PREFIX.length();
                 int    endIdx          = typeName.length() - ATLAS_TYPE_ARRAY_SUFFIX.length();
