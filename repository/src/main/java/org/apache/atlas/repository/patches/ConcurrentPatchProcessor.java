@@ -58,7 +58,7 @@ public abstract class ConcurrentPatchProcessor {
         try {
             Configuration config = ApplicationProperties.get();
 
-            numWorkers = config.getInt(NUM_WORKERS_PROPERTY, config.getInt(ATLAS_SOLR_SHARDS, 1) * 3);
+            //numWorkers = config.getInt(NUM_WORKERS_PROPERTY, config.getInt(ATLAS_SOLR_SHARDS, 1) * 3);
             batchSize  = config.getInt(BATCH_SIZE_PROPERTY, 300);
 
             LOG.info("ConcurrentPatchProcessor: {}={}, {}={}", NUM_WORKERS_PROPERTY, numWorkers, BATCH_SIZE_PROPERTY, batchSize);
