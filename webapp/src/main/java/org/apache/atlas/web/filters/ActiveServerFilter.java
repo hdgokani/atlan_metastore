@@ -60,7 +60,7 @@ public class ActiveServerFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(ActiveServerFilter.class);
     private static final String MIGRATION_STATUS_STATIC_PAGE = "migration-status.html";
     private static final String[] WHITELISTED_APIS_SIGNATURE = {"search", "lineage", "auditSearch", "accessors"
-        , "evaluator", "featureFlag", "repairindex"};
+        , "evaluator", "featureFlag", "repairindex", "typedefs"};
     private static final String DISABLE_WRITE_FLAG = "disable_writes";
 
     private final ActiveInstanceState activeInstanceState;
