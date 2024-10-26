@@ -2521,7 +2521,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             ReIndexPatch.ReindexPatchProcessor reindexPatchProcessor = new ReIndexPatch.ReindexPatchProcessor(context);
 
             reindexPatchProcessor.repairVertices();
-            reindexPatchProcessor.repairEdges();
+            //reindexPatchProcessor.repairEdges();
+            LOG.info("Finished repairIndex");
         } catch (Exception exception) {
             LOG.error("Error while reindexing.", exception);
             throw new AtlasBaseException(AtlasErrorCode.REPAIR_INDEX_FAILED, exception.toString());
