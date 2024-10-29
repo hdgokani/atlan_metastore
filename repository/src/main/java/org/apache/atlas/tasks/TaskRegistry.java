@@ -32,6 +32,7 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.slf4j.Logger;
@@ -46,21 +47,28 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.Constants.TASK_GUID;
+import static org.apache.atlas.repository.Constants.TASK_STATUS;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
 @Component
 public class TaskRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(TaskRegistry.class);
+    public static final int TASK_FETCH_BATCH_SIZE = 100;
+    public static final List<Map<String, Object>> SORT_ARRAY = Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc")));
 
     private AtlasGraph graph;
     private TaskService taskService;
     private int queueSize;
     private boolean useGraphQuery;
+
+    private static final List<Map<String, Object>> STATUS_CLAUSE_LIST = Arrays.asList(mapOf("match", mapOf(TASK_STATUS, AtlasTask.Status.IN_PROGRESS.toString())));
+    private static final Map<String, Object> QUERY_MAP = mapOf("bool", mapOf("must", STATUS_CLAUSE_LIST));
 
     @Inject
     public TaskRegistry(AtlasGraph graph, TaskService taskService) {
@@ -128,32 +136,31 @@ public class TaskRegistry {
     }
 
     public List<AtlasTask> getInProgressTasksES() {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getInProgressTasksES");
         List<AtlasTask> ret = new ArrayList<>();
-        int size = 100;
-        try {
-            int from = 0;
+        Map<String, Object> dsl = mapOf("query", QUERY_MAP);
+        dsl.put("sort", SORT_ARRAY);
+        dsl.put("size", TASK_FETCH_BATCH_SIZE);
+        int from = 0;
             while(true) {
-                List statusClauseList = new ArrayList();
-                statusClauseList.add(mapOf("match", mapOf(TASK_STATUS, AtlasTask.Status.IN_PROGRESS.toString())));
-
-                Map<String, Object> dsl = mapOf("query", mapOf("bool", mapOf("must", statusClauseList)));
-                dsl.put("sort", Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc"))));
-                dsl.put("size", size);
                 dsl.put("from", from);
                 TaskSearchParams taskSearchParams = new TaskSearchParams();
                 taskSearchParams.setDsl(dsl);
-                List<AtlasTask> results = taskService.getTasks(taskSearchParams).getTasks();
-                if (results.isEmpty()){
-                    break;
+                try {
+                    List<AtlasTask> results = taskService.getTasks(taskSearchParams).getTasks();
+                    if (results.isEmpty()){
+                        break;
+                    }
+                    ret.addAll(results);
+                    from += TASK_FETCH_BATCH_SIZE;
+                } catch (AtlasBaseException exception) {
+                    LOG.error("Error fetching in progress tasks from ES, redirecting to GraphQuery", exception);
+                    exception.printStackTrace();
+                    ret = getInProgressTasks();
+                    return ret;
                 }
-                ret.addAll(results);
-                from+=size;
             }
-        } catch (Exception exception) {
-            LOG.error("Error fetching in progress tasks!", exception);
-            exception.printStackTrace();
-        }
-
+        RequestContext.get().endMetricRecord(metric);
         return ret;
     }
 
@@ -559,7 +566,7 @@ public class TaskRegistry {
         return taskService.createTaskVertex(task);
     }
 
-    private Map<String, Object> mapOf(String key, Object value) {
+    private static Map<String, Object> mapOf(String key, Object value) {
         Map<String, Object> map = new HashMap<>();
         map.put(key, value);
 
