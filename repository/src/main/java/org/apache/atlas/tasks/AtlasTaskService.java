@@ -38,6 +38,8 @@ public class AtlasTaskService implements TaskService {
 
     private final List<String> retryAllowedStatuses;
 
+    private static final String ATLAN_HEADER_PREFIX_PATTERN = "x-atlan-";
+
     @Inject
     public AtlasTaskService(AtlasGraph graph) {
         this.graph = graph;
@@ -224,6 +226,7 @@ public class AtlasTaskService implements TaskService {
     @Override
     public AtlasVertex createTaskVertex(AtlasTask task) {
         AtlasVertex ret = graph.addVertex();
+        Map<String, String> requestContextHeaders = RequestContext.get().getRequestContextHeaders();
 
         setEncodedProperty(ret, Constants.TASK_GUID, task.getGuid());
         setEncodedProperty(ret, Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME);
@@ -251,6 +254,16 @@ public class AtlasTaskService implements TaskService {
 
         if (task.getEndTime() != null) {
             setEncodedProperty(ret, Constants.TASK_END_TIME, task.getEndTime().getTime());
+        }
+
+        if (MapUtils.isNotEmpty(requestContextHeaders)) {
+            for (Map.Entry<String, String> entry : requestContextHeaders.entrySet()) {
+                String key = entry.getKey();
+                if (key.startsWith(ATLAN_HEADER_PREFIX_PATTERN)) {
+                    String val = entry.getValue();
+                    setEncodedProperty(ret, key, val);
+                }
+            }
         }
 
         setEncodedProperty(ret, Constants.TASK_PARAMETERS, AtlasJson.toJson(task.getParameters()));
