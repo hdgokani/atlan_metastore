@@ -224,6 +224,7 @@ public class AtlasTaskService implements TaskService {
     @Override
     public AtlasVertex createTaskVertex(AtlasTask task) {
         AtlasVertex ret = graph.addVertex();
+        Map<String, String> requestContextHeaders = RequestContext.get().getRequestContextHeaders();
 
         setEncodedProperty(ret, Constants.TASK_GUID, task.getGuid());
         setEncodedProperty(ret, Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME);
@@ -251,6 +252,16 @@ public class AtlasTaskService implements TaskService {
 
         if (task.getEndTime() != null) {
             setEncodedProperty(ret, Constants.TASK_END_TIME, task.getEndTime().getTime());
+        }
+
+        if (MapUtils.isNotEmpty(requestContextHeaders)) {
+            for (Map.Entry<String, String> entry : requestContextHeaders.entrySet()) {
+                String key = entry.getKey();
+                if (Constants.TASK_HEADER_MAP.containsKey(key)) {
+                    String val = entry.getValue();
+                    setEncodedProperty(ret, key, val);
+                }
+            }
         }
 
         setEncodedProperty(ret, Constants.TASK_PARAMETERS, AtlasJson.toJson(task.getParameters()));
