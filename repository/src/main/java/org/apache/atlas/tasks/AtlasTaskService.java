@@ -38,8 +38,6 @@ public class AtlasTaskService implements TaskService {
 
     private final List<String> retryAllowedStatuses;
 
-    private static final String ATLAN_HEADER_PREFIX_PATTERN = "x-atlan-";
-
     @Inject
     public AtlasTaskService(AtlasGraph graph) {
         this.graph = graph;
