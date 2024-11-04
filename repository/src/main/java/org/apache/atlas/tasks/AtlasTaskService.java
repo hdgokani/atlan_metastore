@@ -259,7 +259,7 @@ public class AtlasTaskService implements TaskService {
         if (MapUtils.isNotEmpty(requestContextHeaders)) {
             for (Map.Entry<String, String> entry : requestContextHeaders.entrySet()) {
                 String key = entry.getKey();
-                if (key.startsWith(ATLAN_HEADER_PREFIX_PATTERN)) {
+                if (Constants.TASK_HEADER_MAP.containsKey(key)) {
                     String val = entry.getValue();
                     setEncodedProperty(ret, key, val);
                 }
