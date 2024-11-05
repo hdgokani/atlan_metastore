@@ -170,8 +170,8 @@ public class EntityGraphMapper {
     };
 
     private static final boolean ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES = AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES.getBoolean();
-    private static final boolean CLASSIFICATION_PROPAGATION_DEFAULT = AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean();
-    private static final boolean RESTRICT_PROPAGATION_THROUGH_LINEAGE_DEFAULT = false;
+    private static final boolean CLASSIFICATION_PROPAGATION_DEFAULT                  = AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean();
+    private static final boolean RESTRICT_PROPAGATION_THROUGH_LINEAGE_DEFAULT        = false;
 
     private static final boolean RESTRICT_PROPAGATION_THROUGH_HIERARCHY_DEFAULT        = false;
     public static final int CLEANUP_BATCH_SIZE = 200000;
@@ -189,11 +189,11 @@ public class EntityGraphMapper {
     private final AtlasTypeRegistry         typeRegistry;
     private final AtlasRelationshipStore    relationshipStore;
     private final IAtlasEntityChangeNotifier entityChangeNotifier;
-    private final AtlasInstanceConverter instanceConverter;
-    private final EntityGraphRetriever entityRetriever;
-    private final IFullTextMapper fullTextMapperV2;
-    private final TaskManagement taskManagement;
-    private final TransactionInterceptHelper transactionInterceptHelper;
+    private final AtlasInstanceConverter    instanceConverter;
+    private final EntityGraphRetriever      entityRetriever;
+    private final IFullTextMapper           fullTextMapperV2;
+    private final TaskManagement            taskManagement;
+    private final TransactionInterceptHelper   transactionInterceptHelper;
     private final EntityGraphRetriever       retrieverNoRelation;
 
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
@@ -210,13 +210,12 @@ public class EntityGraphMapper {
         this.graph                = graph;
         this.relationshipStore    = relationshipStore;
         this.entityChangeNotifier = entityChangeNotifier;
-        this.instanceConverter = instanceConverter;
-        this.entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
+        this.instanceConverter    = instanceConverter;
+        this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
         this.retrieverNoRelation  = new EntityGraphRetriever(graph, typeRegistry, true);
-        this.fullTextMapperV2 = fullTextMapperV2;
-        this.taskManagement = taskManagement;
-        this.transactionInterceptHelper = transactionInterceptHelper;
-    }
+        this.fullTextMapperV2     = fullTextMapperV2;
+        this.taskManagement       = taskManagement;
+        this.transactionInterceptHelper = transactionInterceptHelper;}
 
     @VisibleForTesting
     public void setTasksUseFlag(boolean value) {
@@ -3625,7 +3624,7 @@ public class EntityGraphMapper {
 
         validateClassificationExists(traitNames, classificationName);
 
-        AtlasVertex         classificationVertex = getClassificationVertex(entityVertex, classificationName);
+        AtlasVertex         classificationVertex = getClassificationVertex(graphHelper, entityVertex, classificationName);
 
         // Get in progress task to see if there already is a propagation for this particular vertex
         List<AtlasTask> inProgressTasks = taskManagement.getInProgressTasks();
@@ -3788,7 +3787,7 @@ public class EntityGraphMapper {
             String classificationName = classificationn.getTypeName();
             validateClassificationExists(traitNames, classificationName);
 
-            AtlasVertex classificationVertex = getClassificationVertex(entityVertex, classificationName);
+            AtlasVertex classificationVertex = getClassificationVertex(graphHelper, entityVertex, classificationName);
 
             // Get in progress task to see if there already is a propagation for this particular vertex
             List<AtlasTask> inProgressTasks = taskManagement.getInProgressTasks();
@@ -4025,7 +4024,7 @@ public class EntityGraphMapper {
                     throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY, classificationName);
                 }
 
-                AtlasVertex classificationVertex = getClassificationVertex(entityVertex, classificationName);
+            AtlasVertex classificationVertex = getClassificationVertex(graphHelper, entityVertex, classificationName);
 
                 if (classificationVertex == null) {
                     throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, classificationName);
