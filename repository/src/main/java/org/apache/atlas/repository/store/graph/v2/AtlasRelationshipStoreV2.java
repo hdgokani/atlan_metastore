@@ -481,8 +481,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             AtlasRelationshipType relationType = typeRegistry.getRelationshipTypeByName(relationship.getTypeName());
 
 
-            AtlasEntityHeader end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
-            AtlasEntityHeader end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
+            AtlasEntityHeader end1Entity = entityRetriever.toAtlasEntityHeader(end1Vertex);
+            AtlasEntityHeader end2Entity = entityRetriever.toAtlasEntityHeader(end2Vertex);
 
             AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD,
                                                                                         relationship.getTypeName(), end1Entity, end2Entity));
@@ -537,8 +537,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasRelationshipType relationType = typeRegistry.getRelationshipTypeByName(relationship.getTypeName());
         AtlasVertex           end1Vertex   = relationshipEdge.getOutVertex();
         AtlasVertex           end2Vertex   = relationshipEdge.getInVertex();
-        AtlasEntityHeader     end1Entity   = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
-        AtlasEntityHeader     end2Entity   = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
+        AtlasEntityHeader     end1Entity   = entityRetriever.toAtlasEntityHeader(end1Vertex);
+        AtlasEntityHeader     end2Entity   = entityRetriever.toAtlasEntityHeader(end2Vertex);
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_UPDATE, relationship.getTypeName(), end1Entity, end2Entity));
 
@@ -920,6 +920,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     }
 
     private RelationshipMutationContext getRelationshipMutationContext(Map<String, Set<AtlasRelationship>> relationshipsMutationMap) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getRelationshipMutationContext");
         final List<AtlasRelationship> createdRelationships = new ArrayList<>();
         final List<AtlasRelationship> deletedRelationships = new ArrayList<>();
         final List<AtlasRelationship> updatedRelationships = new ArrayList<>();
@@ -935,7 +936,9 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                 updatedRelationships.addAll(relationships);
             }
         });
-        return RelationshipMutationContext.getInstance(createdRelationships, updatedRelationships, deletedRelationships);
+        RelationshipMutationContext relationshipMutationContext = RelationshipMutationContext.getInstance(createdRelationships, updatedRelationships, deletedRelationships);
+        RequestContext.get().endMetricRecord(recorder);
+        return relationshipMutationContext;
     }
 
     public static void recordRelationshipMutation(RelationshipMutation relationshipMutation, AtlasEdge edge, EntityGraphRetriever entityRetriever) throws AtlasBaseException {
@@ -958,6 +961,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     }
 
     private static Map<String, String> builsESDocIdMapping(AtlasRelationship r) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("builsESDocIdMapping");
 
         final Map<String, String> esDocIdMapping = new HashMap<>();
 
@@ -996,10 +1000,14 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         esDocIdMapping.put(END_1_DOC_ID_KEY, end1DocId);
         esDocIdMapping.put(END_2_DOC_ID_KEY, end2DocId);
+
+        RequestContext.get().endMetricRecord(recorder);
         return esDocIdMapping;
     }
 
     private Map<String, Object> buildRelationshipDefMap(AtlasRelationship relationship) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("buildRelationshipDefMap");
+
         final AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByName(relationship.getTypeName());
         Map<String, Object> relationshipDefMap = new HashMap<>();
         relationshipDefMap.put(END_1_CARDINALITY_KEY, relationshipDef.getEndDef1().getCardinality().toString());
@@ -1009,6 +1017,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         relationshipDefMap.put(END_2_CARDINALITY_KEY, relationshipDef.getEndDef2().getCardinality().toString());
         relationshipDefMap.put(END_2_NAME_KEY, relationshipDef.getEndDef2().getName());
         relationshipDefMap.put(IS_END_2_CONTAINER_KEY, relationshipDef.getEndDef2().getIsContainer());
+
+        RequestContext.get().endMetricRecord(recorder);
         return relationshipDefMap;
     }
 

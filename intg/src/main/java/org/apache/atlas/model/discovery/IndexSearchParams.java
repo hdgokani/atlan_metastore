@@ -35,6 +35,11 @@ public class IndexSearchParams extends SearchParams {
         return queryString;
     }
 
+    @Override
+    public void setQuery(String query) {
+        this.queryString = query;
+    }
+
     public Map getDsl() {
         return dsl;
     }
@@ -99,12 +104,7 @@ public class IndexSearchParams extends SearchParams {
                 ", accessControlExclusive=" + accessControlExclusive +
                 ", includeRelationshipAttributes=" + includeRelationshipAttributes +
                 ", utmTags="+ getUtmTags() +
+                ", enableFullRestriction="+ enableFullRestriction +
                 '}';
     }
-
-    @Override
-    public void setQuery(String query) {
-        this.queryString = query;
-    }
-
 }
