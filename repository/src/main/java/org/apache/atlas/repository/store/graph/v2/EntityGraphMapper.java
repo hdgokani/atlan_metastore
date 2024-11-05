@@ -3787,7 +3787,7 @@ public class EntityGraphMapper {
             String classificationName = classificationn.getTypeName();
             validateClassificationExists(traitNames, classificationName);
 
-            AtlasVertex classificationVertex = getClassificationVertex(entityVertex, classificationName);
+            AtlasVertex classificationVertex = getClassificationVertex(graphHelper, entityVertex, classificationName);
 
             // Get in progress task to see if there already is a propagation for this particular vertex
             List<AtlasTask> inProgressTasks = taskManagement.getInProgressTasks();
