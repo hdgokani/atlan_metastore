@@ -164,7 +164,7 @@ public class EntityREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.evaluatePolicies()");
             }
-
+            LOG.info("Number of evaluations : " + entities.size());
             for (int i = 0; i < entities.size(); i++) {
 
                 String action = entities.get(i).getAction();
@@ -244,6 +244,9 @@ public class EntityREST {
 
             }
         } finally {
+            if(perf.getElapsedTime() > 1000){
+                LOG.info("Slow perf response payload : " + entities.toString());
+            }
             AtlasPerfTracer.log(perf);
         }
 
