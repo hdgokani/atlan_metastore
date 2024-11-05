@@ -420,7 +420,6 @@ public final class Constants {
     public static final String TASK_HEADER_ATLAN_MS_EXCEL_ID       = "x-atlan-microsoft-excel-id";
     public static final Map<String, Boolean> TASK_HEADER_MAP = new HashMap<String, Boolean>(){{
         put(TASK_HEADER_ATLAN_AGENT, true);
-        put(TASK_HEADER_ATLAN_VIA_UI, true);
         put(TASK_HEADER_ATLAN_AGENT_ID, true);
         put(TASK_HEADER_ATLAN_PKG_NAME, true);
         put(TASK_HEADER_ATLAN_AGENT_WORKFLOW_ID, true);
