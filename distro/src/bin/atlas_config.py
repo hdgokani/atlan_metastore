@@ -255,10 +255,8 @@ def runProcess(commandline, logdir=None, shell=False, wait=False):
     stdoutFile = None
     stderrFile = None
     if logdir:
-        # stdoutFile = open(os.path.join(logdir, timestr + ".out"), "w")
-        # stderrFile = open(os.path.join(logdir,timestr + ".err"), "w")
-        stdoutFile = None
-        stderrFile = None
+        stdoutFile = open(os.path.join(logdir, timestr + ".out"), "w")
+        stderrFile = open(os.path.join(logdir,timestr + ".err"), "w")
 
     p = subprocess.Popen(commandline, stdout=stdoutFile, stderr=stderrFile, shell=shell)
 
