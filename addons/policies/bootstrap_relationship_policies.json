@@ -646,6 +646,7 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
+
                 "name": "LINK_MESH_DATA_DOMAIN_TO_DATA_PRODUCT",
                 "qualifiedName": "LINK_MESH_DATA_DOMAIN_TO_DATA_PRODUCT",
                 "policyCategory": "bootstrap",

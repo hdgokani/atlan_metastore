@@ -35,6 +35,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -181,6 +182,8 @@ public final class Constants {
     public static final String SERVICE_ENTITY_TYPE        = "AuthService";
     public static final String REL_POLICY_TO_ACCESS_CONTROL  = "access_control_policies";
 
+    public static final String POLICY_SERVICE_NAME_ABAC  = "atlas_abac";
+
     /**
      * Resource
      */
@@ -206,6 +209,54 @@ public final class Constants {
     public static final String PROCESS_INPUTS = "__Process.inputs";
 
     public static String[] PROCESS_EDGE_LABELS = {PROCESS_OUTPUTS, PROCESS_INPUTS};
+
+    public static final String PROCESS_ENTITY_TYPE = "Process";
+
+    public static final String CONNECTION_PROCESS_ENTITY_TYPE = "ConnectionProcess";
+    public static final String PARENT_CONNECTION_PROCESS_QUALIFIED_NAME = "parentConnectionProcessQualifiedName";
+
+    /***
+     * DataModel
+     */
+    public static final String MODEL_ENTITY = "ModelEntity";
+    public static final String MODEL_ATTRIBUTE = "ModelAttribute";
+    public static final String MODEL_DATA_MODEL = "ModelDataModel";
+    public static final String MODEL_VERSION = "ModelVersion";
+    public static final String MODEL_ENTITY_ASSOCIATION = "ModelEntityAssociation";
+    public static final String MODEL_ATTRIBUTE_ASSOCIATION = "ModelAttributeAssociation";
+    public static final String MODEL_QUALIFIED_NAME_PATTERN = "modelVersionAgnosticQualifiedName";
+    public static final String MODEL_NAMESPACE = "modelNamespace";
+    public static final String MODEL_EXPIRED_AT_SYSTEM_DATE = "modelExpiredAtSystemDate";
+    public static final String MODEL_EXPIRED_AT_BUSINESS_DATE = "modelExpiredAtBusinessDate";
+    public static final String MODEL_SYSTEM_DATE = "modelSystemDate";
+    public static final String MODEL_BUSINESS_DATE = "modelBusinessDate";
+    public static final String MODEL_MODEL_VERSION_RELATION = "model_data_model_model_versions";
+    public static final String RELATED_DATA_MODEL = "modelDataModel";
+    public static final String RELATED_MODEL_VERSIONS = "modelVersions";
+    public static final String MODEL_VERSIONS_MODEL_VERSION_ENTITY_RELATION = "model_versions_model_version_entities";
+    public static final String MODEL_VERSION_ENTITIES = "modelVersionEntities";
+    public static final String MODEL_ENTITY_MAPPED_FROM_ENTITIES = "modelEntityMappedFromEntities";
+    public static final String MODEL_ENTITY_MAPPED_TO_ENTITIES = "modelEntityMappedToEntities";
+    public static final String MODEL_ENTITY_MODEL_ATTRIBUTES_RELATION = "model_attribute_entities_model_entity_attributes";
+    public static final String MODEL_ENTITY_ATTRIBUTES = "modelEntityAttributes";
+    public static final String MODEL_ATTRIBUTE_ENTITIES = "modelAttributeEntities";
+    public static final String MODEL_ATTRIBUTE_MAPPED_TO_ATTRIBUTES = "modelAttributeMappedToAttributes";
+    public static final String MODEL_ATTRIBUTE_MAPPED_FROM_ATTRIBUTES = "modelAttributeMappedFromAttributes";
+    public static final String MODEL_ENTITY_RELATED_FROM_ENTITIES = "modelEntityRelatedFromEntities";
+    public static final String MODEL_ENTITY_RELATED_TO_ENTITIES = "modelEntityRelatedToEntities";
+    public static final String MODEL_ATTRIBUTE_RELATED_FROM_ATTRIBUTES = "modelAttributeRelatedFromAttributes";
+    public static final String MODEL_ATTRIBUTE_RELATED_TO_ATTRIBUTES = "modelAttributeRelatedToAttributes";
+    public static String MODEL_ENTITY_ASSOCIATION_TO = "modelEntityAssociationTo";
+    public static String MODEL_ENTITY_ASSOCIATION_FROM = "modelEntityAssociationFrom";
+    public static  String MODEL_ATTRIBUTE_ASSOCIATION_FROM = "modelAttributeAssociationFrom";
+    public static String MODEL_ATTRIBUTE_ASSOCIATION_TO = "modelAttributeAssociationTo";
+
+
+
+
+
+
+
 
     /**
      * The homeId field is used when saving into Atlas a copy of an object that is being imported from another
@@ -269,6 +320,7 @@ public final class Constants {
 
     public static final String NAME                                    = "name";
     public static final String QUALIFIED_NAME                          = "qualifiedName";
+    public static final String CONNECTION_QUALIFIED_NAME               = "connectionQualifiedName";
     public static final String TYPE_NAME_PROPERTY_KEY                  = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
     public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE        = "atlas.graph.index.search.max-result-set-size";
     public static final String INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH = "atlas.graph.index.search.types.max-query-str-length";
@@ -358,6 +410,23 @@ public final class Constants {
     public static final String TASK_ENTITY_GUID             = encodePropertyKey(TASK_PREFIX + "entityGuid");
     public static final String TASK_CLASSIFICATION_TYPENAME = encodePropertyKey(TASK_PREFIX + "classificationTypeName");
     public static final String ACTIVE_STATE_VALUE           = "ACTIVE";
+    public static final String TASK_HEADER_ATLAN_AGENT      = "x-atlan-agent";
+    public static final String TASK_HEADER_ATLAN_AGENT_ID   = "x-atlan-agent-id";
+    public static final String TASK_HEADER_ATLAN_PKG_NAME   = "x-atlan-package-name";
+    public static final String TASK_HEADER_ATLAN_AGENT_WORKFLOW_ID = "x-atlan-agent-workflow-id";
+    public static final String TASK_HEADER_ATLAN_VIA_UI            = "x-atlan-via-ui";
+    public static final String TASK_HEADER_ATLAN_REQUEST_ID        = "x-atlan-request-id";
+    public static final String TASK_HEADER_ATLAN_GOOGLE_SHEETS_ID  = "x-atlan-google-sheets-id";
+    public static final String TASK_HEADER_ATLAN_MS_EXCEL_ID       = "x-atlan-microsoft-excel-id";
+    public static final Map<String, Boolean> TASK_HEADER_MAP = new HashMap<String, Boolean>(){{
+        put(TASK_HEADER_ATLAN_AGENT, true);
+        put(TASK_HEADER_ATLAN_AGENT_ID, true);
+        put(TASK_HEADER_ATLAN_PKG_NAME, true);
+        put(TASK_HEADER_ATLAN_AGENT_WORKFLOW_ID, true);
+        put(TASK_HEADER_ATLAN_REQUEST_ID, true);
+        put(TASK_HEADER_ATLAN_GOOGLE_SHEETS_ID, true);
+        put(TASK_HEADER_ATLAN_MS_EXCEL_ID, true);
+    }};
 
     /**
      * Index Recovery vertex property keys.

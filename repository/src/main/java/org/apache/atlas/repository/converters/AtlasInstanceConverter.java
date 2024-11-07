@@ -36,6 +36,7 @@ import org.apache.atlas.model.instance.GuidMapping;
 import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.repository.converters.AtlasFormatConverter.ConverterContext;
@@ -51,12 +52,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Singleton
 @Component
@@ -300,26 +296,31 @@ public class AtlasInstanceConverter {
     }
 
     public AtlasEntity getAndCacheEntity(String guid, boolean ignoreRelationshipAttributes) throws AtlasBaseException {
-        RequestContext context = RequestContext.get();
-        AtlasEntity    entity  = context.getEntity(guid);
+        AtlasPerfMetrics.MetricRecorder metricRecorder  = RequestContext.get().startMetricRecord("getAndCacheEntity");
+        try {
+            RequestContext context = RequestContext.get();
+            AtlasEntity    entity  = context.getEntity(guid);
 
-        if (entity == null) {
-            if (ignoreRelationshipAttributes) {
-                entity = entityGraphRetrieverIgnoreRelationshipAttrs.toAtlasEntity(guid);
-            } else {
-                entity = entityGraphRetriever.toAtlasEntity(guid);
-            }
+            if (entity == null) {
+                if (ignoreRelationshipAttributes) {
+                    entity = entityGraphRetrieverIgnoreRelationshipAttrs.toAtlasEntity(guid);
+                } else {
+                    entity = entityGraphRetriever.toAtlasEntity(guid);
+                }
 
-            if (entity != null) {
-                context.cache(entity);
+                if (entity != null) {
+                    context.cache(entity);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Cache miss -> GUID = {}", guid);
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Cache miss -> GUID = {}", guid);
+                    }
                 }
             }
-        }
 
-        return entity;
+            return entity;
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
     }
 
     public AtlasEntity getEntity(String guid, boolean ignoreRelationshipAttributes) throws AtlasBaseException {
@@ -329,7 +330,7 @@ public class AtlasInstanceConverter {
         } else {
             entity = entityGraphRetriever.toAtlasEntity(guid);
         }
-        return entity;
+        return Objects.isNull(entity)?new AtlasEntity() : entity;
     }
 
 
