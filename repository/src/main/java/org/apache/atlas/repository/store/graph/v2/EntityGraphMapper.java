@@ -3244,35 +3244,6 @@ public class EntityGraphMapper {
         LOG.info("Completed cleaning up classification {}", classificationName);
     }
 
-    private void detachAndRepairTagEdges(String classificationName, AtlasVertex vertex){
-        LOG.info("{} - detachAndRepairTagEdges started with index-> {}, processed by thread -> {}", classificationName, Thread.currentThread().getName());
-        List<AtlasClassification> deletedClassifications = new ArrayList<>();
-        List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
-        try{
-            for (AtlasEdge edge : classificationEdges) {
-                AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
-                deletedClassifications.add(classification);
-                graph.removeEdge(edge);
-            }
-
-            AtlasEntity entity = repairClassificationMappings(vertex);
-
-            entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
-            transactionInterceptHelper.intercept();
-        }
-        catch (AtlasBaseException e){
-            LOG.error("Encountered some problem in detaching and repairing tag edges for Asset Vertex : {}", vertex.getIdForDisplay());
-            e.printStackTrace();
-        }
-        catch (Exception e){
-            LOG.error("Encountered some unknown problem in detaching and repairing tag edges for Asset Vertex : {}", vertex.getIdForDisplay());
-            e.printStackTrace();
-        }
-        finally {
-            LOG.info("{} - detachAndRepairTagEdges ended with index-> {}, processed by thread -> {}", classificationName, Thread.currentThread().getName());
-        }
-    }
-
     public AtlasEntity repairClassificationMappings(AtlasVertex entityVertex) throws AtlasBaseException {
         String guid = GraphHelper.getGuid(entityVertex);
         AtlasEntity entity = instanceConverter.getEntity(guid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
@@ -3628,6 +3599,10 @@ public class EntityGraphMapper {
 
         AtlasVertex         classificationVertex = getClassificationVertex(graphHelper, entityVertex, classificationName);
 
+        if (Objects.isNull(classificationVertex)) {
+            LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
+            return;
+        }
         // Get in progress task to see if there already is a propagation for this particular vertex
         List<AtlasTask> inProgressTasks = taskManagement.getInProgressTasks();
         for (AtlasTask task : inProgressTasks) {
@@ -3639,7 +3614,8 @@ public class EntityGraphMapper {
         AtlasClassification classification       = entityRetriever.toAtlasClassification(classificationVertex);
 
         if (classification == null) {
-            throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classificationName);
+            LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
+            return;
         }
 
         // remove classification from propagated entities if propagation is turned on
@@ -4028,9 +4004,10 @@ public class EntityGraphMapper {
 
             AtlasVertex classificationVertex = getClassificationVertex(graphHelper, entityVertex, classificationName);
 
-                if (classificationVertex == null) {
-                    throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, classificationName);
-                }
+            if (classificationVertex == null) {
+                LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
+                continue;
+            }
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Updating classification {} for entity {}", classification, guid);
