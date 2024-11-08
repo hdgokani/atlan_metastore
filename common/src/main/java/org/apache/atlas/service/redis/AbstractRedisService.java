@@ -1,6 +1,7 @@
 package org.apache.atlas.service.redis;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ArrayUtils;
@@ -133,10 +134,10 @@ public abstract class AbstractRedisService implements RedisService {
                 .setReadMode(ReadMode.MASTER_SLAVE)
                 .setCheckSentinelsList(false)
                 .setKeepAlive(true)
-                .setMasterConnectionMinimumIdleSize(2)
-                .setMasterConnectionPoolSize(5)
-                .setSlaveConnectionMinimumIdleSize(2)
-                .setSlaveConnectionPoolSize(5)
+                .setMasterConnectionMinimumIdleSize(AtlasConfiguration.ATLAS_REDIS_POOL_CONNECTION_MIN.getInt())
+                .setMasterConnectionPoolSize(AtlasConfiguration.ATLAS_REDIS_POOL_CONNECTION_MAX.getInt())
+                .setSlaveConnectionMinimumIdleSize(AtlasConfiguration.ATLAS_REDIS_POOL_CONNECTION_MIN.getInt())
+                .setSlaveConnectionPoolSize(AtlasConfiguration.ATLAS_REDIS_POOL_CONNECTION_MAX.getInt())
                 .setMasterName(atlasConfig.getString(ATLAS_REDIS_MASTER_NAME))
                 .addSentinelAddress(formatUrls(atlasConfig.getStringArray(ATLAS_REDIS_SENTINEL_URLS)))
                 .setUsername(atlasConfig.getString(ATLAS_REDIS_USERNAME))
@@ -151,10 +152,10 @@ public abstract class AbstractRedisService implements RedisService {
                 .setReadMode(ReadMode.MASTER_SLAVE)
                 .setCheckSentinelsList(false)
                 .setKeepAlive(true)
-                .setMasterConnectionMinimumIdleSize(10)
-                .setMasterConnectionPoolSize(2)
-                .setSlaveConnectionMinimumIdleSize(10)
-                .setSlaveConnectionPoolSize(2)
+                .setMasterConnectionMinimumIdleSize(AtlasConfiguration.ATLAS_REDIS_POOL_CONNECTION_MIN.getInt())
+                .setMasterConnectionPoolSize(AtlasConfiguration.ATLAS_REDIS_POOL_CONNECTION_MAX.getInt())
+                .setSlaveConnectionMinimumIdleSize(AtlasConfiguration.ATLAS_REDIS_POOL_CONNECTION_MIN.getInt())
+                .setSlaveConnectionPoolSize(AtlasConfiguration.ATLAS_REDIS_POOL_CONNECTION_MAX.getInt())
                 .setMasterName(atlasConfig.getString(ATLAS_REDIS_MASTER_NAME))
                 .addSentinelAddress(formatUrls(atlasConfig.getStringArray(ATLAS_REDIS_SENTINEL_URLS)))
                 .setUsername(atlasConfig.getString(ATLAS_REDIS_USERNAME))

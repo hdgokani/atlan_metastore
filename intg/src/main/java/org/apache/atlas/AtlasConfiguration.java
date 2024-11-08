@@ -116,7 +116,9 @@ public enum AtlasConfiguration {
 
     ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false),
 
-    ATLAS_UD_RELATIONSHIPS_MAX_COUNT("atlas.ud.relationship.max.count", 100);
+    ATLAS_UD_RELATIONSHIPS_MAX_COUNT("atlas.ud.relationship.max.count", 100),
+    ATLAS_REDIS_POOL_CONNECTION_MAX("atlas.redis.connection.max", 5),
+    ATLAS_REDIS_POOL_CONNECTION_MIN("atlas.redis.connection.min", 2);
 
 
     private static final Configuration APPLICATION_PROPERTIES;
