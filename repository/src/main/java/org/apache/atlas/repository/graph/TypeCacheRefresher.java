@@ -45,6 +45,7 @@ public class TypeCacheRefresher {
 
     @PostConstruct
     public void init() throws AtlasException {
+        LOG.info("Starting type cache refresher");
         Configuration configuration = ApplicationProperties.get();
         this.cacheRefresherEndpoint = configuration.getString("atlas.server.type.cache-refresher");
         this.cacheRefresherHealthEndpoint = configuration.getString("atlas.server.type.cache-refresher-health");

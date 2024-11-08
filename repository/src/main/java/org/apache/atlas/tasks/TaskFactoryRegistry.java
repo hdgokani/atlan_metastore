@@ -44,6 +44,7 @@ public class TaskFactoryRegistry {
 
     @PostConstruct
     public void startTaskManagement() throws AtlasException {
+        LOG.info("Starting task management post-construct");
         try {
             if (taskManagement.isWatcherActive()) {
                 LOG.info("TaskFactoryRegistry: TaskManagement already started!");

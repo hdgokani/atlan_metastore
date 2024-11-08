@@ -17,7 +17,9 @@ public class RedisServiceImpl extends AbstractRedisService{
 
     @PostConstruct
     public void init() throws AtlasException {
+        LOG.info("Starting prod lock redisson client");
         redisClient = Redisson.create(getProdConfig());
+        LOG.info("Starting prod cache redisson client");
         redisCacheClient = Redisson.create(getCacheImplConfig());
         LOG.info("Sentinel redis client created successfully.");
     }
