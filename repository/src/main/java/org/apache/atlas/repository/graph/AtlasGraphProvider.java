@@ -94,13 +94,17 @@ public class AtlasGraphProvider implements IAtlasGraphProvider {
     @Override
     @Bean(destroyMethod = "")
     public AtlasGraph get() throws RepositoryException{
+        LOG.info("Getting AtlasGraphProvider");
         try {
             return getGraphInstance();
         } catch (Exception ex) {
             LOG.info("Failed to obtain graph instance, retrying " + MAX_RETRY_COUNT + " times, error: " + ex);
 
             return retry();
+        } finally {
+            LOG.info("Done getting AtlasGraphProvider");
         }
+
     }
 
     private AtlasGraph retry() throws RepositoryException {

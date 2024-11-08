@@ -195,7 +195,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
     @VisibleForTesting
     static JanusGraph initJanusGraph(Configuration config) {
-
+        LOG.info("Initializing Janusgraph instance");
         org.apache.commons.configuration2.Configuration conf2 = createConfiguration2(config);
         try {
             return JanusGraphFactory.open(conf2);
@@ -208,6 +208,8 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
             } else {
                 throw new RuntimeException(e);
             }
+        } finally {
+            LOG.info("Initialized JG instance");
         }
     }
 
@@ -292,6 +294,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     }
 
     static void validateIndexBackend(Configuration config) {
+        LOG.info("Validating index backend");
         String configuredIndexBackend = config.getString(INDEX_BACKEND_CONF);
 
         JanusGraphManagement managementSystem = getGraphInstance().openManagement();
@@ -302,6 +305,8 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
             throw new RuntimeException("Configured Index Backend " + configuredIndexBackend
                     + " differs from earlier configured Index Backend " + currentIndexBackend + ". Aborting!");
         }
+
+        LOG.info("Done validating index backend");
 
     }
 

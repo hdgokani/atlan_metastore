@@ -134,6 +134,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     public AtlasJanusGraph(JanusGraph graphInstance, RestHighLevelClient elasticsearchClient, RestClient restClient) {
         //determine multi-properties once at startup
+        LOG.info("Initializing AtlasJanusGraph constructor");
         JanusGraphManagement mgmt = null;
 
         try {
@@ -150,6 +151,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
             if (mgmt != null) {
                 mgmt.rollback();
             }
+            LOG.info("Done initializing AtlasJanusGraph constructor");
         }
 
         janusGraph = (StandardJanusGraph) graphInstance;
