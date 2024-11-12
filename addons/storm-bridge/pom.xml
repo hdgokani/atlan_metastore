@@ -93,6 +93,10 @@
             <version>${storm.version}</version>
             <exclusions>
                 <exclusion>
+                    <groupId>org.apache.storm</groupId>
+                    <artifactId>storm-clojure</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>log4j-over-slf4j</artifactId>
                 </exclusion>
@@ -344,11 +348,10 @@
                                             <artifactId>hadoop-hdfs-client</artifactId>
                                             <version>${hadoop.hdfs-client.version}</version>
                                         </dependency>
-
                                         <artifactItem>
-                                            <groupId>ch.qos.reload4j</groupId>
-                                            <artifactId>reload4j</artifactId>
-                                            <version>${reload4j.version}</version>
+                                            <groupId>ch.qos.logback</groupId>
+                                            <artifactId>logback-classic</artifactId>
+                                            <version>${logback.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>com.sun.jersey</groupId>
@@ -444,8 +447,8 @@
                             <value>application.log</value>
                         </systemProperty>
                         <systemProperty>
-                            <name>log4j.configuration</name>
-                            <value>file:///${project.build.directory}/test-classes/atlas-log4j.xml</value>
+                            <name>logback.configurationFile</name>
+                            <value>file:///${project.build.directory}/test-classes/atlas-logback.xml</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.graphdb.backend</name>
