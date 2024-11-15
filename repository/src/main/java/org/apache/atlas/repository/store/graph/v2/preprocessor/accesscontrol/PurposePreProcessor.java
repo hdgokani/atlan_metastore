@@ -62,7 +62,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.getTenantId;
 import static org.apache.atlas.repository.util.AccessControlUtils.getUUID;
 import static org.apache.atlas.repository.util.AccessControlUtils.validateUniquenessByTags;
 
-public class PurposePreProcessor extends AccessControlPreProcessor {
+public class PurposePreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(PurposePreProcessor.class);
 
     private final AtlasGraph graph;
@@ -89,8 +89,6 @@ public class PurposePreProcessor extends AccessControlPreProcessor {
         if (LOG.isDebugEnabled()) {
             LOG.debug("PurposePreProcessor.processAttributes: pre processing {}, {}", entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
-
-        super.processAttributes(entityStruct, context, operation);
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
 
