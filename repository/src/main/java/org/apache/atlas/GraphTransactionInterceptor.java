@@ -407,6 +407,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             }
 
             lockedGuids.get().clear();
+            LOG.info("==> releaseLockedObjects(): lockedGuids.size: {}", lockedGuids.get().size());
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== releaseLockedObjects(): lockedGuids.size: {}", lockedGuids.get().size());
