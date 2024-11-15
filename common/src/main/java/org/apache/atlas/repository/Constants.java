@@ -361,9 +361,9 @@ public final class Constants {
     public static final String ACTIVE_STATE_VALUE           = "ACTIVE";
     public static final String TASK_HEADER_ATLAN_AGENT      = "x-atlan-agent";
     public static final String TASK_HEADER_ATLAN_AGENT_ID   = "x-atlan-agent-id";
-    public static final String TASK_HEADER_ATLAN_VIA_UI     = "x-atlan-via-ui";
     public static final String TASK_HEADER_ATLAN_PKG_NAME   = "x-atlan-package-name";
     public static final String TASK_HEADER_ATLAN_AGENT_WORKFLOW_ID = "x-atlan-agent-workflow-id";
+    public static final String TASK_HEADER_ATLAN_VIA_UI            = "x-atlan-via-ui";
     public static final String TASK_HEADER_ATLAN_REQUEST_ID        = "x-atlan-request-id";
     public static final String TASK_HEADER_ATLAN_GOOGLE_SHEETS_ID  = "x-atlan-google-sheets-id";
     public static final String TASK_HEADER_ATLAN_MS_EXCEL_ID       = "x-atlan-microsoft-excel-id";
@@ -377,7 +377,7 @@ public final class Constants {
         add(TASK_HEADER_ATLAN_GOOGLE_SHEETS_ID);
         add(TASK_HEADER_ATLAN_MS_EXCEL_ID);
     }};
-
+    
     /**
      * Index Recovery vertex property keys.
      */
