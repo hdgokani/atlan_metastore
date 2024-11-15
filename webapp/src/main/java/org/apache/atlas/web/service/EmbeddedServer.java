@@ -71,7 +71,7 @@ public class EmbeddedServer {
         executor.allowCoreThreadTimeOut(true);
         ExecutorThreadPool            pool          = new ExecutorThreadPool(executor, minThreads);
 
-        server = new Server(pool);executor.shutdown();
+        server = new Server(pool);
 
         Connector connector = getConnector(host, port);
         connector.addBean(new JettyConnectionMetrics(getMeterRegistry()));
