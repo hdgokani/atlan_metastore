@@ -1106,22 +1106,20 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         ConcurrentHashMap<String, AtlasEntityHeader> headers = new ConcurrentHashMap<>();
 
         // Run vertex processing in limited parallel threads
-        CompletableFuture.runAsync(() -> CUSTOMTHREADPOOL.submit(() ->
-                vertices.parallelStream().forEach(vertex -> {
-                    String guid = vertex.getProperty("__guid", String.class);
-                    headers.computeIfAbsent(guid, k -> {
-                        try {
-                            AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
-                            if (RequestContext.get().includeClassifications()) {
-                                header.setClassifications(entityRetriever.getAllClassifications(vertex));
-                            }
-                            return header;
-                        } catch (AtlasBaseException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-                })
-        ).join(), CUSTOMTHREADPOOL);
+        CompletableFuture.runAsync(() -> vertices.parallelStream().forEach(vertex -> {
+            String guid = vertex.getProperty("__guid", String.class);
+            headers.computeIfAbsent(guid, k -> {
+                try {
+                    AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
+                    if (RequestContext.get().includeClassifications()) {
+                        header.setClassifications(entityRetriever.getAllClassifications(vertex));
+                    }
+                    return header;
+                } catch (AtlasBaseException e) {
+                    throw new RuntimeException("Failed to process vertex with GUID: " + guid, e);
+                }
+            });
+        }), CUSTOMTHREADPOOL).join();
 
         // Process results and handle collapse in parallel
         results.parallelStream().forEach(result -> {
