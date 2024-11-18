@@ -1096,6 +1096,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         // Use ConcurrentHashMap for thread-safe access
         ConcurrentHashMap<String, AtlasEntityHeader> headers = new ConcurrentHashMap<>();
+        ConcurrentHashMap<String, AtlasEntityHeader> entitiesSet = new ConcurrentHashMap<>();
 
         // Run vertex processing in limited parallel threads
         CompletableFuture.runAsync(() -> vertices.parallelStream().forEach(vertex -> {
@@ -1145,10 +1146,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
 
             if (header != null) {
-                ret.addEntity(header);
+                entitiesSet.put(header.getGuid(), header);
             }
         });
 
+        ret.setEntities(new ArrayList<>(entitiesSet.values()));
         if (!searchParams.getEnableFullRestriction()) {
             scrubSearchResults(ret, searchParams.getSuppressLogs());
         }
