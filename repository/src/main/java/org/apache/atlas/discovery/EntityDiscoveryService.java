@@ -1154,7 +1154,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 ret.addHighlights(header.getGuid(), result.getHighLights());
             }
 
-            ret.addEntity(header);
+            if (header != null) {
+                ret.addEntity(header);
+            }
         });
 
         if (!searchParams.getEnableFullRestriction()) {
