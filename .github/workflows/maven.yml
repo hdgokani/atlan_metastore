@@ -25,6 +25,8 @@ on:
       - beta
       - development
       - master
+      - master
+
 
 jobs:
   build:
