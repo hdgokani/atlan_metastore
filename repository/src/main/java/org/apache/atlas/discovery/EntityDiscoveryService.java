@@ -1100,7 +1100,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         // Run vertex processing in limited parallel threads
         CompletableFuture.runAsync(() -> CUSTOMTHREADPOOL.submit(() ->
                 vertices.parallelStream().forEach(vertex -> {
-                    String guid = vertex.getProperty("guid", String.class);
+                    String guid = vertex.getProperty("__guid", String.class);
                     headers.computeIfAbsent(guid, k -> {
                         try {
                             AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
@@ -1120,7 +1120,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             AtlasVertex vertex = result.getVertex();
             if (vertex == null) return;
 
-            String guid = vertex.getProperty("guid", String.class);
+            String guid = vertex.getProperty("__guid", String.class);
             AtlasEntityHeader header = headers.get(guid);
 
             if (showSearchScore) {
