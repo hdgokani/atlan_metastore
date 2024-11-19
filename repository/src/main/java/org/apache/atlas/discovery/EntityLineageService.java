@@ -88,6 +88,7 @@ public class EntityLineageService implements AtlasLineageService {
     private static final boolean LINEAGE_USING_GREMLIN = AtlasConfiguration.LINEAGE_USING_GREMLIN.getBoolean();
     private static final Integer DEFAULT_LINEAGE_MAX_NODE_COUNT       = 9000;
     private static final int     LINEAGE_ON_DEMAND_DEFAULT_DEPTH      = 3;
+    private static final long LINEAGE_TIMEOUT_MS = AtlasConfiguration.LINEAGE_TIMEOUT_MS.getLong();
     private static final String  SEPARATOR                            = "->";
 
     private final AtlasGraph graph;
@@ -298,6 +299,8 @@ public class EntityLineageService implements AtlasLineageService {
         AtomicInteger inputEntitiesTraversed = new AtomicInteger(0);
         AtomicInteger outputEntitiesTraversed = new AtomicInteger(0);
         AtomicInteger traversalOrder = new AtomicInteger(1);
+        TimeoutChecker timeoutChecker = new TimeoutChecker(LINEAGE_TIMEOUT_MS);
+        atlasLineageOnDemandContext.setTimeoutChecker(timeoutChecker);
         if (isDataSet) {
             AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
             if (direction == AtlasLineageOnDemandInfo.LineageDirection.INPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH)
@@ -365,6 +368,14 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private void traverseEdgesOnDemand(AtlasVertex datasetVertex, boolean isInput, int depth, int level, Set<String> visitedVertices, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, String baseGuid, AtomicInteger entitiesTraversed, AtomicInteger traversalOrder) throws AtlasBaseException {
+        // Get timeout checker from context or create new one
+        TimeoutChecker timeoutChecker = atlasLineageOnDemandContext.getTimeoutChecker();
+        // Check timeout before starting traversal
+        if (timeoutChecker.hasTimedOut()) {
+            handleTimeout(ret);
+            return;
+        }
+
         if (isEntityTraversalLimitReached(entitiesTraversed))
             return;
         if (depth != 0) { // base condition of recursion for depth
@@ -379,6 +390,12 @@ public class EntityLineageService implements AtlasLineageService {
             RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesIn);
 
             while (incomingEdges.hasNext()) {
+                // Check timeout periodically
+                if (timeoutChecker.hasTimedOut()) {
+                    handleTimeout(ret);
+                    return;
+                }
+
                 AtlasEdge incomingEdge = incomingEdges.next();
                 AtlasVertex processVertex = incomingEdge.getOutVertex();
 
@@ -407,6 +424,12 @@ public class EntityLineageService implements AtlasLineageService {
                 RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdgesOut);
 
                 while (outgoingEdges.hasNext()) {
+                    // Check timeout in inner loop as well
+                    if (timeoutChecker.hasTimedOut()) {
+                        handleTimeout(ret);
+                        return;
+                    }
+
                     AtlasEdge outgoingEdge = outgoingEdges.next();
                     AtlasVertex entityVertex = outgoingEdge.getInVertex();
 
@@ -436,13 +459,19 @@ public class EntityLineageService implements AtlasLineageService {
                     if (entityVertex != null && !visitedVertices.contains(getId(entityVertex))) {
                         traverseEdgesOnDemand(entityVertex, isInput, depth - 1, nextLevel, visitedVertices, atlasLineageOnDemandContext, ret, baseGuid, entitiesTraversed, traversalOrder); // execute inner depth
                         AtlasEntityHeader traversedEntity = ret.getGuidEntityMap().get(AtlasGraphUtilsV2.getIdFromVertex(entityVertex));
-                        traversedEntity.setFinishTime(traversalOrder.get());
+                        if (traversedEntity != null)
+                            traversedEntity.setFinishTime(traversalOrder.get());
                     }
                 }
             }
 
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+    }
+
+    private void handleTimeout(AtlasLineageOnDemandInfo ret) {
+        ret.setTimeoutOccurred(true);
+        LOG.warn("Lineage traversal timed out after {} ms", LINEAGE_TIMEOUT_MS);
     }
 
     private static void setEntityLimitReachedFlag(boolean isInput, AtlasLineageOnDemandInfo ret) {
