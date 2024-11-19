@@ -431,7 +431,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 LOG.warn(String.format("ES index with name %s not found", index));
                 throw new AtlasBaseException(INDEX_NOT_FOUND, index);
             } else {
-                throw new AtlasBaseException(rex);
+                throw new AtlasBaseException(String.format("Error in executing elastic query: %s", EntityUtils.toString(entity)), rex);
             }
         }
 
