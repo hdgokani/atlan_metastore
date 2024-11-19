@@ -1149,6 +1149,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 entitiesSet.put(header.getGuid(), header);
             }
         });
+
+        ret.setEntities(new ArrayList<>(entitiesSet.values()));
     }
 
     // Non-recursive collapse processing
