@@ -1077,7 +1077,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     @SuppressWarnings("rawtypes")
-    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
+    private void prepareSearchResultAsync(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
         SearchParams searchParams = ret.getSearchParameters();
         boolean showSearchScore = searchParams.getShowSearchScore();
         List<Result> results = new ArrayList<>();
@@ -1153,6 +1153,87 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         scrubSearchResults(ret, searchParams.getSuppressLogs());
     }
 
+    private void prepareSearchResultSync(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
+        SearchParams searchParams = ret.getSearchParameters();
+        try {
+            if(LOG.isDebugEnabled()){
+                LOG.debug("Preparing search results for ({})", ret.getSearchParameters());
+            }
+            Iterator<Result> iterator = indexQueryResult.getIterator();
+            boolean showSearchScore = searchParams.getShowSearchScore();
+            if (iterator == null) {
+                return;
+            }
+
+            while (iterator.hasNext()) {
+                Result result = iterator.next();
+                AtlasVertex vertex = result.getVertex();
+
+                if (vertex == null) {
+                    LOG.warn("vertex in null");
+                    continue;
+                }
+
+                AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
+                if(RequestContext.get().includeClassifications()){
+                    header.setClassifications(entityRetriever.getAllClassifications(vertex));
+                }
+                if (showSearchScore) {
+                    ret.addEntityScore(header.getGuid(), result.getScore());
+                }
+                if (fetchCollapsedResults) {
+                    Map<String, AtlasSearchResult> collapse = new HashMap<>();
+
+                    Set<String> collapseKeys = result.getCollapseKeys();
+                    for (String collapseKey : collapseKeys) {
+                        AtlasSearchResult collapseRet = new AtlasSearchResult();
+                        collapseRet.setSearchParameters(ret.getSearchParameters());
+
+                        Set<String> collapseResultAttributes = new HashSet<>();
+                        if (searchParams.getCollapseAttributes() != null) {
+                            collapseResultAttributes.addAll(searchParams.getCollapseAttributes());
+                        } else {
+                            collapseResultAttributes = resultAttributes;
+                        }
+
+                        if (searchParams.getCollapseRelationAttributes() != null) {
+                            RequestContext.get().getRelationAttrsForSearch().clear();
+                            RequestContext.get().setRelationAttrsForSearch(searchParams.getCollapseRelationAttributes());
+                        }
+
+                        DirectIndexQueryResult indexQueryCollapsedResult = result.getCollapseVertices(collapseKey);
+                        collapseRet.setApproximateCount(indexQueryCollapsedResult.getApproximateCount());
+                        prepareSearchResultSync(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false);
+
+                        collapseRet.setSearchParameters(null);
+                        collapse.put(collapseKey, collapseRet);
+                    }
+                    if (!collapse.isEmpty()) {
+                        header.setCollapse(collapse);
+                    }
+                }
+                if (searchParams.getShowSearchMetadata()) {
+                    ret.addHighlights(header.getGuid(), result.getHighLights());
+                    ret.addSort(header.getGuid(), result.getSort());
+                } else if (searchParams.getShowHighlights()) {
+                    ret.addHighlights(header.getGuid(), result.getHighLights());
+                }
+
+                ret.addEntity(header);
+            }
+        } catch (Exception e) {
+            throw e;
+        }
+        scrubSearchResults(ret, searchParams.getSuppressLogs());
+    }
+
+    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
+        if (AtlasConfiguration.ENABLE_JANUS_GRAPH_OPTIMISATION.getBoolean()) {
+            LOG.debug("enabled janusGraphOptimisation");
+            prepareSearchResultAsync(ret, indexQueryResult, resultAttributes, fetchCollapsedResults);
+        }
+        prepareSearchResultSync(ret, indexQueryResult, resultAttributes, fetchCollapsedResults);
+    }
     // Non-recursive collapse processing
     private Map<String, AtlasSearchResult> processCollapseResults(Result result, SearchParams searchParams, Set<String> resultAttributes) throws AtlasBaseException {
         Map<String, AtlasSearchResult> collapse = new HashMap<>();
