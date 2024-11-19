@@ -1150,6 +1150,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
         });
         ret.setEntities(new ArrayList<>(entitiesSet.values()));
+        scrubSearchResults(ret, searchParams.getSuppressLogs());
     }
 
     // Non-recursive collapse processing
