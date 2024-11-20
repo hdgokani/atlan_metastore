@@ -1006,7 +1006,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 return null;
             }
             RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
-            prepareSearchResult(ret, indexQueryResult, resultAttributes, true);
+            prepareSearchResult(ret, indexQueryResult, resultAttributes, AtlasConfiguration.FETCH_COLLAPSED_RESULT.getBoolean());
 
             ret.setAggregations(indexQueryResult.getAggregationMap());
             ret.setApproximateCount(indexQuery.vertexTotals());
