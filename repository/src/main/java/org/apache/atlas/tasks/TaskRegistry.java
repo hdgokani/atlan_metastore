@@ -52,8 +52,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.repository.Constants.TASK_GUID;
-import static org.apache.atlas.repository.Constants.TASK_STATUS;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
 @Component
@@ -239,15 +238,21 @@ public class TaskRegistry {
         deleteVertex(taskVertex);
     }
 
-    public void inProgress(AtlasVertex taskVertex, AtlasTask task) {
+    public void inProgress(AtlasVertex taskVertex, AtlasTask task, AbstractTask runnableTask) {
         RequestContext.get().setCurrentTask(task);
 
         task.setStartTime(new Date());
-
+        task.setAssetsCountToPropagate(runnableTask.getAssetsCountToPropagate());
         setEncodedProperty(taskVertex, Constants.TASK_START_TIME, task.getStartTime());
         setEncodedProperty(taskVertex, Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS);
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
+        setEncodedProperty(taskVertex, Constants.TASK_ASSET_COUNT_TO_PROPAGATE, task.getAssetsCountToPropagate());
         graph.commit();
+        try {
+            TimeUnit.SECONDS.sleep(10);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @GraphTransaction
@@ -558,7 +563,15 @@ public class TaskRegistry {
             ret.setErrorMessage(errorMessage);
         }
 
+        Long assetsCountToPropagate = v.getProperty(Constants.TASK_ASSET_COUNT_TO_PROPAGATE, Long.class);
+        if (assetsCountToPropagate != null){
+            ret.setAssetsCountToPropagate(assetsCountToPropagate);
+        }
 
+        Long assetsCountPropagated = v.getProperty(Constants.TASK_ASSET_COUNT_PROPAGATED, Long.class);
+        if (assetsCountPropagated != null){
+            ret.setAssetsCountPropagated(assetsCountPropagated);
+        }
         return ret;
     }
 

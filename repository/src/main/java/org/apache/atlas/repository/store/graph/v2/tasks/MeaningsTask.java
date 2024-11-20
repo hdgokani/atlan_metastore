@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.atlas.model.tasks.AtlasTask.Status.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE;
@@ -60,6 +61,7 @@ public abstract class MeaningsTask extends AbstractTask {
             RequestContext.get().setUser(userName, null);
             try {
                 setStatus(IN_PROGRESS);
+                setAssetsCountToPropagate(1234L);
 
                 run(params);
 
@@ -109,6 +111,11 @@ public abstract class MeaningsTask extends AbstractTask {
         } catch (EntityNotFoundException  e) {
             LOG.error("Error updating associated element for: {}", getTaskGuid(), e);
         }
+
+    }
+
+    protected void setAssetsCountToPropagate(Long assetsCount) {
+        super.setAssetsCountToPropagate(assetsCount);
 
     }
 
