@@ -87,8 +87,7 @@ import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.
 public class EntityDiscoveryService implements AtlasDiscoveryService {
     private static final Logger LOG = LoggerFactory.getLogger(EntityDiscoveryService.class);
     private static final String DEFAULT_SORT_ATTRIBUTE_NAME = "name";
-    private static final int AVAILABLEPROCESSORS = Runtime.getRuntime().availableProcessors();
-    private static final ForkJoinPool CUSTOMTHREADPOOL = new ForkJoinPool(AVAILABLEPROCESSORS/2); // Use half of available cores
+    private static final ForkJoinPool CUSTOMTHREADPOOL = new ForkJoinPool(AtlasConfiguration.THREADS_TO_BE_SPAWNED.getInt()); // Use half of available cores
 
     private final AtlasGraph                      graph;
     private final EntityGraphRetriever            entityRetriever;

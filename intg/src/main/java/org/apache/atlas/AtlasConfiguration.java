@@ -115,7 +115,7 @@ public enum AtlasConfiguration {
     INDEXSEARCH_ASYNC_SEARCH_KEEP_ALIVE_TIME_IN_SECONDS("atlas.indexsearch.async.search.keep.alive.time.in.seconds", 300),
 
     /**
-     *   hits elastic search async APU
+     *   hits elastic search async API
      */
     ENABLE_ASYNC_INDEXSEARCH("atlas.indexsearch.async.enable", false),
 
@@ -123,6 +123,11 @@ public enum AtlasConfiguration {
      *  enables parallel processing of janus graph vertices from cassandra
      */
     ENABLE_JANUS_GRAPH_OPTIMISATION("atlas.janus.graph.optimisation.enable", false),
+
+    /**
+     * No. of threads to be spawned for parallel processing
+     */
+    THREADS_TO_BE_SPAWNED("atlas.janus.graph.optimisation.thread_count", (Runtime.getRuntime().availableProcessors())/2),
     ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT("atlas.indexsearch.query.size.max.limit", 100000),
     ATLAS_INDEXSEARCH_LIMIT_UTM_TAGS("atlas.indexsearch.limit.ignore.utm.tags", ""),
     ATLAS_INDEXSEARCH_ENABLE_API_LIMIT("atlas.indexsearch.enable.api.limit", false),
