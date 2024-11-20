@@ -1009,90 +1009,214 @@ public class EntityGraphRetriever {
         return mapVertexToAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }
 
+//    private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
+//        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader");
+//        AtlasEntityHeader ret = new AtlasEntityHeader();
+//        try {
+//            String  typeName     = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
+//            String  guid         = entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+//            Boolean isIncomplete = isEntityIncomplete(entityVertex);
+//
+//            ret.setTypeName(typeName);
+//            ret.setGuid(guid);
+//            ret.setStatus(GraphHelper.getStatus(entityVertex));
+//            RequestContext context = RequestContext.get();
+//            boolean includeClassifications = context.includeClassifications();
+//            boolean includeClassificationNames = context.isIncludeClassificationNames();
+//            if(includeClassifications){
+//                ret.setClassificationNames(getAllTraitNamesFromAttribute(entityVertex));
+//            } else if (!includeClassifications && includeClassificationNames) {
+//                ret.setClassificationNames(getAllTraitNamesFromAttribute(entityVertex));
+//            }
+//            ret.setIsIncomplete(isIncomplete);
+//            ret.setLabels(getLabels(entityVertex));
+//
+//            ret.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
+//            ret.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
+//            ret.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
+//            ret.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
+//
+//            if(RequestContext.get().includeMeanings()) {
+//                List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
+//                ret.setMeanings(termAssignmentHeaders);
+//                ret.setMeaningNames(
+//                        termAssignmentHeaders.stream().map(AtlasTermAssignmentHeader::getDisplayText)
+//                                .collect(Collectors.toList()));
+//            }
+//            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+//
+//            if (entityType != null) {
+//                for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
+//                    Object attrValue = getVertexAttribute(entityVertex, headerAttribute);
+//
+//                    if (attrValue != null) {
+//                        ret.setAttribute(headerAttribute.getName(), attrValue);
+//                    }
+//                }
+//
+//                Object displayText = getDisplayText(entityVertex, entityType);
+//
+//                if (displayText != null) {
+//                    ret.setDisplayText(displayText.toString());
+//                }
+//
+//                if (CollectionUtils.isNotEmpty(attributes)) {
+//                    for (String attrName : attributes) {
+//                        AtlasAttribute attribute = entityType.getAttribute(attrName);
+//
+//                        if (attribute == null) {
+//                            attrName = toNonQualifiedName(attrName);
+//
+//                            if (ret.hasAttribute(attrName)) {
+//                                continue;
+//                            }
+//
+//                            attribute = entityType.getAttribute(attrName);
+//
+//                            if (attribute == null) {
+//                                attribute = entityType.getRelationshipAttribute(attrName, null);
+//                            }
+//                        }
+//
+//                        Object attrValue = getVertexAttribute(entityVertex, attribute);
+//
+//                        if (attrValue != null) {
+//                            ret.setAttribute(attrName, attrValue);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        finally {
+//            RequestContext.get().endMetricRecord(metricRecorder);
+//        }
+//        return ret;
+//    }
+
+
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader");
+
         AtlasEntityHeader ret = new AtlasEntityHeader();
+
         try {
-            String  typeName     = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
-            String  guid         = entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+            // Batch fetch all properties
+            Map<String, Object> vertexProperties = batchGetProperties(entityVertex);
+
+            // Common properties
+            String typeName = (String) getCommonProperty(vertexProperties, Constants.TYPE_NAME_PROPERTY_KEY);
+            String guid = (String) getCommonProperty(vertexProperties, GUID_PROPERTY_KEY);
+            Long createTime = (Long) getCommonProperty(vertexProperties, TIMESTAMP_PROPERTY_KEY);
+            Long updateTime = (Long) getCommonProperty(vertexProperties, MODIFICATION_TIMESTAMP_PROPERTY_KEY);
             Boolean isIncomplete = isEntityIncomplete(entityVertex);
 
+            // Set properties in header
             ret.setTypeName(typeName);
             ret.setGuid(guid);
             ret.setStatus(GraphHelper.getStatus(entityVertex));
-            RequestContext context = RequestContext.get();
-            boolean includeClassifications = context.includeClassifications();
-            boolean includeClassificationNames = context.isIncludeClassificationNames();
-            if(includeClassifications){
-                ret.setClassificationNames(getAllTraitNamesFromAttribute(entityVertex));
-            } else if (!includeClassifications && includeClassificationNames) {
-                ret.setClassificationNames(getAllTraitNamesFromAttribute(entityVertex));
-            }
             ret.setIsIncomplete(isIncomplete);
-            ret.setLabels(getLabels(entityVertex));
-
             ret.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
             ret.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
-            ret.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
-            ret.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
+            ret.setCreateTime(createTime != null ? new Date(createTime) : null);
+            ret.setUpdateTime(updateTime != null ? new Date(updateTime) : null);
+            ret.setLabels(getLabels(entityVertex));
 
-            if(RequestContext.get().includeMeanings()) {
+            // Classifications
+            RequestContext context = RequestContext.get();
+            if (context.includeClassifications() || context.isIncludeClassificationNames()) {
+                ret.setClassificationNames(getAllTraitNamesFromAttribute(entityVertex));
+            }
+
+            // Meanings
+            if (context.includeMeanings()) {
                 List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
                 ret.setMeanings(termAssignmentHeaders);
-                ret.setMeaningNames(
-                        termAssignmentHeaders.stream().map(AtlasTermAssignmentHeader::getDisplayText)
-                                .collect(Collectors.toList()));
+                ret.setMeaningNames(termAssignmentHeaders.stream()
+                        .map(AtlasTermAssignmentHeader::getDisplayText)
+                        .collect(Collectors.toList()));
             }
+
+            // Process entity type and attributes
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
-
             if (entityType != null) {
+                // Header attributes
                 for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
-                    Object attrValue = getVertexAttribute(entityVertex, headerAttribute);
-
+                    Object attrValue = getVertexAttributeFromBatch(vertexProperties, headerAttribute);
                     if (attrValue != null) {
                         ret.setAttribute(headerAttribute.getName(), attrValue);
                     }
                 }
 
+                // Display text
                 Object displayText = getDisplayText(entityVertex, entityType);
-
                 if (displayText != null) {
                     ret.setDisplayText(displayText.toString());
                 }
 
+                // Additional attributes
                 if (CollectionUtils.isNotEmpty(attributes)) {
                     for (String attrName : attributes) {
-                        AtlasAttribute attribute = entityType.getAttribute(attrName);
-
-                        if (attribute == null) {
-                            attrName = toNonQualifiedName(attrName);
-
-                            if (ret.hasAttribute(attrName)) {
-                                continue;
+                        AtlasAttribute attribute = getEntityOrRelationshipAttribute(entityType, attrName);
+                        if (attribute != null) {
+                            Object attrValue = getVertexAttributeFromBatch(vertexProperties, attribute);
+                            if (attrValue != null) {
+                                ret.setAttribute(attrName, attrValue);
                             }
-
-                            attribute = entityType.getAttribute(attrName);
-
-                            if (attribute == null) {
-                                attribute = entityType.getRelationshipAttribute(attrName, null);
-                            }
-                        }
-
-                        Object attrValue = getVertexAttribute(entityVertex, attribute);
-
-                        if (attrValue != null) {
-                            ret.setAttribute(attrName, attrValue);
                         }
                     }
                 }
             }
-        }
-        finally {
+        } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+
         return ret;
     }
 
+
+    private Object getCommonProperty(Map<String, Object> vertexProperties, String propertyName) {
+        if (vertexProperties.get(propertyName) instanceof List) {
+            return ((List<?>) vertexProperties.get(propertyName)).get(0);
+        }
+        return new Object();
+    }
+    /**
+     * Fetches all properties of a vertex in one call and returns them as a map.
+     */
+    private Map<String, Object> batchGetProperties(AtlasVertex vertex) {
+        // Use JanusGraph's Gremlin API for efficient property retrieval
+        return (Map<String, Object>) graph.V(vertex.getId()).valueMap().next();
+    }
+
+    /**
+     * Retrieves a vertex attribute from the pre-fetched batch of properties.
+     */
+    private Object getVertexAttributeFromBatch(Map<String, Object> properties, AtlasAttribute attribute) {
+        if (properties == null || attribute == null) {
+            return null;
+        }
+
+        String propertyKey = attribute.getVertexPropertyName();
+        return properties.get(propertyKey);
+    }
+
+    /**
+     * Retrieves an entity or relationship attribute from the entity type.
+     */
+    private AtlasAttribute getEntityOrRelationshipAttribute(AtlasEntityType entityType, String attrName) {
+        AtlasAttribute attribute = entityType.getAttribute(attrName);
+
+        if (attribute == null) {
+            attrName = toNonQualifiedName(attrName);
+
+            attribute = entityType.getAttribute(attrName);
+            if (attribute == null) {
+                attribute = entityType.getRelationshipAttribute(attrName, null);
+            }
+        }
+
+        return attribute;
+    }
     private String toNonQualifiedName(String attrName) {
         String ret;
         if (attrName.contains(".")) {
