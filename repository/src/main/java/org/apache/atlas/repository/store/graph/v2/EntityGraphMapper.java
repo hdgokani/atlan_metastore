@@ -3467,6 +3467,7 @@ public class EntityGraphMapper {
             //update the 'assetsCountToPropagate' in the current task vertex.
             AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
             currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, impactedVertices.size());
+
             if (CollectionUtils.isEmpty(impactedVertices)) {
                 LOG.debug("propagateClassification(entityGuid={}, classificationVertexId={}): found no entities to propagate the classification", entityGuid, classificationVertexId);
 
@@ -4103,6 +4104,14 @@ public class EntityGraphMapper {
 
             int propagatedEdgesSize = propagatedEdges.size();
 
+            // update the 'assetsCountToPropagate' on in memory java object.
+            AtlasTask currentTask = RequestContext.get().getCurrentTask();
+            currentTask.setAssetsCountToPropagate((long) propagatedEdgesSize);
+
+            //update the 'assetsCountToPropagate' in the current task vertex.
+            AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
+            currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, propagatedEdgesSize);
+
             LOG.info(String.format("Number of edges to be deleted : %s for classification vertex with id : %s", propagatedEdgesSize, classificationVertexId));
 
             List<String> deletedPropagationsGuid = processClassificationEdgeDeletionInChunk(classification, propagatedEdges);
@@ -4261,6 +4270,16 @@ public class EntityGraphMapper {
                 .map(x -> graph.getVertex(x))
                 .filter(vertex -> vertex != null)
                 .collect(Collectors.toList());
+
+        Integer taskCount = verticesToRemove.size() + verticesToAddClassification.size();
+
+        // update the 'assetsCountToPropagate' on in memory java object.
+        AtlasTask currentTask = RequestContext.get().getCurrentTask();
+        currentTask.setAssetsCountToPropagate((long) taskCount);
+
+        //update the 'assetsCountToPropagate' in the current task vertex.
+        AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
+        currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, taskCount);
 
         //Remove classifications from unreachable vertices
         processPropagatedClassificationDeletionFromVertices(verticesToRemove, currentClassificationVertex, classification);
