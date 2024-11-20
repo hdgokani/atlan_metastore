@@ -1180,7 +1180,7 @@ public class EntityGraphRetriever {
         if (vertexProperties.get(propertyName) instanceof List) {
             return ((List<?>) vertexProperties.get(propertyName)).get(0);
         }
-        return "";
+        return new Object();
     }
     /**
      * Fetches all properties of a vertex in one call and returns them as a map.
