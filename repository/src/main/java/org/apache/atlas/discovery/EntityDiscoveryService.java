@@ -73,6 +73,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.*;
@@ -87,7 +88,6 @@ import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.
 public class EntityDiscoveryService implements AtlasDiscoveryService {
     private static final Logger LOG = LoggerFactory.getLogger(EntityDiscoveryService.class);
     private static final String DEFAULT_SORT_ATTRIBUTE_NAME = "name";
-    private static final ForkJoinPool CUSTOMTHREADPOOL = new ForkJoinPool(AtlasConfiguration.THREADS_TO_BE_SPAWNED.getInt()); // Use half of available cores
 
     private final AtlasGraph                      graph;
     private final EntityGraphRetriever            entityRetriever;
@@ -1094,15 +1094,19 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 .collect(Collectors.toList());
 
         // Use ConcurrentHashMap for thread-safe access
-        ConcurrentHashMap<String, AtlasEntityHeader> headers = new ConcurrentHashMap<>();
-        ConcurrentHashMap<String, AtlasEntityHeader> entitiesSet = new ConcurrentHashMap<>();
+        //ConcurrentHashMap<String, AtlasEntityHeader> headers = new ConcurrentHashMap<>();
+        //ConcurrentHashMap<String, AtlasEntityHeader> entitiesSet = new ConcurrentHashMap<>();
+
+        List<AtlasEntityHeader> headers = entityRetriever.mapVerticesToAtlasEntityHeader(vertices, resultAttributes);
+        // Create a Set<String, AltasEntityHeader based on the GUID
+        Map<String, AtlasEntityHeader> entitiesSet = headers.stream().collect(Collectors.toMap(AtlasEntityHeader::getGuid, Function.identity()));
 
         // Run vertex processing in limited parallel threads
-        CompletableFuture.runAsync(() -> vertices.parallelStream().forEach(vertex -> {
+        /**CompletableFuture.runAsync(() -> vertices.parallelStream().forEach(vertex -> {
             String guid = vertex.getProperty("__guid", String.class);
             headers.computeIfAbsent(guid, k -> {
                 try {
-                    AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
+                    //AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
                     if (RequestContext.get().includeClassifications()) {
                         header.setClassifications(entityRetriever.getAllClassifications(vertex));
                     }
@@ -1111,7 +1115,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                     throw new RuntimeException("Failed to process vertex with GUID: " + guid, e);
                 }
             });
-        }), CUSTOMTHREADPOOL).join();
+        }), CUSTOMTHREADPOOL).join();*/
 
         // Process results and handle collapse in parallel
         results.parallelStream().forEach(result -> {
@@ -1119,7 +1123,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             if (vertex == null) return;
 
             String guid = vertex.getProperty("__guid", String.class);
-            AtlasEntityHeader header = headers.get(guid);
+            AtlasEntityHeader header = entitiesSet.get(guid);
 
             if (showSearchScore) {
                 ret.addEntityScore(header.getGuid(), result.getScore());
@@ -1230,7 +1234,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         if (AtlasConfiguration.ENABLE_JANUS_GRAPH_OPTIMISATION.getBoolean()) {
             LOG.debug("enabled janusGraphOptimisation");
             prepareSearchResultAsync(ret, indexQueryResult, resultAttributes, fetchCollapsedResults);
-        }else {
+        } else {
             prepareSearchResultSync(ret, indexQueryResult, resultAttributes, fetchCollapsedResults);
         }
     }
