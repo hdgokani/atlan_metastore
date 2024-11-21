@@ -493,7 +493,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             String qualifiedName = (String) originalEntity.getAttribute(QUALIFIED_NAME);
             entityAuditEventV2.setEntityQualifiedName(AtlasType.toJson(qualifiedName));
         } else {
-            String qualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
+            String qualifiedName = ((List)entity.getAttribute(QUALIFIED_NAME)).get(0).toString();
             entityAuditEventV2.setEntityQualifiedName(AtlasType.toJson(qualifiedName));
         }
 

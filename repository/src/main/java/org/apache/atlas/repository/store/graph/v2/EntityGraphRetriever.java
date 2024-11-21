@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
@@ -49,6 +50,8 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusVertex;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -67,6 +70,9 @@ import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.janusgraph.core.JanusGraphMultiVertexQuery;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -1175,6 +1181,176 @@ public class EntityGraphRetriever {
         return ret;
     }
 
+
+    public List<AtlasEntityHeader> mapVerticesToAtlasEntityHeader(List<AtlasVertex> entityVertices, Set<String> attributes) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapVerticesToAtlasEntityHeader");
+
+        List<AtlasEntityHeader> results = new ArrayList<>();
+
+        try {
+            // Convert AtlasVertex to JanusGraphVertex
+
+            // Use multiQuery for optimized property fetching
+            Map<JanusGraphVertex, Map<String, Object>> multiQueryResults = getBatchPropertiesWithMultiQuery(entityVertices, attributes);
+            Map<JanusGraphVertex, AtlasVertex>  map = getJanusGraphVerticesMap(entityVertices);
+            multiQueryResults.forEach((janusGraphVertex, vertexProperties) -> {
+                AtlasEntityHeader ret = new AtlasEntityHeader();
+
+                // Populate AtlasEntityHeader with fetched properties
+                try {
+                    populateEntityHeader(ret, map.get(janusGraphVertex), vertexProperties, attributes);
+                } catch (AtlasBaseException e) {
+                    throw new RuntimeException(e);
+                }
+                results.add(ret);
+            });
+
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+
+        return results;
+    }
+
+    private Map<JanusGraphVertex, AtlasVertex> getJanusGraphVerticesMap(List<AtlasVertex> vertices) {
+        Map<JanusGraphVertex, AtlasVertex> resultMap = new HashMap<>();
+
+        for (AtlasVertex vertex : vertices) {
+            if (vertex instanceof AtlasJanusVertex) {
+                Object wrappedElement = ((AtlasJanusVertex) vertex).getWrappedElement();
+
+                if (wrappedElement instanceof JanusGraphVertex) {
+                    resultMap.put((JanusGraphVertex) wrappedElement, vertex);
+                } else {
+                    throw new IllegalArgumentException("Wrapped element is not an instance of JanusGraphVertex");
+                }
+            } else {
+                throw new IllegalArgumentException("Provided vertex is not an instance of AtlasJanusVertex");
+            }
+        }
+
+        return resultMap;
+    }
+
+    // Helper to convert AtlasVertex to JanusGraphVertex
+    private List<JanusGraphVertex> getJanusGraphVertices(List<AtlasVertex> vertices) {
+        List<JanusGraphVertex> results = new ArrayList<>();
+        for(AtlasVertex vertex : vertices) {
+            if (((AtlasJanusVertex) vertex).getWrappedElement() instanceof JanusGraphVertex) {
+                results.add(vertex.getWrappedElement());
+            } else {
+                throw new IllegalArgumentException("Provided vertex is not an instance of JanusGraphVertex");
+            }
+        }
+        return results;
+    }
+
+    // Use multiQuery to batch-fetch properties
+    private Map<JanusGraphVertex, Map<String, Object>> getBatchPropertiesWithMultiQuery(List<AtlasVertex> entityVertices, Set<String> attributes) {
+        Iterable<JanusGraphVertex> vertices = getJanusGraphVertices(entityVertices);
+        List<JanusGraphVertex> target = new ArrayList<>();
+        vertices.forEach(target::add);
+        JanusGraphTransaction transaction = ((AtlasJanusGraph)graph).getTransaction();
+        try {
+            JanusGraphMultiVertexQuery multiQuery = transaction.multiQuery(target);
+
+            Set<String> keys = Sets.newHashSet(Constants.TYPE_NAME_PROPERTY_KEY, Constants.GUID_PROPERTY_KEY,
+                    Constants.CREATED_BY_KEY, Constants.MODIFIED_BY_KEY,
+                    Constants.TIMESTAMP_PROPERTY_KEY, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+
+            keys.addAll(attributes);
+
+            multiQuery.keys(Constants.TYPE_NAME_PROPERTY_KEY, Constants.GUID_PROPERTY_KEY,
+                    Constants.CREATED_BY_KEY, Constants.MODIFIED_BY_KEY,
+                    Constants.TIMESTAMP_PROPERTY_KEY, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, STATE_PROPERTY_KEY);
+
+            Map<JanusGraphVertex, Map<String, Object>> vertexPropertiesMap = new HashMap<>();
+
+            for (JanusGraphVertex vertex : vertices) {
+                Map<String, Object> properties = new HashMap<>();
+                for (String key : keys) {
+                    properties.put(key, vertex.property(key).orElse(null));
+                }
+                vertexPropertiesMap.put(vertex, properties);
+            }
+            return vertexPropertiesMap;
+        } finally {
+            /*if(transaction != null) {
+                transaction.commit();
+                transaction.close();
+            }*/
+        }
+
+    }
+
+    // Populate AtlasEntityHeader
+    private void populateEntityHeader(AtlasEntityHeader ret, AtlasVertex entityVertex, Map<String, Object> vertexProperties, Set<String> attributes) throws AtlasBaseException {
+        String typeName = (String) vertexProperties.get(Constants.TYPE_NAME_PROPERTY_KEY);
+        String guid = (String) vertexProperties.get(Constants.GUID_PROPERTY_KEY);
+        String createdBy = (String) vertexProperties.get(Constants.CREATED_BY_KEY);
+        String updatedBy = (String) vertexProperties.get(Constants.MODIFIED_BY_KEY);
+        Long createTime = (Long) vertexProperties.get(Constants.TIMESTAMP_PROPERTY_KEY);
+        Long updateTime = (Long) vertexProperties.get(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+        Boolean isIncomplete = isEntityIncomplete(entityVertex);
+
+        ret.setTypeName(typeName);
+        ret.setGuid(guid);
+        ret.setStatus(GraphHelper.getStatus(entityVertex));
+        ret.setIsIncomplete(isIncomplete);
+        ret.setCreatedBy(createdBy);
+        ret.setUpdatedBy(updatedBy);
+        ret.setCreateTime(createTime != null ? new Date(createTime) : null);
+        ret.setUpdateTime(updateTime != null ? new Date(updateTime) : null);
+        ret.setLabels(getLabels(entityVertex));
+
+        // Classifications
+        RequestContext context = RequestContext.get();
+        if (context.includeClassifications() || context.isIncludeClassificationNames()) {
+            ret.setClassificationNames(getAllTraitNamesFromAttribute(entityVertex));
+        }
+
+        // Meanings
+        if (context.includeMeanings()) {
+            List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
+            ret.setMeanings(termAssignmentHeaders);
+            ret.setMeaningNames(termAssignmentHeaders.stream()
+                    .map(AtlasTermAssignmentHeader::getDisplayText)
+                    .collect(Collectors.toList()));
+        }
+
+        // Process entity type and attributes
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+        if (entityType != null) {
+            // Header attributes
+            for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
+                Object attrValue = getVertexAttributeFromBatch(vertexProperties, headerAttribute);
+                if (attrValue != null) {
+                    ret.setAttribute(headerAttribute.getName(), attrValue);
+                }
+            }
+
+            // Display text
+            Object displayText = getDisplayText(entityVertex, entityType);
+            if (displayText != null) {
+                ret.setDisplayText(displayText.toString());
+            }
+
+            // Additional attributes
+            if (CollectionUtils.isNotEmpty(attributes)) {
+                for (String attrName : attributes) {
+                    AtlasAttribute attribute = getEntityOrRelationshipAttribute(entityType, attrName);
+                    if (attribute != null) {
+                        Object attrValue = getVertexAttributeFromBatch(vertexProperties, attribute);
+                        if (attrValue != null) {
+                            ret.setAttribute(attrName, attrValue);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Additional properties like classifications, meanings, and attributes...
+    }
 
     private Object getCommonProperty(Map<String, Object> vertexProperties, String propertyName) {
         if (vertexProperties.get(propertyName) instanceof List) {
