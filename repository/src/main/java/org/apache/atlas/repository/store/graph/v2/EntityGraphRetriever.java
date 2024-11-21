@@ -1112,8 +1112,6 @@ public class EntityGraphRetriever {
             // Common properties
             String typeName = (String) getCommonProperty(vertexProperties, Constants.TYPE_NAME_PROPERTY_KEY);
             String guid = (String) getCommonProperty(vertexProperties, GUID_PROPERTY_KEY);
-            String createdBy = (String) getCommonProperty(vertexProperties, CREATED_BY_KEY);
-            String updatedBy = (String) getCommonProperty(vertexProperties, MODIFIED_BY_KEY);
             Long createTime = (Long) getCommonProperty(vertexProperties, TIMESTAMP_PROPERTY_KEY);
             Long updateTime = (Long) getCommonProperty(vertexProperties, MODIFICATION_TIMESTAMP_PROPERTY_KEY);
             Boolean isIncomplete = isEntityIncomplete(entityVertex);
@@ -1123,8 +1121,8 @@ public class EntityGraphRetriever {
             ret.setGuid(guid);
             ret.setStatus(GraphHelper.getStatus(entityVertex));
             ret.setIsIncomplete(isIncomplete);
-            ret.setCreatedBy(createdBy);
-            ret.setUpdatedBy(updatedBy);
+            ret.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
+            ret.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
             ret.setCreateTime(createTime != null ? new Date(createTime) : null);
             ret.setUpdateTime(updateTime != null ? new Date(updateTime) : null);
             ret.setLabels(getLabels(entityVertex));

@@ -128,6 +128,7 @@ public enum AtlasConfiguration {
      * No. of threads to be spawned for parallel processing
      */
     THREADS_TO_BE_SPAWNED("atlas.janus.graph.optimisation.thread_count", (Runtime.getRuntime().availableProcessors())/2),
+    FETCH_COLLAPSED_RESULT("atlas.indexsearch.fetch.collapsed.result", true),
     ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT("atlas.indexsearch.query.size.max.limit", 100000),
     ATLAS_INDEXSEARCH_LIMIT_UTM_TAGS("atlas.indexsearch.limit.ignore.utm.tags", ""),
     ATLAS_INDEXSEARCH_ENABLE_API_LIMIT("atlas.indexsearch.enable.api.limit", false),
