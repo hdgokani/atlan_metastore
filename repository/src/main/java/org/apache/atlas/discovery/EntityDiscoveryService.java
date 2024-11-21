@@ -1230,8 +1230,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         if (AtlasConfiguration.ENABLE_JANUS_GRAPH_OPTIMISATION.getBoolean()) {
             LOG.debug("enabled janusGraphOptimisation");
             prepareSearchResultAsync(ret, indexQueryResult, resultAttributes, fetchCollapsedResults);
+        }else {
+            prepareSearchResultSync(ret, indexQueryResult, resultAttributes, fetchCollapsedResults);
         }
-        prepareSearchResultSync(ret, indexQueryResult, resultAttributes, fetchCollapsedResults);
     }
     // Non-recursive collapse processing
     private Map<String, AtlasSearchResult> processCollapseResults(Result result, SearchParams searchParams, Set<String> resultAttributes) throws AtlasBaseException {
