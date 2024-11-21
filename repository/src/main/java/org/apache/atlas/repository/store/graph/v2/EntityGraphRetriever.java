@@ -1192,10 +1192,10 @@ public class EntityGraphRetriever {
             }
             return vertexPropertiesMap;
         } finally {
-            /*if(transaction != null) {
+            if(transaction != null) {
                 transaction.commit();
                 transaction.close();
-            }*/
+            }
         }
 
     }
@@ -1267,20 +1267,6 @@ public class EntityGraphRetriever {
         }
 
         // Additional properties like classifications, meanings, and attributes...
-    }
-
-    private Object getCommonProperty(Map<String, Object> vertexProperties, String propertyName) {
-        if (vertexProperties.get(propertyName) instanceof List) {
-            return ((List<?>) vertexProperties.get(propertyName)).get(0);
-        }
-        return new Object();
-    }
-    /**
-     * Fetches all properties of a vertex in one call and returns them as a map.
-     */
-    private Map<String, Object> batchGetProperties(AtlasVertex vertex) {
-        // Use JanusGraph's Gremlin API for efficient property retrieval
-        return (Map<String, Object>) graph.V(vertex.getId()).valueMap().next();
     }
 
     /**
