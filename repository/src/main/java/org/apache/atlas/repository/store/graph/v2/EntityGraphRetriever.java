@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
-import com.datastax.oss.driver.shaded.guava.common.collect.Sets;
+import com.google.common.collect.Sets;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.AtlasConfiguration;
