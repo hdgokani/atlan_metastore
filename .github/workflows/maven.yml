@@ -49,8 +49,9 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       - name: Get branch name
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        id: get_branch
+        run: |
+          echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+          echo BRANCH_NAME=$BRANCH_NAME
 
       - name: Create Maven Settings
         uses: s4u/maven-settings-action@v2.8.0
@@ -78,8 +79,12 @@ jobs:
         shell: bash
 
       - name: Get version tag
-        run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7`)abcd"
-        id: get_version
+        # run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7`)abcd"
+        run: | 
+          echo "VERSION=$(git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7 | tr -d '[:space:]')abcd"
+          echo "VERSION=$(git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7)abcd"
+          echo "VERSION=$(git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }})"
+          echo "VERSION=$(git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7 | tr -d '[:space:]')abcd" >> $GITHUB_ENV
 
       - name: Set up Buildx 
         id: buildx
