@@ -25,7 +25,7 @@ on:
       - beta
       - development
       - master
-      - dg1908
+      - lineageondemand
 
 jobs:
   build:
