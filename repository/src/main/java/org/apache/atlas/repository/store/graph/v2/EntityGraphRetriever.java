@@ -1177,9 +1177,7 @@ public class EntityGraphRetriever {
 
             keys.addAll(attributes);
 
-            multiQuery.keys(Constants.TYPE_NAME_PROPERTY_KEY, Constants.GUID_PROPERTY_KEY,
-                    Constants.CREATED_BY_KEY, Constants.MODIFIED_BY_KEY,
-                    Constants.TIMESTAMP_PROPERTY_KEY, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, STATE_PROPERTY_KEY);
+            multiQuery.keys(keys.toArray(new String[0]));
 
             Map<JanusGraphVertex, Map<String, Object>> vertexPropertiesMap = new HashMap<>();
 
