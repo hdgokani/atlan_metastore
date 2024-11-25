@@ -16,29 +16,30 @@
 # limitations under the License.
 #
 
-FROM scratch
-FROM ubuntu:22.04
+#FROM scratch
+#ADD alpine-minirootfs-3.20.3-x86_64.tar.gz /
+#FROM alpine:latest
+FROM alpine:3.13
+#FROM ubuntu:22.04
 LABEL maintainer="engineering@atlan.com"
 ARG VERSION=3.0.0-SNAPSHOT
 
 COPY distro/target/apache-atlas-3.0.0-SNAPSHOT-server.tar.gz  /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
 
-RUN apt-get update \
-    && apt-get -y upgrade \
-    && apt-get -y install apt-utils \
-    && apt-get -y install \
+RUN apk update \
+    && apk upgrade --no-cache \
+    && apk add --no-cache \
         wget \
         python2 \
-        openjdk-8-jdk-headless \
+        openjdk8 \
         patch \
-        netcat \
+        netcat-openbsd \
         curl \
     && cd / \
     && export MAVEN_OPTS="-Xms2g -Xmx2g" \
-    && export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64" \
+    && export JAVA_HOME="/usr/lib/jvm/java-1.8-openjdk" \
     && tar -xzvf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz -C /opt \
     && mv /opt/apache-atlas-${VERSION} /opt/apache-atlas \
-    && apt-get clean \
     && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
 
 # Copy the repair index jar file
