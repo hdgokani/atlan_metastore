@@ -50,7 +50,8 @@ RUN cd / \
     && mv /atlas-index-repair-tool-${VERSION}.jar /opt/apache-atlas/libext/ \
     && rm -rf /atlas-index-repair-tool-${VERSION}.tar.gz
 
-RUN ln -s /usr/bin/python2 /usr/bin/python
+#RUN ln -s /usr/bin/python2 /usr/bin/python
+RUN /usr/bin/python --version
 
 COPY atlas-hub/repair_index.py /opt/apache-atlas/bin/
 
