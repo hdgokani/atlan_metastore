@@ -193,7 +193,7 @@ public class LineagePreProcessor implements PreProcessor {
         try {
             AtlasVertex connectionVertex = entityRetriever.getEntityVertex(connectionId);
 
-            // Check both input and output edges
+            // Check if this connection has any active connection processes
             boolean hasActiveConnectionProcess = hasActiveConnectionProcesses(connectionVertex);
 
             // Only update if the hasLineage status needs to change
@@ -226,45 +226,26 @@ public class LineagePreProcessor implements PreProcessor {
     }
 
     private boolean hasActiveConnectionProcesses(AtlasVertex connectionVertex) {
-        // Check both input and output edges
+        // Iterate over both input and output edges connected to this connection
         Iterator<AtlasEdge> edges = connectionVertex.getEdges(AtlasEdgeDirection.BOTH,
                 new String[]{"__ConnectionProcess.inputs", "__ConnectionProcess.outputs"}).iterator();
 
         while (edges.hasNext()) {
             AtlasEdge edge = edges.next();
 
+            // Check if the edge is ACTIVE
             if (getStatus(edge) == ACTIVE) {
-                AtlasVertex processVertex = edge.getLabel().equals("__ConnectionProcess.inputs") ?
-                        edge.getOutVertex() : edge.getInVertex();
+                // Get the connected process vertex (the other vertex of the edge)
+                AtlasVertex processVertex = edge.getOutVertex().equals(connectionVertex) ?
+                        edge.getInVertex() : edge.getOutVertex();
 
-                // If this is an active connection process
+                // Check if the connected vertex is an ACTIVE ConnectionProcess
                 if (getStatus(processVertex) == ACTIVE &&
                         getTypeName(processVertex).equals(CONNECTION_PROCESS_ENTITY_TYPE)) {
-
-                    // Get the other connection in this process
-                    AtlasVertex otherConnectionVertex = null;
-                    Iterator<AtlasEdge> processEdges = processVertex.getEdges(AtlasEdgeDirection.BOTH,
-                            new String[]{"__ConnectionProcess.inputs", "__ConnectionProcess.outputs"}).iterator();
-
-                    while (processEdges.hasNext()) {
-                        AtlasEdge processEdge = processEdges.next();
-                        if (getStatus(processEdge) == ACTIVE) {
-                            AtlasVertex connVertex = processEdge.getInVertex();
-                            if (!connVertex.getId().equals(connectionVertex.getId())) {
-                                otherConnectionVertex = connVertex;
-                                break;
-                            }
-                        }
-                    }
-
-                    // If the other connection is active, this connection process is valid
-                    if (otherConnectionVertex != null && getStatus(otherConnectionVertex) == ACTIVE) {
-                        return true;
-                    }
+                    return true;
                 }
             }
         }
-
         return false;
     }
 
