@@ -44,6 +44,7 @@ RUN apk add --no-cache \
     && export JAVA_HOME="/usr/lib/jvm/java-1.8-openjdk" \
     && tar -xzvf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz -C /opt \
     && mv /opt/apache-atlas-${VERSION} /opt/apache-atlas
+    && unzip /opt/apache-atlas/server/webapp/atlas.war -d /opt/apache-atlas/server/webapp/atlas/
 #    && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
 
 
