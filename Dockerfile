@@ -19,7 +19,8 @@
 #FROM scratch
 #ADD alpine-minirootfs-3.20.3-x86_64.tar.gz /
 #FROM alpine:latest
-FROM alpine:3.13
+#FROM alpine:3.13
+FROM alpine:latest
 #FROM ubuntu:22.04
 LABEL maintainer="engineering@atlan.com"
 ARG VERSION=3.0.0-SNAPSHOT
@@ -34,7 +35,7 @@ CMD ["/bin/bash"]
 
 RUN apk add --no-cache \
         wget \
-        python2 \
+        python3 \
         openjdk8 \
         patch \
         netcat-openbsd \
