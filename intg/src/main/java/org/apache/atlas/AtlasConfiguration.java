@@ -122,7 +122,7 @@ public enum AtlasConfiguration {
     /***
      *  enables parallel processing of janus graph vertices from cassandra
      */
-    ENABLE_JANUS_GRAPH_OPTIMISATION("atlas.janus.graph.optimisation.enable", true),
+    ENABLE_JANUS_GRAPH_OPTIMISATION("atlas.janus.graph.optimisation.enable", false),
 
     /**
      * No. of threads to be spawned for parallel processing
