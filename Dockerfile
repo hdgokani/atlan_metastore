@@ -51,17 +51,17 @@ RUN cd / \
 
 RUN ln -s /usr/bin/python2 /usr/bin/python
 
-RUN ls
-RUN ls /
-RUN ls /atlas-hub
-RUN ls /opt/apache-atlas
-RUN ls /opt/apache-atlas/bin
+#RUN ls
+#RUN ls /
+#RUN ls /atlas-hub
+#RUN ls /opt/apache-atlas
+#RUN ls /opt/apache-atlas/bin
 
 COPY atlas-hub/repair_index.py /opt/apache-atlas/bin/
 
-RUN ls /atlas-hub
-RUN ls /opt/apache-atlas
-RUN ls /opt/apache-atlas/bin
+#RUN ls /atlas-hub
+#RUN ls /opt/apache-atlas
+#RUN ls /opt/apache-atlas/bin
 
 RUN chmod +x /opt/apache-atlas/bin/repair_index.py
 
