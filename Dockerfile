@@ -29,7 +29,7 @@ COPY distro/target/apache-atlas-3.0.0-SNAPSHOT-server.tar.gz  /apache-atlas-3.0.
 RUN apk update \
     && apk upgrade --no-cache \
     && apk add --no-cache \
-        bash
+        bash \
         wget \
         python2 \
         openjdk8 \
