@@ -28,8 +28,11 @@ COPY distro/target/apache-atlas-3.0.0-SNAPSHOT-server.tar.gz  /apache-atlas-3.0.
 
 RUN apk update \
     && apk upgrade --no-cache \
-    && apk add --no-cache \
-        bash \
+    && apk add --no-cache bash
+
+CMD ["/bin/bash"]
+
+RUN apk add --no-cache \
         wget \
         python2 \
         openjdk8 \
@@ -40,10 +43,10 @@ RUN apk update \
     && export MAVEN_OPTS="-Xms2g -Xmx2g" \
     && export JAVA_HOME="/usr/lib/jvm/java-1.8-openjdk" \
     && tar -xzvf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz -C /opt \
-    && mv /opt/apache-atlas-${VERSION} /opt/apache-atlas \
-    && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
+    && mv /opt/apache-atlas-${VERSION} /opt/apache-atlas
+#    && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
 
-CMD ["/bin/bash"]
+
 
 # Copy the repair index jar file
 RUN cd / \
