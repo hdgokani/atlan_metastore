@@ -26,8 +26,7 @@ on:
       - development
       - master
       - lineageondemand
-      - janusoptimisation
-      - janusoptimisation-multiQuery
+      - janusupgrademultiQuery
 
 jobs:
   build:
