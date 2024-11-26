@@ -54,6 +54,7 @@ RUN cd / \
 RUN /usr/bin/python --version
 
 RUN ls
+RUN ls atlas-hub
 COPY atlas-hub/repair_index.py /opt/apache-atlas/bin/
 
 RUN chmod +x /opt/apache-atlas/bin/repair_index.py
