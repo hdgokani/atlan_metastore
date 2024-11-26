@@ -72,6 +72,9 @@ COPY atlas-hub/pre-conf/atlas-auth/ /opt/apache-atlas/conf/
 
 RUN curl https://repo1.maven.org/maven2/org/jolokia/jolokia-jvm/1.6.2/jolokia-jvm-1.6.2-agent.jar -o /opt/apache-atlas/libext/jolokia-jvm-agent.jar
 
+RUN ls /opt/apache-atlas/bin
+RUN ls /atlas-hub
+
 RUN cd /opt/apache-atlas/bin \
     && ./atlas_start.py -setup || true
 
