@@ -27,7 +27,7 @@ on:
       - master
       - lineageondemand
       - janusoptimisation
-      - janusoptimisationmultiquery
+      - janusupgrademultiquery
 
 jobs:
   build:
