@@ -16,30 +16,29 @@
 # limitations under the License.
 #
 
-#FROM scratch
-#ADD alpine-minirootfs-3.20.3-x86_64.tar.gz /
-#FROM alpine:latest
-FROM alpine:3.13
-#FROM ubuntu:22.04
+FROM scratch
+FROM ubuntu:22.04
 LABEL maintainer="engineering@atlan.com"
 ARG VERSION=3.0.0-SNAPSHOT
 
 COPY distro/target/apache-atlas-3.0.0-SNAPSHOT-server.tar.gz  /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
 
-RUN apk update \
-    && apk upgrade --no-cache \
-    && apk add --no-cache \
+RUN apt-get update \
+    && apt-get -y upgrade \
+    && apt-get -y install apt-utils \
+    && apt-get -y install \
         wget \
         python2 \
-        openjdk8 \
+        openjdk-8-jdk-headless \
         patch \
-        netcat-openbsd \
+        netcat \
         curl \
     && cd / \
     && export MAVEN_OPTS="-Xms2g -Xmx2g" \
-    && export JAVA_HOME="/usr/lib/jvm/java-1.8-openjdk" \
+    && export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64" \
     && tar -xzvf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz -C /opt \
     && mv /opt/apache-atlas-${VERSION} /opt/apache-atlas \
+    && apt-get clean \
     && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
 
 # Copy the repair index jar file
@@ -50,26 +49,23 @@ RUN cd / \
     && mv /atlas-index-repair-tool-${VERSION}.jar /opt/apache-atlas/libext/ \
     && rm -rf /atlas-index-repair-tool-${VERSION}.tar.gz
 
-#RUN ln -s /usr/bin/python2 /usr/bin/python
-RUN /usr/bin/python --version
+RUN ln -s /usr/bin/python2 /usr/bin/python
 
 RUN ls
 RUN ls /
 RUN ls /atlas-hub
-RUN ls atlas-hub
-COPY atlas-hub/repair_index.py /opt/apache-atlas/bin/
-
-RUN chmod +x /opt/apache-atlas/bin/repair_index.py
-
-RUN ls
-RUN ls /opt/apache-atlas/bin/
-RUN ls atlas-hub
 RUN ls /opt/apache-atlas
 RUN ls /opt/apache-atlas/bin
 
+COPY atlas-hub/repair_index.py /opt/apache-atlas/bin/
+
+RUN ls /atlas-hub
+RUN ls /opt/apache-atlas
+RUN ls /opt/apache-atlas/bin
+
+RUN chmod +x /opt/apache-atlas/bin/repair_index.py
 
 COPY atlas-hub/atlas_start.py.patch atlas-hub/atlas_config.py.patch /opt/apache-atlas/bin/
-RUN ls /opt/apache-atlas/bin
 COPY atlas-hub/pre-conf/atlas-log4j.xml /opt/apache-atlas/conf/
 COPY atlas-hub/pre-conf/atlas-log4j2.xml /opt/apache-atlas/conf/
 COPY atlas-hub/pre-conf/atlas-auth/ /opt/apache-atlas/conf/
