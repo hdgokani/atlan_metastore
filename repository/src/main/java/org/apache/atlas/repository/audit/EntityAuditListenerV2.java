@@ -20,7 +20,7 @@ package org.apache.atlas.repository.audit;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
+import org.apache.atlas.model.EntityAuditEvent.EntityAuditAction;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.EnableConditional;
 import org.apache.atlas.model.audit.EntityAuditEventV2;

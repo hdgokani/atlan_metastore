@@ -652,8 +652,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                                 if (auditLog == null) {
                                     auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
-                                                            AtlasClient.API_V1.CREATE_ENTITY.getMethod(),
-                                                            AtlasClient.API_V1.CREATE_ENTITY.getNormalizedPath());
+                                                            AtlasClientV2.API_V2.CREATE_ENTITY.getMethod(),
+                                                            AtlasClientV2.API_V2.CREATE_ENTITY.getNormalizedPath());
                                 }
 
                                 createOrUpdate(entities, false, stats, context);

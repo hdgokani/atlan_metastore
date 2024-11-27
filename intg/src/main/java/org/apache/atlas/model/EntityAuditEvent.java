@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas;
+package org.apache.atlas.model;
 
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.type.AtlasType;
 

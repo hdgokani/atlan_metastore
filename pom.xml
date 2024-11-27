@@ -806,26 +806,11 @@
         <module>webapp</module>
         <module>docs</module>
 
-        <module>addons/hdfs-model</module>
         <module>plugin-classloader</module>
-        <module>addons/hive-bridge-shim</module>
-        <module>addons/hive-bridge</module>
-        <module>addons/falcon-bridge-shim</module>
-        <module>addons/falcon-bridge</module>
-        <module>addons/sqoop-bridge-shim</module>
-        <module>addons/sqoop-bridge</module>
-        <module>addons/hbase-bridge-shim</module>
-        <module>addons/hbase-bridge</module>
-        <module>addons/hbase-testing-util</module>
-        <module>addons/kafka-bridge</module>
         <module>tools/classification-updater</module>
         <module>tools/atlas-index-repair</module>
-        <module>addons/impala-hook-api</module>
-        <module>addons/impala-bridge-shim</module>
-        <module>addons/impala-bridge</module>
 
         <module>distro</module>
-        <module>atlas-examples</module>
     </modules>
 
     <repositories>
@@ -896,6 +881,12 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>jakarta.annotation</groupId>
+                <artifactId>jakarta.annotation-api</artifactId>
+                <version>2.1.1</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.antlr</groupId>
                 <artifactId>antlr4-runtime</artifactId>

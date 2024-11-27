@@ -21,7 +21,7 @@ package org.apache.atlas.repository.audit;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.model.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;

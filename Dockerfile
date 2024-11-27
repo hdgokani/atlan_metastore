@@ -29,13 +29,13 @@ RUN apt-get update \
     && apt-get -y install \
         wget \
         python2 \
-        openjdk-8-jdk-headless \
+        openjdk-11-jdk-headless \
         patch \
         netcat \
         curl \
     && cd / \
     && export MAVEN_OPTS="-Xms2g -Xmx2g" \
-    && export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64" \
+    && export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64" \
     && tar -xzvf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz -C /opt \
     && mv /opt/apache-atlas-${VERSION} /opt/apache-atlas \
     && apt-get clean \
