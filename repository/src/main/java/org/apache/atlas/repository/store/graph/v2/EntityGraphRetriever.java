@@ -1016,6 +1016,10 @@ public class EntityGraphRetriever {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader");
         AtlasEntityHeader ret = new AtlasEntityHeader();
         try {
+            //pre-fetching the properties
+            graph.V(entityVertex.getId()).properties().forEachRemaining(p -> {
+                //do nothing
+            });
             String  typeName     = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
             String  guid         = entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
             Boolean isIncomplete = isEntityIncomplete(entityVertex);
