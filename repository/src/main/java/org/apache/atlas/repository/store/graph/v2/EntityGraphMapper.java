@@ -3496,7 +3496,7 @@ public class EntityGraphMapper {
                 String vertexJson = objectMapper.writeValueAsString(vertexMap);
 
                 //send vertexJson to kafka topic 'TAG_PROP_EVENTS'
-                kfknotif.sendInternal(NotificationInterface.NotificationType.RELATIONSHIPS, Collections.singletonList(vertexJson));
+                kfknotif.sendInternal(NotificationInterface.NotificationType.EMIT_PLANNED_RELATIONSHIPS, Collections.singletonList(vertexJson));
             }
             if (CollectionUtils.isEmpty(impactedVertices)) {
                 LOG.debug("propagateClassification(entityGuid={}, classificationVertexId={}): found no entities to propagate the classification", entityGuid, classificationVertexId);
