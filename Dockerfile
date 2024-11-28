@@ -29,7 +29,7 @@ RUN apt-get update \
     && apt-get -y install \
         wget \
         python2 \
-        openjdk-11-jdk-headless \
+        openjdk-17-jdk-headless \
         patch \
         netcat \
         curl \
