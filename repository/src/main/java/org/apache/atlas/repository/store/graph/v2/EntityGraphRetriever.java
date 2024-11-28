@@ -1984,8 +1984,8 @@ public class EntityGraphRetriever {
             return null;
         }
 
-        if (properties.get(attribute) != null) {
-            return properties.get(attribute);
+        if (properties.get(attribute.getName()) != null) {
+            return properties.get(attribute.getName());
         }
         return null;
     }
