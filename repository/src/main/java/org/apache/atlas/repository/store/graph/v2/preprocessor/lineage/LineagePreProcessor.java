@@ -284,8 +284,7 @@ public class LineagePreProcessor implements PreProcessor {
         return false;
     }
 
-    private ArrayList<String> getConnectionProcessQNsForTheGivenInputOutputs(AtlasEntity processEntity) throws  AtlasBaseException{
-
+    private ArrayList<String> getConnectionProcessQNsForTheGivenInputOutputs(AtlasEntity processEntity) throws AtlasBaseException {
         // check connection lineage exists or not
         // check if connection lineage exists
         Map<String, Object> entityAttrValues = processEntity.getRelationshipAttributes();
@@ -293,30 +292,47 @@ public class LineagePreProcessor implements PreProcessor {
         ArrayList<AtlasObjectId> inputsAssets = (ArrayList<AtlasObjectId>) entityAttrValues.get("inputs");
         ArrayList<AtlasObjectId> outputsAssets  = (ArrayList<AtlasObjectId>) entityAttrValues.get("outputs");
 
-        // get connection process
-        Set<Map<String,Object>> uniquesSetOfConnectionProcess = new HashSet<>();
-
-        for (AtlasObjectId input : inputsAssets){
+        // Get unique input connections
+        Set<String> inputConnectionQNs = new HashSet<>();
+        for (AtlasObjectId input : inputsAssets) {
             AtlasVertex inputVertex = entityRetriever.getEntityVertex(input);
             Map<String,String> inputVertexConnectionQualifiedName = fetchAttributes(inputVertex, FETCH_ENTITY_ATTRIBUTES);
-            for (AtlasObjectId output : outputsAssets){
-                AtlasVertex outputVertex = entityRetriever.getEntityVertex(output);
-                Map<String,String> outputVertexConnectionQualifiedName = fetchAttributes(outputVertex, FETCH_ENTITY_ATTRIBUTES);
+            String inputConnQN = inputVertexConnectionQualifiedName.get(CONNECTION_QUALIFIED_NAME);
+            if (inputConnQN != null) {
+                inputConnectionQNs.add(inputConnQN);
+            }
+        }
 
-                if(inputVertexConnectionQualifiedName.get(CONNECTION_QUALIFIED_NAME) == outputVertexConnectionQualifiedName.get(CONNECTION_QUALIFIED_NAME)){
+        // Get unique output connections
+        Set<String> outputConnectionQNs = new HashSet<>();
+        for (AtlasObjectId output : outputsAssets) {
+            AtlasVertex outputVertex = entityRetriever.getEntityVertex(output);
+            Map<String,String> outputVertexConnectionQualifiedName = fetchAttributes(outputVertex, FETCH_ENTITY_ATTRIBUTES);
+            String outputConnQN = outputVertexConnectionQualifiedName.get(CONNECTION_QUALIFIED_NAME);
+            if (outputConnQN != null) {
+                outputConnectionQNs.add(outputConnQN);
+            }
+        }
+
+        // Create connection processes for each input-output connection pair
+        Set<Map<String,Object>> uniquesSetOfConnectionProcess = new HashSet<>();
+        for (String inputConnectionQN : inputConnectionQNs) {
+            for (String outputConnectionQN : outputConnectionQNs) {
+                // Skip if input and output connections are the same
+                if (inputConnectionQN.equals(outputConnectionQN)) {
                     continue;
                 }
 
-                String connectionProcessName = "(" + inputVertexConnectionQualifiedName.get(CONNECTION_QUALIFIED_NAME) + ")->(" + outputVertexConnectionQualifiedName.get(CONNECTION_QUALIFIED_NAME) + ")";
-                String connectionProcessQualifiedName = outputVertexConnectionQualifiedName.get(CONNECTION_QUALIFIED_NAME) + "/" + connectionProcessName;
-                // Create a map to store both connectionProcessName and connectionProcessQualifiedName
+                String connectionProcessName = "(" + inputConnectionQN + ")->(" + outputConnectionQN + ")";
+                // Use the connectionProcessName as the qualifiedName directly
+                String connectionProcessQualifiedName = connectionProcessName;
+                
                 Map<String, Object> connectionProcessMap = new HashMap<>();
-                connectionProcessMap.put("input", inputVertexConnectionQualifiedName.get(CONNECTION_QUALIFIED_NAME));
-                connectionProcessMap.put("output", outputVertexConnectionQualifiedName.get(CONNECTION_QUALIFIED_NAME));
+                connectionProcessMap.put("input", inputConnectionQN);
+                connectionProcessMap.put("output", outputConnectionQN);
                 connectionProcessMap.put("connectionProcessName", connectionProcessName);
                 connectionProcessMap.put("connectionProcessQualifiedName", connectionProcessQualifiedName);
 
-                // Add the map to the set
                 uniquesSetOfConnectionProcess.add(connectionProcessMap);
             }
         }
