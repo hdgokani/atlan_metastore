@@ -1035,6 +1035,8 @@ public class EntityGraphRetriever {
 
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader");
+        AtlasPerfMetrics.MetricRecorder attributeProcessingRecorder = null;
+        boolean metricEnded = false;
         AtlasEntityHeader ret = new AtlasEntityHeader();
         try {
             //pre-fetching the properties
@@ -1098,6 +1100,7 @@ public class EntityGraphRetriever {
 
                 //attributes = only the attributes of entityType
                 if (CollectionUtils.isNotEmpty(attributes)) {
+                    attributeProcessingRecorder = RequestContext.get().startMetricRecord("attributeProcessingTime");
                     for (String attrName : attributes) {
                         AtlasAttribute attribute = entityType.getAttribute(attrName);
 
@@ -1120,11 +1123,17 @@ public class EntityGraphRetriever {
                         if (attrValue != null) {
                             ret.setAttribute(attrName, attrValue);
                         }
+
                     }
+                    RequestContext.get().endMetricRecord(attributeProcessingRecorder);
+                    metricEnded = true;
                 }
             }
         }
         finally {
+            if (!metricEnded) {
+                RequestContext.get().endMetricRecord(attributeProcessingRecorder);
+            }
             RequestContext.get().endMetricRecord(metricRecorder);
         }
         return ret;
