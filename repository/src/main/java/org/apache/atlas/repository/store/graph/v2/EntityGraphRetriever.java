@@ -1987,8 +1987,7 @@ public class EntityGraphRetriever {
         if (properties.get(attribute) != null) {
             return properties.get(attribute);
         }
-
-        return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false) : null;
+        return null;
     }
 
     private Object getVertexAttributeIgnoreInactive(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
