@@ -69,6 +69,9 @@ import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1012,21 +1015,45 @@ public class EntityGraphRetriever {
         return mapVertexToAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }
 
+    private Map<String, Object> preloadProperties(AtlasVertex entityVertex) {
+        Map<String, Object> propertiesMap = new HashMap<>();
+
+        // Execute the traversal to fetch properties
+        GraphTraversal<Vertex, VertexProperty<Object>> traversal = graph.V(entityVertex.getId()).properties();
+
+        // Iterate through the resulting VertexProperty objects
+        while (traversal.hasNext()) {
+            VertexProperty<Object> property = traversal.next();
+
+            if (property.isPresent()) { // Ensure the property exists
+                propertiesMap.put(property.key(), property.value());
+            }
+        }
+
+        return propertiesMap;
+    }
+
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader");
         AtlasEntityHeader ret = new AtlasEntityHeader();
         try {
             //pre-fetching the properties
-            graph.V(entityVertex.getId()).properties().forEachRemaining(p -> {
-                //do nothing
-            });
-            String  typeName     = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
-            String  guid         = entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
-            Boolean isIncomplete = isEntityIncomplete(entityVertex);
+            Map<String, Object> properties = preloadProperties(entityVertex);
+
+            String typeName = (String) properties.get(Constants.TYPE_NAME_PROPERTY_KEY);
+            String guid = (String) properties.get(Constants.GUID_PROPERTY_KEY);
+
+            Integer value = (Integer)properties.get(Constants.IS_INCOMPLETE_PROPERTY_KEY);
+            Boolean isIncomplete = value != null && value.equals(INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
 
             ret.setTypeName(typeName);
             ret.setGuid(guid);
             ret.setStatus(GraphHelper.getStatus(entityVertex));
+
+            String state = (String)properties.get(Constants.STATE_PROPERTY_KEY);
+            Id.EntityState entityState = state == null ? null : Id.EntityState.valueOf(state);
+            ret.setStatus((entityState == Id.EntityState.DELETED) ? AtlasEntity.Status.DELETED : AtlasEntity.Status.ACTIVE);
+
             RequestContext context = RequestContext.get();
             boolean includeClassifications = context.includeClassifications();
             boolean includeClassificationNames = context.isIncludeClassificationNames();
@@ -1038,10 +1065,10 @@ public class EntityGraphRetriever {
             ret.setIsIncomplete(isIncomplete);
             ret.setLabels(getLabels(entityVertex));
 
-            ret.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
-            ret.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
-            ret.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
-            ret.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
+            ret.setCreatedBy(properties.get(CREATED_BY_KEY) != null ? (String) properties.get(CREATED_BY_KEY) : null);
+            ret.setUpdatedBy(properties.get(MODIFIED_BY_KEY) != null ? (String) properties.get(MODIFIED_BY_KEY) : null);
+            ret.setCreateTime(new Date((Long)properties.get(TIMESTAMP_PROPERTY_KEY)));
+            ret.setUpdateTime(new Date((Long)properties.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY)));
 
             if(RequestContext.get().includeMeanings()) {
                 List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
@@ -1050,7 +1077,7 @@ public class EntityGraphRetriever {
                         termAssignmentHeaders.stream().map(AtlasTermAssignmentHeader::getDisplayText)
                                 .collect(Collectors.toList()));
             }
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName); // this is not costly
 
             if (entityType != null) {
                 for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
@@ -1061,12 +1088,15 @@ public class EntityGraphRetriever {
                     }
                 }
 
-                Object displayText = getDisplayText(entityVertex, entityType);
-
-                if (displayText != null) {
-                    ret.setDisplayText(displayText.toString());
+                if(properties.get(NAME) != null){
+                    ret.setDisplayText(properties.get(NAME).toString());
+                } else if(properties.get(DISPLAY_NAME) != null) {
+                    ret.setDisplayText(properties.get(DISPLAY_NAME).toString());
+                } else if(properties.get(QUALIFIED_NAME) != null) {
+                    ret.setDisplayText(properties.get(QUALIFIED_NAME).toString());
                 }
 
+                //attributes = only the attributes of entityType
                 if (CollectionUtils.isNotEmpty(attributes)) {
                     for (String attrName : attributes) {
                         AtlasAttribute attribute = entityType.getAttribute(attrName);
@@ -1085,7 +1115,7 @@ public class EntityGraphRetriever {
                             }
                         }
 
-                        Object attrValue = getVertexAttribute(entityVertex, attribute);
+                            Object attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, properties); //use prefetch cache
 
                         if (attrValue != null) {
                             ret.setAttribute(attrName, attrValue);
@@ -1937,6 +1967,18 @@ public class EntityGraphRetriever {
     }
 
     public Object getVertexAttribute(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
+        return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false) : null;
+    }
+
+    public Object getVertexAttributePreFetchCache(AtlasVertex vertex, AtlasAttribute attribute, Map<String, Object> properties) throws AtlasBaseException {
+        if (vertex == null || attribute == null) {
+            return null;
+        }
+
+        if (properties.get(attribute) != null) {
+            return properties.get(attribute);
+        }
+
         return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false) : null;
     }
 
