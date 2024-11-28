@@ -3490,7 +3490,6 @@ public class EntityGraphMapper {
                 vertexMap.put("assetVertexId", vertex.getIdForDisplay());
                 vertexMap.put("tagVertexId", classificationVertexId);
                 vertexMap.put("parentTaskGuid", currentTask.getGuid());
-                vertexMap.put("assetGuid", vertex.getIdForDisplay());
                 vertexMap.put("tagTypeName", currentTask.getClassificationTypeName());
 
                 String vertexJson = objectMapper.writeValueAsString(vertexMap);
