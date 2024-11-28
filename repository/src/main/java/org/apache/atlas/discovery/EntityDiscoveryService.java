@@ -70,9 +70,6 @@ import javax.inject.Inject;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -1183,37 +1180,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 }
                 if (showSearchScore) {
                     ret.addEntityScore(header.getGuid(), result.getScore());
-                }
-                if (fetchCollapsedResults) {
-                    Map<String, AtlasSearchResult> collapse = new HashMap<>();
-
-                    Set<String> collapseKeys = result.getCollapseKeys();
-                    for (String collapseKey : collapseKeys) {
-                        AtlasSearchResult collapseRet = new AtlasSearchResult();
-                        collapseRet.setSearchParameters(ret.getSearchParameters());
-
-                        Set<String> collapseResultAttributes = new HashSet<>();
-                        if (searchParams.getCollapseAttributes() != null) {
-                            collapseResultAttributes.addAll(searchParams.getCollapseAttributes());
-                        } else {
-                            collapseResultAttributes = resultAttributes;
-                        }
-
-                        if (searchParams.getCollapseRelationAttributes() != null) {
-                            RequestContext.get().getRelationAttrsForSearch().clear();
-                            RequestContext.get().setRelationAttrsForSearch(searchParams.getCollapseRelationAttributes());
-                        }
-
-                        DirectIndexQueryResult indexQueryCollapsedResult = result.getCollapseVertices(collapseKey);
-                        collapseRet.setApproximateCount(indexQueryCollapsedResult.getApproximateCount());
-                        prepareSearchResultSync(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false);
-
-                        collapseRet.setSearchParameters(null);
-                        collapse.put(collapseKey, collapseRet);
-                    }
-                    if (!collapse.isEmpty()) {
-                        header.setCollapse(collapse);
-                    }
                 }
                 if (searchParams.getShowSearchMetadata()) {
                     ret.addHighlights(header.getGuid(), result.getHighLights());
