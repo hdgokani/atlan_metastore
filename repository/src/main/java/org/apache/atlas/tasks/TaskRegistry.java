@@ -382,6 +382,9 @@ public class TaskRegistry {
 
         int size = 1000;
         int from = 0;
+        int totalFetched = 0; // Tracks the total number of tasks fetched
+
+        LOG.info("Starting re-queue task search. Initial fetch size: {}, queue size: {}", size, queueSize);
 
         IndexSearchParams indexSearchParams = new IndexSearchParams();
 
@@ -392,25 +395,29 @@ public class TaskRegistry {
         Map<String, Object> dsl = mapOf("query", mapOf("bool", mapOf("should", statusClauseList)));
         dsl.put("sort", Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc"))));
         dsl.put("size", size);
-        int totalFetched = 0;
+
         while (true) {
-            int fetched = 0;
+            int fetched = 0; // Tracks tasks fetched in this iteration
             try {
                 if (totalFetched + size > queueSize) {
-                    size = queueSize - totalFetched;
+                    size = queueSize - totalFetched; // Adjust size to avoid exceeding queue size
+                    LOG.info("Adjusted fetch size to {} based on queue size constraint.", size);
                 }
 
                 dsl.put("from", from);
                 dsl.put("size", size);
+                LOG.info("Query DSL updated for iteration: {}", dsl);
 
                 indexSearchParams.setDsl(dsl);
 
+                LOG.info("Querying Elasticsearch from offset {} with size {}", from, size);
                 AtlasIndexQuery indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, indexSearchParams);
 
                 try {
                     indexQueryResult = indexQuery.vertices(indexSearchParams);
+                    LOG.info("Query executed successfully for offset {} with size {}", from, size);
                 } catch (AtlasBaseException e) {
-                    LOG.error("Failed to fetch pending/in-progress task vertices to re-que");
+                    LOG.error("Failed to fetch pending/in-progress task vertices to re-queue. Exiting loop.", e);
                     e.printStackTrace();
                     break;
                 }
@@ -424,31 +431,42 @@ public class TaskRegistry {
                         if (vertex != null) {
                             AtlasTask atlasTask = toAtlasTask(vertex);
                             if (atlasTask.getStatus().equals(AtlasTask.Status.PENDING) ||
-                                    atlasTask.getStatus().equals(AtlasTask.Status.IN_PROGRESS) ){
-                                LOG.info(String.format("Fetched task from index search: %s", atlasTask.toString()));
+                                    atlasTask.getStatus().equals(AtlasTask.Status.IN_PROGRESS)) {
+                                LOG.info("Fetched task from index search: {}", atlasTask);
                                 ret.add(atlasTask);
-                            }
-                            else {
-                                LOG.warn(String.format("There is a mismatch on tasks status between ES and Cassandra for guid: %s", atlasTask.getGuid()));
+                            } else {
+                                LOG.warn("Mismatch in task status between ES and Cassandra for guid: {}", atlasTask.getGuid());
                             }
                         } else {
-                            LOG.warn("Null vertex while re-queuing tasks at index {}", fetched);
+                            LOG.warn("Null vertex encountered while re-queuing tasks at index {}", fetched);
                         }
 
                         fetched++;
                     }
+                    LOG.info("Fetched {} tasks in this iteration.", fetched);
+                } else {
+                    LOG.warn("Index query result is null for offset {} and size {}.", from, size);
                 }
 
                 totalFetched += fetched;
+                LOG.info("Total fetched so far: {}. Fetch size for this iteration: {}.", totalFetched, fetched);
+
                 from += size;
-                if (fetched < size || totalFetched >= queueSize) {
+                if (fetched < size) {
+                    LOG.info("Breaking loop as fewer results ({}) than fetch size ({}) were returned.", fetched, size);
                     break;
                 }
-            } catch (Exception e){
+                if (totalFetched >= queueSize) {
+                    LOG.info("Breaking loop as total fetched ({}) has reached queue size ({}).", totalFetched, queueSize);
+                    break;
+                }
+            } catch (Exception e) {
+                LOG.error("Unexpected exception occurred. Exiting loop.", e);
                 break;
             }
         }
 
+        LOG.info("Re-queue task search completed. Total tasks fetched: {}.", totalFetched);
         return ret;
     }
 
