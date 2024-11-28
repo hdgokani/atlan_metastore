@@ -123,11 +123,11 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         return janusConfig;
     }
 
-    static {
+    /*static {
         addHBase2Support();
 
         addSolr6Index();
-    }
+    }*/
 
     private static void addHBase2Support() {
         try {

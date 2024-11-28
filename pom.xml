@@ -674,6 +674,9 @@
     </profiles>
 
     <properties>
+        <maven-compiler-plugin>3.13.0</maven-compiler-plugin>
+        <maven-shade-plugin>3.4.0</maven-shade-plugin>
+        <maven-war-plugin>3.4.0</maven-war-plugin>
         <akka.version>2.3.7</akka.version>
         <antlr4.plugin.version>4.5</antlr4.plugin.version>
         <antlr4.version>4.7</antlr4.version>
@@ -699,7 +702,8 @@
         <dropwizard-metrics>3.2.2</dropwizard-metrics>
         <elasticsearch.version>7.16.2</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
-        <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
+        <!--<enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>-->
+        <enunciate-maven-plugin.version>2.17.0</enunciate-maven-plugin.version>
         <failsafe.version>2.18.1</failsafe.version>
         <falcon.version>0.8</falcon.version>
         <fastutil.version>6.5.16</fastutil.version>
@@ -1775,10 +1779,10 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.7.0</version>
+                    <version>${maven-compiler-plugin}</version>
                     <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
+                        <source>17</source>
+                        <target>17</target>
                     </configuration>
                 </plugin>
 
@@ -1821,7 +1825,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-war-plugin</artifactId>
-                    <version>2.6</version>
+                    <version>${maven-war-plugin}</version>
                 </plugin>
 
                 <plugin>
@@ -1840,12 +1844,6 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
                     <version>${maven-site-plugin.version}</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>findbugs-maven-plugin</artifactId>
-                    <version>3.0.5</version>
                 </plugin>
 
                 <!-- Source code metrics: mvn javancss:report or mvn site -->
@@ -2172,11 +2170,14 @@
                 </executions>
             </plugin>
 
-            <plugin>
+            <!--The findbugs-maven-plugin is outdated and does not officially support Java 17. To analyze code with a tool like FindBugs on Java 17, you should migrate to SpotBugs-->
+
+            <!--<plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>findbugs-maven-plugin</artifactId>
+                <version>3.0.5</version>
                 <configuration>
-                    <!--debug>true</debug -->
+                    &lt;!&ndash;debug>true</debug &ndash;&gt;
                     <xmlOutput>true</xmlOutput>
                     <failOnError>false</failOnError>
                     <skip>${skipCheck}</skip>
@@ -2190,7 +2191,7 @@
                         <phase>verify</phase>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin>-->
 
             <!-- Source code metrics: mvn javancss:report or mvn site -->
             <plugin>
