@@ -203,14 +203,31 @@ public class EntityGraphMapper {
 
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
 
-    Configuration configuration = ApplicationProperties.get();
-    KafkaNotification kfknotif = new KafkaNotification(configuration);
+    Configuration configuration;
+
+    {
+        try {
+            configuration = ApplicationProperties.get();
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    KafkaNotification kfknotif;
+
+    {
+        try {
+            kfknotif = new KafkaNotification(configuration);
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
                              AtlasRelationshipStore relationshipStore, IAtlasEntityChangeNotifier entityChangeNotifier,
                              AtlasInstanceConverter instanceConverter, IFullTextMapper fullTextMapperV2,
-                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper) throws AtlasException {
+                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper) {
         this.restoreHandlerV1 = restoreHandlerV1;
         this.graphHelper          = new GraphHelper(graph);
         this.deleteDelegate       = deleteDelegate;
