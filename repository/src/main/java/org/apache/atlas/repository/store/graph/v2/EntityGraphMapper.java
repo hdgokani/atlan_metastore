@@ -204,25 +204,8 @@ public class EntityGraphMapper {
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
 
     Configuration configuration;
-
-    {
-        try {
-            configuration = ApplicationProperties.get();
-        } catch (AtlasException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     KafkaNotification kfknotif;
-
-    {
-        try {
-            kfknotif = new KafkaNotification(configuration);
-        } catch (AtlasException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
+    
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
                              AtlasRelationshipStore relationshipStore, IAtlasEntityChangeNotifier entityChangeNotifier,
@@ -240,7 +223,16 @@ public class EntityGraphMapper {
         this.retrieverNoRelation  = new EntityGraphRetriever(graph, typeRegistry, true);
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
-        this.transactionInterceptHelper = transactionInterceptHelper;}
+        this.transactionInterceptHelper = transactionInterceptHelper;
+        try {
+            this.configuration = ApplicationProperties.get();
+            this.kfknotif = new KafkaNotification(configuration);
+
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
 
     @VisibleForTesting
     public void setTasksUseFlag(boolean value) {
@@ -3495,21 +3487,19 @@ public class EntityGraphMapper {
             AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
             currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, impactedVertices.size());
 
-
             //iterate over each impacted vertex to create a message and send it to kafka
             for (AtlasVertex vertex : impactedVertices) {
                 // Create a Map to store vertex properties
                 Map<String, Object> vertexMap = new HashMap<>();
-                ObjectMapper objectMapper = new ObjectMapper(); // Jackson ObjectMapper
 
-                vertexMap.put("parentTaskVertexId", vertex.getProperty("parentTaskVertexId", String.class));
+                vertexMap.put("parentTaskVertexId", currentTaskVertex.getIdForDisplay());
                 vertexMap.put("action", "ADD_PROPAGATION");
                 vertexMap.put("assetVertexId", vertex.getIdForDisplay());
                 vertexMap.put("tagVertexId", classificationVertexId);
                 vertexMap.put("parentTaskGuid", currentTask.getGuid());
                 vertexMap.put("tagTypeName", currentTask.getClassificationTypeName());
 
-                String vertexJson = objectMapper.writeValueAsString(vertexMap);
+                String vertexJson = AtlasType.toJson(vertexMap);
 
                 //send vertexJson to kafka topic 'TAG_PROP_EVENTS'
                 kfknotif.sendInternal(NotificationInterface.NotificationType.EMIT_PLANNED_RELATIONSHIPS, Collections.singletonList(vertexJson));
