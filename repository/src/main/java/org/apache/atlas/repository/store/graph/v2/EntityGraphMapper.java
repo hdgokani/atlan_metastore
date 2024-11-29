@@ -140,6 +140,8 @@ import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANING_NAMES_PROPERTY_KEY;
 
+import com.google.common.hash.Hashing;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class EntityGraphMapper {
@@ -205,6 +207,7 @@ public class EntityGraphMapper {
 
     Configuration configuration;
     KafkaNotification kfknotif;
+    int numPartitions = 5; // Total number of partitions in the Kafka topic
 
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
@@ -3501,8 +3504,15 @@ public class EntityGraphMapper {
 
                 String vertexJson = AtlasType.toJson(vertexMap);
 
+
+                // Using Guava to calculate the partition
+                int partition = Hashing.consistentHash(
+                        Hashing.sha256().hashString((String)vertexMap.get("parentTaskGuid"), StandardCharsets.UTF_8),
+                        numPartitions
+                );
+
                 //send vertexJson to kafka topic 'TAG_PROP_EVENTS'
-                kfknotif.sendInternal(NotificationInterface.NotificationType.EMIT_PLANNED_RELATIONSHIPS, Collections.singletonList(vertexJson));
+                kfknotif.sendInternal(NotificationInterface.NotificationType.EMIT_PLANNED_RELATIONSHIPS, Collections.singletonList(vertexJson), partition);
             }
             if (CollectionUtils.isEmpty(impactedVertices)) {
                 LOG.debug("propagateClassification(entityGuid={}, classificationVertexId={}): found no entities to propagate the classification", entityGuid, classificationVertexId);

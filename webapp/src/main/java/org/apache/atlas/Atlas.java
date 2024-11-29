@@ -150,8 +150,6 @@ public final class Atlas {
 
         server = EmbeddedServer.newServer(appHost, appPort, appPath, enableTLS);
         installLogBridge();
-        AtlasTopicCreator a = new AtlasTopicCreator();
-        a.createAtlasTopic(configuration, AtlasConstants.ATLAS_KAFKA_TAG_TOPIC);
         server.start();
     }
 
