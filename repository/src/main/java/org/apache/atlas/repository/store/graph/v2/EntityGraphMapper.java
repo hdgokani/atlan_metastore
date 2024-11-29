@@ -205,7 +205,7 @@ public class EntityGraphMapper {
 
     Configuration configuration;
     KafkaNotification kfknotif;
-    
+
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
                              AtlasRelationshipStore relationshipStore, IAtlasEntityChangeNotifier entityChangeNotifier,
