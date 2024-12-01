@@ -154,6 +154,11 @@ public class LineagePreProcessor implements PreProcessor {
 
         // Update the Process entity's parentConnectionProcessQualifiedName attribute
         entity.setAttribute(PARENT_CONNECTION_PROCESS_QUALIFIED_NAME, newConnectionProcessList);
+
+        // Update __hasLineage for all connections involved in the new connection processes
+        for (String connectionProcessQn : newConnectionProcessList) {
+            updateConnectionsHasLineageForConnectionProcess(connectionProcessQn);
+        }
     }
 
     private AtlasEntity createConnectionProcessEntity(Map<String, Object> connectionProcessInfo) throws AtlasBaseException {
@@ -399,112 +404,110 @@ public class LineagePreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processDeleteLineageProcess");
 
         try {
-            // Collect all connections involved in the process being deleted
-            AtlasEntity processEntity = entityRetriever.toAtlasEntity(vertex);
-
-            Set<String> involvedConnections = new HashSet<>();
-
-            // Retrieve inputs and outputs from the process
-            List<AtlasObjectId> inputs = (List<AtlasObjectId>) processEntity.getRelationshipAttribute("inputs");
-            List<AtlasObjectId> outputs = (List<AtlasObjectId>) processEntity.getRelationshipAttribute("outputs");
-
-            if (inputs == null) inputs = Collections.emptyList();
-            if (outputs == null) outputs = Collections.emptyList();
-
-            List<AtlasObjectId> allAssets = new ArrayList<>();
-            allAssets.addAll(inputs);
-            allAssets.addAll(outputs);
-
-            // For each asset, get its connection and add to involvedConnections
-            for (AtlasObjectId assetId : allAssets) {
-                try {
-                    AtlasVertex assetVertex = entityRetriever.getEntityVertex(assetId);
-                    Map<String, String> assetConnectionAttributes = fetchAttributes(assetVertex, FETCH_ENTITY_ATTRIBUTES);
-                    if (assetConnectionAttributes != null) {
-                        String connectionQN = assetConnectionAttributes.get(CONNECTION_QUALIFIED_NAME);
-                        if (StringUtils.isNotEmpty(connectionQN)) {
-                            involvedConnections.add(connectionQN);
-                        }
-                    }
-                } catch (AtlasBaseException e) {
-                    LOG.warn("Failed to retrieve connection for asset {}: {}", assetId.getGuid(), e.getMessage());
-                }
-            }
-
-            // Collect affected connections from connection processes to be deleted
-            Set<String> connectionProcessQNs = new HashSet<>();
-
-            // Handle both single value and multi-value cases
-            try {
-                // Try getting as a list first
-                Iterable<Object> propertyValues = vertex.getPropertyValues(PARENT_CONNECTION_PROCESS_QUALIFIED_NAME, Object.class);
-                if (propertyValues != null) {
-                    for (Object value : propertyValues) {
-                        if (value != null) {
-                            connectionProcessQNs.add(value.toString());
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                // If getting as list fails, try getting as single value
-                try {
-                    String singleValue = vertex.getProperty(PARENT_CONNECTION_PROCESS_QUALIFIED_NAME, String.class);
-                    if (StringUtils.isNotEmpty(singleValue)) {
-                        connectionProcessQNs.add(singleValue);
-                    }
-                } catch (Exception ex) {
-                    LOG.warn("Error getting parentConnectionProcessQualifiedName property: {}", ex.getMessage());
-                }
-            }
-
+            // Get all connection process QNs associated with this process
+            Set<String> connectionProcessQNs = getConnectionProcessQNs(vertex);
             if (connectionProcessQNs.isEmpty()) {
                 return;
             }
 
-            Set<String> affectedConnections = new HashSet<>();
+            // Track all connections that need their hasLineage status checked
+            Set<String> connectionsToCheck = new HashSet<>();
 
-            // Process each connection process
+            // For each connection process
             for (String connectionProcessQn : connectionProcessQNs) {
+                // Only delete connection process if this is the last child process
                 if (!checkIfMoreChildProcessExistForConnectionProcess(connectionProcessQn)) {
-                    AtlasObjectId atlasObjectId = new AtlasObjectId();
-                    atlasObjectId.setTypeName(CONNECTION_PROCESS_ENTITY_TYPE);
-                    atlasObjectId.setUniqueAttributes(AtlasEntityUtils.mapOf(QUALIFIED_NAME, connectionProcessQn));
-
-                    try {
-                        // Get connection process before deletion to track affected connections
-                        AtlasVertex connectionProcessVertex = entityRetriever.getEntityVertex(atlasObjectId);
-                        AtlasEntity connectionProcess = entityRetriever.toAtlasEntity(connectionProcessVertex);
-
-                        // Get all input and output connections
-                        List<String> inputConnQNs = getConnectionQualifiedNames(connectionProcess, "inputs");
-                        List<String> outputConnQNs = getConnectionQualifiedNames(connectionProcess, "outputs");
-
-                        // Add all connections to affected set
-                        affectedConnections.addAll(inputConnQNs);
-                        affectedConnections.addAll(outputConnQNs);
-
-                        // Delete the connection process
-                        entityStore.deleteById(connectionProcessVertex.getProperty("__guid", String.class));
-                    } catch (AtlasBaseException exp) {
-                        if (!exp.getAtlasErrorCode().equals(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND)) {
-                            throw exp;
-                        }
-                    }
+                    // Get affected connections before deleting the connection process
+                    connectionsToCheck.addAll(getConnectionsFromConnectionProcess(connectionProcessQn));
+                    
+                    // Delete the connection process
+                    deleteConnectionProcess(connectionProcessQn);
                 }
             }
 
-            // Combine involved and affected connections
-            Set<String> connectionsToCheck = new HashSet<>();
-            connectionsToCheck.addAll(involvedConnections);
-            connectionsToCheck.addAll(affectedConnections);
+            // Add connections from the process being deleted
+            connectionsToCheck.addAll(getConnectionsFromProcess(vertex));
 
-            // Check and update hasLineage for all connections involved
+            // Update hasLineage for all affected connections
             for (String connectionQN : connectionsToCheck) {
                 checkAndUpdateConnectionLineage(connectionQN);
             }
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+    }
+
+    private Set<String> getConnectionProcessQNs(AtlasVertex vertex) {
+        Set<String> connectionProcessQNs = new HashSet<>();
+        try {
+            Iterable<Object> values = vertex.getPropertyValues(PARENT_CONNECTION_PROCESS_QUALIFIED_NAME, Object.class);
+            if (values != null) {
+                for (Object value : values) {
+                    if (value != null) {
+                        connectionProcessQNs.add(value.toString());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Try single value if list fails
+            try {
+                String value = vertex.getProperty(PARENT_CONNECTION_PROCESS_QUALIFIED_NAME, String.class);
+                if (StringUtils.isNotEmpty(value)) {
+                    connectionProcessQNs.add(value);
+                }
+            } catch (Exception ex) {
+                LOG.warn("Error getting parentConnectionProcessQualifiedName property", ex);
+            }
+        }
+        return connectionProcessQNs;
+    }
+
+    // New helper method to get connections from a connection process
+    private Set<String> getConnectionsFromConnectionProcess(String connectionProcessQn) throws AtlasBaseException {
+        Set<String> connections = new HashSet<>();
+        AtlasObjectId atlasObjectId = new AtlasObjectId();
+        atlasObjectId.setTypeName(CONNECTION_PROCESS_ENTITY_TYPE);
+        atlasObjectId.setUniqueAttributes(AtlasEntityUtils.mapOf(QUALIFIED_NAME, connectionProcessQn));
+
+        try {
+            AtlasVertex connectionProcessVertex = entityRetriever.getEntityVertex(atlasObjectId);
+            AtlasEntity connectionProcess = entityRetriever.toAtlasEntity(connectionProcessVertex);
+            
+            connections.addAll(getConnectionQualifiedNames(connectionProcess, "inputs"));
+            connections.addAll(getConnectionQualifiedNames(connectionProcess, "outputs"));
+        } catch (AtlasBaseException e) {
+            if (!e.getAtlasErrorCode().equals(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND)) {
+                throw e;
+            }
+        }
+        return connections;
+    }
+
+    // New helper method to get connections from a process
+    private Set<String> getConnectionsFromProcess(AtlasVertex vertex) throws AtlasBaseException {
+        Set<String> connections = new HashSet<>();
+        AtlasEntity processEntity = entityRetriever.toAtlasEntity(vertex);
+        
+        List<AtlasObjectId> inputs = (List<AtlasObjectId>) processEntity.getRelationshipAttribute("inputs");
+        List<AtlasObjectId> outputs = (List<AtlasObjectId>) processEntity.getRelationshipAttribute("outputs");
+        
+        List<AtlasObjectId> allAssets = new ArrayList<>();
+        if (inputs != null) allAssets.addAll(inputs);
+        if (outputs != null) allAssets.addAll(outputs);
+
+        for (AtlasObjectId assetId : allAssets) {
+            try {
+                AtlasVertex assetVertex = entityRetriever.getEntityVertex(assetId);
+                Map<String, String> attributes = fetchAttributes(assetVertex, FETCH_ENTITY_ATTRIBUTES);
+                String connectionQN = attributes.get(CONNECTION_QUALIFIED_NAME);
+                if (StringUtils.isNotEmpty(connectionQN)) {
+                    connections.add(connectionQN);
+                }
+            } catch (AtlasBaseException e) {
+                LOG.warn("Failed to retrieve connection for asset {}: {}", assetId.getGuid(), e.getMessage());
+            }
+        }
+        return connections;
     }
 
     private List<String> getConnectionQualifiedNames(AtlasEntity connectionProcess, String attributeName) {
