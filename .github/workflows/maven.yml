@@ -26,7 +26,7 @@ on:
       - development
       - master
       - dg1908
-      - ns/fix/delta-refresh
+      - deltarefresh
 
 jobs:
   build:
