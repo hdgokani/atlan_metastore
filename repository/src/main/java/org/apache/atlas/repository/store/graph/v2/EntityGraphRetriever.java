@@ -1227,6 +1227,8 @@ public class EntityGraphRetriever {
                     ret.setDisplayText(properties.get(QUALIFIED_NAME).toString());
                 }
 
+
+
                 //attributes = only the attributes of entityType
                 if (CollectionUtils.isNotEmpty(attributes)) {
                     for (String attrName : attributes) {
@@ -1255,8 +1257,7 @@ public class EntityGraphRetriever {
                     }
                 }
             }
-        }
-        finally {
+        } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
         return ret;
@@ -1884,23 +1885,22 @@ public class EntityGraphRetriever {
         }
         LOG.info("capturing property its category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
 
-        if ((properties.get(attribute.getName()) != null) &&
-                (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) ||
-                        attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ENUM) ||
-                        attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ARRAY)
-                )) {
+        TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
+        TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ?((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
+
+
+        if (properties.get(attribute.getName()) != null &&
+                (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) || (elementTypeCategory == null || elementTypeCategory.equals(TypeCategory.PRIMITIVE)))) {
+            LOG.info("capturing non null attributes - {} : {} : {} ", attribute.getName(), properties.get(attribute.getName()), attribute.getAttributeType().getTypeCategory());
             return properties.get(attribute.getName());
         }
 
-        TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
-        TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
-
-        if (elementTypeCategory == TypeCategory.PRIMITIVE) {
+        if (properties.get(attribute.getName()) == null &&  attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ARRAY)) {
+            LOG.info("capturing null array attributes - {} : {}", attribute.getName(), properties.get(attribute.getName()));
             return new ArrayList<>();
         }
 
-        Set<TypeCategory> ENRICH_PROPERTY_TYPES = new HashSet<>(Arrays.asList(TypeCategory.STRUCT, TypeCategory.OBJECT_ID_TYPE, TypeCategory.MAP));
-        if (ENRICH_PROPERTY_TYPES.contains(attribute.getAttributeType().getTypeCategory())) {
+        if (properties.get(attribute.getName()) != null && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
             LOG.info("capturing excluded property set category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
             AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
