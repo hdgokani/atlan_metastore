@@ -3227,123 +3227,6 @@ public class EntityGraphMapper {
         LOG.info("Completed cleaning up classification {}", classificationName);
     }
 
-
-
-// Huge change to get affected edge count, to be reviewed hence keeping in comments for future review.
-//    public void cleanUpClassificationPropagation(String classificationName, int batchLimit) {
-//        int CLEANUP_MAX = batchLimit <= 0 ? CLEANUP_BATCH_SIZE : batchLimit * CLEANUP_BATCH_SIZE;
-//        int cleanedUpCount = 0;
-//        long classificationEdgeCount = 0; // To hold the total count
-//        long classificationEdgeInMemoryCount = 0;
-//
-//        // Cache vertices and their classification edges during the initial iteration
-//        List<AtlasVertex> allTagVertices = new ArrayList<>();
-//        Map<AtlasVertex, Long> vertexEdgeCounts = new HashMap<>();
-//
-//        Iterator<AtlasVertex> tagVerticesIterator = GraphHelper.getClassificationVertices(graph, classificationName, CLEANUP_BATCH_SIZE);
-//
-//        while (tagVerticesIterator != null && tagVerticesIterator.hasNext()) {
-//            AtlasVertex tagVertex = tagVerticesIterator.next();
-//            long edgeCount = GraphHelper.getClassificationEdges(tagVertex, null, classificationName).size();
-//            classificationEdgeCount += edgeCount;
-//
-//            // Cache the vertex and its edge count
-//            allTagVertices.add(tagVertex);
-//            vertexEdgeCounts.put(tagVertex, edgeCount);
-//        }
-//
-//        LOG.info("Total classification edges to be cleaned for {}: {}", classificationName, classificationEdgeCount);
-//
-//        // Now use the cached vertices for cleanup
-//        List<AtlasVertex> tagVerticesProcessed = new ArrayList<>();
-//        List<AtlasVertex> currentAssetVerticesBatch = new ArrayList<>();
-//
-//        Iterator<AtlasVertex> cachedVerticesIterator = allTagVertices.iterator();
-//        while (cachedVerticesIterator.hasNext()) {
-//            if (cleanedUpCount >= CLEANUP_MAX) {
-//                return;
-//            }
-//
-//            while (cachedVerticesIterator.hasNext() && currentAssetVerticesBatch.size() < CLEANUP_BATCH_SIZE) {
-//                AtlasVertex tagVertex = cachedVerticesIterator.next();
-//
-//                int availableSlots = CLEANUP_BATCH_SIZE - currentAssetVerticesBatch.size();
-//                long assetCountForCurrentTagVertex = GraphHelper.getAssetsCountOfClassificationVertex(tagVertex);
-//                currentAssetVerticesBatch.addAll(GraphHelper.getAllAssetsWithClassificationVertex(tagVertex, availableSlots));
-//                LOG.info("Available slots : {}, assetCountForCurrentTagVertex : {}, queueSize : {}", availableSlots, assetCountForCurrentTagVertex, currentAssetVerticesBatch.size());
-//                if (assetCountForCurrentTagVertex <= availableSlots) {
-//                    tagVerticesProcessed.add(tagVertex);
-//                }
-//            }
-//
-//            int currentAssetsBatchSize = currentAssetVerticesBatch.size();
-//            if (currentAssetsBatchSize > 0) {
-//                LOG.info("To clean up tag {} from {} entities", classificationName, currentAssetsBatchSize);
-//                int offset = 0;
-//                do {
-//                    try {
-//                        int toIndex = Math.min((offset + CHUNK_SIZE), currentAssetsBatchSize);
-//                        List<AtlasVertex> entityVertices = currentAssetVerticesBatch.subList(offset, toIndex);
-//                        for (AtlasVertex vertex : entityVertices) {
-//                            List<AtlasClassification> deletedClassifications = new ArrayList<>();
-//                            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(graphHelper.getGuid(vertex));
-//                            List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
-//                            int batchSize = CHUNK_SIZE;
-//                            for (int i = 0; i < classificationEdges.size(); i += batchSize) {
-//                                int end = Math.min(i + batchSize, classificationEdges.size());
-//                                List<AtlasEdge> batch = classificationEdges.subList(i, end);
-//                                for (AtlasEdge edge : batch) {
-//                                    try {
-//                                        AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
-//                                        deletedClassifications.add(classification);
-//                                        deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
-//                                        classificationEdgeInMemoryCount++;
-//                                    } catch (IllegalStateException | AtlasBaseException e) {
-//                                        e.printStackTrace();
-//                                    }
-//                                }
-//                                if (classificationEdgeInMemoryCount >= CHUNK_SIZE) {
-//                                    transactionInterceptHelper.intercept();
-//                                    classificationEdgeInMemoryCount = 0;
-//                                }
-//                            }
-//                            try {
-//                                AtlasEntity entity = repairClassificationMappings(vertex);
-//                                entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
-//                            } catch (IllegalStateException | AtlasBaseException e) {
-//                                e.printStackTrace();
-//                            }
-//                        }
-//
-//                        transactionInterceptHelper.intercept();
-//
-//                        offset += CHUNK_SIZE;
-//                    } finally {
-//                        LOG.info("For offset {} , cleaned up classification edges.", offset);
-//                        LOG.info("Cleaned up {} entities for classification {}", offset, classificationName);
-//                    }
-//
-//                } while (offset < currentAssetsBatchSize);
-//
-//                for (AtlasVertex classificationVertex : tagVerticesProcessed) {
-//                    try {
-//                        deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
-//                    } catch (IllegalStateException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//                transactionInterceptHelper.intercept();
-//
-//                cleanedUpCount += currentAssetsBatchSize;
-//                currentAssetVerticesBatch.clear();
-//                tagVerticesProcessed.clear();
-//            }
-//        }
-
-//        LOG.info("Completed cleaning up classification {}", classificationName);
-//    }
-
-
     public AtlasEntity repairClassificationMappings(AtlasVertex entityVertex) throws AtlasBaseException {
         String guid = GraphHelper.getGuid(entityVertex);
         AtlasEntity entity = instanceConverter.getEntity(guid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
@@ -3576,14 +3459,6 @@ public class EntityGraphMapper {
             List<String> edgeLabelsToCheck = CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode);
             Boolean toExclude = propagationMode == CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE ? true:false;
             List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV2(entityVertex, relationshipGuid, classificationVertexId, edgeLabelsToCheck,toExclude);
-
-            // update the 'assetsCountToPropagate' on in memory java object.
-            AtlasTask currentTask = RequestContext.get().getCurrentTask();
-            currentTask.setAssetsCountToPropagate((long) impactedVertices.size());
-
-            //update the 'assetsCountToPropagate' in the current task vertex.
-            AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
-            currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, impactedVertices.size());
 
             if (CollectionUtils.isEmpty(impactedVertices)) {
                 LOG.debug("propagateClassification(entityGuid={}, classificationVertexId={}): found no entities to propagate the classification", entityGuid, classificationVertexId);
@@ -4176,15 +4051,6 @@ public class EntityGraphMapper {
         AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
         LOG.info("Fetched classification : {} ", classification.toString());
         List<AtlasVertex> impactedVertices = graphHelper.getAllPropagatedEntityVertices(classificationVertex);
-
-        // update the 'assetsCountToPropagate' on in memory java object.
-        AtlasTask currentTask = RequestContext.get().getCurrentTask();
-        currentTask.setAssetsCountToPropagate((long) impactedVertices.size());
-
-        //update the 'assetsCountToPropagate' in the current task vertex.
-        AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
-        currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, impactedVertices.size());
-
         LOG.info("impactedVertices : {}", impactedVertices.size());
         int batchSize = 100;
         for (int i = 0; i < impactedVertices.size(); i += batchSize) {
@@ -4229,14 +4095,6 @@ public class EntityGraphMapper {
             }
 
             int propagatedEdgesSize = propagatedEdges.size();
-
-            // update the 'assetsCountToPropagate' on in memory java object.
-            AtlasTask currentTask = RequestContext.get().getCurrentTask();
-            currentTask.setAssetsCountToPropagate((long) propagatedEdgesSize);
-
-            //update the 'assetsCountToPropagate' in the current task vertex.
-            AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
-            currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, propagatedEdgesSize);
 
             LOG.info(String.format("Number of edges to be deleted : %s for classification vertex with id : %s", propagatedEdgesSize, classificationVertexId));
 
@@ -4396,16 +4254,6 @@ public class EntityGraphMapper {
                 .map(x -> graph.getVertex(x))
                 .filter(vertex -> vertex != null)
                 .collect(Collectors.toList());
-
-        Integer taskCount = verticesToRemove.size() + verticesToAddClassification.size();
-
-        // update the 'assetsCountToPropagate' on in memory java object.
-        AtlasTask currentTask = RequestContext.get().getCurrentTask();
-        currentTask.setAssetsCountToPropagate((long) taskCount);
-
-        //update the 'assetsCountToPropagate' in the current task vertex.
-        AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
-        currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, taskCount);
 
         //Remove classifications from unreachable vertices
         processPropagatedClassificationDeletionFromVertices(verticesToRemove, currentClassificationVertex, classification);

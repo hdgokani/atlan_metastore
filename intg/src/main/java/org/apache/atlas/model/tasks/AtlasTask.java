@@ -95,8 +95,6 @@ public class AtlasTask {
     private String              classificationId;
     private String              entityGuid;
     private String              classificationTypeName;
-    private Long                assetsCountToPropagate;
-    private Long                assetsCountPropagated;
 
     public AtlasTask() {
     }
@@ -113,22 +111,6 @@ public class AtlasTask {
         this.attemptCount       = 0;
         this.classificationId   = classificationId;
         this.entityGuid         = entityGuid;
-    }
-
-    public AtlasTask(String type, String createdBy, Map<String, Object> parameters, String classificationId,
-                     String entityGuid, Long assetsCountToPropagate, Long assetsCountPropagated) {
-        this.guid               = UUID.randomUUID().toString();
-        this.type               = type;
-        this.createdBy          = createdBy;
-        this.createdTime        = new Date();
-        this.updatedTime        = this.createdTime;
-        this.parameters         = parameters;
-        this.status             = Status.PENDING;
-        this.attemptCount       = 0;
-        this.classificationId   = classificationId;
-        this.entityGuid         = entityGuid;
-        this.assetsCountToPropagate = assetsCountToPropagate;
-        this.assetsCountPropagated = assetsCountPropagated;
     }
 
     public String getGuid() {
@@ -257,13 +239,6 @@ public class AtlasTask {
         return entityGuid;
     }
 
-    public void setAssetsCountToPropagate(Long assetsCount) {
-        this.assetsCountToPropagate = assetsCount ;
-    }
-    public Long getAssetsCountToPropagate() {
-        return assetsCountToPropagate ;
-    }
-
     @JsonIgnore
     public void start() {
         this.setStatus(Status.IN_PROGRESS);
@@ -295,8 +270,6 @@ public class AtlasTask {
                 ", attemptCount=" + attemptCount +
                 ", errorMessage='" + errorMessage + '\'' +
                 ", status=" + status +
-                ", assetsCountToPropagate=" + assetsCountToPropagate +
-                ", assetsCountPropagated=" + assetsCountPropagated +
                 '}';
     }
 }
