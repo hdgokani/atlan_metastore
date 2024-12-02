@@ -207,7 +207,7 @@ public class EntityGraphMapper {
 
     Configuration configuration;
     KafkaNotification kfknotif;
-    int numPartitions = 5; // Total number of partitions in the Kafka topic
+    int numPartitions = Integer.parseInt(TAG_PROP_EVENTS_PARTITION_COUNT); // Total number of partitions in the Kafka topic
 
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
