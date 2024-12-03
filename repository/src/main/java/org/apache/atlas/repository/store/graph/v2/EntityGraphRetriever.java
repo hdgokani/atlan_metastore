@@ -1024,21 +1024,20 @@ public class EntityGraphRetriever {
             TypeCategory typeCategory = attribute != null ? attribute.getAttributeType().getTypeCategory() : null;
             TypeCategory elementTypeCategory = attribute != null && attribute.getAttributeType().getTypeCategory() == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
 
-            if (propertiesMap.get(property.key()) == null) {
-                propertiesMap.put(property.key(), property.value());
-            } else {
+            if (property.isPresent()) {
                 if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
                     Object value = propertiesMap.get(property.key());
                     if (value instanceof List) {
                         ((List) value).add(property.value());
                     } else {
                         List<Object> values = new ArrayList<>();
-                        values.add(value);
                         values.add(property.value());
                         propertiesMap.put(property.key(), values);
                     }
                 } else {
-                    propertiesMap.put(property.key(), property.value());
+                    if (propertiesMap.get(property.key()) == null) {
+                        propertiesMap.put(property.key(), property.value());
+                    }
                 }
             }
         }
@@ -1070,15 +1069,14 @@ public class EntityGraphRetriever {
     }
 
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
-//        boolean shouldPrefetch = attributes.size() > AtlasConfiguration.ATLAS_INDEXSEARCH_ATTRIBUTES_MIN_LIMIT.getInt()
-//                && !isPolicyAttribute(attributes)
-//                && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION.getBoolean();
-//
-//        if (shouldPrefetch) {
-//            return mapVertexToAtlasEntityHeaderWithPrefetch(entityVertex, attributes);
-//        } else {
+        boolean shouldPrefetch = !isPolicyAttribute(attributes)
+                && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION.getBoolean();
+
+        if (shouldPrefetch) {
+            return mapVertexToAtlasEntityHeaderWithPrefetch(entityVertex, attributes);
+        } else {
             return mapVertexToAtlasEntityHeaderWithoutPrefetch(entityVertex, attributes);
-        //}
+        }
     }
 
     private AtlasEntityHeader mapVertexToAtlasEntityHeaderWithoutPrefetch(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
