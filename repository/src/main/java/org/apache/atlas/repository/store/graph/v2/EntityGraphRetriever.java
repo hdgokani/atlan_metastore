@@ -1070,15 +1070,15 @@ public class EntityGraphRetriever {
     }
 
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
-        boolean shouldPrefetch = attributes.size() > AtlasConfiguration.ATLAS_INDEXSEARCH_ATTRIBUTES_MIN_LIMIT.getInt()
-                && !isPolicyAttribute(attributes)
-                && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION.getBoolean();
-
-        if (shouldPrefetch) {
-            return mapVertexToAtlasEntityHeaderWithPrefetch(entityVertex, attributes);
-        } else {
+//        boolean shouldPrefetch = attributes.size() > AtlasConfiguration.ATLAS_INDEXSEARCH_ATTRIBUTES_MIN_LIMIT.getInt()
+//                && !isPolicyAttribute(attributes)
+//                && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION.getBoolean();
+//
+//        if (shouldPrefetch) {
+//            return mapVertexToAtlasEntityHeaderWithPrefetch(entityVertex, attributes);
+//        } else {
             return mapVertexToAtlasEntityHeaderWithoutPrefetch(entityVertex, attributes);
-        }
+        //}
     }
 
     private AtlasEntityHeader mapVertexToAtlasEntityHeaderWithoutPrefetch(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
