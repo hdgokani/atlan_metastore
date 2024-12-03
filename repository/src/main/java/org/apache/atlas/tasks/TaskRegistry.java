@@ -403,21 +403,24 @@ public class TaskRegistry {
             int fetched = 0;
             try {
                 if (totalFetched + size > queueSize) {
-                    size = queueSize - totalFetched;
+                    size = queueSize - totalFetched; // Adjust size to not exceed queue size
+                    LOG.info("Adjusting fetch size to {} based on queue size constraint.", size);
                 }
 
                 dsl.put("from", from);
                 dsl.put("size", size);
 
+                LOG.info("DSL Query for iteration: {}", dsl);
                 indexSearchParams.setDsl(dsl);
 
+                LOG.info("Executing Elasticsearch query with from: {} and size: {}", from, size);
                 AtlasIndexQuery indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, indexSearchParams);
 
                 try {
                     indexQueryResult = indexQuery.vertices(indexSearchParams);
+                    LOG.info("Query executed successfully for from: {} with size: {}", from, size);
                 } catch (AtlasBaseException e) {
-                    LOG.error("Failed to fetch pending/in-progress task vertices to re-que");
-                    e.printStackTrace();
+                    LOG.error("Failed to fetch PENDING/IN_PROGRESS task vertices. Exiting loop.", e);
                     break;
                 }
 
@@ -429,34 +432,46 @@ public class TaskRegistry {
 
                         if (vertex != null) {
                             AtlasTask atlasTask = toAtlasTask(vertex);
+
+                            LOG.info("Processing fetched task: {}", atlasTask);
                             if (atlasTask.getStatus().equals(AtlasTask.Status.PENDING) ||
-                                    atlasTask.getStatus().equals(AtlasTask.Status.IN_PROGRESS) ){
-                                LOG.info(String.format("Fetched task from index search: %s", atlasTask.toString()));
+                                    atlasTask.getStatus().equals(AtlasTask.Status.IN_PROGRESS)) {
+                                LOG.info("Adding task to the result list: {}", atlasTask);
                                 ret.add(atlasTask);
                             } else {
                                 LOG.warn("Status mismatch for task with guid: {}. Expected PENDING/IN_PROGRESS but found: {}",
                                         atlasTask.getGuid(), atlasTask.getStatus());
+                                // Repair mismatched task
                                 String docId = LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay()));
+                                LOG.info("Repairing mismatched task with docId: {}", docId);
                                 repairMismatchedTask(atlasTask, docId);
                             }
                         } else {
-                            LOG.warn("Null vertex while re-queuing tasks at index {}", fetched);
+                            LOG.warn("Null vertex encountered while re-queuing tasks at index {}", fetched);
                         }
 
                         fetched++;
                     }
+                    LOG.info("Fetched {} tasks in this iteration.", fetched);
+                } else {
+                    LOG.warn("Index query result is null for from: {} and size: {}", from, size);
                 }
 
                 totalFetched += fetched;
+                LOG.info("Total tasks fetched so far: {}. Incrementing offset by {}.", totalFetched, size);
+
                 from += size;
                 if (fetched < size || totalFetched >= queueSize) {
+                    LOG.info("Breaking loop. Fetched fewer tasks ({}) than requested size ({}) or reached queue size limit ({}).", fetched, size, queueSize);
                     break;
                 }
-            } catch (Exception e){
+            } catch (Exception e) {
+                LOG.error("Exception occurred during task fetching process. Exiting loop.", e);
                 break;
             }
         }
 
+        LOG.info("Fetch process completed. Total tasks fetched: {}.", totalFetched);
         return ret;
     }
 
@@ -495,7 +510,7 @@ public class TaskRegistry {
             Map<String, LinkedHashMap> result = indexQuery.directUpdateByQuery(queryDsl);
 
             if (result != null) {
-                LOG.info("Elasticsearch UpdateByQuery Result: " + result);
+                LOG.info("Elasticsearch UpdateByQuery Result: " + result + "\nfor task : " + atlasTask.getGuid());
             } else {
                 LOG.info("No documents updated in Elasticsearch for guid: " + atlasTask.getGuid());
             }
@@ -613,6 +628,10 @@ public class TaskRegistry {
             ret.setErrorMessage(errorMessage);
         }
 
+        long countToPropagate = v.getProperty(Constants.TASK_ASSET_COUNT_TO_PROPAGATE, Long.class);
+        if (errorMessage != null) {
+            ret.setAssetsCountToPropagate(countToPropagate);
+        }
 
         return ret;
     }

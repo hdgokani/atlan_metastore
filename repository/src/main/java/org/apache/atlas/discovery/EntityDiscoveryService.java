@@ -1002,7 +1002,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 return null;
             }
             RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
-            prepareSearchResult(ret, indexQueryResult, resultAttributes, true);
+            prepareSearchResult(ret, indexQueryResult, resultAttributes, AtlasConfiguration.FETCH_COLLAPSED_RESULT.getBoolean());
 
             ret.setAggregations(indexQueryResult.getAggregationMap());
             ret.setApproximateCount(indexQuery.vertexTotals());
@@ -1071,7 +1071,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
     }
 
-    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
+    private void prepareSearchResultSync(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
         SearchParams searchParams = ret.getSearchParameters();
         try {
             if(LOG.isDebugEnabled()){
@@ -1121,7 +1121,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
                         DirectIndexQueryResult indexQueryCollapsedResult = result.getCollapseVertices(collapseKey);
                         collapseRet.setApproximateCount(indexQueryCollapsedResult.getApproximateCount());
-                        prepareSearchResult(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false);
+                        prepareSearchResultSync(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false);
 
                         collapseRet.setSearchParameters(null);
                         collapse.put(collapseKey, collapseRet);
@@ -1140,9 +1140,13 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 ret.addEntity(header);
             }
         } catch (Exception e) {
-                throw e;
+            throw e;
         }
         scrubSearchResults(ret, searchParams.getSuppressLogs());
+    }
+
+    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
+            prepareSearchResultSync(ret, indexQueryResult, resultAttributes, fetchCollapsedResults);
     }
 
     private Map<String, Object> getMap(String key, Object value) {
