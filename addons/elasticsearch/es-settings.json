@@ -63,6 +63,9 @@
           "truncate_filter"
         ],
         "tokenizer": "standard"
+      },
+      "atlan_hierarchy_analyzer": {
+        "tokenizer": "path_hierarchy"
       }
     },
     "normalizer": {
