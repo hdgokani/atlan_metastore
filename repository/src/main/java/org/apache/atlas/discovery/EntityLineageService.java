@@ -658,7 +658,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean checkForOffset(AtlasEdge atlasEdge, AtlasVertex entityVertex, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret) {
-        AtlasPerfMetrics.MetricRecorder checkForOffsetMetricRecorder = RequestContext.get().startMetricRecord("checkForOffset");
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("checkForOffset");
         try {
             String entityGuid = getGuid(entityVertex);
             LineageOnDemandConstraints entityConstraints = getAndValidateLineageConstraintsByGuid(entityGuid, atlasLineageOnDemandContext);
@@ -673,7 +673,7 @@ public class EntityLineageService implements AtlasLineageService {
             }
             return false;
         } finally {
-            RequestContext.get().endMetricRecord(checkForOffsetMetricRecorder);
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
@@ -1001,7 +1001,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private String getEdgeLabel(AtlasEdge edge) {
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("addEdgeToSkippedEdges");
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getEdgeLabel");
         try {
             AtlasVertex inVertex     = edge.getInVertex();
             AtlasVertex outVertex    = edge.getOutVertex();
@@ -1324,9 +1324,9 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean vertexMatchesEvaluation(AtlasVertex currentVertex, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
-        AtlasPerfMetrics.MetricRecorder vertexMatchesEvaluationMetricRecorder = RequestContext.get().startMetricRecord("vertexMatchesEvaluation");
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("vertexMatchesEvaluation");
         boolean result = atlasLineageOnDemandContext.evaluate(currentVertex);
-        RequestContext.get().endMetricRecord(vertexMatchesEvaluationMetricRecorder);
+        RequestContext.get().endMetricRecord(metric);
         return result;
     }
 
