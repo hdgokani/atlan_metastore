@@ -41,25 +41,14 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /apache-atlas-3.0.0-SNAPSHOT-server.tar.gz
 
-# Copy the repair index jar file
-RUN cd / \
-    && wget https://atlan-build-artifacts.s3.ap-south-1.amazonaws.com/atlas/atlas-index-repair-tool-${VERSION}.tar.gz \
-    && tar -xzvf /atlas-index-repair-tool-${VERSION}.tar.gz \
-    && mkdir /opt/apache-atlas/libext \
-    && mv /atlas-index-repair-tool-${VERSION}.jar /opt/apache-atlas/libext/ \
-    && rm -rf /atlas-index-repair-tool-${VERSION}.tar.gz
-
 RUN ln -s /usr/bin/python2 /usr/bin/python
-
-COPY atlas-hub/repair_index.py /opt/apache-atlas/bin/
-
-RUN chmod +x /opt/apache-atlas/bin/repair_index.py
 
 COPY atlas-hub/atlas_start.py.patch atlas-hub/atlas_config.py.patch /opt/apache-atlas/bin/
 COPY atlas-hub/pre-conf/atlas-log4j.xml /opt/apache-atlas/conf/
 COPY atlas-hub/pre-conf/atlas-log4j2.xml /opt/apache-atlas/conf/
 COPY atlas-hub/pre-conf/atlas-auth/ /opt/apache-atlas/conf/
 
+RUN mkdir /opt/apache-atlas/libext
 RUN curl https://repo1.maven.org/maven2/org/jolokia/jolokia-jvm/1.6.2/jolokia-jvm-1.6.2-agent.jar -o /opt/apache-atlas/libext/jolokia-jvm-agent.jar
 
 RUN cd /opt/apache-atlas/bin \

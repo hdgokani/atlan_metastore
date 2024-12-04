@@ -19,8 +19,8 @@
 
 package org.apache.atlas.plugin.model;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.htrace.shaded.fasterxml.jackson.annotation.JsonInclude;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 public class RangerPolicy extends RangerBaseModelObject implements java.io.Serializable {
@@ -678,7 +678,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		}
 	}
 
-	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 	@XmlRootElement
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class RangerPolicyResource implements java.io.Serializable {
@@ -844,7 +844,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		
 	}
 
-	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 	@XmlRootElement
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class RangerPolicyItem implements java.io.Serializable {
@@ -1135,7 +1135,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		}
 	}
 
-	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 	@XmlRootElement
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class RangerDataMaskPolicyItem extends RangerPolicyItem implements java.io.Serializable {
@@ -1220,7 +1220,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		}
 	}
 
-	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 	@XmlRootElement
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class RangerRowFilterPolicyItem extends RangerPolicyItem implements java.io.Serializable {
@@ -1305,7 +1305,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		}
 	}
 
-	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 	@XmlRootElement
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class RangerPolicyItemAccess implements java.io.Serializable {
@@ -1407,7 +1407,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		
 	}
 
-	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 	@XmlRootElement
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class RangerPolicyItemCondition implements java.io.Serializable {
@@ -1523,7 +1523,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		
 	}
 
-	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 	@XmlRootElement
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class RangerPolicyItemDataMaskInfo implements java.io.Serializable {
@@ -1630,7 +1630,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		}
 	}
 
-	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 	@XmlRootElement
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class RangerPolicyItemRowFilterInfo implements java.io.Serializable {

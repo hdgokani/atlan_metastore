@@ -26,8 +26,7 @@ import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.atlas.admin.client.RangerAdminClient;
-import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
+import org.apache.atlas.authorization.config.RangerPluginConfig;
 import org.apache.atlas.plugin.policyengine.RangerPluginContext;
 import org.apache.atlas.plugin.service.RangerBasePlugin;
 
@@ -49,7 +48,6 @@ public class PolicyRefresher extends Thread {
 	private final RangerBasePlugin               plugIn;
 	private final String                         serviceType;
 	private final String                         serviceName;
-	private final RangerAdminClient              rangerAdmin;
 	private final AtlasAuthAdminClient			 atlasAuthAdminClient;
 	private final RangerRolesProvider            rolesProvider;
 	private final RangerUserStoreProvider		 userStoreProvider;
@@ -87,8 +85,6 @@ public class PolicyRefresher extends Thread {
 		cacheFilename = cacheFilename.replace(File.pathSeparatorChar,  '_');
 
 		this.cacheFileName = cacheFilename;
-
-		rangerAdmin = getRangerAdminClient();
 
 		Gson gson = null;
 		try {
@@ -130,13 +126,6 @@ public class PolicyRefresher extends Thread {
 	 */
 	public String getServiceName() {
 		return serviceName;
-	}
-
-	/**
-	 * @return the rangerAdmin
-	 */
-	public RangerAdminClient getRangerAdminClient() {
-		return rangerAdmin;
 	}
 
 	public long getLastActivationTimeInMillis() {

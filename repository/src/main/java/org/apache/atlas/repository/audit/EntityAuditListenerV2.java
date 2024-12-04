@@ -102,7 +102,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     }
 
     private long getAuditMaxSize(EntityAuditRepository auditRepository, int entityCount) {
-        boolean isCassandraRepository = auditRepository.getClass().equals(CassandraBasedAuditRepository.class);
+        boolean isCassandraRepository = false;
         // Subtracting 150 for other details in the Insert statement.
         long auditMaxSize = isCassandraRepository ? ((CASSANDRA_AUDIT_REPOSITORY_MAX_SIZE_DEFAULT / entityCount) - 150): AUDIT_REPOSITORY_MAX_SIZE_DEFAULT;
         return  auditMaxSize;

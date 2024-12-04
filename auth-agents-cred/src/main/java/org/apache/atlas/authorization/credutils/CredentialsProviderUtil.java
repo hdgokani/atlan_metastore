@@ -65,30 +65,6 @@ public class CredentialsProviderUtil {
         return oid;
     }
 
-    public static KerberosCredentialsProvider getKerberosCredentials(String user, String password){
-        KerberosCredentialsProvider credentialsProvider = new KerberosCredentialsProvider();
-        final GSSManager gssManager = GSSManager.getInstance();
-        try {
-            final GSSName gssUserPrincipalName = gssManager.createName(user, GSSName.NT_USER_NAME);
-            Subject subject = login(user, password);
-            final AccessControlContext acc = AccessController.getContext();
-            final GSSCredential credential = doAsPrivilegedWrapper(subject,
-                    (PrivilegedExceptionAction<GSSCredential>) () -> gssManager.createCredential(gssUserPrincipalName,
-                            GSSCredential.DEFAULT_LIFETIME, SPNEGO_OID, GSSCredential.INITIATE_ONLY),
-                    acc);
-            credentialsProvider.setCredentials(
-                    new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT, AuthScope.ANY_REALM, AuthSchemes.SPNEGO),
-                    new KerberosCredentials(credential));
-        } catch (GSSException e) {
-            logger.error("GSSException:", e);
-            throw new RuntimeException(e);
-        } catch (PrivilegedActionException e) {
-            logger.error("PrivilegedActionException:", e);
-            throw new RuntimeException(e);
-        }
-        return credentialsProvider;
-    }
-
     public static synchronized KerberosTicket getTGT(Subject subject) {
         Set<KerberosTicket> tickets = subject.getPrivateCredentials(KerberosTicket.class);
         for(KerberosTicket ticket: tickets) {

@@ -25,7 +25,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.util.KerberosName;
 import org.apache.hadoop.security.authentication.util.KerberosUtil;
-import org.apache.atlas.authorization.hadoop.utils.RangerCredentialProvider;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
@@ -35,7 +34,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.rmi.dgc.VMID;
-import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
 import java.text.SimpleDateFormat;
@@ -444,63 +442,6 @@ public class MiscUtil {
 		return list;
 	}
 
-	public static String getCredentialString(String url, String alias) {
-		if (url != null && alias != null) {
-			return RangerCredentialProvider.getInstance()
-					.getCredentialString(url, alias);
-		}
-		return null;
-	}
-
-	public static UserGroupInformation createUGIFromSubject(Subject subject)
-			throws IOException {
-		logger.info("SUBJECT " + (subject == null ? "not found" : "found"));
-		UserGroupInformation ugi = null;
-		if (subject != null) {
-			logger.info("SUBJECT.PRINCIPALS.size()="
-					+ subject.getPrincipals().size());
-			Set<Principal> principals = subject.getPrincipals();
-			for (Principal principal : principals) {
-				logger.info("SUBJECT.PRINCIPAL.NAME=" + principal.getName());
-			}
-			try {
-				// Do not remove the below statement. The default
-				// getLoginUser does some initialization which is needed
-				// for getUGIFromSubject() to work.
-				UserGroupInformation.getLoginUser();
-				logger.info("Default UGI before using new Subject:"
-						+ UserGroupInformation.getLoginUser());
-			} catch (Throwable t) {
-				logger.error(t);
-			}
-			ugi = UserGroupInformation.getUGIFromSubject(subject);
-			logger.info("SUBJECT.UGI.NAME=" + ugi.getUserName() + ", ugi="
-					+ ugi);
-		} else {
-			logger.info("Server username is not available");
-		}
-		return ugi;
-	}
-
-	/**
-	 * @param newUGI
-	 * @param newSubject
-	 */
-	public static void setUGILoginUser(UserGroupInformation newUGI,
-			Subject newSubject) {
-		if (newUGI != null) {
-			UserGroupInformation.setLoginUser(newUGI);
-			ugiLoginUser = newUGI;
-			logger.info("Setting UGI=" + newUGI);
-		} else {
-			logger.error("UGI is null. Not setting it.");
-		}
-		if (newSubject != null) {
-			logger.info("Setting SUBJECT");
-			subjectLoginUser = newSubject;
-		}
-	}
-
 	public static UserGroupInformation getUGILoginUser() {
 		UserGroupInformation ret = ugiLoginUser;
 
@@ -554,62 +495,6 @@ public class MiscUtil {
 		}
 	}
 
-	public static Subject getSubjectLoginUser() {
-		return subjectLoginUser;
-	}
-
-	public static String getKerberosNamesRules() {
-		return KerberosName.getRules();
-	}
-	/**
-	 *
-	 * @param principal
-	 *            This could be in the format abc/host@domain.com
-	 * @return
-	 */
-	static public String getShortNameFromPrincipalName(String principal) {
-		if (principal == null) {
-			return null;
-		}
-		try {
-			// Assuming it is kerberos name for now
-			KerberosName kerbrosName = new KerberosName(principal);
-			String userName = kerbrosName.getShortName();
-			userName = StringUtils.substringBefore(userName, "/");
-			userName = StringUtils.substringBefore(userName, "@");
-			return userName;
-		} catch (Throwable t) {
-			logger.error("Error converting kerberos name. principal="
-					+ principal + ", KerberosName.rules=" + KerberosName.getRules());
-		}
-		return principal;
-	}
-
-	/**
-	 * @param userName
-	 * @return
-	 */
-	static public Set<String> getGroupsForRequestUser(String userName) {
-		if (userName != null) {
-			try {
-				UserGroupInformation ugi = UserGroupInformation
-						.createRemoteUser(userName);
-				String[] groups = ugi.getGroupNames();
-				if (groups != null && groups.length > 0) {
-					Set<String> groupsSet = new java.util.HashSet<String>();
-					for (String group : groups) {
-						groupsSet.add(group);
-					}
-					return groupsSet;
-				}
-			} catch (Throwable e) {
-				logErrorMessageByInterval(logger,
-						"Error getting groups for users. userName=" + userName, e);
-			}
-		}
-		return Collections.emptySet();
-	}
-
 	static public boolean logErrorMessageByInterval(Log useLogger,
 			String message) {
 		return logErrorMessageByInterval(useLogger, message, null);
@@ -652,192 +537,9 @@ public class MiscUtil {
 
 	}
 
-	public static void setUGIFromJAASConfig(String jaasConfigAppName) throws Exception {
-		String keytabFile 			= null;
-		String principal  			= null;
-		UserGroupInformation ugi 	= null;
-		if (logger.isDebugEnabled()){
-			logger.debug("===> MiscUtil.setUGIFromJAASConfig() jaasConfigAppName: " + jaasConfigAppName);
-		}
-		try {
-			AppConfigurationEntry entries[] = Configuration.getConfiguration().getAppConfigurationEntry(jaasConfigAppName);
-			if(!ArrayUtils.isEmpty(entries)) {
-				for (AppConfigurationEntry entry : entries) {
-					if (entry.getOptions().get("keyTab") != null) {
-						keytabFile = (String) entry.getOptions().get("keyTab");
-					}
-					if (entry.getOptions().get("principal") != null) {
-						principal = (String) entry.getOptions().get("principal");
-					}
-					if (!StringUtils.isEmpty(principal) && !StringUtils.isEmpty(keytabFile)) {
-						break;
-					}
-				}
-				if (!StringUtils.isEmpty(principal) && !StringUtils.isEmpty(keytabFile)) {
-					// This will login and set the UGI
-					UserGroupInformation.loginUserFromKeytab(principal, keytabFile);
-					ugi = UserGroupInformation.getLoginUser();
-				} else {
-					String error_mesage = "Unable to get the principal/keytab from jaasConfigAppName: " + jaasConfigAppName;
-					logger.error(error_mesage);
-					throw new Exception(error_mesage);
-				}
-				logger.info("MiscUtil.setUGIFromJAASConfig() UGI: " + ugi + " principal: " + principal + " keytab: " + keytabFile);
-			} else {
-				logger.warn("JAASConfig file not found! Ranger Plugin will not working in a Secure Cluster...");
-			}
-		} catch ( Exception e) {
-			logger.error("Unable to set UGI for Principal: " + principal + " keytab: " + keytabFile );
-			throw e;
-		}
-		if (logger.isDebugEnabled()) {
-			logger.debug("<=== MiscUtil.setUGIFromJAASConfig() jaasConfigAppName: " + jaasConfigAppName + " UGI: " + ugi + " principal: " + principal + " keytab: " + keytabFile);
-		}
-	}
-
-	public static void authWithKerberos(String keytab, String principal,
-			String nameRules) {
-
-		if (keytab == null || principal == null) {
-			return;
-		}
-		Subject serverSubject = new Subject();
-		int successLoginCount = 0;
-		String[] spnegoPrincipals = null;
-
-		try {
-			if (principal.equals("*")) {
-				spnegoPrincipals = KerberosUtil.getPrincipalNames(keytab,
-						Pattern.compile("HTTP/.*"));
-				if (spnegoPrincipals.length == 0) {
-					logger.error("No principals found in keytab=" + keytab);
-				}
-			} else {
-				spnegoPrincipals = new String[] { principal };
-			}
-
-			if (nameRules != null) {
-				KerberosName.setRules(nameRules);
-			}
-
-			boolean useKeytab = true;
-			if (!useKeytab) {
-				logger.info("Creating UGI with subject");
-                                LoginContext loginContext = null;
-				List<LoginContext> loginContexts = new ArrayList<LoginContext>();
-				for (String spnegoPrincipal : spnegoPrincipals) {
-					try {
-						logger.info("Login using keytab " + keytab
-								+ ", for principal " + spnegoPrincipal);
-						final KerberosConfiguration kerberosConfiguration = new KerberosConfiguration(
-								keytab, spnegoPrincipal);
-                                                loginContext = new LoginContext("",
-								serverSubject, null, kerberosConfiguration);
-						loginContext.login();
-						successLoginCount++;
-						logger.info("Login success keytab " + keytab
-								+ ", for principal " + spnegoPrincipal);
-						loginContexts.add(loginContext);
-					} catch (Throwable t) {
-						logger.error("Login failed keytab " + keytab
-								+ ", for principal " + spnegoPrincipal, t);
-					}
-					if (successLoginCount > 0) {
-						logger.info("Total login success count="
-								+ successLoginCount);
-						try {
-							UserGroupInformation
-									.loginUserFromSubject(serverSubject);
-							// UserGroupInformation ugi =
-							// createUGIFromSubject(serverSubject);
-							// if (ugi != null) {
-							// setUGILoginUser(ugi, serverSubject);
-							// }
-						} catch (Throwable e) {
-							logger.error("Error creating UGI from subject. subject="
-									+ serverSubject);
-                                                } finally {
-                                                        if (loginContext != null) {
-                                                                loginContext.logout();
-                                                        }
-						}
-					} else {
-						logger.error("Total logins were successfull from keytab="
-								+ keytab + ", principal=" + principal);
-					}
-				}
-			} else {
-				logger.info("Creating UGI from keytab directly. keytab="
-						+ keytab + ", principal=" + spnegoPrincipals[0]);
-				UserGroupInformation ugi = UserGroupInformation
-						.loginUserFromKeytabAndReturnUGI(spnegoPrincipals[0],
-								keytab);
-				MiscUtil.setUGILoginUser(ugi, null);
-			}
-
-		} catch (Throwable t) {
-			logger.error("Failed to login with given keytab and principal", t);
-		}
-
-	}
-
 	static class LogHistory {
 		long lastLogTime = 0;
 		int counter = 0;
-	}
-
-	/**
-	 * Kerberos context configuration for the JDK GSS library.
-	 */
-	private static class KerberosConfiguration extends Configuration {
-		private String keytab;
-		private String principal;
-
-		public KerberosConfiguration(String keytab, String principal) {
-			this.keytab = keytab;
-			this.principal = principal;
-		}
-
-		@Override
-		public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-			Map<String, String> options = new HashMap<String, String>();
-			if (IBM_JAVA) {
-				options.put("useKeytab", keytab.startsWith("file://") ? keytab
-						: "file://" + keytab);
-				options.put("principal", principal);
-				options.put("credsType", "acceptor");
-			} else {
-				options.put("keyTab", keytab);
-				options.put("principal", principal);
-				options.put("useKeyTab", "true");
-				options.put("storeKey", "true");
-				options.put("doNotPrompt", "true");
-				options.put("useTicketCache", "true");
-				options.put("renewTGT", "true");
-				options.put("isInitiator", "false");
-			}
-			options.put("refreshKrb5Config", "true");
-			String ticketCache = System.getenv("KRB5CCNAME");
-			if (ticketCache != null) {
-				if (IBM_JAVA) {
-					options.put("useDefaultCcache", "true");
-					// The first value searched when "useDefaultCcache" is used.
-					System.setProperty("KRB5CCNAME", ticketCache);
-					options.put("renewTGT", "true");
-					options.put("credsType", "both");
-				} else {
-					options.put("ticketCache", ticketCache);
-				}
-			}
-			if (logger.isDebugEnabled()) {
-				options.put("debug", "true");
-			}
-
-			return new AppConfigurationEntry[] { new AppConfigurationEntry(
-					KerberosUtil.getKrb5LoginModuleName(),
-					AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-					options), };
-		}
 	}
 
 	public static UserGroupInformation getLoginUser() throws IOException {
@@ -857,24 +559,6 @@ public class MiscUtil {
 		if ( logger.isDebugEnabled() ) {
 			logger.debug("<== MiscUtil.initLocalHost()");
 		}
-	}
-	public static Date getUTCDateForLocalDate(Date date) {
-		TimeZone gmtTimeZone = TimeZone.getTimeZone("GMT+0");
-		Calendar local  = Calendar.getInstance();
-		int      offset = local.getTimeZone().getOffset(local.getTimeInMillis());
-		GregorianCalendar utc = new GregorianCalendar(gmtTimeZone);
-		utc.setTimeInMillis(date.getTime());
-		utc.add(Calendar.MILLISECOND, -offset);
-		return utc.getTime();
-	}
-	public static Date getUTCDate() {
-		TimeZone gmtTimeZone = TimeZone.getTimeZone("GMT+0");
-	    Calendar local  = Calendar.getInstance();
-	    int      offset = local.getTimeZone().getOffset(local.getTimeInMillis());
-	    GregorianCalendar utc = new GregorianCalendar(gmtTimeZone);
-	    utc.setTimeInMillis(local.getTimeInMillis());
-	    utc.add(Calendar.MILLISECOND, -offset);
-	    return utc.getTime();
 	}
 
 	// use Holder class to defer initialization until needed

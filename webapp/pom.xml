@@ -111,10 +111,10 @@
             </exclusions>
         </dependency>
 
-        <dependency>
+        <!--<dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-client-v1</artifactId>
-        </dependency>
+        </dependency>-->
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
@@ -154,18 +154,6 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>auth-plugin-atlas</artifactId>
             <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-janusgraph-hbase2</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-              <exclusion>
-                <groupId>org.noggit</groupId>
-                <artifactId>noggit</artifactId>
-              </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -578,13 +566,6 @@
             <artifactId>jackson-core</artifactId>
             <version>${jackson.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-index-repair-tool</artifactId>
-            <version>3.0.0-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
-
     </dependencies>
 
     <build>

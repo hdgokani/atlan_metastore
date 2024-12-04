@@ -124,30 +124,8 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     }
 
     /*static {
-        addHBase2Support();
-
         addSolr6Index();
     }*/
-
-    private static void addHBase2Support() {
-        try {
-            Field field = StandardStoreManager.class.getDeclaredField("ALL_MANAGER_CLASSES");
-            field.setAccessible(true);
-
-            Field modifiersField = Field.class.getDeclaredField("modifiers");
-            modifiersField.setAccessible(true);
-            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-
-            Map<String, String> customMap = new HashMap<>(StandardStoreManager.getAllManagerClasses());
-            customMap.put("hbase2", org.janusgraph.diskstorage.hbase2.HBaseStoreManager.class.getName());
-            ImmutableMap<String, String> immap = ImmutableMap.copyOf(customMap);
-            field.set(null, immap);
-
-            LOG.debug("Injected HBase2 support - {}", org.janusgraph.diskstorage.hbase2.HBaseStoreManager.class.getName());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private static void addSolr6Index() {
         try {

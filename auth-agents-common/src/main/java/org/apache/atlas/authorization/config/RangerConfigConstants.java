@@ -17,14 +17,11 @@
  * under the License.
  */
 
-package org.apache.atlas.plugin.util;
+package org.apache.atlas.authorization.config;
 
-import org.apache.commons.lang.StringUtils;
-
-public class RangerServiceNotFoundException extends Exception {
-
-    public RangerServiceNotFoundException(String serviceName) {
-        super(serviceName);
-    }
+public class RangerConfigConstants {
+	//SECURITY CONFIG DEFAULTS
+    public static final String  RANGER_KEYSTORE_TYPE                            = "ranger.keystore.file.type";
 
 }
+

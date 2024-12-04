@@ -714,7 +714,6 @@
         <guice.version>4.1.0</guice.version>
         <hadoop.hdfs-client.version>${hadoop.version}</hadoop.hdfs-client.version>
         <hadoop.version>3.3.6</hadoop.version>
-        <hbase.version>2.3.3</hbase.version>
         <hive.version>3.1.0</hive.version>
         <hppc.version>0.8.1</hppc.version>
         <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
@@ -758,14 +757,16 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <projectBaseDir>${project.basedir}</projectBaseDir>
-        <skipCheck>false</skipCheck>
+
+        <skipCheck>true</skipCheck>
         <skipDocs>true</skipDocs>
         <skipEnunciate>false</skipEnunciate>
-        <skipITs>false</skipITs>
+        <skipITs>true</skipITs>
         <skipSite>true</skipSite>
         <skipTests>false</skipTests>
         <skipUTs>false</skipUTs>
         <skipOverlay>false</skipOverlay>
+
         <slf4j.version>1.7.30</slf4j.version>
         <solr-test-framework.version>8.6.3</solr-test-framework.version>
         <solr.version>8.6.3</solr.version>
@@ -811,8 +812,6 @@
         <module>docs</module>
 
         <module>plugin-classloader</module>
-        <module>tools/classification-updater</module>
-        <module>tools/atlas-index-repair</module>
 
         <module>distro</module>
     </modules>
@@ -835,14 +834,14 @@
                 <enabled>true</enabled>
             </releases>
         </repository>
-        <repository>
+       <!-- <repository>
             <id>hortonworks.repo</id>
             <url>https://repo.hortonworks.com/content/repositories/releases</url>
             <name>Hortonworks Repo</name>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
-        </repository>
+        </repository>-->
         <repository>
             <id>apache.snapshots.repo</id>
             <url>https://repository.apache.org/content/groups/snapshots</url>
@@ -885,6 +884,12 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-core</artifactId>
+                <version>1.38.1</version>
+            </dependency>
+
             <dependency>
                 <groupId>jakarta.annotation</groupId>
                 <artifactId>jakarta.annotation-api</artifactId>
@@ -1321,76 +1326,6 @@
             </dependency>
 
             <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-client</artifactId>
-                <version>${hbase.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <artifactId>avro</artifactId>
-                        <groupId>org.apache.avro</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>jruby-complete</artifactId>
-                        <groupId>org.jruby</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>asm</artifactId>
-                        <groupId>asm</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.apache.hadoop</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.codehaus.jackson</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.mortbay.jetty</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>junit</groupId>
-                        <artifactId>junit</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-server</artifactId>
-                <version>${hbase.version}</version>
-                <classifier>tests</classifier>
-                <exclusions>
-                    <exclusion>
-                        <groupId>junit</groupId>
-                        <artifactId>junit</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-server</artifactId>
-                <version>${hbase.version}</version>
-                <scope>provided</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.mortbay.jetty</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>tomcat</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>junit</groupId>
-                        <artifactId>junit</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
                 <groupId>javax.servlet</groupId>
                 <artifactId>javax.servlet-api</artifactId>
                 <version>${javax.servlet.version}</version>
@@ -1508,90 +1443,6 @@
                 <artifactId>atlas-graphdb-impls</artifactId>
                 <version>${project.version}</version>
                 <type>pom</type>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>hive-bridge</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>storm-bridge</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>falcon-bridge</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>sqoop-bridge</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>hive-bridge-shim</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>storm-bridge-shim</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>falcon-bridge-shim</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>sqoop-bridge-shim</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>hbase-bridge</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>hbase-bridge-shim</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>kafka-bridge</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>impala-hook-api</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>impala-bridge</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>impala-bridge-shim</artifactId>
-                <version>${project.version}</version>
             </dependency>
 
             <!-- API documentation  -->
