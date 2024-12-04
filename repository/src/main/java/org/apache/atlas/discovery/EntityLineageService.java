@@ -1001,17 +1001,23 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private String getEdgeLabel(AtlasEdge edge) {
-        AtlasVertex inVertex     = edge.getInVertex();
-        AtlasVertex outVertex    = edge.getOutVertex();
-        String      inGuid       = AtlasGraphUtilsV2.getIdFromVertex(inVertex);
-        String      outGuid      = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
-        String      relationGuid = AtlasGraphUtilsV2.getEncodedProperty(edge, RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
-        boolean     isInputEdge  = edge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("addEdgeToSkippedEdges");
+        try {
+            AtlasVertex inVertex     = edge.getInVertex();
+            AtlasVertex outVertex    = edge.getOutVertex();
+            String      inGuid       = AtlasGraphUtilsV2.getIdFromVertex(inVertex);
+            String      outGuid      = AtlasGraphUtilsV2.getIdFromVertex(outVertex);
+            String      relationGuid = AtlasGraphUtilsV2.getEncodedProperty(edge, RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
+            boolean     isInputEdge  = edge.getLabel().equalsIgnoreCase(PROCESS_INPUTS_EDGE);
 
-        if (isLineageOnDemandEnabled()) {
-            return getEdgeLabelFromGuids(isInputEdge, inGuid, outGuid);
+            if (isLineageOnDemandEnabled()) {
+                return getEdgeLabelFromGuids(isInputEdge, inGuid, outGuid);
+            }
+            return relationGuid;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
-        return relationGuid;
+
     }
 
     private String getEdgeLabelFromGuids(boolean isInputEdge, String inGuid, String outGuid) {
@@ -1392,9 +1398,11 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private void addEdgeToSkippedEdges(AtlasLineageOnDemandInfo lineageInfo, AtlasEdge edge) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("addEdgeToSkippedEdges");
         if (lineageInfo.getSkippedEdges() != null) {
             lineageInfo.getSkippedEdges().add(getEdgeLabel(edge));
         }
+        RequestContext.get().endMetricRecord(metric);
     }
 
     private AtlasLineageInfo initializeLineageInfo(String guid, LineageDirection direction, int depth, int limit, int offset) {
