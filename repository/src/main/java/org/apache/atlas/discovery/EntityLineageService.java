@@ -658,18 +658,23 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean checkForOffset(AtlasEdge atlasEdge, AtlasVertex entityVertex, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret) {
-        String entityGuid = getGuid(entityVertex);
-        LineageOnDemandConstraints entityConstraints = getAndValidateLineageConstraintsByGuid(entityGuid, atlasLineageOnDemandContext);
-        LineageInfoOnDemand entityLineageInfo = ret.getRelationsOnDemand().containsKey(entityGuid) ? ret.getRelationsOnDemand().get(entityGuid) : new LineageInfoOnDemand(entityConstraints);
+        AtlasPerfMetrics.MetricRecorder checkForOffsetMetricRecorder = RequestContext.get().startMetricRecord("checkForOffset");
+        try {
+            String entityGuid = getGuid(entityVertex);
+            LineageOnDemandConstraints entityConstraints = getAndValidateLineageConstraintsByGuid(entityGuid, atlasLineageOnDemandContext);
+            LineageInfoOnDemand entityLineageInfo = ret.getRelationsOnDemand().containsKey(entityGuid) ? ret.getRelationsOnDemand().get(entityGuid) : new LineageInfoOnDemand(entityConstraints);
 
-        if (entityConstraints.getFrom() != 0 && entityLineageInfo.getFromCounter() < entityConstraints.getFrom()) {
-            if (! lineageContainsSkippedEdgeV2(ret, atlasEdge)) {
-                addEdgeToSkippedEdges(ret, atlasEdge);
-                entityLineageInfo.incrementFromCounter();
+            if (entityConstraints.getFrom() != 0 && entityLineageInfo.getFromCounter() < entityConstraints.getFrom()) {
+                if (! lineageContainsSkippedEdgeV2(ret, atlasEdge)) {
+                    addEdgeToSkippedEdges(ret, atlasEdge);
+                    entityLineageInfo.incrementFromCounter();
+                }
+                return true;
             }
-            return true;
+            return false;
+        } finally {
+            RequestContext.get().endMetricRecord(checkForOffsetMetricRecorder);
         }
-        return false;
     }
 
     private boolean checkOffsetAndSkipEntity(AtlasLineageListContext atlasLineageListContext, AtlasLineageListInfo ret) {
@@ -1313,7 +1318,10 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean vertexMatchesEvaluation(AtlasVertex currentVertex, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
-        return atlasLineageOnDemandContext.evaluate(currentVertex);
+        AtlasPerfMetrics.MetricRecorder vertexMatchesEvaluationMetricRecorder = RequestContext.get().startMetricRecord("vertexMatchesEvaluation");
+        boolean result = atlasLineageOnDemandContext.evaluate(currentVertex);
+        RequestContext.get().endMetricRecord(vertexMatchesEvaluationMetricRecorder);
+        return result;
     }
 
     private boolean edgeMatchesEvaluation(AtlasEdge currentEdge, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
