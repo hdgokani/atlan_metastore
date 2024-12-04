@@ -374,13 +374,4 @@ public interface AtlasEntityStore {
     void unlinkBusinessPolicy(String policyId, Set<String> unlinkGuids) throws AtlasBaseException;
 
     void moveBusinessPolicies(Set<String> policyId, String assetId, String type) throws AtlasBaseException;
-
-    /**
-     *
-     * @param entities
-     * @throws AtlasBaseException
-     *
-     *  For evaluations of policies
-     */
-    List<AtlasEvaluatePolicyResponse> evaluatePolicies(List<AtlasEvaluatePolicyRequest> entities) throws AtlasBaseException;
 }
