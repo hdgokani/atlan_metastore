@@ -1899,7 +1899,7 @@ public class EntityGraphRetriever {
         }
 
         // if array is empty && element is array of primitives, return the value from properties
-        if (properties.get(attribute.getName()) == null &&  attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ARRAY)) {
+        if (properties.get(attribute.getName()) == null &&  (elementTypeCategory == null || elementTypeCategory.equals(TypeCategory.PRIMITIVE))) {
             return new ArrayList<>();
         }
 
@@ -1908,7 +1908,6 @@ public class EntityGraphRetriever {
             LOG.info("capturing excluded property set category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
             AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
-            properties.put(attribute.getName(), mappedVertex);
             RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
             return mappedVertex;
         }
