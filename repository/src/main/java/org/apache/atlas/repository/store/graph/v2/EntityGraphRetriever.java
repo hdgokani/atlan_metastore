@@ -1014,20 +1014,23 @@ public class EntityGraphRetriever {
 
     private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set<String> attributes) {
         Map<String, Object> propertiesMap = new HashMap<>();
-
+        if (entityType == null) {
+            return propertiesMap;
+        }
         // Execute the traversal to fetch properties
         GraphTraversal<Vertex, VertexProperty<Object>> traversal = graph.V(entityVertex.getId()).properties();
 
-        // loop through all attributes
-        // check typeCategory of each attribute via typeRegistry
-        // if typeCategory is ARRAY of struct, then check elementTypeCategory
+        // Check if any attribute is a struct or object type for edge lookup
+        boolean isAnyAttributeAStructOrObject = attributes.stream().anyMatch(a -> {
 
-        boolean isArrayOfStruct = attributes.stream().anyMatch(a -> {
             AtlasAttribute attribute = entityType.getAttribute(a);
             if (attribute == null || attribute.getAttributeType() == null) {
                 return false;
             }
 
+            if ((attribute.getAttributeType() instanceof AtlasStructType)) {
+                return true;
+            }
 
             if (!(attribute.getAttributeType() instanceof AtlasArrayType)) {
                 return false;
@@ -1044,7 +1047,7 @@ public class EntityGraphRetriever {
             return arrayElementType.getTypeCategory() == TypeCategory.STRUCT;
         });
 
-        if (isArrayOfStruct) {
+        if (isAnyAttributeAStructOrObject) {
             List<AtlasEdge> edgeProperties = IteratorUtils.toList(entityVertex.getEdges(AtlasEdgeDirection.OUT).iterator());
             List<String> edgeLabels =
                     edgeProperties.stream()
@@ -1056,7 +1059,6 @@ public class EntityGraphRetriever {
 
             edgeLabels.stream().forEach(e -> propertiesMap.put(e, StringUtils.SPACE));
         }
-
 
         // Iterate through the resulting VertexProperty objects
         while (traversal.hasNext()) {
@@ -1929,25 +1931,22 @@ public class EntityGraphRetriever {
             return null;
         }
 
-
         TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
         TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ?((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
 
-        // 1. if element is primitive or array of primitives, return the value from properties
-        // 2. also loads property for map type attributes
-        if (properties.get(attribute.getName()) != null &&
-                (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) || (elementTypeCategory == null || elementTypeCategory.equals(TypeCategory.PRIMITIVE)))) {
+        // value is present and value is not marker (SPACE for further lookup) and type is primitive or array of primitives
+        if (properties.get(attribute.getName()) != null && properties.get(attribute.getName()) != StringUtils.SPACE &&
+                ((TypeCategory.PRIMITIVE.equals(typeCategory)) || (TypeCategory.PRIMITIVE.equals(elementTypeCategory)))) {
             return properties.get(attribute.getName());
         }
 
-        // if array is empty && element is array of primitives, return the value from properties
-        if (properties.get(attribute.getName()) == null &&  (elementTypeCategory == null || elementTypeCategory.equals(TypeCategory.PRIMITIVE))) {
+        // if value is empty && element is array of primitives, return the value from properties
+        if (properties.get(attribute.getName()) == null &&  (TypeCategory.PRIMITIVE.equals(elementTypeCategory))) {
             return new ArrayList<>();
         }
 
-        // if element is non-primitive, fetch the value from the vertex
-        if (properties.get(attribute.getName()) != null && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
-            //LOG.debug("capturing excluded property set category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
+        // if value is present, then lookup. object or struct or array of object or struct
+        if (properties.get(attribute.getName()) != null) {
             AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
             RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
