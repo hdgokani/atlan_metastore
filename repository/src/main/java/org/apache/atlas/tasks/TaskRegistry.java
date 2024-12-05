@@ -628,10 +628,6 @@ public class TaskRegistry {
             ret.setErrorMessage(errorMessage);
         }
 
-        long countToPropagate = v.getProperty(Constants.TASK_ASSET_COUNT_TO_PROPAGATE, Long.class);
-        if (errorMessage != null) {
-            ret.setAssetsCountToPropagate(countToPropagate);
-        }
 
         return ret;
     }
