@@ -1012,19 +1012,51 @@ public class EntityGraphRetriever {
         return mapVertexToAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }
 
-    private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType) {
+    private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set<String> attributes) {
         Map<String, Object> propertiesMap = new HashMap<>();
 
         // Execute the traversal to fetch properties
         GraphTraversal<Vertex, VertexProperty<Object>> traversal = graph.V(entityVertex.getId()).properties();
 
-        // struct properties are stored as edges in the graph
-        List<String> structProperties = (List<String>) IteratorUtils.toList
-                (entityVertex.getEdges(AtlasEdgeDirection.BOTH).iterator())
-                .stream().map(e -> ((AtlasJanusEdge) e).getLabel().substring(2))
-                .collect(Collectors.toList());
+        // loop through all attributes
+        // check typeCategory of each attribute via typeRegistry
+        // if typeCategory is ARRAY of struct, then check elementTypeCategory
 
-        structProperties.stream().forEach(e-> propertiesMap.put(e, StringUtils.SPACE));
+        boolean isArrayOfStruct = attributes.stream().anyMatch(a -> {
+            AtlasAttribute attribute = entityType.getAttribute(a);
+            if (attribute == null || attribute.getAttributeType() == null) {
+                return false;
+            }
+
+
+            if (!(attribute.getAttributeType() instanceof AtlasArrayType)) {
+                return false;
+
+            }
+            AtlasArrayType arrayType = (AtlasArrayType) attribute.getAttributeType();
+
+            if (arrayType.getElementType() == null) {
+                return false;
+            }
+
+            AtlasType arrayElementType = arrayType.getElementType();
+
+            return arrayElementType.getTypeCategory() == TypeCategory.STRUCT;
+        });
+
+        if (isArrayOfStruct) {
+            List<AtlasEdge> edgeProperties = IteratorUtils.toList(entityVertex.getEdges(AtlasEdgeDirection.OUT).iterator());
+            List<String> edgeLabels =
+                    edgeProperties.stream()
+                            .map(e -> {
+                                AtlasJanusEdge edge = (AtlasJanusEdge) e;
+                                return edge.getLabel().toString().substring(2);
+                            })
+                            .collect(Collectors.toList());
+
+            edgeLabels.stream().forEach(e -> propertiesMap.put(e, StringUtils.SPACE));
+        }
+
 
         // Iterate through the resulting VertexProperty objects
         while (traversal.hasNext()) {
@@ -1185,7 +1217,7 @@ public class EntityGraphRetriever {
             //pre-fetching the properties
             String typeName = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class); //properties.get returns null
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName); // this is not costly
-            Map<String, Object> properties = preloadProperties(entityVertex, entityType);
+            Map<String, Object> properties = preloadProperties(entityVertex, entityType, attributes);
 
             String guid = (String) properties.get(Constants.GUID_PROPERTY_KEY);
 
