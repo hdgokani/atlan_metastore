@@ -1046,7 +1046,7 @@ public class EntityGraphRetriever {
                 throw e; // Re-throw the exception after logging it
             }
         }
-
+        LOG.info("Preloaded properties for entity {}, dataContractLatest: {}", entityVertex.getId(), propertiesMap.get("dataContractLatest"));
         return propertiesMap;
     }
 
@@ -1904,8 +1904,8 @@ public class EntityGraphRetriever {
         }
 
         // if element is non-primitive, fetch the value from the vertex
-        if (properties.get(attribute.getName()) != null && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
-            LOG.debug("capturing excluded property set category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
+        if (AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
+            LOG.info("capturing excluded property set category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
             AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
             properties.put(attribute.getName(), mappedVertex);
