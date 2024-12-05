@@ -1089,7 +1089,6 @@ public class EntityLineageService implements AtlasLineageService {
         } finally {
             RequestContext.get().endMetricRecord(metric);
         }
-
     }
 
     private String getEdgeLabelFromGuids(boolean isInputEdge, String inGuid, String outGuid) {
@@ -1398,18 +1397,30 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean vertexMatchesEvaluation(AtlasVertex currentVertex, AtlasLineageContext lineageContext) {
-        return currentVertex.equals(lineageContext.getStartDatasetVertex()) || lineageContext.evaluate(currentVertex);
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("vertexMatchesEvaluation");
+        try {
+            return currentVertex.equals(lineageContext.getStartDatasetVertex()) || lineageContext.evaluate(currentVertex);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
     }
 
     private boolean vertexMatchesEvaluation(AtlasVertex currentVertex, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("vertexMatchesEvaluation");
-        boolean result = atlasLineageOnDemandContext.evaluate(currentVertex);
-        RequestContext.get().endMetricRecord(metric);
-        return result;
+        try {
+            return atlasLineageOnDemandContext.evaluate(currentVertex);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
     }
 
     private boolean edgeMatchesEvaluation(AtlasEdge currentEdge, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
-        return atlasLineageOnDemandContext.evaluate(currentEdge);
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("edgeMatchesEvaluation");
+        try {
+            return atlasLineageOnDemandContext.evaluate(currentEdge);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
     }
 
     private boolean shouldProcessEdge(AtlasLineageContext lineageContext, AtlasEdge edge) {
