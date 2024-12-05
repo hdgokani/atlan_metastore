@@ -49,6 +49,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusEdge;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
@@ -66,6 +67,7 @@ import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -1016,6 +1018,14 @@ public class EntityGraphRetriever {
         // Execute the traversal to fetch properties
         GraphTraversal<Vertex, VertexProperty<Object>> traversal = graph.V(entityVertex.getId()).properties();
 
+        // struct properties are stored as edges in the graph
+        List<String> structProperties = (List<String>) IteratorUtils.toList
+                (entityVertex.getEdges(AtlasEdgeDirection.BOTH).iterator())
+                .stream().map(e -> ((AtlasJanusEdge) e).getLabel().substring(2))
+                .collect(Collectors.toList());
+
+        structProperties.stream().forEach(e-> propertiesMap.put(e, StringUtils.SPACE));
+
         // Iterate through the resulting VertexProperty objects
         while (traversal.hasNext()) {
             try {
@@ -1891,7 +1901,8 @@ public class EntityGraphRetriever {
         TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
         TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ?((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
 
-        // if element is primitive or array of primitives, return the value from properties
+        // 1. if element is primitive or array of primitives, return the value from properties
+        // 2. also loads property for map type attributes
         if (properties.get(attribute.getName()) != null &&
                 (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) || (elementTypeCategory == null || elementTypeCategory.equals(TypeCategory.PRIMITIVE)))) {
             return properties.get(attribute.getName());
@@ -1903,7 +1914,7 @@ public class EntityGraphRetriever {
         }
 
         // if element is non-primitive, fetch the value from the vertex
-        if (AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
+        if (properties.get(attribute.getName()) != null && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
             //LOG.debug("capturing excluded property set category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
             AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
