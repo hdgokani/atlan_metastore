@@ -1932,20 +1932,20 @@ public class EntityGraphRetriever {
         }
 
         TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
-        TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ?((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
+        TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
 
         // value is present and value is not marker (SPACE for further lookup) and type is primitive or array of primitives
         if (properties.get(attribute.getName()) != null && properties.get(attribute.getName()) != StringUtils.SPACE &&
-                ((TypeCategory.PRIMITIVE.equals(typeCategory)) || (TypeCategory.PRIMITIVE.equals(elementTypeCategory)))) {
+                (typeCategory.equals(TypeCategory.PRIMITIVE) || (elementTypeCategory == null || elementTypeCategory.equals(TypeCategory.PRIMITIVE)))) {
             return properties.get(attribute.getName());
         }
 
-        // if value is empty && element is array of primitives, return the value from properties
-        if (properties.get(attribute.getName()) == null &&  (TypeCategory.PRIMITIVE.equals(elementTypeCategory))) {
+        // if value is empty && element is array of primitives, return empty list
+        if (properties.get(attribute.getName()) == null &&  (elementTypeCategory == null || elementTypeCategory.equals(TypeCategory.PRIMITIVE))) {
             return new ArrayList<>();
         }
 
-        // if value is present, then lookup. object or struct or array of object or struct
+        // value is present as marker, fetch the value from the vertex
         if (properties.get(attribute.getName()) != null) {
             AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
