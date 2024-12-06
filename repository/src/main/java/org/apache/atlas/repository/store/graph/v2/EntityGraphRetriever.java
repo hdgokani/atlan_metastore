@@ -80,20 +80,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -1054,18 +1041,11 @@ public class EntityGraphRetriever {
             List<String> edgeLabelsDebug  = edgeProperties.stream().map(AtlasEdge::getLabel).collect(Collectors.toList());
             LOG.info("Edge labels for entityVertex: {}, is : {}", guid, edgeLabelsDebug);
             Set<String> edgeLabels =
-                    edgeProperties.stream()
-                            .map(e -> {
-                                AtlasJanusEdge edge = (AtlasJanusEdge) e;
-                                String edgeLabel = edge.getLabel();
-                                // Get an attribute from attributes that matches edgeLabel
-                                Map<String, String> attributeMap = attributes.stream()
-                                        .collect(Collectors.toMap(
-                                                ele -> EDGE_LABEL_PREFIX.concat(ele),
-                                                ele -> ele
-                                        ));
-                                return attributeMap.getOrDefault(edgeLabel, null);
-                            })
+                    edgeLabelsDebug.stream()
+                            .map(edgeLabel -> {
+                                Optional<String> matchingAttrOpt = attributes.stream().filter(ele -> edgeLabel.contains(ele)).findFirst();
+                                return matchingAttrOpt.orElse(null);
+                            }).filter(Objects::nonNull)
                             .collect(Collectors.toSet());
 
             edgeLabels.stream().forEach(e -> propertiesMap.put(e, StringUtils.SPACE));
