@@ -1080,6 +1080,10 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static Boolean isEntityIncomplete(Integer value) {
+        return value != null && value.equals(INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
+    }
+
     public static Boolean getEntityHasLineage(AtlasElement element) {
         if (element.getPropertyKeys().contains(HAS_LINEAGE)) {
             return element.getProperty(HAS_LINEAGE, Boolean.class);
@@ -1107,8 +1111,22 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static Map getCustomAttributes(String customAttrsString) {
+        Map    ret               = null;
+
+        if (customAttrsString != null) {
+            ret = AtlasType.fromJson(customAttrsString, Map.class);
+        }
+
+        return ret;
+    }
+
     public static Set<String> getLabels(AtlasElement element) {
         return parseLabelsString(element.getProperty(LABELS_PROPERTY_KEY, String.class));
+    }
+
+    public static Set<String> getLabels(String labels) {
+        return parseLabelsString(labels);
     }
 
     public static Integer getProvenanceType(AtlasElement element) {

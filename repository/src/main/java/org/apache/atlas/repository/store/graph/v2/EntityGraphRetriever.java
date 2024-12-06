@@ -1017,7 +1017,7 @@ public class EntityGraphRetriever {
 
     private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set<String> attributes) {
         Map<String, Object> propertiesMap = new HashMap<>();
-
+        String  guid         = entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
         // Execute the traversal to fetch properties
         GraphTraversal<Vertex, VertexProperty<Object>> traversal = graph.V(entityVertex.getId()).properties();
 
@@ -1052,7 +1052,7 @@ public class EntityGraphRetriever {
                     .map(ele -> EDGE_LABEL_PREFIX.concat(ele)).collect(Collectors.toSet());
             List<AtlasEdge> edgeProperties = IteratorUtils.toList(entityVertex.getEdges(AtlasEdgeDirection.BOTH).iterator());
             List<String> edgeLabelsDebug  = edgeProperties.stream().map(AtlasEdge::getLabel).collect(Collectors.toList());
-            LOG.info("Edge labels for entityVertex: {}, is : {}", entityVertex.getId(), edgeLabelsDebug);
+            LOG.info("Edge labels for entityVertex: {}, is : {}", guid, edgeLabelsDebug);
             Set<String> edgeLabels =
                     edgeProperties.stream()
                             .map(e -> {
@@ -1101,7 +1101,7 @@ public class EntityGraphRetriever {
                 throw e; // Re-throw the exception after logging it
             }
         }
-        LOG.info("Preloaded properties for entity vertex: {}", propertiesMap);
+        LOG.info("Preloaded properties for entity vertex: {}, {}", guid, propertiesMap);
         return propertiesMap;
     }
 
@@ -1250,7 +1250,7 @@ public class EntityGraphRetriever {
                 ret.setClassificationNames(getAllTraitNamesFromAttribute(entityVertex));
             }
             ret.setIsIncomplete(isIncomplete);
-            ret.setLabels(getLabels(entityVertex));
+            ret.setLabels(getLabels((String)properties.get(Constants.LABELS_PROPERTY_KEY)));
 
             ret.setCreatedBy(properties.get(CREATED_BY_KEY) != null ? (String) properties.get(CREATED_BY_KEY) : null);
             ret.setUpdatedBy(properties.get(MODIFIED_BY_KEY) != null ? (String) properties.get(MODIFIED_BY_KEY) : null);
@@ -1339,25 +1339,33 @@ public class EntityGraphRetriever {
 
         try {
             if (entityVertex != null) {
-                entity.setGuid(getGuid(entityVertex));
-                entity.setTypeName(getTypeName(entityVertex));
-                entity.setStatus(GraphHelper.getStatus(entityVertex));
-                entity.setVersion(GraphHelper.getVersion(entityVertex));
+                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+                Map<String, Object> preloadProperties = preloadProperties(entityVertex, entityType, Collections.emptySet());
+                String guid = (String) preloadProperties.get(Constants.GUID_PROPERTY_KEY);
+                entity.setGuid(guid);
+                entity.setTypeName(preloadProperties.get(Constants.TYPE_NAME_PROPERTY_KEY).toString());
+                String state = (String)preloadProperties.get(Constants.STATE_PROPERTY_KEY);
+                Id.EntityState entityState = state == null ? null : Id.EntityState.valueOf(state);
+                entity.setStatus((entityState == Id.EntityState.DELETED) ? AtlasEntity.Status.DELETED : AtlasEntity.Status.ACTIVE);
+                entity.setVersion(preloadProperties.get(Constants.VERSION_PROPERTY_KEY) != null ? (Long)preloadProperties.get(Constants.VERSION_PROPERTY_KEY) : 0);
 
-                entity.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
-                entity.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
+                entity.setCreatedBy(preloadProperties.get(CREATED_BY_KEY) != null ? (String) preloadProperties.get(CREATED_BY_KEY) : null);
+                entity.setUpdatedBy(preloadProperties.get(MODIFIED_BY_KEY) != null ? (String) preloadProperties.get(MODIFIED_BY_KEY) : null);
+                entity.setCreateTime(preloadProperties.get(TIMESTAMP_PROPERTY_KEY) != null ? new Date((Long)preloadProperties.get(TIMESTAMP_PROPERTY_KEY)) : null);
+                entity.setUpdateTime(preloadProperties.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY) != null ? new Date((Long)preloadProperties.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY)) : null);
 
-                entity.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
-                entity.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
+                entity.setHomeId(preloadProperties.get(HOME_ID_KEY).toString());
 
-                entity.setHomeId(GraphHelper.getHomeId(entityVertex));
+                entity.setIsProxy(preloadProperties.get(IS_PROXY_KEY) != null ? (Boolean)preloadProperties.get(IS_PROXY_KEY) : false);
 
-                entity.setIsProxy(GraphHelper.isProxy(entityVertex));
-                entity.setIsIncomplete(isEntityIncomplete(entityVertex));
+                Integer value = (Integer)preloadProperties.get(Constants.IS_INCOMPLETE_PROPERTY_KEY);
+                Boolean isIncomplete = value != null && value.equals(INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
 
-                entity.setProvenanceType(GraphHelper.getProvenanceType(entityVertex));
-                entity.setCustomAttributes(getCustomAttributes(entityVertex));
-                entity.setLabels(getLabels(entityVertex));
+                entity.setIsIncomplete(isIncomplete);
+
+                entity.setProvenanceType(preloadProperties.get(PROVENANCE_TYPE_KEY) != null ? (Integer)preloadProperties.get(PROVENANCE_TYPE_KEY) : null);
+                entity.setCustomAttributes(getCustomAttributes(preloadProperties.get(CUSTOM_ATTRIBUTES_PROPERTY_KEY)!=null ? (String)preloadProperties.get(CUSTOM_ATTRIBUTES_PROPERTY_KEY) : null));
+                entity.setLabels(getLabels(preloadProperties.get(LABELS_PROPERTY_KEY).toString()));
                 entity.setPendingTasks(getPendingTasks(entityVertex));
             }
         } catch (Throwable t) {
@@ -1961,8 +1969,10 @@ public class EntityGraphRetriever {
         }
 
         // value is present as marker, fetch the value from the vertex
-        if (properties.get(attribute.getName()) == StringUtils.SPACE) {
-            return mapVertexToAttribute(vertex, attribute, null, false);
+        if (ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
+            Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
+            LOG.debug("capturing excluded property set category and value, mapVertexValue - {}: {} : {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()), mappedVertex);
+            return mappedVertex;
         }
 
         return null;
