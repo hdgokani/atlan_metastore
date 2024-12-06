@@ -119,22 +119,14 @@ public enum AtlasConfiguration {
      *   hits elastic search async API
      */
     ENABLE_ASYNC_INDEXSEARCH("atlas.indexsearch.async.enable", false),
-
-    /***
-     *  enables parallel processing of janus graph vertices from cassandra
-     */
-    ENABLE_JANUS_GRAPH_OPTIMISATION("atlas.janus.graph.optimisation.enable", false),
-
-    /**
-     * No. of threads to be spawned for parallel processing
-     */
-    THREADS_TO_BE_SPAWNED("atlas.janus.graph.optimisation.thread_count", (Runtime.getRuntime().availableProcessors())/2),
-    FETCH_COLLAPSED_RESULT("atlas.indexsearch.fetch.collapsed.result", true),
     ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT("atlas.indexsearch.query.size.max.limit", 100000),
     ATLAS_INDEXSEARCH_LIMIT_UTM_TAGS("atlas.indexsearch.limit.ignore.utm.tags", ""),
     ATLAS_INDEXSEARCH_ENABLE_API_LIMIT("atlas.indexsearch.enable.api.limit", false),
-    ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION("atlas.indexsearch.enable.janus.optimization", false),
 
+    /**
+     * enables janus/cassandra optimization
+     */
+    ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION("atlas.indexsearch.enable.janus.optimization", false),
     /***
      * This configuration is used to enable fetching non primitive attributes in index search
      */
