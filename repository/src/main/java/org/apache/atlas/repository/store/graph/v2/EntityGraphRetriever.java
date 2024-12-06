@@ -1050,7 +1050,9 @@ public class EntityGraphRetriever {
         if (isAnyAttributeAStructOrObject) {
             Set<String> relationshipAttrs = attributes.stream()
                     .map(ele -> EDGE_LABEL_PREFIX.concat(ele)).collect(Collectors.toSet());
-            List<AtlasEdge> edgeProperties = IteratorUtils.toList(entityVertex.getEdges(AtlasEdgeDirection.BOTH, relationshipAttrs.toArray(new String[0])).iterator());
+            List<AtlasEdge> edgeProperties = IteratorUtils.toList(entityVertex.getEdges(AtlasEdgeDirection.BOTH).iterator());
+            List<String> edgeLabelsDebug  = edgeProperties.stream().map(AtlasEdge::getLabel).collect(Collectors.toList());
+            LOG.info("Edge labels for entityVertex: {}, is : {}", entityVertex.getId(), edgeLabelsDebug);
             Set<String> edgeLabels =
                     edgeProperties.stream()
                             .map(e -> {
@@ -1095,10 +1097,11 @@ public class EntityGraphRetriever {
                     }
                 }
             } catch (RuntimeException e) {
-                LOG.error("Error preloading properties for entity vertex: {}", entityVertex, e);
+                LOG.error("Error preloading properties for entity vertex: {}", entityVertex.getId(), e);
                 throw e; // Re-throw the exception after logging it
             }
         }
+        LOG.info("Preloaded properties for entity vertex: {}", propertiesMap);
         return propertiesMap;
     }
 
