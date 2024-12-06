@@ -299,27 +299,25 @@ public class EntityGraphRetriever {
 
         if (entityType != null) {
             Map<String, Object> uniqueAttributes = new HashMap<>();
+            Map<String, Object> attributes = new HashMap<>();
+            Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
+            // preloadProperties here
+            Map<String, Object> preloadProperties =   preloadProperties(entityVertex, entityType, relationAttributes);
 
             for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
-                Object attrValue = getVertexAttribute(entityVertex, attribute);
+                Object attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, preloadProperties);
 
                 if (attrValue != null) {
                     uniqueAttributes.put(attribute.getName(), attrValue);
                 }
             }
 
-            Map<String, Object> attributes = new HashMap<>();
-            Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
-
-            // preloadProperties here
             if (CollectionUtils.isNotEmpty(relationAttributes)) {
-                Map<String, Object> referenceVertexProperties =   preloadProperties(entityVertex, entityType, Collections.emptySet());
-
                 for (String attributeName : relationAttributes) {
                     AtlasAttribute attribute = entityType.getAttribute(attributeName);
                     if (attribute != null
                             && !uniqueAttributes.containsKey(attributeName)) {
-                        Object attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, referenceVertexProperties);
+                        Object attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, preloadProperties);
                         if (attrValue != null) {
                             attributes.put(attribute.getName(), attrValue);
                         }
@@ -1022,6 +1020,54 @@ public class EntityGraphRetriever {
 
         // Execute the traversal to fetch properties
         GraphTraversal<Vertex, VertexProperty<Object>> traversal = graph.V(entityVertex.getId()).properties();
+
+        // Check if any attribute is a struct or object type for edge lookup
+        boolean isAnyAttributeAStructOrObject = attributes.stream().anyMatch(a -> {
+
+            AtlasAttribute attribute = entityType.getAttribute(a);
+            if (attribute == null || attribute.getAttributeType() == null) {
+                return false;
+            }
+
+            if ((attribute.getAttributeType() instanceof AtlasStructType)) {
+                return true;
+            }
+
+            if (!(attribute.getAttributeType() instanceof AtlasArrayType)) {
+                return false;
+            }
+            AtlasArrayType arrayType = (AtlasArrayType) attribute.getAttributeType();
+
+            if (arrayType.getElementType() == null) {
+                return false;
+            }
+
+            AtlasType arrayElementType = arrayType.getElementType();
+
+            return arrayElementType.getTypeCategory() == TypeCategory.STRUCT;
+        });
+
+        if (isAnyAttributeAStructOrObject) {
+            Set<String> relationshipAttrs = attributes.stream()
+                    .map(ele -> EDGE_LABEL_PREFIX.concat(ele)).collect(Collectors.toSet());
+            List<AtlasEdge> edgeProperties = IteratorUtils.toList(entityVertex.getEdges(AtlasEdgeDirection.BOTH, relationshipAttrs.toArray(new String[0])).iterator());
+            Set<String> edgeLabels =
+                    edgeProperties.stream()
+                            .map(e -> {
+                                AtlasJanusEdge edge = (AtlasJanusEdge) e;
+                                String edgeLabel = edge.getLabel();
+                                // Get an attribute from attributes that matches edgeLabel
+                                Map<String, String> attributeMap = attributes.stream()
+                                        .collect(Collectors.toMap(
+                                                ele -> EDGE_LABEL_PREFIX.concat(ele),
+                                                ele -> ele
+                                        ));
+                                return attributeMap.getOrDefault(edgeLabel, null);
+                            })
+                            .collect(Collectors.toSet());
+
+            edgeLabels.stream().forEach(e -> propertiesMap.put(e, StringUtils.SPACE));
+        }
 
         // Iterate through the resulting VertexProperty objects
         while (traversal.hasNext()) {
@@ -1912,12 +1958,8 @@ public class EntityGraphRetriever {
         }
 
         // value is present as marker, fetch the value from the vertex
-        if (ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
-            //AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
+        if (properties.get(attribute.getName()) == StringUtils.SPACE) {
             return mapVertexToAttribute(vertex, attribute, null, false);
-            //LOG.debug("capturing excluded property set category and value, mapVertexValue - {}: {} : {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()), mappedVertex);
-            //RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
-            //return mappedVertex;
         }
 
         return null;

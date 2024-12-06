@@ -27,6 +27,7 @@ on:
       - master
       - lineageondemand
       - janus0.6
+      - janus0.6-fork
 
 jobs:
   build:
