@@ -72,6 +72,8 @@ import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.slf4j.Logger;
@@ -1036,10 +1038,22 @@ public class EntityGraphRetriever {
             return arrayElementType.getTypeCategory() == TypeCategory.STRUCT;
         });
 
-        Set<String> relationshipLabels = attributes.stream().map(attr -> entityType.getAttribute(attr)).filter(Objects::nonNull).filter(ele -> TypeCategory.ARRAY.equals(ele.getAttributeType().getTypeCategory())).map(ele -> AtlasGraphUtilsV2.getEdgeLabel(ele.getName())).collect(Collectors.toSet());
+        // Fetch edges in both directions
+        Iterator<AtlasJanusEdge> edges = entityVertex.getEdges(AtlasEdgeDirection.BOTH).iterator();
+        List<String> edgeLabelsDebug = new ArrayList<>();
+        while (edges.hasNext()) {
+            AtlasJanusEdge edge = edges.next();
+            LOG.info("Edge Label: {}", edge.getLabel());
+            edgeLabelsDebug.add(edge.getLabel());
+            // Fetch edge properties
+            Set<String> edgeProperties = edge.getPropertyKeys();
+            LOG.info("Edge Properties:  {}", edgeProperties);
+        }
+
+        /*Set<String> relationshipLabels = attributes.stream().map(attr -> entityType.getAttribute(attr)).filter(Objects::nonNull).filter(ele -> TypeCategory.ARRAY.equals(ele.getAttributeType().getTypeCategory())).map(ele -> AtlasGraphUtilsV2.getEdgeLabel(ele.getName())).collect(Collectors.toSet());
         relationshipLabels.addAll(attributes.stream().map(attr -> entityType.getRelationshipAttributes().getOrDefault(attr, Collections.emptyMap()).values().stream().filter(ele1 -> ele1.getName().equalsIgnoreCase(attr)).filter(Objects::nonNull).map(AtlasAttribute::getRelationshipEdgeLabel).findFirst().orElse(null)).filter(Objects::nonNull).collect(Collectors.toSet()));
         List<AtlasEdge> edgeProperties = IteratorUtils.toList(entityVertex.getEdges(AtlasEdgeDirection.OUT, relationshipLabels.toArray(new String[0])).iterator());
-        List<String> edgeLabelsDebug  = edgeProperties.stream().map(AtlasEdge::getLabel).collect(Collectors.toList());
+        List<String> edgeLabelsDebug  = edgeProperties.stream().map(AtlasEdge::getLabel).collect(Collectors.toList());*/
         LOG.info("Edge labels for entityVertex: {}, is : {}", guid, edgeLabelsDebug);
         Set<String> edgeLabels =
                 edgeLabelsDebug.stream()
@@ -1943,12 +1957,12 @@ public class EntityGraphRetriever {
         }
 
         // if value is empty && element is array of primitives, return empty list
-        if (properties.get(attribute.getName()) == null && typeCategory.equals(TypeCategory.ARRAY)) {
+        if (properties.get(attribute.getName()) == null && isArrayOfPrimitives) {
             return new ArrayList<>();
         }
 
         // value is present as marker, fetch the value from the vertex
-        if (properties.get(attribute.getName()) == StringUtils.SPACE || TypeCategory.OBJECT_ID_TYPE.equals(typeCategory)) {
+        if (ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
             LOG.info("capturing excluded property set category and value, mapVertexValue - {}: {} : {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()), mappedVertex);
             return mappedVertex;
