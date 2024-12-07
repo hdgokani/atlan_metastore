@@ -119,7 +119,6 @@ import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 @Component
 public class EntityGraphRetriever {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphRetriever.class);
-    private static final int BATCH_SIZE = 300;
 
     private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "name";
     public  static final String TERM_RELATION_NAME              = "AtlasGlossarySemanticAssignment";
@@ -527,7 +526,7 @@ public class EntityGraphRetriever {
                 List<AtlasVertex> entitiesPropagatingTo = getImpactedVerticesV2(sourceEntityVertex, relationshipGuidToExclude,
                         classificationId, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode),toExclude);
 
-                LOG.info("Traversed {} vertices for Classification vertex id {} excluding RelationShip GUID {}", entitiesPropagatingTo.size(), classificationId, relationshipGuidToExclude);
+                LOG.debug("Traversed {} vertices for Classification vertex id {} excluding RelationShip GUID {}", entitiesPropagatingTo.size(), classificationId, relationshipGuidToExclude);
 
                 ret.put(classificationVertex, entitiesPropagatingTo);
             }
@@ -661,7 +660,7 @@ public class EntityGraphRetriever {
             String      entityVertexId = entityVertex.getIdForDisplay();
 
             if (visitedVertices.contains(entityVertexId)) {
-                LOG.info("Already visited: {}", entityVertexId);
+                LOG.debug("Already visited: {}", entityVertexId);
 
                 continue;
             }
@@ -1012,7 +1011,6 @@ public class EntityGraphRetriever {
             edgeLabelsDebug.add(edge.getLabel());
         }
 
-        LOG.info("Edge labels for entityVertex: {}, is : {}", guid, edgeLabelsDebug);
         Set<String> edgeLabels =
                 edgeLabelsDebug.stream()
                         .map(edgeLabel -> {
@@ -1053,10 +1051,8 @@ public class EntityGraphRetriever {
                 throw e; // Re-throw the exception after logging it
             }
         }
-        LOG.info("Preloaded properties for entity vertex: {}, {}", guid, propertiesMap);
         return propertiesMap;
     }
-
 
     private boolean isPolicyAttribute(Set<String> attributes) {
         Set<String> exclusionSet = new HashSet<>(Arrays.asList(AccessControlUtils.ATTR_POLICY_TYPE,
@@ -1910,16 +1906,14 @@ public class EntityGraphRetriever {
             return null;
         }
 
-        // if value is empty && element is array of primitives, return empty list
+        // if value is empty && element is array and not inward relation, return empty list
         if (properties.get(attribute.getName()) == null && typeCategory.equals(TypeCategory.ARRAY) && !AtlasRelationshipEdgeDirection.IN.equals(attribute.getRelationshipEdgeDirection())) {
             return new ArrayList<>();
         }
 
-        // value is present as marker, fetch the value from the vertex
+        // value is present as marker or is inward relation, fetch the value from the vertex
         if (properties.get(attribute.getName()) == StringUtils.SPACE || AtlasRelationshipEdgeDirection.IN.equals(attribute.getRelationshipEdgeDirection())) {
-            Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
-            LOG.info("capturing excluded property set category and value, mapVertexValue - {}: {} : {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()), mappedVertex);
-            return mappedVertex;
+            return mapVertexToAttribute(vertex, attribute, null, false);
         }
 
         return null;
