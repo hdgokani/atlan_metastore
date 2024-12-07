@@ -1079,7 +1079,11 @@ public class EntityGraphRetriever {
                 AccessControlUtils.ATTR_POLICY_RESOURCES_CATEGORY,
                 AccessControlUtils.ATTR_POLICY_SERVICE_NAME,
                 AccessControlUtils.ATTR_POLICY_PRIORITY,
-                AccessControlUtils.REL_ATTR_POLICIES));
+                AccessControlUtils.REL_ATTR_POLICIES,
+                AccessControlUtils.ATTR_SERVICE_SERVICE_TYPE,
+                AccessControlUtils.ATTR_SERVICE_TAG_SERVICE,
+                AccessControlUtils.ATTR_SERVICE_IS_ENABLED,
+                AccessControlUtils.ATTR_SERVICE_LAST_SYNC));
 
         return exclusionSet.stream().anyMatch(attributes::contains);
     }
