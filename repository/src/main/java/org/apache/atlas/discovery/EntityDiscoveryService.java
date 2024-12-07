@@ -70,10 +70,6 @@ import javax.inject.Inject;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ForkJoinPool;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.*;
@@ -1006,7 +1002,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 return null;
             }
             RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
-            prepareSearchResult(ret, indexQueryResult, resultAttributes, AtlasConfiguration.FETCH_COLLAPSED_RESULT.getBoolean());
+            prepareSearchResult(ret, indexQueryResult, resultAttributes, true);
 
             ret.setAggregations(indexQueryResult.getAggregationMap());
             ret.setApproximateCount(indexQuery.vertexTotals());
@@ -1075,88 +1071,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
     }
 
-    @SuppressWarnings("rawtypes")
-    private void prepareSearchResultAsync(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
-        SearchParams searchParams = ret.getSearchParameters();
-        boolean showSearchScore = searchParams.getShowSearchScore();
-        List<Result> results = new ArrayList<>();
-
-        // Collect results for batch processing
-        Iterator<Result> iterator = indexQueryResult.getIterator();
-        while (iterator != null && iterator.hasNext()) {
-            results.add(iterator.next());
-        }
-
-        // Batch fetch vertices
-        List<AtlasVertex> vertices = results.stream()
-                .map(Result::getVertex)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
-        // Use ConcurrentHashMap for thread-safe access
-        //ConcurrentHashMap<String, AtlasEntityHeader> headers = new ConcurrentHashMap<>();
-        //ConcurrentHashMap<String, AtlasEntityHeader> entitiesSet = new ConcurrentHashMap<>();
-
-        List<AtlasEntityHeader> headers = entityRetriever.mapVerticesToAtlasEntityHeader(vertices, resultAttributes);
-        // Create a Set<String, AltasEntityHeader based on the GUID
-        Map<String, AtlasEntityHeader> entitiesSet = headers.stream().collect(Collectors.toMap(AtlasEntityHeader::getGuid, Function.identity()));
-
-        // Run vertex processing in limited parallel threads
-        /**CompletableFuture.runAsync(() -> vertices.parallelStream().forEach(vertex -> {
-            String guid = vertex.getProperty("__guid", String.class);
-            headers.computeIfAbsent(guid, k -> {
-                try {
-                    //AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
-                    if (RequestContext.get().includeClassifications()) {
-                        header.setClassifications(entityRetriever.getAllClassifications(vertex));
-                    }
-                    return header;
-                } catch (AtlasBaseException e) {
-                    throw new RuntimeException("Failed to process vertex with GUID: " + guid, e);
-                }
-            });
-        }), CUSTOMTHREADPOOL).join();*/
-
-        // Process results and handle collapse in parallel
-        results.parallelStream().forEach(result -> {
-            AtlasVertex vertex = result.getVertex();
-            if (vertex == null) return;
-
-            String guid = vertex.getProperty("__guid", String.class);
-            AtlasEntityHeader header = entitiesSet.get(guid);
-
-            if (showSearchScore) {
-                ret.addEntityScore(header.getGuid(), result.getScore());
-            }
-
-            if (fetchCollapsedResults) {
-                Map<String, AtlasSearchResult> collapse;
-                try {
-                    collapse = processCollapseResults(result, searchParams, resultAttributes);
-                } catch (AtlasBaseException e) {
-                    throw new RuntimeException(e);
-                }
-                if (!collapse.isEmpty()) {
-                    header.setCollapse(collapse);
-                }
-            }
-
-            if (searchParams.getShowSearchMetadata()) {
-                ret.addHighlights(header.getGuid(), result.getHighLights());
-                ret.addSort(header.getGuid(), result.getSort());
-            } else if (searchParams.getShowHighlights()) {
-                ret.addHighlights(header.getGuid(), result.getHighLights());
-            }
-
-            if (header != null) {
-                entitiesSet.put(header.getGuid(), header);
-            }
-        });
-        ret.setEntities(new ArrayList<>(entitiesSet.values()));
-        scrubSearchResults(ret, searchParams.getSuppressLogs());
-    }
-
-    private void prepareSearchResultSync(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
+    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean collapseResults) throws AtlasBaseException {
         SearchParams searchParams = ret.getSearchParameters();
         try {
             if(LOG.isDebugEnabled()){
@@ -1184,7 +1099,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 if (showSearchScore) {
                     ret.addEntityScore(header.getGuid(), result.getScore());
                 }
-                if (fetchCollapsedResults) {
+                if (collapseResults) {
                     Map<String, AtlasSearchResult> collapse = new HashMap<>();
 
                     Set<String> collapseKeys = result.getCollapseKeys();
@@ -1206,7 +1121,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
                         DirectIndexQueryResult indexQueryCollapsedResult = result.getCollapseVertices(collapseKey);
                         collapseRet.setApproximateCount(indexQueryCollapsedResult.getApproximateCount());
-                        prepareSearchResultSync(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false);
+                        prepareSearchResult(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false);
 
                         collapseRet.setSearchParameters(null);
                         collapse.put(collapseKey, collapseRet);
@@ -1230,14 +1145,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         scrubSearchResults(ret, searchParams.getSuppressLogs());
     }
 
-    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
-        if (AtlasConfiguration.ENABLE_JANUS_GRAPH_OPTIMISATION.getBoolean()) {
-            LOG.debug("enabled janusGraphOptimisation");
-            prepareSearchResultAsync(ret, indexQueryResult, resultAttributes, fetchCollapsedResults);
-        } else {
-            prepareSearchResultSync(ret, indexQueryResult, resultAttributes, fetchCollapsedResults);
-        }
-    }
     // Non-recursive collapse processing
     private Map<String, AtlasSearchResult> processCollapseResults(Result result, SearchParams searchParams, Set<String> resultAttributes) throws AtlasBaseException {
         Map<String, AtlasSearchResult> collapse = new HashMap<>();
