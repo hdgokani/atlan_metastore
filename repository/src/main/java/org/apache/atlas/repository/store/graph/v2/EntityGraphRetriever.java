@@ -1036,22 +1036,20 @@ public class EntityGraphRetriever {
             return arrayElementType.getTypeCategory() == TypeCategory.STRUCT;
         });
 
-        if (isAnyAttributeAStructOrObject) {
-            Set<String> relationshipLabels = attributes.stream().map(attr -> entityType.getAttribute(attr)).filter(Objects::nonNull).filter(ele -> TypeCategory.ARRAY.equals(ele.getAttributeType().getTypeCategory())).map(ele -> AtlasGraphUtilsV2.getEdgeLabel(ele.getName())).collect(Collectors.toSet());
-            relationshipLabels.addAll(attributes.stream().map(attr -> entityType.getRelationshipAttributes().getOrDefault(attr, Collections.emptyMap()).values().stream().filter(ele1 -> ele1.getName().equalsIgnoreCase(attr)).filter(Objects::nonNull).map(AtlasAttribute::getRelationshipEdgeLabel).findFirst().orElse(null)).filter(Objects::nonNull).collect(Collectors.toSet()));
-            List<AtlasEdge> edgeProperties = IteratorUtils.toList(entityVertex.getEdges(AtlasEdgeDirection.OUT, relationshipLabels.toArray(new String[0])).iterator());
-            List<String> edgeLabelsDebug  = edgeProperties.stream().map(AtlasEdge::getLabel).collect(Collectors.toList());
-            LOG.info("Edge labels for entityVertex: {}, is : {}", guid, edgeLabelsDebug);
-            Set<String> edgeLabels =
-                    edgeLabelsDebug.stream()
-                            .map(edgeLabel -> {
-                                Optional<String> matchingAttrOpt = attributes.stream().filter(ele -> edgeLabel.contains(ele)).findFirst();
-                                return matchingAttrOpt.orElse(null);
-                            }).filter(Objects::nonNull)
-                            .collect(Collectors.toSet());
+        Set<String> relationshipLabels = attributes.stream().map(attr -> entityType.getAttribute(attr)).filter(Objects::nonNull).filter(ele -> TypeCategory.ARRAY.equals(ele.getAttributeType().getTypeCategory())).map(ele -> AtlasGraphUtilsV2.getEdgeLabel(ele.getName())).collect(Collectors.toSet());
+        relationshipLabels.addAll(attributes.stream().map(attr -> entityType.getRelationshipAttributes().getOrDefault(attr, Collections.emptyMap()).values().stream().filter(ele1 -> ele1.getName().equalsIgnoreCase(attr)).filter(Objects::nonNull).map(AtlasAttribute::getRelationshipEdgeLabel).findFirst().orElse(null)).filter(Objects::nonNull).collect(Collectors.toSet()));
+        List<AtlasEdge> edgeProperties = IteratorUtils.toList(entityVertex.getEdges(AtlasEdgeDirection.OUT, relationshipLabels.toArray(new String[0])).iterator());
+        List<String> edgeLabelsDebug  = edgeProperties.stream().map(AtlasEdge::getLabel).collect(Collectors.toList());
+        LOG.info("Edge labels for entityVertex: {}, is : {}", guid, edgeLabelsDebug);
+        Set<String> edgeLabels =
+                edgeLabelsDebug.stream()
+                        .map(edgeLabel -> {
+                            Optional<String> matchingAttrOpt = attributes.stream().filter(ele -> edgeLabel.contains(ele)).findFirst();
+                            return matchingAttrOpt.orElse(null);
+                        }).filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
 
-            edgeLabels.stream().forEach(e -> propertiesMap.put(e, StringUtils.SPACE));
-        }
+        edgeLabels.stream().forEach(e -> propertiesMap.put(e, StringUtils.SPACE));
 
         // Iterate through the resulting VertexProperty objects
         while (traversal.hasNext()) {
