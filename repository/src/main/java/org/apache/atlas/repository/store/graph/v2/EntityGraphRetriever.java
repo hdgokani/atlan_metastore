@@ -68,13 +68,8 @@ import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +82,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CREATED_BY;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_DESCRIPTION;
@@ -292,11 +286,9 @@ public class EntityGraphRetriever {
             Map<String, Object> uniqueAttributes = new HashMap<>();
             Map<String, Object> attributes = new HashMap<>();
             Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
-            // preloadProperties here
-            Map<String, Object> preloadProperties =   preloadProperties(entityVertex, entityType, relationAttributes);
 
             for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
-                Object attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, preloadProperties);
+                Object attrValue = getVertexAttribute(entityVertex, attribute);
 
                 if (attrValue != null) {
                     uniqueAttributes.put(attribute.getName(), attrValue);
@@ -308,7 +300,7 @@ public class EntityGraphRetriever {
                     AtlasAttribute attribute = entityType.getAttribute(attributeName);
                     if (attribute != null
                             && !uniqueAttributes.containsKey(attributeName)) {
-                        Object attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, preloadProperties);
+                        Object attrValue = getVertexAttribute(entityVertex, attribute);
                         if (attrValue != null) {
                             attributes.put(attribute.getName(), attrValue);
                         }
@@ -1036,7 +1028,7 @@ public class EntityGraphRetriever {
             try {
                 VertexProperty<Object> property = traversal.next();
 
-                AtlasAttribute attribute = entityType.getAttribute(property.key());
+                AtlasAttribute attribute = entityType.getAttribute(property.key()) != null ? entityType.getAttribute(property.key()) : null;
                 TypeCategory typeCategory = attribute != null ? attribute.getAttributeType().getTypeCategory() : null;
                 TypeCategory elementTypeCategory = attribute != null && attribute.getAttributeType().getTypeCategory() == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
 
@@ -1302,33 +1294,25 @@ public class EntityGraphRetriever {
 
         try {
             if (entityVertex != null) {
-                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-                Map<String, Object> preloadProperties = preloadProperties(entityVertex, entityType, Collections.emptySet());
-                String guid = (String) preloadProperties.get(Constants.GUID_PROPERTY_KEY);
-                entity.setGuid(guid);
-                entity.setTypeName(preloadProperties.get(Constants.TYPE_NAME_PROPERTY_KEY).toString());
-                String state = (String)preloadProperties.get(Constants.STATE_PROPERTY_KEY);
-                Id.EntityState entityState = state == null ? null : Id.EntityState.valueOf(state);
-                entity.setStatus((entityState == Id.EntityState.DELETED) ? AtlasEntity.Status.DELETED : AtlasEntity.Status.ACTIVE);
-                entity.setVersion(preloadProperties.get(Constants.VERSION_PROPERTY_KEY) != null ? (Long)preloadProperties.get(Constants.VERSION_PROPERTY_KEY) : 0);
+                entity.setGuid(getGuid(entityVertex));
+                entity.setTypeName(getTypeName(entityVertex));
+                entity.setStatus(GraphHelper.getStatus(entityVertex));
+                entity.setVersion(GraphHelper.getVersion(entityVertex));
 
-                entity.setCreatedBy(preloadProperties.get(CREATED_BY_KEY) != null ? (String) preloadProperties.get(CREATED_BY_KEY) : null);
-                entity.setUpdatedBy(preloadProperties.get(MODIFIED_BY_KEY) != null ? (String) preloadProperties.get(MODIFIED_BY_KEY) : null);
-                entity.setCreateTime(preloadProperties.get(TIMESTAMP_PROPERTY_KEY) != null ? new Date((Long)preloadProperties.get(TIMESTAMP_PROPERTY_KEY)) : null);
-                entity.setUpdateTime(preloadProperties.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY) != null ? new Date((Long)preloadProperties.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY)) : null);
+                entity.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
+                entity.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
 
-                entity.setHomeId(preloadProperties.get(HOME_ID_KEY).toString());
+                entity.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
+                entity.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
 
-                entity.setIsProxy(preloadProperties.get(IS_PROXY_KEY) != null ? (Boolean)preloadProperties.get(IS_PROXY_KEY) : false);
+                entity.setHomeId(GraphHelper.getHomeId(entityVertex));
 
-                Integer value = (Integer)preloadProperties.get(Constants.IS_INCOMPLETE_PROPERTY_KEY);
-                Boolean isIncomplete = value != null && value.equals(INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
+                entity.setIsProxy(GraphHelper.isProxy(entityVertex));
+                entity.setIsIncomplete(isEntityIncomplete(entityVertex));
 
-                entity.setIsIncomplete(isIncomplete);
-
-                entity.setProvenanceType(preloadProperties.get(PROVENANCE_TYPE_KEY) != null ? (Integer)preloadProperties.get(PROVENANCE_TYPE_KEY) : null);
-                entity.setCustomAttributes(getCustomAttributes(preloadProperties.get(CUSTOM_ATTRIBUTES_PROPERTY_KEY)!=null ? (String)preloadProperties.get(CUSTOM_ATTRIBUTES_PROPERTY_KEY) : null));
-                entity.setLabels(getLabels(preloadProperties.get(LABELS_PROPERTY_KEY).toString()));
+                entity.setProvenanceType(GraphHelper.getProvenanceType(entityVertex));
+                entity.setCustomAttributes(getCustomAttributes(entityVertex));
+                entity.setLabels(getLabels(entityVertex));
                 entity.setPendingTasks(getPendingTasks(entityVertex));
             }
         } catch (Throwable t) {
