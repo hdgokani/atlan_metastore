@@ -1035,9 +1035,9 @@ public class EntityGraphRetriever {
         });
 
         if (isAnyAttributeAStructOrObject) {
-            Set<String> relationshipAttrs = attributes.stream()
-                    .map(ele -> EDGE_LABEL_PREFIX.concat(ele)).collect(Collectors.toSet());
-            List<AtlasEdge> edgeProperties = IteratorUtils.toList(entityVertex.getEdges(AtlasEdgeDirection.BOTH).iterator());
+            Set<String> relationshipLabels = attributes.stream().map(attr -> entityType.getAttribute(attr)).filter(Objects::nonNull).filter(ele -> TypeCategory.ARRAY.equals(ele.getAttributeType().getTypeCategory())).map(ele -> AtlasGraphUtilsV2.getEdgeLabel(ele.getName())).collect(Collectors.toSet());
+            relationshipLabels.addAll(attributes.stream().map(attr -> entityType.getRelationshipAttributes().getOrDefault(attr, Collections.emptyMap()).values().stream().filter(ele1 -> ele1.getName().equalsIgnoreCase(attr)).filter(Objects::nonNull).map(AtlasAttribute::getRelationshipEdgeLabel).findFirst().orElse(null)).filter(Objects::nonNull).collect(Collectors.toSet()));
+            List<AtlasEdge> edgeProperties = IteratorUtils.toList(entityVertex.getEdges(AtlasEdgeDirection.OUT, relationshipLabels.toArray(new String[0])).iterator());
             List<String> edgeLabelsDebug  = edgeProperties.stream().map(AtlasEdge::getLabel).collect(Collectors.toList());
             LOG.info("Edge labels for entityVertex: {}, is : {}", guid, edgeLabelsDebug);
             Set<String> edgeLabels =
@@ -1949,7 +1949,7 @@ public class EntityGraphRetriever {
         }
 
         // value is present as marker, fetch the value from the vertex
-        if (ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
+        if (properties.get(attribute.getName()) == StringUtils.SPACE || TypeCategory.OBJECT_ID_TYPE.equals(typeCategory)) {
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
             LOG.info("capturing excluded property set category and value, mapVertexValue - {}: {} : {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()), mappedVertex);
             return mappedVertex;
