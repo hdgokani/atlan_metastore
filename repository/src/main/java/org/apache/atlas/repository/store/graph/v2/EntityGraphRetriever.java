@@ -1944,7 +1944,7 @@ public class EntityGraphRetriever {
         }
 
         // if value is empty && element is array of primitives, return empty list
-        if (properties.get(attribute.getName()) == null && isArrayOfPrimitives) {
+        if (properties.get(attribute.getName()) == null && typeCategory.equals(TypeCategory.ARRAY)) {
             return new ArrayList<>();
         }
 
