@@ -1031,6 +1031,7 @@ public class EntityGraphRetriever {
                 AtlasAttribute attribute = entityType.getAttribute(property.key());
                 TypeCategory typeCategory = attribute != null ? attribute.getAttributeType().getTypeCategory() : null;
                 TypeCategory elementTypeCategory = attribute != null && attribute.getAttributeType().getTypeCategory() == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
+                boolean isBusinessAttribute = attribute == null;
 
                 if (property.isPresent()) {
                     if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
@@ -1045,6 +1046,12 @@ public class EntityGraphRetriever {
                     } else {
                         if (propertiesMap.get(property.key()) == null) {
                             propertiesMap.put(property.key(), property.value());
+                        } else if (isBusinessAttribute) {    // If it is a business attribute, and is a multi-valued attribute
+                            LOG.warn("Duplicate property key {} found for entity vertex: {}", property.key(), entityVertex);
+                            List<Object> values = new ArrayList<>();
+                            values.add(propertiesMap.get(property.key()));
+                            values.add(property.value());
+                            propertiesMap.put(property.key(), values);
                         }
                     }
                 }
@@ -1890,6 +1897,7 @@ public class EntityGraphRetriever {
         if (vertex == null || attribute == null) {
             return null;
         }
+
 
         TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
         TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
