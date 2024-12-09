@@ -1029,6 +1029,7 @@ public class EntityGraphRetriever {
                 AtlasAttribute attribute = entityType.getAttribute(property.key()) != null ? entityType.getAttribute(property.key()) : null;
                 TypeCategory typeCategory = attribute != null ? attribute.getAttributeType().getTypeCategory() : null;
                 TypeCategory elementTypeCategory = attribute != null && attribute.getAttributeType().getTypeCategory() == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
+                boolean isBusinessAttribute = attribute == null;
 
                 if (property.isPresent()) {
                     if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
@@ -1043,6 +1044,12 @@ public class EntityGraphRetriever {
                     } else {
                         if (propertiesMap.get(property.key()) == null) {
                             propertiesMap.put(property.key(), property.value());
+                        } else if (isBusinessAttribute) {    // If it is a business attribute, and is a multi-valued attribute
+                            LOG.warn("More than one value for property key {}  for entity vertex: {}", property.key(), entityVertex);
+                            List<Object> values = new ArrayList<>();
+                            values.add(propertiesMap.get(property.key()));
+                            values.add(property.value());
+                            propertiesMap.put(property.key(), values);
                         }
                     }
                 }
