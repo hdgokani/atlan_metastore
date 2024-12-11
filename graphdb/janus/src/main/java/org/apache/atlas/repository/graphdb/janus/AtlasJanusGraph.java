@@ -684,14 +684,6 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         return null;
     }
 
-    public void setEnableCache(boolean enableCache) {
-        this.janusGraph.setEnableCache(enableCache);
-    }
-
-    public Boolean isCacheEnabled() {
-        return this.janusGraph.isCacheEnabled();
-    }
-
     public JanusGraphTransaction getTransaction() {
         return this.janusGraph.newThreadBoundTransaction();
     }

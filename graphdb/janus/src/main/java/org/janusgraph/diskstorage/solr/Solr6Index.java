@@ -121,6 +121,7 @@ import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -672,7 +673,7 @@ public class Solr6Index implements IndexProvider {
                 doc -> doc.getFieldValue(keyIdField).toString());
     }
 
-    @Override
+    //@Override
     public Long queryCount(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
         try {
             String collection = query.getStore();
@@ -1176,6 +1177,16 @@ public class Solr6Index implements IndexProvider {
         } catch (KeeperException | InterruptedException e) {
             throw new PermanentBackendException("Unable to check if index exists", e);
         }
+    }
+
+    @Override
+    public Number queryAggregation(IndexQuery indexQuery, KeyInformation.IndexRetriever indexRetriever, BaseTransaction baseTransaction, Aggregation aggregation) throws BackendException {
+        return null;
+    }
+
+    @Override
+    public void clearStore(String s) throws BackendException {
+
     }
 
     /*
