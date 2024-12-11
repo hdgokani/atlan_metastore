@@ -104,9 +104,7 @@ public abstract class ClassificationTask extends AbstractTask {
 
         try {
             setStatus(IN_PROGRESS);
-            setAssetsCountToPropagate(1234L);
             run(params);
-
             setStatus(COMPLETE);
         } catch (AtlasBaseException e) {
             LOG.error("Task: {}: Error performing task!", getTaskGuid(), e);
@@ -184,9 +182,5 @@ public abstract class ClassificationTask extends AbstractTask {
         graph.commit();
     }
 
-    protected void setAssetsCountToPropagate(Long assetsCount) {
-        super.setAssetsCountToPropagate(assetsCount);
-        graph.commit();
-    }
     protected abstract void run(Map<String, Object> parameters) throws AtlasBaseException;
 }

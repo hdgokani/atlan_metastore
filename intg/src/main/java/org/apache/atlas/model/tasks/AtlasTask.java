@@ -260,10 +260,6 @@ public class AtlasTask {
         return  assetsCountPropagated;
     }
 
-    public void incrementAssetCountPropagated() {
-        this.assetsCountPropagated++;
-    }
-
     @JsonIgnore
     public void start() {
         this.setStatus(Status.IN_PROGRESS);

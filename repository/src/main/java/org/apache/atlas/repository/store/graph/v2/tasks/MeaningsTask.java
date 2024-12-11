@@ -61,7 +61,6 @@ public abstract class MeaningsTask extends AbstractTask {
             RequestContext.get().setUser(userName, null);
             try {
                 setStatus(IN_PROGRESS);
-                setAssetsCountToPropagate(1234L);
 
                 run(params);
 
@@ -111,11 +110,6 @@ public abstract class MeaningsTask extends AbstractTask {
         } catch (EntityNotFoundException  e) {
             LOG.error("Error updating associated element for: {}", getTaskGuid(), e);
         }
-
-    }
-
-    protected void setAssetsCountToPropagate(Long assetsCount) {
-        super.setAssetsCountToPropagate(assetsCount);
 
     }
 
