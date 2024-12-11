@@ -61,6 +61,9 @@ public class AssetPreProcessor implements PreProcessor {
             case UPDATE:
                 processUpdateAsset(entity, vertex);
                 break;
+            case DELETE:
+                processDelete(vertex);
+                break;
         }
     }
 
@@ -113,6 +116,14 @@ public class AssetPreProcessor implements PreProcessor {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Asset can be linked to only domain");
                 }
             }
+        }
+    }
+
+    @Override
+    public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
+        //remove the domain link
+        if (vertex != null) {
+            vertex.removeProperty(DOMAIN_GUIDS);
         }
     }
 

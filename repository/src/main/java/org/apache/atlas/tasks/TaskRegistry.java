@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.tasks;
 
+import com.datastax.oss.driver.shaded.fasterxml.jackson.core.JsonProcessingException;
+import com.datastax.oss.driver.shaded.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
@@ -31,10 +33,12 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
+import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -49,6 +53,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -62,6 +67,7 @@ public class TaskRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(TaskRegistry.class);
     public static final int TASK_FETCH_BATCH_SIZE = 100;
     public static final List<Map<String, Object>> SORT_ARRAY = Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc")));
+    public static final String JANUSGRAPH_VERTEX_INDEX = "janusgraph_vertex_index";
 
     private AtlasGraph graph;
     private TaskService taskService;
@@ -399,21 +405,24 @@ public class TaskRegistry {
             int fetched = 0;
             try {
                 if (totalFetched + size > queueSize) {
-                    size = queueSize - totalFetched;
+                    size = queueSize - totalFetched; // Adjust size to not exceed queue size
+                    LOG.info("Adjusting fetch size to {} based on queue size constraint.", size);
                 }
 
                 dsl.put("from", from);
                 dsl.put("size", size);
 
+                LOG.info("DSL Query for iteration: {}", dsl);
                 indexSearchParams.setDsl(dsl);
 
+                LOG.info("Executing Elasticsearch query with from: {} and size: {}", from, size);
                 AtlasIndexQuery indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, indexSearchParams);
 
                 try {
                     indexQueryResult = indexQuery.vertices(indexSearchParams);
+                    LOG.info("Query executed successfully for from: {} with size: {}", from, size);
                 } catch (AtlasBaseException e) {
-                    LOG.error("Failed to fetch pending/in-progress task vertices to re-que");
-                    e.printStackTrace();
+                    LOG.error("Failed to fetch PENDING/IN_PROGRESS task vertices. Exiting loop.", e);
                     break;
                 }
 
@@ -425,33 +434,94 @@ public class TaskRegistry {
 
                         if (vertex != null) {
                             AtlasTask atlasTask = toAtlasTask(vertex);
+
+                            LOG.info("Processing fetched task: {}", atlasTask);
                             if (atlasTask.getStatus().equals(AtlasTask.Status.PENDING) ||
-                                    atlasTask.getStatus().equals(AtlasTask.Status.IN_PROGRESS) ){
-                                LOG.info(String.format("Fetched task from index search: %s", atlasTask.toString()));
+                                    atlasTask.getStatus().equals(AtlasTask.Status.IN_PROGRESS)) {
+                                LOG.info("Adding task to the result list: {}", atlasTask);
                                 ret.add(atlasTask);
-                            }
-                            else {
-                                LOG.warn(String.format("There is a mismatch on tasks status between ES and Cassandra for guid: %s", atlasTask.getGuid()));
+                            } else {
+                                LOG.warn("Status mismatch for task with guid: {}. Expected PENDING/IN_PROGRESS but found: {}",
+                                        atlasTask.getGuid(), atlasTask.getStatus());
+                                // Repair mismatched task
+                                String docId = LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay()));
+                                LOG.info("Repairing mismatched task with docId: {}", docId);
+                                repairMismatchedTask(atlasTask, docId);
                             }
                         } else {
-                            LOG.warn("Null vertex while re-queuing tasks at index {}", fetched);
+                            LOG.warn("Null vertex encountered while re-queuing tasks at index {}", fetched);
                         }
 
                         fetched++;
                     }
+                    LOG.info("Fetched {} tasks in this iteration.", fetched);
+                } else {
+                    LOG.warn("Index query result is null for from: {} and size: {}", from, size);
                 }
 
                 totalFetched += fetched;
+                LOG.info("Total tasks fetched so far: {}. Incrementing offset by {}.", totalFetched, size);
+
                 from += size;
                 if (fetched < size || totalFetched >= queueSize) {
+                    LOG.info("Breaking loop. Fetched fewer tasks ({}) than requested size ({}) or reached queue size limit ({}).", fetched, size, queueSize);
                     break;
                 }
-            } catch (Exception e){
+            } catch (Exception e) {
+                LOG.error("Exception occurred during task fetching process. Exiting loop.", e);
                 break;
             }
         }
 
+        LOG.info("Fetch process completed. Total tasks fetched: {}.", totalFetched);
         return ret;
+    }
+
+    private void repairMismatchedTask(AtlasTask atlasTask, String docId) {
+        AtlasElasticsearchQuery indexQuery = null;
+
+        try {
+            // Create a map for the fields to be updated
+            Map<String, Object> fieldsToUpdate = new HashMap<>();
+            fieldsToUpdate.put("__task_endTime", atlasTask.getEndTime().getTime());
+            fieldsToUpdate.put("__task_timeTakenInSeconds", atlasTask.getTimeTakenInSeconds());
+            fieldsToUpdate.put("__task_status", atlasTask.getStatus().toString());
+            fieldsToUpdate.put("__task_modificationTimestamp", atlasTask.getUpdatedTime().getTime()); // Set current timestamp
+
+            // Convert fieldsToUpdate map to JSON using Jackson
+            ObjectMapper objectMapper = new ObjectMapper();
+            String fieldsToUpdateJson = objectMapper.writeValueAsString(fieldsToUpdate);
+
+            // Construct the Elasticsearch update by query DSL
+            String queryDsl = "{"
+                    + "\"script\": {"
+                    + "    \"source\": \"for (entry in params.fields.entrySet()) { ctx._source[entry.getKey()] = entry.getValue() }\","
+                    + "    \"params\": {"
+                    + "        \"fields\": " + fieldsToUpdateJson
+                    + "    }"
+                    + "},"
+                    + "\"query\": {"
+                    + "    \"term\": {"
+                    + "        \"_id\": \"" + docId + "\""
+                    + "    }"
+                    + "}"
+                    + "}";
+
+            // Execute the Elasticsearch query
+            indexQuery = (AtlasElasticsearchQuery) graph.elasticsearchQuery(JANUSGRAPH_VERTEX_INDEX);
+            Map<String, LinkedHashMap> result = indexQuery.directUpdateByQuery(queryDsl);
+
+            if (result != null) {
+                LOG.info("Elasticsearch UpdateByQuery Result: " + result + "\nfor task : " + atlasTask.getGuid());
+            } else {
+                LOG.info("No documents updated in Elasticsearch for guid: " + atlasTask.getGuid());
+            }
+        } catch (JsonProcessingException e) {
+            LOG.error("Error converting fieldsToUpdate to JSON for task with guid: {} and docId: {}. Error: {}", atlasTask.getGuid(), docId, e.getMessage(), e);
+        }
+         catch (AtlasBaseException e) {
+             LOG.error("Error executing Elasticsearch query for task with guid: {} and docId: {}. Error: {}", atlasTask.getGuid(), docId, e.getMessage(), e);
+         }
     }
 
     public void commit() {

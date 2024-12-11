@@ -80,6 +80,7 @@ public class RequestContext {
     private Set<String> userGroups;
     private String clientIPAddress;
     private List<String> forwardedAddresses;
+    private String clientOrigin;
     private DeleteType deleteType = DeleteType.DEFAULT;
     private boolean isPurgeRequested = false;
     private int maxAttempts = 1;
@@ -180,7 +181,7 @@ public class RequestContext {
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
             if (Objects.nonNull(this.metricsRegistry)){
-                this.metricsRegistry.collect(traceId, this.requestUri, metrics);
+                this.metricsRegistry.collect(traceId, this.requestUri, metrics, this.getClientOrigin());
             }
             metrics.clear();
         }
@@ -675,6 +676,13 @@ public class RequestContext {
         }
     }
 
+    public void endMetricRecordWithInvocations(MetricRecorder recorder, long invocationCount) {
+        if (metrics != null && recorder != null) {
+            metrics.recordMetricWithInvocations(recorder, invocationCount);
+        }
+    }
+
+
     public void recordEntityGuidUpdate(AtlasEntity entity, String guidInRequest) {
         recordEntityGuidUpdate(new EntityGuidPair(entity, guidInRequest));
     }
@@ -747,20 +755,20 @@ public class RequestContext {
         return this.requestUri;
     }
 
-    public void setEnableCache(boolean cacheEnabled) {
-        this.cacheEnabled = cacheEnabled;
-    }
-
-    public boolean isCacheEnabled() {
-        return this.cacheEnabled;
-    }
-
     public boolean isIncludeClassificationNames() {
         return includeClassificationNames;
     }
 
     public void setIncludeClassificationNames(boolean includeClassificationNames) {
         this.includeClassificationNames = includeClassificationNames;
+    }
+
+    public String getClientOrigin() {
+        return clientOrigin;
+    }
+
+    public void setClientOrigin(String clientOrigin) {
+        this.clientOrigin = StringUtils.isEmpty(this.clientOrigin) ? "other" :clientOrigin;
     }
 
     public class EntityGuidPair {
