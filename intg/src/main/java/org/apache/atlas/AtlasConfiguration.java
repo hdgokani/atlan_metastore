@@ -114,16 +114,15 @@ public enum AtlasConfiguration {
     HERACLES_API_SERVER_URL("atlas.heracles.api.service.url", "http://heracles-service.heracles.svc.cluster.local"),
 
     INDEXSEARCH_ASYNC_SEARCH_KEEP_ALIVE_TIME_IN_SECONDS("atlas.indexsearch.async.search.keep.alive.time.in.seconds", 300),
+
+    /**
+     *   hits elastic search async API
+     */
     ENABLE_ASYNC_INDEXSEARCH("atlas.indexsearch.async.enable", false),
     ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT("atlas.indexsearch.query.size.max.limit", 100000),
     ATLAS_INDEXSEARCH_LIMIT_UTM_TAGS("atlas.indexsearch.limit.ignore.utm.tags", ""),
     FETCH_COLLAPSED_RESULT("atlas.indexsearch.fetch.collapsed.result", true),
     ATLAS_INDEXSEARCH_ENABLE_API_LIMIT("atlas.indexsearch.enable.api.limit", false),
-    ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION("atlas.indexsearch.enable.janus.optimization", true),
-    /***
-     * This configuration is used to enable fetching non primitive attributes in index search
-     */
-    ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES("atlas.indexsearch.enable.fetching.non.primitive.attributes", true),
 
     /**
      * enables janus/cassandra optimization
