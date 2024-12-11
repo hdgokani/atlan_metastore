@@ -23,7 +23,6 @@ import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
@@ -37,11 +36,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
-import static org.apache.atlas.model.tasks.AtlasTask.Status.*;
-import static org.apache.atlas.repository.Constants.TASK_ASSET_COUNT_TO_PROPAGATE;
-import static org.apache.atlas.repository.Constants.TASK_GUID;
+import static org.apache.atlas.model.tasks.AtlasTask.Status.FAILED;
+import static org.apache.atlas.model.tasks.AtlasTask.Status.COMPLETE;
+import static org.apache.atlas.model.tasks.AtlasTask.Status.IN_PROGRESS;
+
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE;
 
 public abstract class ClassificationTask extends AbstractTask {
