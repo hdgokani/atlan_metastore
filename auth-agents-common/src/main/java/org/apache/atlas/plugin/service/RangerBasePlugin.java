@@ -27,8 +27,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.atlas.audit.provider.AuditHandler;
 import org.apache.atlas.audit.provider.AuditProviderFactory;
-import org.apache.atlas.audit.provider.StandAloneAuditProviderFactory;
-import org.apache.atlas.authorization.config.RangerAuditConfig;
 import org.apache.atlas.authorization.config.RangerPluginConfig;
 import org.apache.atlas.authorization.utils.RangerUtil;
 import org.apache.atlas.plugin.conditionevaluator.RangerScriptExecutionContext;
@@ -758,18 +756,8 @@ public class RangerBasePlugin {
 	private static AuditProviderFactory getAuditProviderFactory(String serviceName) {
 		AuditProviderFactory ret = AuditProviderFactory.getInstance();
 
-		if (!ret.isInitDone()) {
-			LOG.warn("RangerBasePlugin.getAuditProviderFactory(serviceName=" + serviceName + "): audit not initialized yet. Will use stand-alone audit factory");
-
-			ret = StandAloneAuditProviderFactory.getInstance();
-
-			if (!ret.isInitDone()) {
-				RangerAuditConfig conf = new RangerAuditConfig();
-
-				if (conf.isInitSuccess()) {
-					ret.init(conf.getProperties(), "StandAlone");
-				}
-			}
+		if (ret == null || !ret.isInitDone()) {
+			LOG.error("AuditProviderFactory not configured properly, will not log authz events");
 		}
 
 		return ret;

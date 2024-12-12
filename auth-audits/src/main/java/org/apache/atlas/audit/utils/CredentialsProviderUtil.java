@@ -17,22 +17,23 @@
  * under the License.
  */
 
-package org.apache.atlas.authorization.credutils.kerberos;
+package org.apache.atlas.audit.utils;
 
-import java.util.Map;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class KeytabJaasConf extends AbstractJaasConf {
-    private final String keytabFilePath;
+public class CredentialsProviderUtil {
+    private static final Logger logger = LoggerFactory.getLogger(CredentialsProviderUtil.class);
 
-    public KeytabJaasConf(final String userPrincipalName, final String keytabFilePath, final boolean enableDebugLogs) {
-        super(userPrincipalName, enableDebugLogs);
-        this.keytabFilePath = keytabFilePath;
-    }
-
-    public void addOptions(final Map<String, String> options) {
-        options.put("useKeyTab", Boolean.TRUE.toString());
-        options.put("keyTab", keytabFilePath);
-        options.put("doNotPrompt", Boolean.TRUE.toString());
+    public static CredentialsProvider getBasicCredentials(String user, String password) {
+        CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(AuthScope.ANY,
+                new UsernamePasswordCredentials(user, password));
+        return credentialsProvider;
     }
 
 }

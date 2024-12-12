@@ -36,8 +36,6 @@ import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.StandardIndexProvider;
-import org.janusgraph.diskstorage.StandardStoreManager;
-import org.janusgraph.diskstorage.solr.Solr6Index;
 import org.janusgraph.graphdb.database.serialize.attribute.SerializableSerializer;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 import org.slf4j.Logger;
@@ -121,30 +119,6 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         janusConfig.setProperty("attributes.custom.attribute4.serializer-class", BigDecimalSerializer.class.getName());
 
         return janusConfig;
-    }
-
-    /*static {
-        addSolr6Index();
-    }*/
-
-    private static void addSolr6Index() {
-        try {
-            Field field = StandardIndexProvider.class.getDeclaredField("ALL_MANAGER_CLASSES");
-            field.setAccessible(true);
-
-            Field modifiersField = Field.class.getDeclaredField("modifiers");
-            modifiersField.setAccessible(true);
-            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-
-            Map<String, String> customMap = new HashMap<>(StandardIndexProvider.getAllProviderClasses());
-            customMap.put("solr", Solr6Index.class.getName());
-            ImmutableMap<String, String> immap = ImmutableMap.copyOf(customMap);
-            field.set(null, immap);
-
-            LOG.debug("Injected solr6 index - {}", Solr6Index.class.getName());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public static JanusGraph getGraphInstance() {

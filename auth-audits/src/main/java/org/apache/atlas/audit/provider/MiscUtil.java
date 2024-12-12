@@ -16,48 +16,27 @@
  */
 package org.apache.atlas.audit.provider;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.security.authentication.util.KerberosName;
-import org.apache.hadoop.security.authentication.util.KerberosUtil;
+import org.apache.atlas.audit.utils.AuthObjectUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.security.auth.Subject;
-import javax.security.auth.login.AppConfigurationEntry;
-import javax.security.auth.login.Configuration;
-import javax.security.auth.login.LoginContext;
 import java.io.File;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.rmi.dgc.VMID;
-import java.security.PrivilegedAction;
-import java.security.PrivilegedExceptionAction;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
-import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.TimeZone;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
-import static org.apache.hadoop.util.PlatformName.IBM_JAVA;
 
 public class MiscUtil {
-	private static final Log logger = LogFactory.getLog(MiscUtil.class);
+	private static final Logger logger = LoggerFactory.getLogger(MiscUtil.class);
 
 	public static final String TOKEN_START = "%";
 	public static final String TOKEN_END = "%";
@@ -67,33 +46,14 @@ public class MiscUtil {
 	public static final String TOKEN_TIME = "time:";
 	public static final String TOKEN_PROPERTY = "property:";
 	public static final String TOKEN_ENV = "env:";
-	public static final String ESCAPE_STR = "\\";
 
 	private static final VMID         sJvmID        = new VMID();
 
-	public static String LINE_SEPARATOR = System.getProperty("line.separator");
-
-	private static Gson sGsonBuilder = null;
 	private static String sApplicationType = null;
-	private static UserGroupInformation ugiLoginUser = null;
-	private static Subject subjectLoginUser = null;
 	private static String local_hostname = null;
 
 	private static Map<String, LogHistory> logHistoryList = new Hashtable<String, LogHistory>();
 	private static int logInterval = 30000; // 30 seconds
-
-	static {
-		try {
-			sGsonBuilder = new GsonBuilder().setDateFormat(
-					"yyyy-MM-dd HH:mm:ss.SSS").create();
-		} catch (Throwable excp) {
-			logger.warn(
-					"failed to create GsonBuilder object. stringify() will return obj.toString(), instead of Json",
-					excp);
-		}
-
-		initLocalHost();
-	}
 
 	public static String replaceTokens(String str, long time) {
 		if (str == null) {
@@ -307,10 +267,8 @@ public class MiscUtil {
 		if (log != null) {
 			if (log instanceof String) {
 				ret = (String) log;
-			} else if (MiscUtil.sGsonBuilder != null) {
-				ret = MiscUtil.sGsonBuilder.toJson(log);
 			} else {
-				ret = log.toString();
+				ret = AuthObjectUtil.toJson(log);
 			}
 		}
 
@@ -318,7 +276,7 @@ public class MiscUtil {
 	}
 
 	static public <T> T fromJson(String jsonStr, Class<T> clazz) {
-		return sGsonBuilder.fromJson(jsonStr, clazz);
+		return AuthObjectUtil.fromJson(jsonStr, clazz);
 	}
 
 	public static String getStringProperty(Properties props, String propName) {
@@ -442,60 +400,7 @@ public class MiscUtil {
 		return list;
 	}
 
-	public static UserGroupInformation getUGILoginUser() {
-		UserGroupInformation ret = ugiLoginUser;
-
-		if (ret == null) {
-			try {
-				// Do not cache ugiLoginUser if it is not explicitly set with
-				// setUGILoginUser.
-				// It appears that the user represented by
-				// the returned object is periodically logged out and logged back
-				// in when the token is scheduled to expire. So it is better
-				// to get the user object every time from UserGroupInformation class and
-				// not cache it
-				ret = getLoginUser();
-			} catch (IOException e) {
-				logger.error("Error getting UGI.", e);
-			}
-		}
-
-		if(ret != null) {
-			try {
-			ret.checkTGTAndReloginFromKeytab();
-			} catch(IOException ioe) {
-				logger.error("Error renewing TGT and relogin. Ignoring Exception, and continuing with the old TGT", ioe);
-			}
-		}
-
-		return ret;
-	}
-
-	/**
-	 * Execute the {@link PrivilegedExceptionAction} on the {@link UserGroupInformation} if it's set, otherwise call it directly
-	 */
-	public static <X> X executePrivilegedAction(final PrivilegedExceptionAction<X> action) throws Exception {
-		final UserGroupInformation ugi = getUGILoginUser();
-		if (ugi != null) {
-			return ugi.doAs(action);
-		} else {
-			return action.run();
-		}
-	}
-
-	/**
-	 * Execute the {@link PrivilegedAction} on the {@link UserGroupInformation} if it's set, otherwise call it directly.
-	 */
-	public static <X> X executePrivilegedAction(final PrivilegedAction<X> action) {
-		final UserGroupInformation ugi = getUGILoginUser();
-		if (ugi != null) {
-			return ugi.doAs(action);
-		} else {
-			return action.run();
-		}
-	}
-
-	static public boolean logErrorMessageByInterval(Log useLogger,
+	static public boolean logErrorMessageByInterval(Logger useLogger,
 			String message) {
 		return logErrorMessageByInterval(useLogger, message, null);
 	}
@@ -505,7 +410,7 @@ public class MiscUtil {
 	 * @param message
 	 * @param e
 	 */
-	static public boolean logErrorMessageByInterval(Log useLogger,
+	static public boolean logErrorMessageByInterval(Logger useLogger,
 			String message, Throwable e) {
         if (message == null) {
             return false;
@@ -540,10 +445,6 @@ public class MiscUtil {
 	static class LogHistory {
 		long lastLogTime = 0;
 		int counter = 0;
-	}
-
-	public static UserGroupInformation getLoginUser() throws IOException {
-		return UserGroupInformation.getLoginUser();
 	}
 
 	private static void initLocalHost() {

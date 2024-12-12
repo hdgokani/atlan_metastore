@@ -19,7 +19,7 @@
 
 package org.apache.atlas.audit.destination;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpHost;
@@ -27,7 +27,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.atlas.audit.model.AuditEventBase;
 import org.apache.atlas.audit.model.AuthzAuditEvent;
 import org.apache.atlas.audit.provider.MiscUtil;
-import org.apache.atlas.authorization.credutils.CredentialsProviderUtil;
+import org.apache.atlas.audit.utils.CredentialsProviderUtil;
 import org.elasticsearch.action.admin.indices.open.OpenIndexRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -41,7 +41,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
