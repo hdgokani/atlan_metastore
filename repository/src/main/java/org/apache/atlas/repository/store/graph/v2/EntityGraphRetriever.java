@@ -297,6 +297,7 @@ public class EntityGraphRetriever {
             }
 
             if (CollectionUtils.isNotEmpty(relationAttributes)) {
+
                 for (String attributeName : relationAttributes) {
                     AtlasAttribute attribute = entityType.getAttribute(attributeName);
                     if (attribute != null
@@ -999,29 +1000,15 @@ public class EntityGraphRetriever {
         return mapVertexToAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }
 
-    private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set<String> attributes) {
+    private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set<String> attributes) throws AtlasBaseException {
         Map<String, Object> propertiesMap = new HashMap<>();
         String  guid         = entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
         // Execute the traversal to fetch properties
         Iterator<VertexProperty<Object>> traversal = ((AtlasJanusVertex)entityVertex).getWrappedElement().properties();
 
         // Fetch edges in both directions
-        Iterator<AtlasJanusEdge> edges = entityVertex.getEdges(AtlasEdgeDirection.BOTH).iterator();
-        List<String> edgeLabelsDebug = new ArrayList<>();
-        while (edges.hasNext()) {
-            AtlasJanusEdge edge = edges.next();
-            edgeLabelsDebug.add(edge.getLabel());
-        }
-
-        Set<String> edgeLabels =
-                edgeLabelsDebug.stream()
-                        .map(edgeLabel -> {
-                            Optional<String> matchingAttrOpt = attributes.stream().filter(ele -> edgeLabel.contains(ele)).findFirst();
-                            return matchingAttrOpt.orElse(null);
-                        }).filter(Objects::nonNull)
-                        .collect(Collectors.toSet());
-
-        edgeLabels.stream().forEach(e -> propertiesMap.put(e, StringUtils.SPACE));
+        retrieveEdgeLabels(GraphHelper.getOnlyActiveEdges(entityVertex, AtlasEdgeDirection.IN), attributes, propertiesMap);
+        retrieveEdgeLabels(GraphHelper.getOnlyActiveEdges(entityVertex, AtlasEdgeDirection.OUT), attributes, propertiesMap);
 
         // Iterate through the resulting VertexProperty objects
         while (traversal.hasNext()) {
@@ -1052,6 +1039,24 @@ public class EntityGraphRetriever {
             }
         }
         return propertiesMap;
+    }
+
+    private void retrieveEdgeLabels(Iterator<AtlasJanusEdge> edges, Set<String> attributes, Map<String, Object> propertiesMap) {
+        List<String> edgeLabelsDebug = new ArrayList<>();
+        while (edges.hasNext()) {
+            AtlasJanusEdge edge = edges.next();
+            edgeLabelsDebug.add(edge.getLabel());
+        }
+
+        Set<String> edgeLabels =
+                edgeLabelsDebug.stream()
+                        .map(edgeLabel -> {
+                            Optional<String> matchingAttrOpt = attributes.stream().filter(ele -> edgeLabel.contains(ele)).findFirst();
+                            return matchingAttrOpt.orElse(null);
+                        }).filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+
+        edgeLabels.stream().forEach(e -> propertiesMap.put(e, StringUtils.SPACE));
     }
 
     private void updateAttrValue( Map<String, Object> propertiesMap, VertexProperty<Object> property){
@@ -1925,7 +1930,8 @@ public class EntityGraphRetriever {
         }
 
         // value is present as marker or is inward relation, fetch the value from the vertex
-        if (properties.get(attribute.getName()) == StringUtils.SPACE || AtlasRelationshipEdgeDirection.IN.equals(attribute.getRelationshipEdgeDirection())) {
+        if (properties.get(attribute.getName()) == StringUtils.SPACE || AtlasRelationshipEdgeDirection.IN.equals(attribute.getRelationshipEdgeDirection())
+        ||  AtlasRelationshipEdgeDirection.OUT.equals(attribute.getRelationshipEdgeDirection())) {
             return mapVertexToAttribute(vertex, attribute, null, false);
         }
 
