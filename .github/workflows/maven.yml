@@ -79,8 +79,14 @@ jobs:
         shell: bash
 
       - name: Get version tag
-        run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7`)abcd"
-        id: get_version
+        # run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ env.BRANCH_NAME }} | awk '{ print $1}' | cut -c1-7`)abcd"
+        run: |
+          echo "VERSION=$(git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ env.BRANCH_NAME }} | awk '{ print $1}' | cut -c1-7 | head -n 1)abcd"
+          echo "VERSION=$(git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ env.BRANCH_NAME }} | awk '{ print $1}' | cut -c1-7 | tr -d '[:space:]')abcd"
+          echo "VERSION=$(git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ env.BRANCH_NAME }} | awk '{ print $1}' | cut -c1-7 | tr -d '[:space:]')abcd" >> $GITHUB_ENV
+
+      - name: Get commit ID
+        run: echo "COMMIT_ID=$(echo ${GITHUB_SHA} | cut -c1-7)abcd" >> $GITHUB_ENV
 
       - name: Set up Buildx
         id: buildx
