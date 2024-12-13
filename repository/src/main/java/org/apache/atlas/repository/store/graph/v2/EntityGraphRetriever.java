@@ -285,8 +285,6 @@ public class EntityGraphRetriever {
 
         if (entityType != null) {
             Map<String, Object> uniqueAttributes = new HashMap<>();
-            Map<String, Object> attributes = new HashMap<>();
-            Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
 
             for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
                 Object attrValue = getVertexAttribute(entityVertex, attribute);
@@ -296,8 +294,9 @@ public class EntityGraphRetriever {
                 }
             }
 
+            Map<String, Object> attributes = new HashMap<>();
+            Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
             if (CollectionUtils.isNotEmpty(relationAttributes)) {
-
                 for (String attributeName : relationAttributes) {
                     AtlasAttribute attribute = entityType.getAttribute(attributeName);
                     if (attribute != null
@@ -1059,7 +1058,6 @@ public class EntityGraphRetriever {
 
         edgeLabels.stream().forEach(e -> propertiesMap.put(e, StringUtils.SPACE));
     }
-
     private void updateAttrValue( Map<String, Object> propertiesMap, VertexProperty<Object> property){
         Object value = propertiesMap.get(property.key());
         if (value instanceof List) {
@@ -1070,7 +1068,6 @@ public class EntityGraphRetriever {
             propertiesMap.put(property.key(), values);
         }
     }
-
 
     private boolean isPolicyAttribute(Set<String> attributes) {
         Set<String> exclusionSet = new HashSet<>(Arrays.asList(AccessControlUtils.ATTR_POLICY_TYPE,
@@ -1931,9 +1928,9 @@ public class EntityGraphRetriever {
             return null;
         }
 
-        // value is present as marker or is inward relation, fetch the value from the vertex
+        // value is present as marker or is inward/outward relation, fetch the value from the vertex
         if (properties.get(attribute.getName()) == StringUtils.SPACE || AtlasRelationshipEdgeDirection.IN.equals(attribute.getRelationshipEdgeDirection())
-        ||  AtlasRelationshipEdgeDirection.OUT.equals(attribute.getRelationshipEdgeDirection())) {
+                ||  AtlasRelationshipEdgeDirection.OUT.equals(attribute.getRelationshipEdgeDirection())) {
             return mapVertexToAttribute(vertex, attribute, null, false);
         }
 
