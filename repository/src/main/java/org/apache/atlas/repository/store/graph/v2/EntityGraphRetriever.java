@@ -1002,15 +1002,11 @@ public class EntityGraphRetriever {
 
     private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set<String> attributes) throws AtlasBaseException {
         Map<String, Object> propertiesMap = new HashMap<>();
-        String  guid         = entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+
         // Execute the traversal to fetch properties
         Iterator<VertexProperty<Object>> traversal = ((AtlasJanusVertex)entityVertex).getWrappedElement().properties();
-
         // Fetch edges in both directions
-//        retrieveEdgeLabels(entityVertex, AtlasEdgeDirection.IN, attributes, propertiesMap);
-//        retrieveEdgeLabels(entityVertex, AtlasEdgeDirection.OUT, attributes, propertiesMap);
         retrieveEdgeLabels(entityVertex, AtlasEdgeDirection.BOTH, attributes, propertiesMap);
-
 
         // Iterate through the resulting VertexProperty objects
         while (traversal.hasNext()) {
