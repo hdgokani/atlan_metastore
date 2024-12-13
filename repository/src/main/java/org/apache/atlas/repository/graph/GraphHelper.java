@@ -2025,28 +2025,6 @@ public final class GraphHelper {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
-
-    /**
-     * Get all the active edges
-     * @param vertex entity vertex
-     * @return Iterator of children edges
-     */
-    public static Iterator<AtlasJanusEdge> getOnlyActiveEdges(AtlasVertex vertex, AtlasEdgeDirection direction) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.getOnlyActiveEdges");
-
-        try {
-            return vertex.query()
-                    .direction(direction)
-                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
-                    .edges()
-                    .iterator();
-        } catch (Exception e) {
-            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
-        }
-        finally {
-            RequestContext.get().endMetricRecord(metricRecorder);
-        }
-    }
     public static Iterator<AtlasVertex> getActiveVertices(AtlasVertex vertex, String childrenEdgeLabel, AtlasEdgeDirection direction) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("CategoryPreProcessor.getEdges");
 
