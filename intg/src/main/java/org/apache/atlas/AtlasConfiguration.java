@@ -121,7 +121,6 @@ public enum AtlasConfiguration {
     ENABLE_ASYNC_INDEXSEARCH("atlas.indexsearch.async.enable", false),
     ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT("atlas.indexsearch.query.size.max.limit", 100000),
     ATLAS_INDEXSEARCH_LIMIT_UTM_TAGS("atlas.indexsearch.limit.ignore.utm.tags", ""),
-    FETCH_COLLAPSED_RESULT("atlas.indexsearch.fetch.collapsed.result", true),
     ATLAS_INDEXSEARCH_ENABLE_API_LIMIT("atlas.indexsearch.enable.api.limit", false),
 
     /**
@@ -132,6 +131,7 @@ public enum AtlasConfiguration {
      * This configuration is used to enable fetching non primitive attributes in index search
      */
     ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES("atlas.indexsearch.enable.fetching.non.primitive.attributes", true),
+
     ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false),
 
     DELTA_BASED_REFRESH_ENABLED("atlas.authorizer.enable.delta_based_refresh", false),
