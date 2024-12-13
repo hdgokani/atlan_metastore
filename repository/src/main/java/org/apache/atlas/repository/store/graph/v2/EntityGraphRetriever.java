@@ -1007,8 +1007,8 @@ public class EntityGraphRetriever {
         Iterator<VertexProperty<Object>> traversal = ((AtlasJanusVertex)entityVertex).getWrappedElement().properties();
 
         // Fetch edges in both directions
-        retrieveEdgeLabels(GraphHelper.getOnlyActiveEdges(entityVertex, AtlasEdgeDirection.IN), attributes, propertiesMap);
-        retrieveEdgeLabels(GraphHelper.getOnlyActiveEdges(entityVertex, AtlasEdgeDirection.OUT), attributes, propertiesMap);
+        retrieveEdgeLabels(entityVertex, AtlasEdgeDirection.IN, attributes, propertiesMap);
+        retrieveEdgeLabels(entityVertex, AtlasEdgeDirection.OUT, attributes, propertiesMap);
 
         // Iterate through the resulting VertexProperty objects
         while (traversal.hasNext()) {
@@ -1041,7 +1041,8 @@ public class EntityGraphRetriever {
         return propertiesMap;
     }
 
-    private void retrieveEdgeLabels(Iterator<AtlasJanusEdge> edges, Set<String> attributes, Map<String, Object> propertiesMap) {
+    private void retrieveEdgeLabels(AtlasVertex entityVertex, AtlasEdgeDirection edgeDirection, Set<String> attributes, Map<String, Object> propertiesMap) throws AtlasBaseException {
+        Iterator<AtlasJanusEdge> edges = GraphHelper.getOnlyActiveEdges(entityVertex, edgeDirection);
         List<String> edgeLabelsDebug = new ArrayList<>();
         while (edges.hasNext()) {
             AtlasJanusEdge edge = edges.next();
@@ -1051,7 +1052,7 @@ public class EntityGraphRetriever {
         Set<String> edgeLabels =
                 edgeLabelsDebug.stream()
                         .map(edgeLabel -> {
-                            Optional<String> matchingAttrOpt = attributes.stream().filter(ele -> edgeLabel.contains(ele)).findFirst();
+                            Optional<String> matchingAttrOpt = attributes.stream().filter(ele -> (edgeLabel.contains(ele) || ele.contains(edgeLabel))).findFirst();
                             return matchingAttrOpt.orElse(null);
                         }).filter(Objects::nonNull)
                         .collect(Collectors.toSet());
