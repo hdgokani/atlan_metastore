@@ -50,6 +50,7 @@ import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusEdge;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusPropertyKey;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusVertex;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.type.AtlasArrayType;
@@ -86,6 +87,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CREATED_BY;
@@ -1003,12 +1005,21 @@ public class EntityGraphRetriever {
     }
 
     private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set<String> attributes) throws AtlasBaseException {
+        if (entityType == null) {
+            return new HashMap<>();
+        }
         Map<String, Object> propertiesMap = new HashMap<>();
 
         // Execute the traversal to fetch properties
         Iterator<VertexProperty<Object>> traversal = ((AtlasJanusVertex)entityVertex).getWrappedElement().properties();
+
+        //  retrieve all the valid relationships for this entityType
+        Map<String, String> relationshipsLookup = fetchEdgeNames(entityType);
+
         // Fetch edges in both directions
-        retrieveEdgeLabels(entityVertex, AtlasEdgeDirection.BOTH, attributes, propertiesMap);
+        retrieveEdgeLabels(entityVertex, AtlasEdgeDirection.BOTH, attributes, relationshipsLookup, propertiesMap);
+
+
 
         // Iterate through the resulting VertexProperty objects
         while (traversal.hasNext()) {
@@ -1041,25 +1052,45 @@ public class EntityGraphRetriever {
         return propertiesMap;
     }
 
-    private void retrieveEdgeLabels(AtlasVertex entityVertex, AtlasEdgeDirection edgeDirection, Set<String> attributes, Map<String, Object> propertiesMap) throws AtlasBaseException {
+    private Map<String, String> fetchEdgeNames(AtlasEntityType entityType){
+        Map<String, Map<String, AtlasAttribute>> relationships = entityType.getRelationshipAttributes();
+        Map<String, String> edgeNames = new HashMap<>();
+        relationships.forEach((k,v) -> {
+            v.forEach((k1,v1) -> {
+                edgeNames.put(k1, k);
+            });
+        });
+        return edgeNames;
+    }
+
+    private void retrieveEdgeLabels(AtlasVertex entityVertex, AtlasEdgeDirection edgeDirection, Set<String> attributes, Map<String, String> relationshipsLookup,Map<String, Object> propertiesMap) throws AtlasBaseException {
         Iterator<AtlasJanusEdge> edges = GraphHelper.getOnlyActiveEdges(entityVertex, edgeDirection);
 
-
         List<String> edgeLabelsDebug = new ArrayList<>();
+        Map<String, String> edgesTypeName = new HashMap();
+
         while (edges.hasNext()) {
             AtlasJanusEdge edge = edges.next();
-            edgeLabelsDebug.add(edge.getLabel());
+            String label = edge.getLabel();
+            edgeLabelsDebug.add(label);
+            edgesTypeName.putIfAbsent(label, edge.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
         }
 
-        Set<String> edgeLabels =
-                edgeLabelsDebug.stream()
-                        .map(edgeLabel -> {
-                            Optional<String> matchingAttrOpt = attributes.stream().filter(ele -> (edgeLabel.contains(ele))).findFirst();
-                            return matchingAttrOpt.orElse(null);
-                        }).filter(Objects::nonNull)
-                        .collect(Collectors.toSet());
+        Set<String> edgeLabels = new HashSet<>();
+        edgeLabelsDebug.stream().filter(Objects::nonNull).forEach(edgeLabel -> attributes.forEach(attribute->{
+               if (edgeLabel.contains(attribute)){
+                   edgeLabels.add(attribute);
+                   return;
+               }
+
+            String edgeTypeName = edgesTypeName.get(edgeLabel);
+            if (relationshipsLookup.containsKey(edgeTypeName) && attribute.equals(relationshipsLookup.get(edgeTypeName))) {
+                edgeLabels.add(attribute);
+            }
+        }));
 
         edgeLabels.stream().forEach(e -> propertiesMap.put(e, StringUtils.SPACE));
+
     }
     private void updateAttrValue( Map<String, Object> propertiesMap, VertexProperty<Object> property){
         Object value = propertiesMap.get(property.key());
@@ -1923,7 +1954,7 @@ public class EntityGraphRetriever {
         }
 
         // if value is empty && element is array and not inward relation, return empty list
-        if (properties.get(attribute.getName()) == null && typeCategory.equals(TypeCategory.ARRAY) && !AtlasRelationshipEdgeDirection.IN.equals(attribute.getRelationshipEdgeDirection())) {
+        if (properties.get(attribute.getName()) == null && typeCategory.equals(TypeCategory.ARRAY)) {
             return new ArrayList<>();
         }
 
@@ -1932,9 +1963,8 @@ public class EntityGraphRetriever {
             return null;
         }
 
-        // value is present as marker or is inward/outward relation, fetch the value from the vertex
-        if (properties.get(attribute.getName()) == StringUtils.SPACE || AtlasRelationshipEdgeDirection.IN.equals(attribute.getRelationshipEdgeDirection())
-                ||  AtlasRelationshipEdgeDirection.OUT.equals(attribute.getRelationshipEdgeDirection())) {
+        // value is present as marker , fetch the value from the vertex
+        if (properties.get(attribute.getName()) == StringUtils.SPACE) {
             return mapVertexToAttribute(vertex, attribute, null, false);
         }
 
