@@ -3868,7 +3868,7 @@ public class EntityGraphMapper {
                |-------------|-------------| */
 
             Boolean currentTagPropagation = currentClassification.isPropagate();
-            Boolean updatedTagPropagation = classification.isPropagate();
+            Boolean updatedTagPropagation = Objects.isNull(classification.isPropagate()) ? CLASSIFICATION_PROPAGATION_DEFAULT : classification.isPropagate();
             Boolean currentRestrictPropagationThroughLineage = currentClassification.getRestrictPropagationThroughLineage();
             Boolean updatedRestrictPropagationThroughLineage = classification.getRestrictPropagationThroughLineage();
             Boolean currentRestrictPropagationThroughHierarchy = currentClassification.getRestrictPropagationThroughHierarchy();
