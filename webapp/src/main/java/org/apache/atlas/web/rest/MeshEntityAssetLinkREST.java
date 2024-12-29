@@ -160,7 +160,7 @@ public class MeshEntityAssetLinkREST {
      * @throws AtlasBaseException if there is an error during the unlinking process
      */
     @POST
-    @Path("/unlink-domain")
+    @Path("/unlink-product")
     @Timed
     public void unlinkProductFromAssets(final LinkMeshEntityRequest request) throws AtlasBaseException {
         String productGuid = request.getDomainGuid();
