@@ -44,7 +44,8 @@ public class LinkMeshEntityRequest implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Set<String> assetGuids;
-    private String domainGuid; 
+    private String domainGuid;
+    private String productGuid;
 
 
     public Set<String> getAssetGuids() {
@@ -63,11 +64,16 @@ public class LinkMeshEntityRequest implements Serializable {
         this.domainGuid = domainGuid;
     }
 
+    public String getProductGuid() {return productGuid;}
+
+    public void setProductGuid(String productGuid) {this.productGuid = productGuid;}
+
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("LinkBusinessPolicyRequest{");
+        final StringBuilder sb = new StringBuilder("LinkMeshEntityRequest{");
         sb.append("assetGuids=").append(assetGuids);
         sb.append(", domainGuid='").append(domainGuid).append('\'');
+        sb.append(", productGuid='").append(productGuid).append('\'');
         sb.append('}');
         return sb.toString();
     }

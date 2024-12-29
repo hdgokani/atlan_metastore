@@ -4836,6 +4836,11 @@ public class EntityGraphMapper {
 
     public List<AtlasVertex> linkMeshEntityToAssets(String meshEntityId, Set<String> linkGuids) throws AtlasBaseException {
         List<AtlasVertex> linkedVertices = new ArrayList<>();
+        AtlasVertex meshEntityVertex = findByGuid(graph, meshEntityId);
+        String meshEntityTypeName = "";
+        if (meshEntityVertex != null) {
+            meshEntityTypeName = meshEntityVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
+        }
 
         for (String guid : linkGuids) {
             AtlasVertex ev = findByGuid(graph, guid);
@@ -4846,18 +4851,25 @@ public class EntityGraphMapper {
                     LOG.warn("Type {} is not allowed to link with mesh entity", typeName);
                     continue;
                 }
-                Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+                Set<String> existingValues = null ;
+                if (meshEntityTypeName.equals(DATA_DOMAIN_ENTITY_TYPE)){
+                    existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+                }
+
+                if (meshEntityTypeName.equals(DATA_PRODUCT_ENTITY_TYPE)){
+                    existingValues = ev.getMultiValuedSetProperty(PRODUCT_GUIDS_ATTR, String.class);
+                }
 
                 if (!existingValues.contains(meshEntityId)) {
                     isAuthorizedToLink(ev);
 
-                    updateDomainAttribute(ev, existingValues, meshEntityId);
+                    updateEntityAttribute(ev, existingValues, meshEntityId, meshEntityTypeName);
                     existingValues.clear();
                     existingValues.add(meshEntityId);
 
                     updateModificationMetadata(ev);
 
-                    cacheDifferentialMeshEntity(ev, existingValues);
+                    cacheDifferentialMeshEntity(ev, existingValues, meshEntityTypeName);
 
                     linkedVertices.add(ev);
                 }
@@ -4869,6 +4881,11 @@ public class EntityGraphMapper {
 
     public List<AtlasVertex> unlinkMeshEntityFromAssets(String meshEntityId, Set<String> unlinkGuids) throws AtlasBaseException {
         List<AtlasVertex> unlinkedVertices = new ArrayList<>();
+        AtlasVertex meshEntityVertex = findByGuid(graph, meshEntityId);
+        String meshEntityTypeName = "";
+        if (meshEntityVertex != null) {
+            meshEntityTypeName = meshEntityVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
+        }
 
         for (String guid : unlinkGuids) {
             AtlasVertex ev = AtlasGraphUtilsV2.findByGuid(graph, guid);
@@ -4880,21 +4897,40 @@ public class EntityGraphMapper {
                     continue;
                 }
 
-                Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+                Set<String> existingValues = null ;
+                if (meshEntityTypeName.equals(DATA_DOMAIN_ENTITY_TYPE)){
+                    existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+                }
+
+                if (meshEntityTypeName.equals(DATA_PRODUCT_ENTITY_TYPE)){
+                    existingValues = ev.getMultiValuedSetProperty(PRODUCT_GUIDS_ATTR, String.class);
+                }
 
                 if (meshEntityId.isEmpty() || existingValues.contains(meshEntityId)) {
                     isAuthorizedToLink(ev);
 
                     if (StringUtils.isEmpty(meshEntityId)) {
                         existingValues.clear();
-                        ev.removeProperty(DOMAIN_GUIDS_ATTR);
+                        if (meshEntityTypeName.equals(DATA_DOMAIN_ENTITY_TYPE)) {
+                            ev.removeProperty(DOMAIN_GUIDS_ATTR);
+                        }
+
+                        if (meshEntityTypeName.equals(DATA_PRODUCT_ENTITY_TYPE)) {
+                            ev.removeProperty(PRODUCT_GUIDS_ATTR);
+                        }
                     } else {
                         existingValues.remove(meshEntityId);
-                        ev.removePropertyValue(DOMAIN_GUIDS_ATTR, meshEntityId);
+                        if (meshEntityTypeName.equals(DATA_DOMAIN_ENTITY_TYPE)) {
+                            ev.removePropertyValue(DOMAIN_GUIDS_ATTR, meshEntityId);
+                        }
+
+                        if (meshEntityTypeName.equals(DATA_PRODUCT_ENTITY_TYPE)) {
+                            ev.removePropertyValue(PRODUCT_GUIDS_ATTR, meshEntityId);
+                        }
                     }
 
                     updateModificationMetadata(ev);
-                    cacheDifferentialMeshEntity(ev, existingValues);
+                    cacheDifferentialMeshEntity(ev, existingValues, meshEntityTypeName);
 
                     unlinkedVertices.add(ev);
                 }
@@ -4904,10 +4940,17 @@ public class EntityGraphMapper {
         return unlinkedVertices;
     }
 
-    private void updateDomainAttribute(AtlasVertex vertex, Set<String> existingValues, String meshEntityId){
-        existingValues.forEach(existingValue -> vertex.removePropertyValue(DOMAIN_GUIDS_ATTR, existingValue));
-        vertex.setProperty(DOMAIN_GUIDS_ATTR, meshEntityId);
+    private void updateEntityAttribute(AtlasVertex vertex, Set<String> existingValues, String meshEntityId, String typeName){
+        if (typeName.equals(DATA_DOMAIN_ENTITY_TYPE)){
+            existingValues.forEach(existingValue -> vertex.removePropertyValue(DOMAIN_GUIDS_ATTR, existingValue));
+            vertex.setProperty(DOMAIN_GUIDS_ATTR, meshEntityId);
+        }
+
+        if (typeName.equals(DATA_PRODUCT_ENTITY_TYPE)){
+            vertex.setProperty(PRODUCT_GUIDS_ATTR, meshEntityId);
+        }
     }
+
     public AtlasVertex moveBusinessPolicies(Set<String> policyIds, String assetId, String type) throws AtlasBaseException {
         // Retrieve the AtlasVertex for the given assetId
         AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(graph, assetId);
@@ -4976,10 +5019,16 @@ public class EntityGraphMapper {
         requestContext.cacheDifferentialEntity(diffEntity);
     }
 
-    private void cacheDifferentialMeshEntity(AtlasVertex ev, Set<String> existingValues) {
+    private void cacheDifferentialMeshEntity(AtlasVertex ev, Set<String> existingValues, String typeName) {
         AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
         setEntityCommonAttributes(ev, diffEntity);
-        diffEntity.setAttribute(DOMAIN_GUIDS_ATTR, existingValues);
+        if (typeName.equals(DATA_DOMAIN_ENTITY_TYPE)){
+            diffEntity.setAttribute(DOMAIN_GUIDS_ATTR, existingValues);
+        }
+
+        if (typeName.equals(DATA_PRODUCT_ENTITY_TYPE)){
+            diffEntity.setAttribute(PRODUCT_GUIDS_ATTR, existingValues);
+        }
 
         RequestContext requestContext = RequestContext.get();
         requestContext.cacheDifferentialEntity(diffEntity);

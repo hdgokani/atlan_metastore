@@ -1,5 +1,6 @@
 package org.apache.atlas.web.rest;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -16,6 +17,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+
+import static org.apache.atlas.repository.util.AccessControlUtils.ARGO_SERVICE_USER_NAME;
 
 @Path("mesh-asset-link")
 @Singleton
@@ -37,7 +40,7 @@ public class MeshEntityAssetLinkREST {
     /**
      * Links a product to entities.
      *
-     * @param request    the request containing the GUIDs of the assets to link the product to
+     * @param request    the request containing the GUIDs of the assets to link domain to
      * @throws AtlasBaseException if there is an error during the linking process
      */
 
@@ -61,7 +64,7 @@ public class MeshEntityAssetLinkREST {
         try {
             // Start performance tracing if enabled
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MeshEntityAssetLinkREST.linkMeshEntityToAssets(" + domainGuid + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MeshEntityAssetLinkREST.linkDomainToAssets(" + domainGuid + ")");
             }
 
             // Link the domain to the specified entities
@@ -75,7 +78,7 @@ public class MeshEntityAssetLinkREST {
     /**
      * Unlinks a product from entities.
      *
-     * @param request    the request containing the GUIDs of the assets to unlink the policy from
+     * @param request    the request containing the GUIDs of the assets to unlink the domain from
      * @throws AtlasBaseException if there is an error during the unlinking process
      */
     @POST
@@ -100,6 +103,90 @@ public class MeshEntityAssetLinkREST {
 
             // Unlink the domain from the specified entities
             entitiesStore.unlinkMeshEntityFromAssets(domainGuid, request.getAssetGuids());
+        } finally {
+            // Log performance metrics
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Links a product to entities.
+     *
+     * @param request    the request containing the GUIDs of the assets to link product to
+     * @throws AtlasBaseException if there is an error during the linking process
+     */
+
+    @POST
+    @Path("/link-product")
+    @Timed
+    public void linkProductToAssets(final LinkMeshEntityRequest request) throws AtlasBaseException {
+        String productGuid = request.getProductGuid();
+        if(productGuid == null || productGuid.isEmpty()) {
+            throw new AtlasBaseException("Product GUID is required for linking product to assets");
+        }
+
+        // Ensure the current user is authorized to move the policy
+        String currentUser = RequestContext.getCurrentUser();
+        if (!ARGO_SERVICE_USER_NAME.equals(currentUser)) {
+            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, currentUser, "moveBusinessPolicy");
+        }
+
+        LOG.info("Linking Product {} to Asset", productGuid);
+
+        // Set request context parameters
+        RequestContext.get().setIncludeClassifications(true);
+        RequestContext.get().setIncludeMeanings(false);
+        RequestContext.get().getRequestContextHeaders().put("route", "product-asset-link");
+
+        AtlasPerfTracer perf = null;
+        try {
+            // Start performance tracing if enabled
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MeshEntityAssetLinkREST.linkProductToAssets(" + productGuid + ")");
+            }
+
+            // Link the product to the specified entities
+            entitiesStore.linkMeshEntityToAssets(productGuid, request.getAssetGuids());
+        } finally {
+            // Log performance metrics
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Unlinks a product from entities.
+     *
+     * @param request    the request containing the GUIDs of the assets to unlink the product from
+     * @throws AtlasBaseException if there is an error during the unlinking process
+     */
+    @POST
+    @Path("/unlink-domain")
+    @Timed
+    public void unlinkProductFromAssets(final LinkMeshEntityRequest request) throws AtlasBaseException {
+        String productGuid = request.getDomainGuid();
+
+        LOG.info("Unlinking Product {} from Asset", productGuid);
+
+        // Ensure the current user is authorized to move the policy
+        String currentUser = RequestContext.getCurrentUser();
+        if (!ARGO_SERVICE_USER_NAME.equals(currentUser)) {
+            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, currentUser, "moveBusinessPolicy");
+        }
+
+        // Set request context parameters
+        RequestContext.get().setIncludeClassifications(true);
+        RequestContext.get().setIncludeMeanings(false);
+        RequestContext.get().getRequestContextHeaders().put("route", "product-asset-unlink");
+
+        AtlasPerfTracer perf = null;
+        try {
+            // Start performance tracing if enabled
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MeshEntityAssetLinkREST.unlinkProductFromAssets(" + productGuid + ")");
+            }
+
+            // Unlink the domain from the specified entities
+            entitiesStore.unlinkMeshEntityFromAssets(productGuid, request.getAssetGuids());
         } finally {
             // Log performance metrics
             AtlasPerfTracer.log(perf);
