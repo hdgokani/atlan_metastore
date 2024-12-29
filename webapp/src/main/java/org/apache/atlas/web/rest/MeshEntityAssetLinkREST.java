@@ -185,7 +185,7 @@ public class MeshEntityAssetLinkREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MeshEntityAssetLinkREST.unlinkProductFromAssets(" + productGuid + ")");
             }
 
-            // Unlink the domain from the specified entities
+            // Unlink the product from the specified entities
             entitiesStore.unlinkMeshEntityFromAssets(productGuid, request.getAssetGuids());
         } finally {
             // Log performance metrics
