@@ -3143,7 +3143,7 @@ public class EntityGraphMapper {
 
         List<AtlasVertex> tagVerticesProcessed = new ArrayList<>(0);
         List<AtlasVertex> currentAssetVerticesBatch = new ArrayList<>(0);
-        int total_count = 0;
+        int totalCount = 0;
         while (tagVertices != null && tagVertices.hasNext()) {
             if (cleanedUpCount >= CLEANUP_MAX){
                 return;
@@ -3162,7 +3162,7 @@ public class EntityGraphMapper {
             }
 
             int currentAssetsBatchSize = currentAssetVerticesBatch.size();
-            total_count += currentAssetsBatchSize;
+            totalCount += currentAssetsBatchSize;
 
             if (currentAssetsBatchSize > 0) {
                 LOG.info("To clean up tag {} from {} entities", classificationName, currentAssetsBatchSize);
@@ -3226,14 +3226,14 @@ public class EntityGraphMapper {
                 }
                 // update the 'assetsCountToPropagate' on in memory java object.
                 AtlasTask currentTask = RequestContext.get().getCurrentTask();
-                currentTask.setAssetsCountToPropagate((long) total_count);
+                currentTask.setAssetsCountToPropagate((long) totalCount);
 
                 //update the 'assetsCountToPropagate' in the current task vertex.
                 AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
                 currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, currentTask.getAssetsCountToPropagate());
                 graph.commit();
 
-                currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + total_count);
+                currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + totalCount);
                 currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
                 transactionInterceptHelper.intercept();
 
