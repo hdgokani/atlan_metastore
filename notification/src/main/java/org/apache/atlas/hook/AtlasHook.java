@@ -122,7 +122,7 @@ public abstract class AtlasHook {
                                               new LinkedBlockingDeque<>(queueSize),
                                               new ThreadFactoryBuilder().setNameFormat("Atlas Notifier %d").setDaemon(true).build());
 
-            ShutdownHookManager.get().addShutdownHook(new Thread() {
+            Runtime.getRuntime().addShutdownHook(new Thread() {
                 @Override
                 public void run() {
                     try {
@@ -138,7 +138,7 @@ public abstract class AtlasHook {
                         LOG.info("<== Shutdown of Atlas Hook");
                     }
                 }
-            }, AtlasConstants.ATLAS_SHUTDOWN_HOOK_PRIORITY);
+            });
         }
 
         LOG.info("Created Atlas Hook");
