@@ -580,7 +580,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
 
         @VisibleForTesting
-        void handleMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) throws AtlasServiceException, AtlasException {
+        void handleMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) throws AtlasException {
             AtlasPerfTracer  perf           = null;
             HookNotification message        = kafkaMsg.getMessage();
             String           messageUser    = message.getUser();
@@ -655,8 +655,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                                 if (auditLog == null) {
                                     auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
-                                                            AtlasClientV2.API_V2.CREATE_ENTITY.getMethod(),
-                                                            AtlasClientV2.API_V2.CREATE_ENTITY.getNormalizedPath());
+                                                            "POST",
+                                                            "v2/entity");
                                 }
 
                                 createOrUpdate(entities, false, stats, context);
@@ -670,8 +670,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                                 if (auditLog == null) {
                                     auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
-                                                            AtlasClientV2.API_V2.UPDATE_ENTITY_BY_ATTRIBUTE.getMethod(),
-                                                            String.format(AtlasClientV2.API_V2.UPDATE_ENTITY_BY_ATTRIBUTE.getNormalizedPath(), partialUpdateRequest.getTypeName()));
+                                                            "PUT",
+                                            "v2/entity");
                                 }
 
                                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(partialUpdateRequest.getTypeName());
@@ -689,8 +689,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                                 if (auditLog == null) {
                                     auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
-                                                            AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE.getMethod(),
-                                                            String.format(AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE.getNormalizedPath(), deleteRequest.getTypeName()));
+                                                            "DELETE",
+                                            "v2/entity");
                                 }
 
                                 try {
@@ -712,8 +712,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                                 if (auditLog == null) {
                                     auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
-                                                            AtlasClientV2.API_V2.UPDATE_ENTITY.getMethod(),
-                                                            AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
+                                                            "POST",
+                                            "v2/entity");
                                 }
 
                                 createOrUpdate(entities, false, stats, context);
@@ -726,8 +726,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                                 if (auditLog == null) {
                                     auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
-                                                            AtlasClientV2.API_V2.CREATE_ENTITY.getMethod(),
-                                                            AtlasClientV2.API_V2.CREATE_ENTITY.getNormalizedPath());
+                                            "POST",
+                                            "v2/entity");
                                 }
 
                                 createOrUpdate(entities, false, stats, context);
@@ -741,8 +741,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                                 if (auditLog == null) {
                                     auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
-                                                            AtlasClientV2.API_V2.UPDATE_ENTITY.getMethod(),
-                                                            AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
+                                            "POST",
+                                            "v2/entity");
                                 }
 
                                 EntityMutationResponse response = atlasEntityStore.updateEntity(entityId, entity, true);
@@ -757,8 +757,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                                 if (auditLog == null) {
                                     auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
-                                                            AtlasClientV2.API_V2.UPDATE_ENTITY.getMethod(),
-                                                            AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
+                                            "POST",
+                                            "v2/entity");
                                 }
 
                                 createOrUpdate(entities, false, stats, context);
@@ -773,8 +773,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                     for (AtlasObjectId entity : entities) {
                                         if (auditLog == null) {
                                             auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
-                                                                    AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE.getMethod(),
-                                                                    String.format(AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE.getNormalizedPath(), entity.getTypeName()));
+                                                    "DELETE",
+                                                    "v2/entity/uniqueAttribute/type/");
                                         }
 
                                         AtlasEntityType type = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());

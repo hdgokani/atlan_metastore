@@ -111,16 +111,6 @@
             </exclusions>
         </dependency>
 
-        <!--<dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-client-v1</artifactId>
-        </dependency>-->
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-client-v2</artifactId>
-        </dependency>
-
         <!-- https://mvnrepository.com/artifact/com.googlecode.owasp-java-html-sanitizer/owasp-java-html-sanitizer -->
         <dependency>
             <groupId>com.googlecode.owasp-java-html-sanitizer</groupId>
@@ -285,25 +275,33 @@
             <artifactId>jetty-webapp</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>com.sun.jersey</groupId>
+        <!--<dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-core</artifactId>
         </dependency>
-
+-->
         <dependency>
-            <groupId>com.sun.jersey</groupId>
+            <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-server</artifactId>
+            <version>${glass.jersey.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>com.sun.jersey</groupId>
+            <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>
+            <version>${glass.jersey.version}</version>
         </dependency>
 
         <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-multipart</artifactId>
+            <version>${glass.jersey.version}</version>
+        </dependency>
+
+        <!--<dependency>
             <groupId>com.sun.jersey.contribs</groupId>
             <artifactId>jersey-multipart</artifactId>
-        </dependency>
+        </dependency>-->
 
         <dependency>
             <groupId>org.mockito</groupId>
@@ -386,14 +384,26 @@
         </dependency>
 
         <!-- Jersey + Spring -->
-        <dependency>
+        <!--<dependency>
             <groupId>com.sun.jersey.contribs</groupId>
             <artifactId>jersey-spring</artifactId>
-        </dependency>
-        <dependency>
+        </dependency>-->
+        <!--<dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-servlet</artifactId>
+        </dependency>-->
+        <!--<dependency>
+            <groupId>org.glassfish.jersey.contribs</groupId>
+            <artifactId>jersey-spring5</artifactId>
+            <version>${glass.jersey-spring.version}</version>
+        </dependency>-->
+
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet</artifactId>
+            <version>${glass.jersey.version}</version>
         </dependency>
+
         <!-- Required for Spring configuration processing -->
         <dependency>
             <groupId>org.springframework</groupId>

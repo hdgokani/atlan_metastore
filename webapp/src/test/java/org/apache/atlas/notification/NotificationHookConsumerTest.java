@@ -18,7 +18,6 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
@@ -127,7 +126,7 @@ public class NotificationHookConsumerTest {
     }
 
     @Test
-    public void testCommitIsCalledWhenMessageIsProcessed() throws AtlasServiceException, AtlasException {
+    public void testCommitIsCalledWhenMessageIsProcessed() throws AtlasException {
         NotificationHookConsumer               notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null);
         NotificationConsumer                   consumer                 = mock(NotificationConsumer.class);
         NotificationHookConsumer.HookConsumer  hookConsumer             = notificationHookConsumer.new HookConsumer(consumer);
@@ -144,7 +143,7 @@ public class NotificationHookConsumerTest {
     }
 
     @Test
-    public void testCommitIsNotCalledEvenWhenMessageProcessingFails() throws AtlasServiceException, AtlasException, AtlasBaseException {
+    public void testCommitIsNotCalledEvenWhenMessageProcessingFails() throws AtlasException, AtlasBaseException {
         NotificationHookConsumer              notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null);
         NotificationConsumer                  consumer                 = mock(NotificationConsumer.class);
         NotificationHookConsumer.HookConsumer hookConsumer             = notificationHookConsumer.new HookConsumer(consumer);

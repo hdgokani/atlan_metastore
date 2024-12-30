@@ -19,7 +19,6 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.kafka.*;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -201,7 +200,7 @@ public class NotificationHookConsumerKafkaTest {
                     break;
                 }
             }
-        } catch (AtlasServiceException | AtlasException e) {
+        } catch (AtlasException e) {
             Assert.fail("Consumer failed with exception ", e);
         }
     }
