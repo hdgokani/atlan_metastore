@@ -54,7 +54,7 @@ def main():
     else:
         jvm_opts_list = (ATLAS_LOG_OPTS % (jvm_logdir, "atlas_setup")).split()
 
-    jvm_opts_list.extend(ADD_OPENS_JAVA_17_JVM_OPTS)
+    jvm_opts_list.insert(0, ADD_OPENS_JAVA_17_JVM_OPTS)
 
     cmd_opts = (ATLAS_COMMAND_OPTS % jvm_atlas_home)
     jvm_opts_list.extend(cmd_opts.split())
@@ -169,6 +169,7 @@ def main():
 
 
 def start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path):
+    print(f"{jvm_opts_list}\n")
     args = ["-app", web_app_path]
     args.extend(sys.argv[1:])
     process = mc.java("org.apache.atlas.Atlas", args, atlas_classpath, jvm_opts_list, jvm_logdir)
