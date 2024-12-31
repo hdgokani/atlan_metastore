@@ -89,6 +89,10 @@
                     <groupId>org.apache.tinkerpop</groupId>
                     <artifactId>gremlin-driver</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>cassandra-hadoop-util</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 

@@ -66,7 +66,6 @@ import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ActiveInstanceElectorService;
-import org.apache.atlas.web.service.AtlasDebugMetricsSink;
 import org.apache.atlas.web.service.AtlasHealthStatus;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
@@ -184,7 +183,6 @@ public class AdminResource {
     private final  String                   defaultUIVersion;
     private final  boolean                  isTimezoneFormatEnabled;
     private final  String                   uiDateFormat;
-    private final  AtlasDebugMetricsSink    debugMetricsRESTSink;
     private final  boolean                  isDebugMetricsEnabled;
     private final  boolean                  isTasksEnabled;
     private final  boolean                  isOnDemandLineageEnabled;
@@ -206,7 +204,7 @@ public class AdminResource {
                          AtlasServerService serverService,
                          ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
                          AtlasPatchManager patchManager, AtlasAuditService auditService,
-                         TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink, MetricsRegistry metricsRegistry) {
+                         TaskManagement taskManagement, MetricsRegistry metricsRegistry) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;
         this.exportService             = exportService;
@@ -221,7 +219,6 @@ public class AdminResource {
         this.patchManager              = patchManager;
         this.auditService              = auditService;
         this.taskManagement            = taskManagement;
-        this.debugMetricsRESTSink      = debugMetricsRESTSink;
         this.metricsRegistry           = metricsRegistry;
 
         if (atlasProperties != null) {
@@ -922,13 +919,6 @@ public class AdminResource {
         if (CollectionUtils.isNotEmpty(guids)) {
             taskManagement.deleteByGuids(guids);
         }
-    }
-
-    @GET
-    @Path("/debug/metrics")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Map getDebugMetrics() {
-        return debugMetricsRESTSink.getMetrics();
     }
 
     @POST

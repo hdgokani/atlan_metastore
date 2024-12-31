@@ -56,15 +56,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.Iterator;
 
@@ -473,6 +465,7 @@ public class CachePolicyTransformerImpl {
 
         List<String> users = (List<String>) atlasPolicy.getAttribute("policyUsers");
         List<String> groups = (List<String>) atlasPolicy.getAttribute("policyGroups");
+
         List<String> roles = (List<String>) atlasPolicy.getAttribute("policyRoles");
 
         List<RangerPolicyItemAccess> accesses = new ArrayList<>();

@@ -657,6 +657,13 @@ public class RequestContext {
         }
     }
 
+    public void endMetricRecordWithInvocations(MetricRecorder recorder, long invocationCount) {
+        if (metrics != null && recorder != null) {
+            metrics.recordMetricWithInvocations(recorder, invocationCount);
+        }
+    }
+
+
     public void recordEntityGuidUpdate(AtlasEntity entity, String guidInRequest) {
         recordEntityGuidUpdate(new EntityGuidPair(entity, guidInRequest));
     }
@@ -729,14 +736,6 @@ public class RequestContext {
         return this.requestUri;
     }
 
-    public void setEnableCache(boolean cacheEnabled) {
-        this.cacheEnabled = cacheEnabled;
-    }
-
-    public boolean isCacheEnabled() {
-        return this.cacheEnabled;
-    }
-
     public boolean isIncludeClassificationNames() {
         return includeClassificationNames;
     }
@@ -750,7 +749,7 @@ public class RequestContext {
     }
 
     public void setClientOrigin(String clientOrigin) {
-        this.clientOrigin = StringUtils.isEmpty(this.clientOrigin) ? "other" :clientOrigin;
+        this.clientOrigin = StringUtils.isEmpty(clientOrigin) ? "other" :clientOrigin;
     }
 
     public class EntityGuidPair {
