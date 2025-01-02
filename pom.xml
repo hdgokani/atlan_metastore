@@ -823,16 +823,6 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
-        <repository>
-            <id>github</id>
-            <url>https://maven.pkg.github.com/atlanhq/atlan-janusgraph</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-        </repository>
        <!-- <repository>
             <id>hortonworks.repo</id>
             <url>https://repo.hortonworks.com/content/repositories/releases</url>
