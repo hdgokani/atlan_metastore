@@ -26,10 +26,6 @@ on:
       - beta
       - development
       - master
-      - lineageondemand
-      - makerlogic
-      - java17
-      - java17cherry
 
 jobs:
   build:
