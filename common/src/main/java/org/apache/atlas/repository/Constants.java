@@ -193,6 +193,11 @@ public final class Constants {
     public static final String ASSET_README_EDGE_LABEL = "__Asset.readme";
     public static final String ASSET_LINK_EDGE_LABEL = "__Asset.links";
 
+    public static final String DATA_SET_SUPER_TYPE       = "Catalog";
+    public static final String PROCESS_SUPER_TYPE        = "Process";
+    public static final String ERROR      = "error";
+    public static final String STATUS     = "Status";
+
     /**
      * Contract
      */
