@@ -125,11 +125,6 @@ public class MeshEntityAssetLinkREST {
             throw new AtlasBaseException("Product GUID is required for linking product to assets");
         }
 
-        // Ensure the current user is authorized to move the policy
-        String currentUser = RequestContext.getCurrentUser();
-        if (!ARGO_SERVICE_USER_NAME.equals(currentUser)) {
-            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, currentUser, "linkProductToAssets");
-        }
 
         LOG.info("Linking Product {} to Asset", productGuid);
 
@@ -166,12 +161,6 @@ public class MeshEntityAssetLinkREST {
         String productGuid = request.getDomainGuid();
 
         LOG.info("Unlinking Product {} from Asset", productGuid);
-
-        // Ensure the current user is authorized to move the policy
-        String currentUser = RequestContext.getCurrentUser();
-        if (!ARGO_SERVICE_USER_NAME.equals(currentUser)) {
-            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, currentUser, "unlinkProductFromAssets");
-        }
 
         // Set request context parameters
         RequestContext.get().setIncludeClassifications(true);
