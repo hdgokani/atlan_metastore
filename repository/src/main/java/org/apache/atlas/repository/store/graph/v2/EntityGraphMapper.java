@@ -4730,45 +4730,106 @@ public class EntityGraphMapper {
 
 
     public void addHasLineage(Set<AtlasEdge> inputOutputEdges, boolean isRestoreEntity) {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addHasLineage");
+        AtlasPerfMetrics.MetricRecorder methodRecorder = RequestContext.get().startMetricRecord("addHasLineage");
+        try {
+            LOG.info("Starting addHasLineage with {} edges. isRestoreEntity={}", inputOutputEdges.size(), isRestoreEntity);
 
-        for (AtlasEdge atlasEdge : inputOutputEdges) {
+            for (AtlasEdge atlasEdge : inputOutputEdges) {
+                AtlasPerfMetrics.MetricRecorder iterationRecorder = RequestContext.get().startMetricRecord("addHasLineage.loopIteration");
+                try {
+                    boolean isOutputEdge = PROCESS_OUTPUTS.equals(atlasEdge.getLabel());
 
-            boolean isOutputEdge = PROCESS_OUTPUTS.equals(atlasEdge.getLabel());
+                    AtlasVertex processVertex = atlasEdge.getOutVertex();
+                    AtlasVertex assetVertex   = atlasEdge.getInVertex();
+                    String edgeLabel          = atlasEdge.getLabel();
+                    String processVertexId    = AtlasGraphUtilsV2.getIdFromVertex(processVertex);
+                    String assetVertexId      = AtlasGraphUtilsV2.getIdFromVertex(assetVertex);
 
-            AtlasVertex processVertex = atlasEdge.getOutVertex();
-            AtlasVertex assetVertex = atlasEdge.getInVertex();
+                    LOG.info("Looking for edge label={} between processVertex={} and assetVertex={}",
+                            edgeLabel, processVertexId, assetVertexId);
 
-            if (getEntityHasLineage(processVertex)) {
-                AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
-                continue;
-            }
+                    AtlasPerfMetrics.MetricRecorder checkLineageRecorder = RequestContext.get().startMetricRecord("addHasLineage.checkLineage");
+                    try {
+                        boolean processHasLineage = getEntityHasLineage(processVertex);
+                        if (processHasLineage) {
+                            LOG.info("Process vertex {} already has lineage. Setting lineage on asset vertex {} and skipping further processing.",
+                                    processVertexId, assetVertexId);
+
+                            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
+                            continue;
+                        } else {
+                            LOG.info("Process vertex {} does not have lineage yet.", processVertexId);
+                        }
+                    } finally {
+                        RequestContext.get().endMetricRecord(checkLineageRecorder);
+                    }
 
             String oppositeEdgeLabel = isOutputEdge ? PROCESS_INPUTS : PROCESS_OUTPUTS;
 
-            Iterator<AtlasEdge> oppositeEdges = processVertex.getEdges(AtlasEdgeDirection.BOTH, oppositeEdgeLabel).iterator();
-            boolean isHasLineageSet = false;
-            while (oppositeEdges.hasNext()) {
-                AtlasEdge oppositeEdge = oppositeEdges.next();
-                AtlasVertex oppositeEdgeAssetVertex = oppositeEdge.getInVertex();
+                    AtlasPerfMetrics.MetricRecorder oppEdgesRecorder = RequestContext.get().startMetricRecord("addHasLineage.oppositeEdges");
+                    Iterator<AtlasEdge> oppositeEdges;
+                    try {
+                        LOG.info("Looking for opposite edges with label={} for processVertex={}",
+                                oppositeEdgeLabel, processVertexId);
 
-                if (getStatus(oppositeEdge) == ACTIVE && getStatus(oppositeEdgeAssetVertex) == ACTIVE) {
-                    if (!isHasLineageSet) {
-                        AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
-                        AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
-                        isHasLineageSet = true;
+                        oppositeEdges = processVertex.getEdges(AtlasEdgeDirection.BOTH, oppositeEdgeLabel).iterator();
+                    } finally {
+                        RequestContext.get().endMetricRecord(oppEdgesRecorder);
                     }
 
-                    if (isRestoreEntity) {
-                        AtlasGraphUtilsV2.setEncodedProperty(oppositeEdgeAssetVertex, HAS_LINEAGE, true);
-                    } else {
-                        break;
+                    AtlasPerfMetrics.MetricRecorder oppEdgesRecorder2 = RequestContext.get().startMetricRecord("addHasLineage.oppositeEdges2");
+                    try {
+                        boolean isHasLineageSet = false;
+                        while (oppositeEdges.hasNext()) {
+                            AtlasEdge oppositeEdge = oppositeEdges.next();
+                            AtlasVertex oppositeEdgeAssetVertex = oppositeEdge.getInVertex();
+
+                            String oppositeEdgeAssetVertexId = AtlasGraphUtilsV2.getIdFromVertex(oppositeEdgeAssetVertex);
+                            AtlasEntity.Status oppositeEdgeStatus = getStatus(oppositeEdge);
+                            AtlasEntity.Status oppositeEdgeAssetStatus = getStatus(oppositeEdgeAssetVertex);
+
+                            LOG.info("Looking for lineage on oppositeEdgeAssetVertex={}, edgeStatus={}, vertexStatus={}",
+                                    oppositeEdgeAssetVertexId, oppositeEdgeStatus, oppositeEdgeAssetStatus);
+
+                            if (oppositeEdgeStatus == ACTIVE && oppositeEdgeAssetStatus == ACTIVE) {
+                                if (!isHasLineageSet) {
+                                    LOG.info("Setting lineage on asset={}, process={}", assetVertexId, processVertexId);
+                                    AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
+                                    AtlasGraphUtilsV2.setEncodedProperty(processVertex, HAS_LINEAGE, true);
+                                    isHasLineageSet = true;
+                                }
+
+                                if (isRestoreEntity) {
+                                    LOG.info("isRestoreEntity=true, setting lineage on oppositeEdgeAssetVertex={}",
+                                            oppositeEdgeAssetVertexId);
+                                    AtlasGraphUtilsV2.setEncodedProperty(oppositeEdgeAssetVertex, HAS_LINEAGE, true);
+                                } else {
+                                    LOG.info("isRestoreEntity=false, breaking out from opposite edges loop for processVertex={}",
+                                            processVertexId);
+                                    break;
+                                }
+                            } else {
+                                LOG.info("Skipping lineage for oppositeEdgeAssetVertex={} because edgeStatus={} or vertexStatus={} is not ACTIVE.",
+                                        oppositeEdgeAssetVertexId, oppositeEdgeStatus, oppositeEdgeAssetStatus);
+                            }
+                        }
+                    } finally {
+                        RequestContext.get().endMetricRecord(oppEdgesRecorder2);
                     }
+
+                } finally {
+                    RequestContext.get().endMetricRecord(iterationRecorder);
                 }
             }
+
+            LOG.info("Finished processing all edges in addHasLineage.");
+
+        } finally {
+            RequestContext.get().endMetricRecord(methodRecorder);
+            LOG.info("Completed addHasLineage method metrics.");
         }
-        RequestContext.get().endMetricRecord(metricRecorder);
     }
+
 
 
     public List<AtlasVertex> linkBusinessPolicy(String policyId, Set<String> linkGuids) {
