@@ -3496,7 +3496,7 @@ public class EntityGraphMapper {
                 Map<String, Object> vertexMap = new HashMap<>();
 
                 vertexMap.put("parentTaskVertexId", currentTaskVertex.getIdForDisplay());
-                vertexMap.put("action", "ADD_PROPAGATION");
+                vertexMap.put("action", CLASSIFICATION_PROPAGATION_ADD);
                 vertexMap.put("assetVertexId", vertex.getIdForDisplay());
                 vertexMap.put("tagVertexId", classificationVertexId);
                 vertexMap.put("parentTaskGuid", currentTask.getGuid());
@@ -3506,13 +3506,12 @@ public class EntityGraphMapper {
 
 
                 // Using Guava to calculate the partition
-                int partition = Hashing.consistentHash(
-                        Hashing.sha256().hashString((String)vertexMap.get("parentTaskGuid"), StandardCharsets.UTF_8),
-                        numPartitions
-                );
+                int partition = Math.abs((Integer) vertexMap.get("parentTaskGuid")) % numPartitions;
+                LOG.debug("sending message with  guid={} to partition={}",currentTaskVertex.getIdForDisplay(), partition);
 
                 //send vertexJson to kafka topic 'TAG_PROP_EVENTS'
                 kfknotif.sendInternal(NotificationInterface.NotificationType.EMIT_PLANNED_RELATIONSHIPS, Collections.singletonList(vertexJson), partition);
+                LOG.debug("Message with guid={} sent to partition={} sent successfully.",currentTaskVertex.getIdForDisplay(), partition );
             }
             if (CollectionUtils.isEmpty(impactedVertices)) {
                 LOG.debug("propagateClassification(entityGuid={}, classificationVertexId={}): found no entities to propagate the classification", entityGuid, classificationVertexId);
