@@ -19,12 +19,12 @@
 *
 -->
 <assembly>
-    <id>classification-updater</id>
+    <id>migration-exporter</id>
     <formats>
         <format>zip</format>
     </formats>
 
-    <baseDirectory>atlas-classification-updater</baseDirectory>
+    <baseDirectory>atlas-migration-exporter</baseDirectory>
 
     <fileSets>
         <fileSet>
@@ -33,21 +33,27 @@
             </includes>
         </fileSet>
         <fileSet>
-            <directory>../tools/classification-updater/src/main/resources</directory>
+            <directory>../tools/atlas-migration-exporter/src/main/resources</directory>
             <outputDirectory>.</outputDirectory>
             <includes>
-                <include>*.sh</include>
+                <include>*.py</include>
+                <include>migrationContext.xml</include>
                 <include>atlas-logback.xml</include>
+                <include>README</include>
             </includes>
             <fileMode>0755</fileMode>
             <directoryMode>0755</directoryMode>
         </fileSet>
         <fileSet>
-            <directory>../tools/classification-updater/target</directory>
+            <directory>../tools/atlas-migration-exporter/target</directory>
             <outputDirectory>.</outputDirectory>
             <includes>
-                <include>atlas-classification-updater-${project.version}.jar</include>
+                <include>atlas-migration-*.jar</include>
             </includes>
+            <excludes>
+                <exclude>*-test-sources.jar</exclude>
+                <exclude>*-sources.jar</exclude>
+            </excludes>
         </fileSet>
     </fileSets>
 </assembly>
