@@ -1247,13 +1247,14 @@ public class EntityGraphMapper {
                     deleteDelegate.getHandler().deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), ctx.getAttribute().isOwnedRef(),
                             true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
                 }
+                if(StringUtils.isNotEmpty(edgeLabel)) {
+                    if (edgeLabel.equals(GLOSSARY_TERMS_EDGE_LABEL) || edgeLabel.equals(GLOSSARY_CATEGORY_EDGE_LABEL)) {
+                        addGlossaryAttr(ctx, newEdge);
+                    }
 
-                if (edgeLabel.equals(GLOSSARY_TERMS_EDGE_LABEL) || edgeLabel.equals(GLOSSARY_CATEGORY_EDGE_LABEL)) {
-                    addGlossaryAttr(ctx, newEdge);
-                }
-
-                if (CATEGORY_PARENT_EDGE_LABEL.equals(edgeLabel)) {
-                    addCatParentAttr(ctx, newEdge);
+                    if (CATEGORY_PARENT_EDGE_LABEL.equals(edgeLabel)) {
+                        addCatParentAttr(ctx, newEdge);
+                    }
                 }
 
                 return newEdge;
@@ -1307,6 +1308,9 @@ public class EntityGraphMapper {
     }
 
     private void addInverseReference(EntityMutationContext context, AtlasAttribute inverseAttribute, AtlasEdge edge, Map<String, Object> relationshipAttributes) throws AtlasBaseException {
+        if(Objects.isNull(edge)){
+            return;
+        }
         AtlasStructType inverseType      = inverseAttribute.getDefinedInType();
         AtlasVertex     inverseVertex    = edge.getInVertex();
         String          inverseEdgeLabel = inverseAttribute.getRelationshipEdgeLabel();
@@ -2927,7 +2931,7 @@ public class EntityGraphMapper {
 
         String    newEntityId = getIdFromVertex(newEntityVertex);
         AtlasEdge ret         = currentEdge;
-
+        // TODO : discuss this currentEdge to throw null or not, or to simply delete this as currentVertex does not exists.
         if (!currentEntityId.equals(newEntityId)) {
             // create a new relationship edge to the new attribute vertex from the instance
             String relationshipName = AtlasGraphUtilsV2.getTypeName(currentEdge);
