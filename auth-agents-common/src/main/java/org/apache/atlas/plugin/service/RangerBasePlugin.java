@@ -388,6 +388,7 @@ public class RangerBasePlugin {
 					if (this.refresher != null) {
 						this.refresher.saveToCache(usePolicyDeltas ? servicePolicies : policies);
 					}
+					LOG.info("New RangerPolicyEngine created with policy count:"+ (usePolicyDeltas? servicePolicies.getPolicies().size() : policies.getPolicies().size()));
 				}
 
 			} else {
