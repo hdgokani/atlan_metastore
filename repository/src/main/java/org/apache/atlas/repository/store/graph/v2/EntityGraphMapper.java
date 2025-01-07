@@ -1247,12 +1247,12 @@ public class EntityGraphMapper {
                     deleteDelegate.getHandler().deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), ctx.getAttribute().isOwnedRef(),
                             true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
                 }
-                if(StringUtils.isNotEmpty(edgeLabel)) {
+                if(StringUtils.isNotEmpty(edgeLabel) && Objects.nonNull(newEdge)) {
                     if (edgeLabel.equals(GLOSSARY_TERMS_EDGE_LABEL) || edgeLabel.equals(GLOSSARY_CATEGORY_EDGE_LABEL)) {
                         addGlossaryAttr(ctx, newEdge);
                     }
 
-                    if (CATEGORY_PARENT_EDGE_LABEL.equals(edgeLabel)) {
+                    if (CATEGORY_PARENT_EDGE_LABEL.equals(edgeLabel) && Objects.nonNull(newEdge)) {
                         addCatParentAttr(ctx, newEdge);
                     }
                 }
@@ -2931,7 +2931,11 @@ public class EntityGraphMapper {
 
         String    newEntityId = getIdFromVertex(newEntityVertex);
         AtlasEdge ret         = currentEdge;
-        // TODO : discuss this currentEdge to throw null or not, or to simply delete this as currentVertex does not exists.
+
+        if(StringUtils.isEmpty(currentEntityId)){
+            return null;
+        }
+
         if (!currentEntityId.equals(newEntityId)) {
             // create a new relationship edge to the new attribute vertex from the instance
             String relationshipName = AtlasGraphUtilsV2.getTypeName(currentEdge);
