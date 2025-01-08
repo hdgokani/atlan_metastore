@@ -469,26 +469,25 @@ public class EntityGraphMapper {
                     throw baseException;
                 }
             }
-        } else {
-
-            if (CollectionUtils.isNotEmpty(appendEntities)) {
-                for (AtlasEntity entity : appendEntities) {
-                    String guid = entity.getGuid();
-                    AtlasVertex vertex = context.getVertex(guid);
-                    AtlasEntityType entityType = context.getType(guid);
-                    mapAppendRemoveRelationshipAttributes(entity, entityType, vertex, UPDATE, context, true, false);
-                }
-            }
-
-            if (CollectionUtils.isNotEmpty(removeEntities)) {
-                for (AtlasEntity entity : removeEntities) {
-                    String guid = entity.getGuid();
-                    AtlasVertex vertex = context.getVertex(guid);
-                    AtlasEntityType entityType = context.getType(guid);
-                    mapAppendRemoveRelationshipAttributes(entity, entityType, vertex, UPDATE, context, false, true);
-                }
+        }
+        if (CollectionUtils.isNotEmpty(appendEntities)) {
+            for (AtlasEntity entity : appendEntities) {
+                String guid = entity.getGuid();
+                AtlasVertex vertex = context.getVertex(guid);
+                AtlasEntityType entityType = context.getType(guid);
+                mapAppendRemoveRelationshipAttributes(entity, entityType, vertex, UPDATE, context, true, false);
             }
         }
+
+        if (CollectionUtils.isNotEmpty(removeEntities)) {
+            for (AtlasEntity entity : removeEntities) {
+                String guid = entity.getGuid();
+                AtlasVertex vertex = context.getVertex(guid);
+                AtlasEntityType entityType = context.getType(guid);
+                mapAppendRemoveRelationshipAttributes(entity, entityType, vertex, UPDATE, context, false, true);
+            }
+        }
+
 
         if (CollectionUtils.isNotEmpty(context.getEntitiesToDelete())) {
             deleteDelegate.getHandler().deleteEntities(context.getEntitiesToDelete());
@@ -516,7 +515,6 @@ public class EntityGraphMapper {
 
         return resp;
     }
-
     private void setSystemAttributesToEntity(AtlasVertex entityVertex, AtlasEntity createdEntity) {
 
         createdEntity.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
