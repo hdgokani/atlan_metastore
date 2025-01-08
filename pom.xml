@@ -171,7 +171,7 @@
                 <role>PMC</role>
             </roles>
             <organization>SAP Inc.</organization>
-            <organizationUrl>https://www.sap.com</organizationUrl>-->
+            <!--<organizationUrl>https://www.sap.com</organizationUrl>-->
         </developer>
         <developer>
             <id>chyzer</id>
