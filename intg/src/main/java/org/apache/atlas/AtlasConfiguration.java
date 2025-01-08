@@ -144,7 +144,7 @@ public enum AtlasConfiguration {
      * OTEL Configuration
      */
     OTEL_RESOURCE_ATTRIBUTES("OTEL_RESOURCE_ATTRIBUTES", "service.name=atlas"),
-    OTEL_SERVICE_NAME(" OTEL_SERVICE_NAME", "atlas"),
+    OTEL_SERVICE_NAME("OTEL_SERVICE_NAME", "atlas"),
     OTEL_EXPORTER_OTLP_ENDPOINT("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317");
 
 
