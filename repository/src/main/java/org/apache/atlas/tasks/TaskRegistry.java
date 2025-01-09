@@ -17,8 +17,6 @@
  */
 package org.apache.atlas.tasks;
 
-import com.datastax.oss.driver.shaded.fasterxml.jackson.core.JsonProcessingException;
-import com.datastax.oss.driver.shaded.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
@@ -33,12 +31,10 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
-import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
-import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -53,9 +49,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.Constants.TASK_STATUS;
@@ -66,7 +62,6 @@ public class TaskRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(TaskRegistry.class);
     public static final int TASK_FETCH_BATCH_SIZE = 100;
     public static final List<Map<String, Object>> SORT_ARRAY = Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc")));
-    public static final String JANUSGRAPH_VERTEX_INDEX = "janusgraph_vertex_index";
 
     private AtlasGraph graph;
     private TaskService taskService;
@@ -97,7 +92,7 @@ public class TaskRegistry {
         try {
             AtlasGraphQuery query = graph.query()
                                          .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
-                                         .has(Constants.TASK_STATUS, AtlasTask.Status.PENDING)
+                                         .has(TASK_STATUS, AtlasTask.Status.PENDING)
                                          .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
 
             Iterator<AtlasVertex> results = query.vertices().iterator();
@@ -122,7 +117,7 @@ public class TaskRegistry {
         try {
             AtlasGraphQuery query = graph.query()
                     .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
-                    .has(Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS)
+                    .has(TASK_STATUS, AtlasTask.Status.IN_PROGRESS)
                     .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
 
             Iterator<AtlasVertex> results = query.vertices().iterator();
@@ -177,7 +172,7 @@ public class TaskRegistry {
         }
 
         setEncodedProperty(taskVertex, Constants.TASK_ATTEMPT_COUNT, task.getAttemptCount());
-        setEncodedProperty(taskVertex, Constants.TASK_STATUS, task.getStatus().toString());
+        setEncodedProperty(taskVertex, TASK_STATUS, task.getStatus().toString());
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
         setEncodedProperty(taskVertex, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
     }
@@ -245,14 +240,15 @@ public class TaskRegistry {
         deleteVertex(taskVertex);
     }
 
-    public void inProgress(AtlasVertex taskVertex, AtlasTask task) {
+    public void inProgress(AtlasVertex taskVertex, AtlasTask task, AbstractTask runnableTask) {
         RequestContext.get().setCurrentTask(task);
 
         task.setStartTime(new Date());
-
+        task.setAssetsCountToPropagate(runnableTask.getAssetsCountToPropagate());
         setEncodedProperty(taskVertex, Constants.TASK_START_TIME, task.getStartTime());
-        setEncodedProperty(taskVertex, Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS);
+        setEncodedProperty(taskVertex, TASK_STATUS, AtlasTask.Status.IN_PROGRESS);
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
+        setEncodedProperty(taskVertex, Constants.TASK_ASSET_COUNT_TO_PROPAGATE, task.getAssetsCountToPropagate());
         graph.commit();
     }
 
@@ -288,7 +284,7 @@ public class TaskRegistry {
 
     @GraphTransaction
     public AtlasVertex getVertex(String taskGuid) {
-        AtlasGraphQuery query = graph.query().has(Constants.TASK_GUID, taskGuid);
+        AtlasGraphQuery query = graph.query().has(TASK_GUID, taskGuid);
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
 
@@ -325,7 +321,7 @@ public class TaskRegistry {
             List<AtlasGraphQuery> orConditions = new LinkedList<>();
 
             for (String status : statusList) {
-                orConditions.add(query.createChildQuery().has(Constants.TASK_STATUS, AtlasTask.Status.from(status)));
+                orConditions.add(query.createChildQuery().has(TASK_STATUS, AtlasTask.Status.from(status)));
             }
 
             query.or(orConditions);
@@ -361,8 +357,8 @@ public class TaskRegistry {
                 .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME);
 
         List<AtlasGraphQuery> orConditions = new LinkedList<>();
-        orConditions.add(query.createChildQuery().has(Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS));
-        orConditions.add(query.createChildQuery().has(Constants.TASK_STATUS, AtlasTask.Status.PENDING));
+        orConditions.add(query.createChildQuery().has(TASK_STATUS, AtlasTask.Status.IN_PROGRESS));
+        orConditions.add(query.createChildQuery().has(TASK_STATUS, AtlasTask.Status.PENDING));
         query.or(orConditions);
 
         query.orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
@@ -433,11 +429,9 @@ public class TaskRegistry {
                                     atlasTask.getStatus().equals(AtlasTask.Status.IN_PROGRESS) ){
                                 LOG.info(String.format("Fetched task from index search: %s", atlasTask.toString()));
                                 ret.add(atlasTask);
-                            } else {
-                                LOG.warn("Status mismatch for task with guid: {}. Expected PENDING/IN_PROGRESS but found: {}",
-                                        atlasTask.getGuid(), atlasTask.getStatus());
-                                String docId = LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay()));
-                                repairMismatchedTask(atlasTask, docId);
+                            }
+                            else {
+                                LOG.warn(String.format("There is a mismatch on tasks status between ES and Cassandra for guid: %s", atlasTask.getGuid()));
                             }
                         } else {
                             LOG.warn("Null vertex while re-queuing tasks at index {}", fetched);
@@ -458,53 +452,6 @@ public class TaskRegistry {
         }
 
         return ret;
-    }
-
-    private void repairMismatchedTask(AtlasTask atlasTask, String docId) {
-        AtlasElasticsearchQuery indexQuery = null;
-
-        try {
-            // Create a map for the fields to be updated
-            Map<String, Object> fieldsToUpdate = new HashMap<>();
-            fieldsToUpdate.put("__task_endTime", atlasTask.getEndTime().getTime());
-            fieldsToUpdate.put("__task_timeTakenInSeconds", atlasTask.getTimeTakenInSeconds());
-            fieldsToUpdate.put("__task_status", atlasTask.getStatus().toString());
-            fieldsToUpdate.put("__task_modificationTimestamp", atlasTask.getUpdatedTime().getTime()); // Set current timestamp
-
-            // Convert fieldsToUpdate map to JSON using Jackson
-            ObjectMapper objectMapper = new ObjectMapper();
-            String fieldsToUpdateJson = objectMapper.writeValueAsString(fieldsToUpdate);
-
-            // Construct the Elasticsearch update by query DSL
-            String queryDsl = "{"
-                    + "\"script\": {"
-                    + "    \"source\": \"for (entry in params.fields.entrySet()) { ctx._source[entry.getKey()] = entry.getValue() }\","
-                    + "    \"params\": {"
-                    + "        \"fields\": " + fieldsToUpdateJson
-                    + "    }"
-                    + "},"
-                    + "\"query\": {"
-                    + "    \"term\": {"
-                    + "        \"_id\": \"" + docId + "\""
-                    + "    }"
-                    + "}"
-                    + "}";
-
-            // Execute the Elasticsearch query
-            indexQuery = (AtlasElasticsearchQuery) graph.elasticsearchQuery(JANUSGRAPH_VERTEX_INDEX);
-            Map<String, LinkedHashMap> result = indexQuery.directUpdateByQuery(queryDsl);
-
-            if (result != null) {
-                LOG.info("Elasticsearch UpdateByQuery Result: " + result);
-            } else {
-                LOG.info("No documents updated in Elasticsearch for guid: " + atlasTask.getGuid());
-            }
-        } catch (JsonProcessingException e) {
-            LOG.error("Error converting fieldsToUpdate to JSON for task with guid: {} and docId: {}. Error: {}", atlasTask.getGuid(), docId, e.getMessage(), e);
-        }
-         catch (AtlasBaseException e) {
-             LOG.error("Error executing Elasticsearch query for task with guid: {} and docId: {}. Error: {}", atlasTask.getGuid(), docId, e.getMessage(), e);
-         }
     }
 
     public void commit() {
@@ -538,7 +485,7 @@ public class TaskRegistry {
     public static AtlasTask toAtlasTask(AtlasVertex v) {
         AtlasTask ret = new AtlasTask();
 
-        String guid = v.getProperty(Constants.TASK_GUID, String.class);
+        String guid = v.getProperty(TASK_GUID, String.class);
         if (guid != null) {
             ret.setGuid(guid);
         }
@@ -548,7 +495,7 @@ public class TaskRegistry {
             ret.setType(type);
         }
 
-        String status = v.getProperty(Constants.TASK_STATUS, String.class);
+        String status = v.getProperty(TASK_STATUS, String.class);
         if (status != null) {
             ret.setStatus(status);
         }
@@ -613,11 +560,15 @@ public class TaskRegistry {
             ret.setErrorMessage(errorMessage);
         }
 
-        long countToPropagate = v.getProperty(Constants.TASK_ASSET_COUNT_TO_PROPAGATE, Long.class);
-        if (errorMessage != null) {
-            ret.setAssetsCountToPropagate(countToPropagate);
+        Long assetsCountToPropagate = v.getProperty(Constants.TASK_ASSET_COUNT_TO_PROPAGATE, Long.class);
+        if (assetsCountToPropagate != null){
+            ret.setAssetsCountToPropagate(assetsCountToPropagate);
         }
 
+        Long assetsCountPropagated = v.getProperty(Constants.TASK_ASSET_COUNT_PROPAGATED, Long.class);
+        if (assetsCountPropagated != null){
+            ret.setAssetsCountPropagated(assetsCountPropagated);
+        }
         return ret;
     }
 
