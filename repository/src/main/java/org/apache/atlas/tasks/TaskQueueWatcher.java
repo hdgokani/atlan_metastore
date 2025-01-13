@@ -87,38 +87,51 @@ public class TaskQueueWatcher implements Runnable {
             LOG.debug("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
         }
         while (shouldRun.get()) {
+            LOG.info("TaskQueueWatcher: Starting a new iteration of task fetching and processing.");
+            TasksFetcher fetcher = new TasksFetcher(registry);
             try {
+                LOG.info("TaskQueueWatcher: Attempting to acquire distributed lock: {}", ATLAS_TASK_LOCK);
                 if (!redisService.acquireDistributedLock(ATLAS_TASK_LOCK)) {
+                    LOG.warn("TaskQueueWatcher: Could not acquire lock: {}. Retrying after {} ms.", ATLAS_TASK_LOCK, AtlasConstants.TASK_WAIT_TIME_MS);
                     Thread.sleep(AtlasConstants.TASK_WAIT_TIME_MS);
                     continue;
                 }
-
-                TasksFetcher fetcher = new TasksFetcher(registry);
-
-                Thread tasksFetcherThread = new Thread(fetcher);
-                tasksFetcherThread.start();
-                tasksFetcherThread.join();
+                LOG.info("TaskQueueWatcher: Acquired distributed lock: {}", ATLAS_TASK_LOCK);
 
                 List<AtlasTask> tasks = fetcher.getTasks();
+                LOG.info("TaskQueueWatcher: Fetched {} tasks for processing.", CollectionUtils.isNotEmpty(tasks) ? tasks.size() : 0);
+
                 if (CollectionUtils.isNotEmpty(tasks)) {
                     final CountDownLatch latch = new CountDownLatch(tasks.size());
+                    LOG.info("TaskQueueWatcher: Submitting {} tasks to the queue.", tasks.size());
                     submitAll(tasks, latch);
-                    LOG.info("Submitted {} tasks to the queue", tasks.size());
+
+                    LOG.info("TaskQueueWatcher: Waiting for submitted tasks to complete.");
                     waitForTasksToComplete(latch);
+                    LOG.info("TaskQueueWatcher: All tasks have been processed.");
                 } else {
+                    LOG.info("TaskQueueWatcher: No tasks fetched. Releasing distributed lock: {}", ATLAS_TASK_LOCK);
                     redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
                 }
+
+                LOG.info("TaskQueueWatcher: Sleeping for {} ms before the next poll.", pollInterval);
                 Thread.sleep(pollInterval);
             } catch (InterruptedException interruptedException) {
-                LOG.error("TaskQueueWatcher: Interrupted: thread is terminated, new tasks will not be loaded into the queue until next restart");
+                LOG.info("TaskQueueWatcher: Interrupted. Thread is terminating. New tasks will not be loaded into the queue until next restart.", interruptedException);
                 break;
             } catch (Exception e) {
-                LOG.error("TaskQueueWatcher: Exception occurred " + e.getMessage(), e);
+                LOG.info("TaskQueueWatcher: Exception occurred during task processing: {}", e.getMessage(), e);
             } finally {
+                LOG.info("TaskQueueWatcher: Releasing distributed lock: {}", ATLAS_TASK_LOCK);
                 redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
+                fetcher.clearTasks();
+                LOG.info("TaskQueueWatcher: Cleared tasks from the fetcher.");
             }
         }
+
+        LOG.info("TaskQueueWatcher: Thread has stopped. shouldRun is now set to false.");
     }
+
 
     private void waitForTasksToComplete(final CountDownLatch latch) throws InterruptedException {
         if (latch.getCount() != 0) {
@@ -145,7 +158,7 @@ public class TaskQueueWatcher implements Runnable {
         }
     }
 
-    static class TasksFetcher implements Runnable {
+    static class TasksFetcher {
         private TaskRegistry registry;
         private List<AtlasTask> tasks = new ArrayList<>();
 
@@ -153,7 +166,6 @@ public class TaskQueueWatcher implements Runnable {
             this.registry = registry;
         }
 
-        @Override
         public void run() {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("TasksFetcher: Fetching tasks for queuing");
@@ -163,7 +175,12 @@ public class TaskQueueWatcher implements Runnable {
         }
 
         public List<AtlasTask> getTasks() {
+            run();
             return tasks;
+        }
+
+        public void clearTasks() {
+            this.tasks.clear();
         }
     }
 

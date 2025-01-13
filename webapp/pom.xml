@@ -552,7 +552,6 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-testtools</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -583,6 +582,12 @@
             <artifactId>atlas-index-repair-tool</artifactId>
             <version>3.0.0-SNAPSHOT</version>
             <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.aayushatharva.brotli4j</groupId>
+            <artifactId>brotli4j</artifactId>
+            <version>1.17.0</version>
         </dependency>
 
     </dependencies>
