@@ -5,15 +5,9 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.common.unit.Fuzziness;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.suggest.SuggestBuilder;
-import org.elasticsearch.search.suggest.SuggestBuilders;
-import org.elasticsearch.search.suggest.completion.CompletionSuggestionBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +29,6 @@ public class ESBasedSuggestionService {
     }
 
     public SuggestionResponse searchSuggestions(String queryStr) throws IOException {
-        // Build the suggestor query for ES
-        String suggestorName = "suggest_keyword";
         Request queryRequest = new Request("POST", "/autocomplete/_search");
         queryRequest.setJsonEntity(queryStr);
         Response response = esRestClient.performRequest(queryRequest);
@@ -46,13 +38,7 @@ public class ESBasedSuggestionService {
 
         // Parse the response and return the suggestions
         Map<String, Object> responseMap = AtlasType.fromJson(esResponseString, Map.class);
-        Map<String, Object> suggestMap = (Map<String, Object>) responseMap.get("suggest");
-        ArrayList<LinkedHashMap> suggestionMap = (ArrayList<LinkedHashMap>) suggestMap.get(suggestorName);
-        LinkedHashMap suggestions = suggestionMap.get(0);
-        List<LinkedHashMap> options = (List<LinkedHashMap>) suggestions.get("options");
-        for (LinkedHashMap option : options) {
-            suggestionResponse.addSuggestion((String) option.get("text"));
-        }
+        suggestionResponse.setResponseMap(responseMap);
 
         return suggestionResponse;
     }
@@ -63,19 +49,16 @@ public class ESBasedSuggestionService {
     public class SuggestionResponse {
 
         public SuggestionResponse() { }
-        private List<String> suggestions = new ArrayList<>();
+        private Map<String, Object> responseMap = new LinkedHashMap<>();
 
-        public List<String> getSuggestions() {
-            return suggestions;
+        public Map<String, Object> getResponseMap() {
+            return responseMap;
         }
 
-        public void addSuggestion(String suggestion) {
-            this.suggestions.add(suggestion);
+        public void setResponseMap(Map<String, Object> responseMap) {
+            this.responseMap = responseMap;
         }
 
-        public void setSuggestions(List<String> suggestions) {
-            this.suggestions = suggestions;
-        }
     }
 
 
