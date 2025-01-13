@@ -117,7 +117,6 @@ public class AtlasTask {
         this.assetsCountPropagated = 0L;
     }
 
-
     public String getGuid() {
         return guid;
     }

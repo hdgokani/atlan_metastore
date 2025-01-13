@@ -27,7 +27,7 @@ public interface TaskFactory {
      * @param atlasTask
      * @return
      */
-    AbstractTask create(AtlasTask atlasTask) throws AtlasException;
+    AbstractTask create(AtlasTask atlasTask);
 
     List<String> getSupportedTypes();
 }
