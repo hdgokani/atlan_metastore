@@ -121,7 +121,9 @@ public enum AtlasConfiguration {
     ENABLE_ASYNC_INDEXSEARCH("atlas.indexsearch.async.enable", false),
     ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT("atlas.indexsearch.query.size.max.limit", 100000),
     ATLAS_INDEXSEARCH_LIMIT_UTM_TAGS("atlas.indexsearch.limit.ignore.utm.tags", ""),
-    FETCH_COLLAPSED_RESULT("atlas.indexsearch.fetch.collapsed.result", true),
+    ATLAS_INDEXSEARCH_ENABLE_REQUEST_ISOLATION("atlas.indexsearch.request.isolation.enable", false),
+    ATLAS_ELASTICSEARCH_PRODUCT_SEARCH_CLUSTER_URL("atlas.index.elasticsearch.product.cluster.url","atlas-elasticsearch2-product-search-headless.atlas.svc.cluster.local:9200"),
+    ATLAS_ELASTICSEARCH_SDK_SEARCH_CLUSTER_URL("atlas.index.elasticsearch.sdk.cluster.url","atlas-elasticsearch2-sdk-search-headless.atlas.svc.cluster.local:9200"),
     ATLAS_INDEXSEARCH_ENABLE_API_LIMIT("atlas.indexsearch.enable.api.limit", false),
 
     /**
@@ -132,11 +134,19 @@ public enum AtlasConfiguration {
      * This configuration is used to enable fetching non primitive attributes in index search
      */
     ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES("atlas.indexsearch.enable.fetching.non.primitive.attributes", true),
-    ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false),
 
+    ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false),
     DELTA_BASED_REFRESH_ENABLED("atlas.authorizer.enable.delta_based_refresh", false),
 
-    ATLAS_UD_RELATIONSHIPS_MAX_COUNT("atlas.ud.relationship.max.count", 100);
+    ATLAS_UD_RELATIONSHIPS_MAX_COUNT("atlas.ud.relationship.max.count", 100),
+
+    /***
+     * OTEL Configuration
+     */
+    OTEL_RESOURCE_ATTRIBUTES("OTEL_RESOURCE_ATTRIBUTES", "service.name=atlas"),
+    OTEL_SERVICE_NAME("OTEL_SERVICE_NAME", "atlas"),
+    OTEL_EXPORTER_OTLP_ENDPOINT("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317");
+
 
 
     private static final Configuration APPLICATION_PROPERTIES;
