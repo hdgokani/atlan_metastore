@@ -58,7 +58,7 @@ public class MeshEntityAssetLinkREST {
         // Set request context parameters
         RequestContext.get().setIncludeClassifications(true);
         RequestContext.get().setIncludeMeanings(false);
-        RequestContext.get().getRequestContextHeaders().put("route", "domain-asset-link");
+        RequestContext.get().getRequestContextHeaders().put("route", "data-mesh-rest");
 
         AtlasPerfTracer perf = null;
         try {
@@ -92,7 +92,7 @@ public class MeshEntityAssetLinkREST {
         // Set request context parameters
         RequestContext.get().setIncludeClassifications(true);
         RequestContext.get().setIncludeMeanings(false);
-        RequestContext.get().getRequestContextHeaders().put("route", "domain-asset-unlink");
+        RequestContext.get().getRequestContextHeaders().put("route", "data-mesh-rest");
 
         AtlasPerfTracer perf = null;
         try {
@@ -131,7 +131,7 @@ public class MeshEntityAssetLinkREST {
         // Set request context parameters
         RequestContext.get().setIncludeClassifications(true);
         RequestContext.get().setIncludeMeanings(false);
-        RequestContext.get().getRequestContextHeaders().put("route", "product-asset-link");
+        RequestContext.get().getRequestContextHeaders().put("route", "data-mesh-rest");
 
         AtlasPerfTracer perf = null;
         try {
@@ -165,7 +165,7 @@ public class MeshEntityAssetLinkREST {
         // Set request context parameters
         RequestContext.get().setIncludeClassifications(true);
         RequestContext.get().setIncludeMeanings(false);
-        RequestContext.get().getRequestContextHeaders().put("route", "product-asset-unlink");
+        RequestContext.get().getRequestContextHeaders().put("route", "data-mesh-rest");
 
         AtlasPerfTracer perf = null;
         try {
