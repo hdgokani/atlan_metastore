@@ -3005,16 +3005,13 @@ public class EntityGraphMapper {
                             continue;
                         }
 
-                        boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
-                                true, attribute.getRelationshipEdgeDirection(), entityVertex);
-
-//                        boolean deleted = false;
-//                        if (edgeLabelsForHardDeletion.contains(edge.getLabel())) {
-//                            graph.removeEdge(edge);
-//                        } else {
-//                            deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
-//                                    true, attribute.getRelationshipEdgeDirection(), entityVertex);
-//                        }
+                        boolean deleted = false;
+                        if (edgeLabelsForHardDeletion.contains(edge.getLabel())) {
+                            graph.removeEdge(edge);
+                        } else {
+                            deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
+                                    true, attribute.getRelationshipEdgeDirection(), entityVertex);
+                        }
 
                         if (!deleted) {
                             additionalElements.add(edge);
