@@ -1894,7 +1894,8 @@ public class EntityGraphRetriever {
                 boolean isRelationshipAttribute = typeRegistry.getRelationshipDefByName(relationshipTypeName) != null;
                 if (isRelationshipAttribute) {
                     LOG.info("CustomRelationship: ret is null: {} ", ret == null);
-                    LOG.error("CustomRelationship: relTypeName: {}, assetGuid: {}", relationshipTypeName, GraphHelper.getGuid(entityVertex));
+                    LOG.info("CustomRelationship: relTypeName: {}, assetGuid: {}, edgeId {}",
+                            relationshipTypeName, GraphHelper.getGuid(entityVertex), edge.getIdForDisplay());
 
                     try {
                         LOG.info("CustomRelationship: Fetching relationshipAttributes for {}", relationshipTypeName);
