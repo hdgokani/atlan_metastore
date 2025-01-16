@@ -512,32 +512,25 @@ public abstract class DeleteHandlerV1 {
 
     public void authorizeRemoveRelation(AtlasEdge edge) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("authoriseRemoveRelation");
-        if(isRequestFromWF()){
-            RequestContext.get().setAuthorisedRemoveRelation(true);
+        if(!RequestContext.get().isAuthorisedRemoveRelation()) {
+            if (isRequestFromWorkFlow()) {
+                RequestContext.get().setAuthorisedRemoveRelation(true);
+            }
+            AtlasEntityHeader end1Entity, end2Entity;
+            String relationShipType = getTypeName(edge);
+            AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByName(relationShipType);
+            if (relationshipDef == null) {
+                return;
+            }
+
+            end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getOutVertex());
+            end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity));
         }
-        AtlasEntityHeader end1Entity, end2Entity;
-        String relationShipType = getTypeName(edge);
-        AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByName(relationShipType);
-        if (relationshipDef == null) {
-            return;
-        }
-
-        end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getOutVertex());
-        end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
-
-        AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
-
         RequestContext.get().endMetricRecord(metric);
     }
 
-    private boolean isRequestFromWF() {
-        String workflowID = RequestContext.get().getRequestContextHeaders().getOrDefault("x-atlan-agent-workflow-id", "");
-        boolean ret = !workflowID.isEmpty();
-        if(ret){
-            LOG.info("Authorised one time request for workflow with id : {} ", workflowID);
-        }
-        return ret;
-    }
 
     public Map<AtlasVertex, List<AtlasVertex>> removeTagPropagation(AtlasEdge edge) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationEdge");
@@ -1604,6 +1597,14 @@ public abstract class DeleteHandlerV1 {
             }
         }
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+    private boolean isRequestFromWorkFlow() {
+        String workflowID = RequestContext.get().getRequestContextHeaders().getOrDefault("x-atlan-agent-workflow-id", "");
+        boolean isWorkFlowRequest = !workflowID.isEmpty();
+        if(isWorkFlowRequest){
+            LOG.info("Authorised one time request for workflow with id : {} ", workflowID);
+        }
+        return isWorkFlowRequest;
     }
 
     private String getLabel(String guid, String label){
