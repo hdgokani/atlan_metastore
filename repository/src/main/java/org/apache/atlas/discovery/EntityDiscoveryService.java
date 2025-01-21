@@ -993,7 +993,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 LOG.debug("Performing ES search for the params ({})", searchParams);
             }
 
-            String indexName = getIndexName(params);
+            String indexName = "janusgraph_vertex_index_shard_3";
 
             indexQuery = graph.elasticsearchQuery(indexName);
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
