@@ -77,7 +77,7 @@ public final class AtlasPerfTracer {
         if (elapsedTime > reportingThresholdMs) {
             MDC.put("timeTaken", String.valueOf(elapsedTime));
             logger.debug("PERF|{}", tag);
-            MDC.clear();
+            MDC.remove("timeTaken");
         }
     }
 }
