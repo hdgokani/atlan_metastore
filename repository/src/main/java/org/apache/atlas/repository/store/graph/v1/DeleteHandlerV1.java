@@ -1248,13 +1248,13 @@ public abstract class DeleteHandlerV1 {
 
                 removeTagPropagation(classificationVertex, entitiesToRemovePropagation);
                 propagatedCount++;
-                if (propagatedCount == 100){
+                if (propagatedCount >= 100){
                     currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount);
                     currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
                     propagatedCount = 0;
                 }
             }
-            // Apply the final propagated count (adjust for the direct attachment only once)
+            // Apply the final propagated count
             if (propagatedCount != 0) {
                 currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount - 1);
                 currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
