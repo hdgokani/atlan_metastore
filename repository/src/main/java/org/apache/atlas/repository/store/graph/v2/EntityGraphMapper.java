@@ -3500,10 +3500,17 @@ public class EntityGraphMapper {
             List<String> edgeLabelsToCheck = CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode);
             Boolean toExclude = propagationMode == CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE ? true:false;
             List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV2(entityVertex, relationshipGuid, classificationVertexId, edgeLabelsToCheck,toExclude);
-            
+
+            // update the 'assetsCountToPropagate' on in memory java object.
+            AtlasTask currentTask = RequestContext.get().getCurrentTask();
+            currentTask.setAssetsCountToPropagate((long) impactedVertices.size() - 1);
+
+            //update the 'assetsCountToPropagate' in the current task vertex.
+            AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
+            currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, currentTask.getAssetsCountToPropagate());
+            graph.commit();
             if (CollectionUtils.isEmpty(impactedVertices)) {
                 LOG.debug("propagateClassification(entityGuid={}, classificationVertexId={}): found no entities to propagate the classification", entityGuid, classificationVertexId);
-
                 return null;
             }
 
@@ -3516,16 +3523,8 @@ public class EntityGraphMapper {
     }
 
     public List<String> processClassificationPropagationAddition(List<AtlasVertex> verticesToPropagate, AtlasVertex classificationVertex) throws AtlasBaseException{
-
-        // update the 'assetsCountToPropagate' on in memory java object.
         AtlasTask currentTask = RequestContext.get().getCurrentTask();
-        currentTask.setAssetsCountToPropagate((long) verticesToPropagate.size() - 1);
-
-        //update the 'assetsCountToPropagate' in the current task vertex.
         AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
-        currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, currentTask.getAssetsCountToPropagate());
-        graph.commit();
-
         AtlasPerfMetrics.MetricRecorder classificationPropagationMetricRecorder = RequestContext.get().startMetricRecord("processClassificationPropagationAddition");
         List<String> propagatedEntitiesGuids = new ArrayList<>();
         int impactedVerticesSize = verticesToPropagate.size();
