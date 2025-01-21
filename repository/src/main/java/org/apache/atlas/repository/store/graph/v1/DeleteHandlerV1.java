@@ -1218,11 +1218,13 @@ public abstract class DeleteHandlerV1 {
                 }
             }
 
-            // update the 'assetsCountToPropagate' on in memory java object.
-            AtlasTask currentTask = RequestContext.get().getCurrentTask();
-            currentTask.setAssetsCountToPropagate((long) addPropagationsMap.size() + removePropagationsMap.size() - 1);
+            // Calculate total entities to propagate and remove
+            long totalEntitiesToPropagate = addPropagationsMap.values().stream().mapToLong(List::size).sum();
+            long totalEntitiesToRemove = removePropagationsMap.values().stream().mapToLong(List::size).sum();
 
-            //update the 'assetsCountToPropagate' in the current task vertex.
+
+            AtlasTask currentTask = RequestContext.get().getCurrentTask();
+            currentTask.setAssetsCountToPropagate(totalEntitiesToPropagate + totalEntitiesToRemove - 1);
             AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
             currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, currentTask.getAssetsCountToPropagate());
             graph.commit();
@@ -1232,9 +1234,10 @@ public abstract class DeleteHandlerV1 {
                 List<AtlasVertex> entitiesToAddPropagation = addPropagationsMap.get(classificationVertex);
 
                 addTagPropagation(classificationVertex, entitiesToAddPropagation);
-                propagatedCount++;
-                if (propagatedCount == 100){
-                    currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount - 1);
+                propagatedCount += entitiesToAddPropagation.size();
+
+                if (propagatedCount >= 100) {
+                    currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount);
                     currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
                     propagatedCount = 0;
                 }
@@ -1252,7 +1255,7 @@ public abstract class DeleteHandlerV1 {
                 }
             }
             if (propagatedCount != 0){
-                currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount);
+                currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount - 1);
                 currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
             }
         } else {
