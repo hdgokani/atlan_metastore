@@ -3557,7 +3557,10 @@ public class EntityGraphMapper {
                 propagatedEntitiesGuids.addAll(chunkedPropagatedEntitiesGuids);
 
                 transactionInterceptHelper.intercept();
-                int finishedTaskCount = toIndex - offset - 1;
+
+                int finishedTaskCount = (offset + CHUNK_SIZE >= impactedVerticesSize && impactedVerticesSize == verticesToPropagate.size())
+                        ? toIndex - offset - 1 // Subtract 1 for the last chunk
+                        : toIndex - offset;
 
                 offset += CHUNK_SIZE;
                 currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + finishedTaskCount);
