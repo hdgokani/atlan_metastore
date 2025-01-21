@@ -4133,7 +4133,10 @@ public class EntityGraphMapper {
                 }
             }
 
-            currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + batch.size() - 1);
+            //substract one to exclude direct attachement
+            int batchSizeToAdd = (end == impactedVertices.size()) ? batch.size() - 1 : batch.size();
+
+            currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + batchSizeToAdd);
             currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
 
             transactionInterceptHelper.intercept();
