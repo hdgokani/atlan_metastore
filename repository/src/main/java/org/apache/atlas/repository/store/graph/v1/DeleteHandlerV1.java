@@ -1256,7 +1256,7 @@ public abstract class DeleteHandlerV1 {
             }
             // Apply the final propagated count (adjust for the direct attachment only once)
             if (propagatedCount != 0) {
-                currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount);
+                currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount - 1);
                 currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
             }
         } else {
