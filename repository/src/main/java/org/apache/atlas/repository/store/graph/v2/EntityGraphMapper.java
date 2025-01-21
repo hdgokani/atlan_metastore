@@ -4327,8 +4327,8 @@ public class EntityGraphMapper {
 
         // update the 'assetsCountToPropagate' on in memory java object.
         AtlasTask currentTask = RequestContext.get().getCurrentTask();
-        //removing one for dirrect attachment and removal
-        currentTask.setAssetsCountToPropagate((long) (verticesToRemove.size() - 1) + (verticesToAddClassification.size() - 1));
+        //removing one for direct attachment and removal
+        currentTask.setAssetsCountToPropagate((long) verticesToRemove.size() + (verticesToAddClassification.size() - 1));
 
         //update the 'assetsCountToPropagate' in the current task vertex.
         AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
@@ -4415,7 +4415,7 @@ public class EntityGraphMapper {
                 List<AtlasEntity> updatedEntities = updateClassificationText(classification, updatedVertices);
                 entityChangeNotifier.onClassificationsDeletedFromEntities(updatedEntities, Collections.singletonList(classification));
 
-                int finishedTaskCount = (offset + CHUNK_SIZE >= propagatedVerticesSize && propagatedVerticesSize == verticesChunkToRemoveTag.size())
+                int finishedTaskCount = (offset + CHUNK_SIZE >= propagatedVerticesSize)
                         ? toIndex - offset - 1 // Subtract 1 for the last chunk
                         : toIndex - offset;
                 offset += CHUNK_SIZE;
