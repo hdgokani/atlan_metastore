@@ -62,8 +62,6 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private List<String>                    classificationNames = null;
     private List<AtlasClassification>       classifications     = null;
     private List<AtlasClassification>       addOrUpdateClassifications = null;
-
-
     private List<AtlasClassification>       removeClassifications     = null;
     private List<String>                    meaningNames        = null;
     private List<AtlasTermAssignmentHeader> meanings            = null;
