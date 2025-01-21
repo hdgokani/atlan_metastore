@@ -4415,7 +4415,9 @@ public class EntityGraphMapper {
                 List<AtlasEntity> updatedEntities = updateClassificationText(classification, updatedVertices);
                 entityChangeNotifier.onClassificationsDeletedFromEntities(updatedEntities, Collections.singletonList(classification));
 
-                int finishedTaskCount = toIndex - offset;
+                int finishedTaskCount = (offset + CHUNK_SIZE >= propagatedVerticesSize && propagatedVerticesSize == verticesChunkToRemoveTag.size())
+                        ? toIndex - offset - 1 // Subtract 1 for the last chunk
+                        : toIndex - offset;
                 offset += CHUNK_SIZE;
                 currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + finishedTaskCount);
                 currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
