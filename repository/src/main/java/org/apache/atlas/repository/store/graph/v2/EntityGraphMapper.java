@@ -3244,18 +3244,6 @@ public class EntityGraphMapper {
                         e.printStackTrace();
                     }
                 }
-                // update the 'assetsCountToPropagate' on in memory java object.
-                AtlasTask currentTask = RequestContext.get().getCurrentTask();
-                currentTask.setAssetsCountToPropagate((long) totalCount);
-
-                //update the 'assetsCountToPropagate' in the current task vertex.
-                AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
-                currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, currentTask.getAssetsCountToPropagate());
-                graph.commit();
-
-                currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + totalCount);
-                currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
-                transactionInterceptHelper.intercept();
 
                 cleanedUpCount += currentAssetsBatchSize;
                 currentAssetVerticesBatch.clear();
@@ -3264,6 +3252,19 @@ public class EntityGraphMapper {
             tagVertices = GraphHelper.getClassificationVertices(graph, classificationName, CLEANUP_BATCH_SIZE);
         }
 
+        // update the 'assetsCountToPropagate' on in memory java object.
+        AtlasTask currentTask = RequestContext.get().getCurrentTask();
+        currentTask.setAssetsCountToPropagate((long) totalCount);
+
+        //update the 'assetsCountToPropagate' in the current task vertex.
+        AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
+        currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, currentTask.getAssetsCountToPropagate());
+        graph.commit();
+
+        currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + totalCount);
+        currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
+
+        transactionInterceptHelper.intercept();
         LOG.info("Completed cleaning up classification {}", classificationName);
     }
 
