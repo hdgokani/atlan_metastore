@@ -3558,9 +3558,7 @@ public class EntityGraphMapper {
 
                 transactionInterceptHelper.intercept();
 
-                int finishedTaskCount = (offset + CHUNK_SIZE >= impactedVerticesSize && impactedVerticesSize == verticesToPropagate.size())
-                        ? toIndex - offset - 1 // Subtract 1 for the last chunk
-                        : toIndex - offset;
+                int finishedTaskCount = toIndex - offset;
 
                 offset += CHUNK_SIZE;
                 currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + finishedTaskCount);
@@ -4419,9 +4417,7 @@ public class EntityGraphMapper {
                 List<AtlasEntity> updatedEntities = updateClassificationText(classification, updatedVertices);
                 entityChangeNotifier.onClassificationsDeletedFromEntities(updatedEntities, Collections.singletonList(classification));
 
-                int finishedTaskCount = (offset + CHUNK_SIZE >= propagatedVerticesSize)
-                        ? toIndex - offset - 1 // Subtract 1 for the last chunk
-                        : toIndex - offset;
+                int finishedTaskCount = toIndex - offset;
                 offset += CHUNK_SIZE;
                 currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + finishedTaskCount);
                 currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
