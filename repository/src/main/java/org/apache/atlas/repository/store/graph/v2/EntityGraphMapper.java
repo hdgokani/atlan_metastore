@@ -4330,7 +4330,7 @@ public class EntityGraphMapper {
         // update the 'assetsCountToPropagate' on in memory java object.
         AtlasTask currentTask = RequestContext.get().getCurrentTask();
         //removing one for direct attachment and removal
-        currentTask.setAssetsCountToPropagate((long) verticesToRemove.size() + (verticesToAddClassification.size() - 1));
+        currentTask.setAssetsCountToPropagate((long) verticesToRemove.size() + (verticesToAddClassification.size()));
 
         //update the 'assetsCountToPropagate' in the current task vertex.
         AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
