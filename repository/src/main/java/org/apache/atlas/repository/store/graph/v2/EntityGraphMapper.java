@@ -84,7 +84,6 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.LABEL_MAX_LENGTH;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
-import static org.apache.atlas.AtlasErrorCode.CLASSIFICATION_NOT_FOUND;
 import static org.apache.atlas.model.TypeCategory.ARRAY;
 import static org.apache.atlas.model.TypeCategory.CLASSIFICATION;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
@@ -470,26 +469,26 @@ public class EntityGraphMapper {
                     throw baseException;
                 }
             }
-        } else {
+        }
 
-            if (CollectionUtils.isNotEmpty(appendEntities)) {
-                for (AtlasEntity entity : appendEntities) {
-                    String guid = entity.getGuid();
-                    AtlasVertex vertex = context.getVertex(guid);
-                    AtlasEntityType entityType = context.getType(guid);
-                    mapAppendRemoveRelationshipAttributes(entity, entityType, vertex, UPDATE, context, true, false);
-                }
-            }
-
-            if (CollectionUtils.isNotEmpty(removeEntities)) {
-                for (AtlasEntity entity : removeEntities) {
-                    String guid = entity.getGuid();
-                    AtlasVertex vertex = context.getVertex(guid);
-                    AtlasEntityType entityType = context.getType(guid);
-                    mapAppendRemoveRelationshipAttributes(entity, entityType, vertex, UPDATE, context, false, true);
-                }
+        if (CollectionUtils.isNotEmpty(appendEntities)) {
+            for (AtlasEntity entity : appendEntities) {
+                String guid = entity.getGuid();
+                AtlasVertex vertex = context.getVertex(guid);
+                AtlasEntityType entityType = context.getType(guid);
+                mapAppendRemoveRelationshipAttributes(entity, entityType, vertex, UPDATE, context, true, false);
             }
         }
+
+        if (CollectionUtils.isNotEmpty(removeEntities)) {
+            for (AtlasEntity entity : removeEntities) {
+                String guid = entity.getGuid();
+                AtlasVertex vertex = context.getVertex(guid);
+                AtlasEntityType entityType = context.getType(guid);
+                mapAppendRemoveRelationshipAttributes(entity, entityType, vertex, UPDATE, context, false, true);
+            }
+        }
+
 
         if (CollectionUtils.isNotEmpty(context.getEntitiesToDelete())) {
             deleteDelegate.getHandler().deleteEntities(context.getEntitiesToDelete());
@@ -2003,7 +2002,7 @@ public class EntityGraphMapper {
 
             case INPUT_PORT_PRODUCT_EDGE_LABEL:
             case OUTPUT_PORT_PRODUCT_EDGE_LABEL:
-                addInternalProductAttr(ctx, newElementsCreated, removedElements);
+                addInternalProductAttr(ctx, newElementsCreated, removedElements, currentElements);
                 break;
 
             case UD_RELATIONSHIP_EDGE_LABEL:
@@ -2097,7 +2096,7 @@ public class EntityGraphMapper {
 
             case INPUT_PORT_PRODUCT_EDGE_LABEL:
             case OUTPUT_PORT_PRODUCT_EDGE_LABEL:
-                addInternalProductAttr(ctx, newElementsCreated, null);
+                addInternalProductAttr(ctx, newElementsCreated, null, null);
                 break;
 
             case UD_RELATIONSHIP_EDGE_LABEL:
@@ -2173,7 +2172,7 @@ public class EntityGraphMapper {
 
             case INPUT_PORT_PRODUCT_EDGE_LABEL:
             case OUTPUT_PORT_PRODUCT_EDGE_LABEL:
-                addInternalProductAttr(ctx, null , removedElements);
+                addInternalProductAttr(ctx, null , removedElements, null);
                 break;
         }
 
@@ -2306,7 +2305,7 @@ public class EntityGraphMapper {
         }
     }
 
-    private void addInternalProductAttr(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) throws AtlasBaseException {
+    private void addInternalProductAttr(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements, List<Object> currentElements) throws AtlasBaseException {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addInternalProductAttrForAppend");
         AtlasVertex toVertex = ctx.getReferringVertex();
         String toVertexType = getTypeName(toVertex);
@@ -2321,22 +2320,40 @@ public class EntityGraphMapper {
                     ? OUTPUT_PORT_GUIDS_ATTR
                     : INPUT_PORT_GUIDS_ATTR;
 
-            addOrRemoveDaapInternalAttr(toVertex, attrName, createdElements, deletedElements);
+            addOrRemoveDaapInternalAttr(toVertex, attrName, createdElements, deletedElements, currentElements);
         }else{
            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Can not update product relations while updating any asset");
         }
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void addOrRemoveDaapInternalAttr(AtlasVertex toVertex, String internalAttr, List<Object> createdElements, List<AtlasEdge> deletedElements) {
+    private void addOrRemoveDaapInternalAttr(AtlasVertex toVertex, String internalAttr, List<Object> createdElements, List<AtlasEdge> deletedElements, List<Object> currentElements) {
+        List<String> addedGuids = new ArrayList<>();
+        List<String> removedGuids = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(createdElements)) {
-            List<String> addedGuids = createdElements.stream().map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
+            addedGuids = createdElements.stream().map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
             addedGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(toVertex, internalAttr, guid));
         }
 
         if (CollectionUtils.isNotEmpty(deletedElements)) {
-            List<String> removedGuids = deletedElements.stream().map(x -> x.getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
+            removedGuids = deletedElements.stream().map(x -> x.getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
             removedGuids.forEach(guid -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(toVertex, internalAttr, guid));
+        }
+
+        // Add more info to outputPort update event.
+        if (internalAttr.equals(OUTPUT_PORT_GUIDS_ATTR)) {
+            if (CollectionUtils.isNotEmpty(currentElements)) {
+                List<String> currentElementGuids = currentElements.stream()
+                        .filter(x -> ((AtlasEdge) x).getProperty(STATE_PROPERTY_KEY, String.class).equals("ACTIVE"))
+                        .map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class))
+                        .collect(Collectors.toList());
+
+                addedGuids = addedGuids.stream()
+                        .filter(guid -> !currentElementGuids.contains(guid))
+                        .collect(Collectors.toList());
+            }
+            RequestContext.get().setAddedOutputPorts(addedGuids);
+            RequestContext.get().setRemovedOutputPorts(removedGuids);
         }
     }
 
@@ -4771,20 +4788,96 @@ public class EntityGraphMapper {
     }
 
 
-    public List<AtlasVertex> linkBusinessPolicy(String policyId, Set<String> linkGuids) {
-        return linkGuids.stream().map(guid -> findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
-            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
-            return !existingValues.contains(policyId);
-        }).peek(ev -> {
-            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
-            existingValues.add(policyId);
-            ev.setProperty(ASSET_POLICY_GUIDS, policyId);
-            ev.setProperty(ASSET_POLICIES_COUNT, existingValues.size());
+    public AtlasVertex linkBusinessPolicy(final BusinessPolicyRequest.AssetComplianceInfo data) {
+        String assetGuid = data.getAssetId();
+        AtlasVertex vertex = findByGuid(graph, assetGuid);
 
-            updateModificationMetadata(ev);
+        // Retrieve existing policies
+        Set<String> existingCompliant = getVertexPolicies(vertex, ASSET_POLICY_GUIDS);
+        Set<String> existingNonCompliant = getVertexPolicies(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS);
 
-            cacheDifferentialEntity(ev, existingValues, ev.getMultiValuedSetProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, String.class));
-        }).collect(Collectors.toList());
+        // Retrieve new policies
+        Set<String> addCompliantGUIDs = getOrCreateEmptySet(data.getAddCompliantGUIDs());
+        Set<String> addNonCompliantGUIDs = getOrCreateEmptySet(data.getAddNonCompliantGUIDs());
+        Set<String> removeCompliantGUIDs = getOrCreateEmptySet(data.getRemoveCompliantGUIDs());
+        Set<String> removeNonCompliantGUIDs = getOrCreateEmptySet(data.getRemoveNonCompliantGUIDs());
+
+
+        // Update vertex properties
+        addToAttribute(vertex, ASSET_POLICY_GUIDS, addCompliantGUIDs);
+        removeFromAttribute(vertex, ASSET_POLICY_GUIDS, removeCompliantGUIDs);
+
+
+        addToAttribute(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, addNonCompliantGUIDs);
+        removeFromAttribute(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, removeNonCompliantGUIDs);
+
+        // Count and set policies
+        Set<String> effectiveCompliantGUIDs = getVertexPolicies(vertex, ASSET_POLICY_GUIDS);
+        Set<String> effectiveNonCompliantGUIDs = getVertexPolicies(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS);
+
+        int compliantPolicyCount = countPoliciesExcluding(effectiveCompliantGUIDs, "rule");
+        int nonCompliantPolicyCount = countPoliciesExcluding(effectiveNonCompliantGUIDs, "rule");
+
+        int totalPolicyCount = compliantPolicyCount + nonCompliantPolicyCount;
+
+        vertex.setProperty(ASSET_POLICIES_COUNT, totalPolicyCount);
+        updateModificationMetadata(vertex);
+
+        // Create and cache differential entity
+        AtlasEntity diffEntity = createDifferentialEntity(
+                vertex, effectiveCompliantGUIDs, effectiveNonCompliantGUIDs, existingCompliant, existingNonCompliant, totalPolicyCount);
+
+        RequestContext.get().cacheDifferentialEntity(diffEntity);
+        return vertex;
+    }
+
+    private static Set<String> getOrCreateEmptySet(Set<String> input) {
+        return input == null ? new HashSet<>() : input;
+    }
+
+    private void addToAttribute(AtlasVertex vertex, String propertyKey, Set<String> policies) {
+        String targetProperty = determineTargetProperty(propertyKey);
+        policies.stream()
+                .filter(StringUtils::isNotEmpty)
+                .forEach(policyGuid -> vertex.setProperty(targetProperty, policyGuid));
+    }
+
+    private void removeFromAttribute(AtlasVertex vertex, String propertyKey, Set<String> policies) {
+        String targetProperty = determineTargetProperty(propertyKey);
+        policies.stream()
+                .filter(StringUtils::isNotEmpty)
+                .forEach(policyGuid -> vertex.removePropertyValue(targetProperty, policyGuid));
+    }
+
+    private String determineTargetProperty(String propertyKey) {
+        return ASSET_POLICY_GUIDS.equals(propertyKey)
+                ? ASSET_POLICY_GUIDS
+                : NON_COMPLIANT_ASSET_POLICY_GUIDS;
+    }
+
+    private int countPoliciesExcluding(Set<String> policies, String substring) {
+        return (int) policies.stream().filter(policy -> !policy.contains(substring)).count();
+    }
+
+    private AtlasEntity createDifferentialEntity(AtlasVertex vertex, Set<String> effectiveCompliant, Set<String> effectiveNonCompliant,
+                                                 Set<String> existingCompliant, Set<String> existingNonCompliant, int totalPolicyCount) {
+        AtlasEntity diffEntity = new AtlasEntity(vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+        setEntityCommonAttributes(vertex, diffEntity);
+        diffEntity.setAttribute(ASSET_POLICIES_COUNT, totalPolicyCount);
+
+        if (!existingCompliant.equals(effectiveCompliant)) {
+            diffEntity.setAttribute(ASSET_POLICY_GUIDS, effectiveCompliant);
+        }
+        if (!existingNonCompliant.equals(effectiveNonCompliant)) {
+            diffEntity.setAttribute(NON_COMPLIANT_ASSET_POLICY_GUIDS, effectiveNonCompliant);
+        }
+
+        return diffEntity;
+    }
+
+    private Set<String> getVertexPolicies(AtlasVertex vertex, String propertyKey) {
+        return Optional.ofNullable(vertex.getMultiValuedSetProperty(propertyKey, String.class))
+                .orElse(Collections.emptySet());
     }
 
 
@@ -4811,21 +4904,29 @@ public class EntityGraphMapper {
         Set<String> compliantPolicies = getMultiValuedSetProperty(vertex, ASSET_POLICY_GUIDS);
         Set<String> nonCompliantPolicies = getMultiValuedSetProperty(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS);
 
-        boolean removed = compliantPolicies.remove(policyId);
-        removed |= nonCompliantPolicies.remove(policyId);
+        boolean removed = removePolicyAndRule(compliantPolicies, policyId);
+        removed |= removePolicyAndRule(nonCompliantPolicies,policyId);
 
         if (removed) {
             vertex.removePropertyValue(ASSET_POLICY_GUIDS, policyId);
             vertex.removePropertyValue(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
 
-            int totalPolicies = compliantPolicies.size() + nonCompliantPolicies.size();
-            vertex.setProperty(ASSET_POLICIES_COUNT, totalPolicies);
+            int compliantPolicyCount = countPoliciesExcluding(compliantPolicies, "rule");
+            int nonCompliantPolicyCount = countPoliciesExcluding(nonCompliantPolicies, "rule");
+            int totalPolicyCount = compliantPolicyCount + nonCompliantPolicyCount;
+            vertex.setProperty(ASSET_POLICIES_COUNT, totalPolicyCount);
 
             updateModificationMetadata(vertex);
             cacheDifferentialEntity(vertex, compliantPolicies, nonCompliantPolicies);
         }
 
         return vertex;
+    }
+
+    private boolean removePolicyAndRule(Set<String> policies, String policyId) {
+        Set<String> toRemove = policies.stream().filter(i-> i.contains(policyId)).collect(Collectors.toSet());
+        return policies.removeAll(toRemove);
+
     }
 
     private Set<String> getMultiValuedSetProperty(AtlasVertex vertex, String propertyName) {
@@ -4927,7 +5028,7 @@ public class EntityGraphMapper {
 
         // Check if the asset already has the given policy IDs
         if (policyIds.isEmpty()) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Asset already has the given policy id");
+            return assetVertex;
         }
 
         // Move policies to the appropriate set
