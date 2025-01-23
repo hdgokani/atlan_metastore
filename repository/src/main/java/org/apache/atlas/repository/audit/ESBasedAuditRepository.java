@@ -88,7 +88,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String DETAIL = "detail";
     private static final String ENTITY = "entity";
     private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
-    private static final Set<String> linkedAttributes = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
+    private static final Set<String> ALLOWED_LINKED_ATTRIBUTES = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
 
     /*
     *    created   → event creation time
@@ -225,6 +225,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
         Map<String, Object> hits_0 = (Map<String, Object>) responseMap.get("hits");
         List<LinkedHashMap> hits_1 = (List<LinkedHashMap>) hits_0.get("hits");
+        Map<String, AtlasEntityHeader> existingLinkedEntities = searchResult.getLinkedEntities();
+
         for (LinkedHashMap hit : hits_1) {
             Map source = (Map) hit.get("_source");
             String entityGuid = (String) source.get(ENTITYID);
@@ -251,29 +253,26 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             Map<String, Object> detail = event.getDetail();
             if (detail != null && detail.containsKey("attributes")) {
                 Map<String, Object> attributes = (Map<String, Object>) detail.get("attributes");
-                List<AtlasEntityHeader> linkedEntityList = new ArrayList<>();
 
                 for (Map.Entry<String, Object> entry: attributes.entrySet()) {
-                    if (linkedAttributes.contains(entry.getKey())) {
+                    if (ALLOWED_LINKED_ATTRIBUTES.contains(entry.getKey())) {
                         List<String> guids = (List<String>) entry.getValue();
 
                         if (guids != null && !guids.isEmpty()){
                             for (String guid: guids){
-                                try {
-                                    AtlasEntityHeader entityHeader = fetchAtlasEntityHeader(guid);
-                                    if (entityHeader != null) {
-                                        linkedEntityList.add(entityHeader);
+                                if(!existingLinkedEntities.containsKey(guid)){
+                                    try {
+                                        AtlasEntityHeader entityHeader = fetchAtlasEntityHeader(guid);
+                                        if (entityHeader != null) {
+                                            existingLinkedEntities.put(guid, entityHeader);
+                                        }
+                                    } catch (AtlasBaseException e) {
+                                        LOG.error("Error while fetching entity header for guid: {}", guid, e);
                                     }
-                                } catch (AtlasBaseException e) {
-                                    throw new AtlasBaseException(e);
                                 }
                             }
                         }
                     }
-                }
-
-                if(!linkedEntityList.isEmpty()){
-                    event.setLinkedEntities(linkedEntityList);
                 }
             }
 
@@ -286,6 +285,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         Map<String, Object> countObject = (Map<String, Object>) hits_0.get("total");
         int totalCount = (int) countObject.get("value");
         searchResult.setEntityAudits(entityAudits);
+        searchResult.setLinkedEntities(existingLinkedEntities);
         searchResult.setAggregations(aggregationsMap);
         searchResult.setTotalCount(totalCount);
         searchResult.setCount(entityAudits.size());
