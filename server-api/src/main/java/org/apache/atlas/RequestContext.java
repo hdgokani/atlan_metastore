@@ -86,6 +86,8 @@ public class RequestContext {
     private boolean isPurgeRequested = false;
     private int maxAttempts = 1;
     private int attemptCount = 1;
+    private Long assetsCountToPropagate = 0L;
+    private Long assetsCountPropagated = 0L;
     private boolean isImportInProgress = false;
     private boolean     isInNotificationProcessing = false;
 
@@ -114,6 +116,8 @@ public class RequestContext {
     private boolean delayTagNotifications = false;
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
     private Map<AtlasClassification, Collection<Object>> addedClassificationAndVertices = new HashMap<>();
+    private final List<String> addedOutputPorts = new ArrayList<>();
+    private final List<String> removedOutputPorts = new ArrayList<>();
 
 
     private RequestContext() {
@@ -179,6 +183,8 @@ public class RequestContext {
         this.delayTagNotifications = false;
         deletedClassificationAndVertices.clear();
         addedClassificationAndVertices.clear();
+        this.addedOutputPorts.clear();
+        this.removedOutputPorts.clear();
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
@@ -309,6 +315,23 @@ public class RequestContext {
 
     public void setAttemptCount(int attemptCount) {
         this.attemptCount = attemptCount;
+    }
+
+    public Long getAssetsCountToPropagate() {
+        return assetsCountToPropagate;
+    }
+
+    public Long getAssetsCountPropagated() {
+        return assetsCountPropagated;
+    }
+
+
+    public void setAssetsCountToPropagate(Long assetsCount) {
+        this.assetsCountToPropagate = assetsCount ;
+    }
+
+    public void setAssetsCountPropagated(Long assetsCountPropagated) {
+        this.assetsCountPropagated = assetsCountPropagated;
     }
 
     public boolean isImportInProgress() {
@@ -845,6 +868,22 @@ public class RequestContext {
 
     public boolean isEdgeLabelAlreadyProcessed(String processEdgeLabel) {
         return edgeLabels.contains(processEdgeLabel);
+    }
+
+    public void setAddedOutputPorts(List<String> addedOutputPorts) {
+        this.addedOutputPorts.addAll(addedOutputPorts);
+    }
+
+    public List<String> getAddedOutputPorts() {
+        return addedOutputPorts;
+    }
+
+    public void setRemovedOutputPorts(List<String> removedOutputPorts) {
+        this.removedOutputPorts.addAll(removedOutputPorts);
+    }
+
+    public List<String> getRemovedOutputPorts() {
+        return removedOutputPorts;
     }
 
 }

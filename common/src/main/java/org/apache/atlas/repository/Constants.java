@@ -158,6 +158,10 @@ public final class Constants {
     public static final String INPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.inputPortDataProducts";
     public static final String OUTPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.outputPortDataProducts";
 
+    public static final String OUTPUT_PORTS = "outputPorts";
+    public static final String ADDED_OUTPUT_PORTS = "addedOutputPorts";
+    public static final String REMOVED_OUTPUT_PORTS = "removedOutputPorts";
+
     public static final String UD_RELATIONSHIP_EDGE_LABEL = "__Referenceable.userDefRelationshipTo";
     public static final String UD_RELATIONSHIP_END_NAME_FROM = "userDefRelationshipFrom";
     public static final String UD_RELATIONSHIP_END_NAME_TO = "userDefRelationshipTo";
@@ -370,6 +374,8 @@ public final class Constants {
     public static final String TASK_CLASSIFICATION_ID       = encodePropertyKey(TASK_PREFIX + "classificationId");
     public static final String TASK_ENTITY_GUID             = encodePropertyKey(TASK_PREFIX + "entityGuid");
     public static final String TASK_CLASSIFICATION_TYPENAME = encodePropertyKey(TASK_PREFIX + "classificationTypeName");
+    public static final String TASK_ASSET_COUNT_TO_PROPAGATE = encodePropertyKey(TASK_PREFIX + "assetsCountToPropagate");
+    public static final String TASK_ASSET_COUNT_PROPAGATED = encodePropertyKey(TASK_PREFIX + "assetsCountPropagated");
     public static final String ACTIVE_STATE_VALUE           = "ACTIVE";
     public static final String TASK_HEADER_ATLAN_AGENT      = "x-atlan-agent";
     public static final String TASK_HEADER_ATLAN_AGENT_ID   = "x-atlan-agent-id";
@@ -408,6 +414,7 @@ public final class Constants {
     public static final String FILE_SPOOL_SOURCE  = "file_spool";
     public static final String DOMAIN_GUIDS_ATTR = "domainGUIDs";
     public static final String ASSET_POLICY_GUIDS  = "assetPolicyGUIDs";
+    public static final String PRODUCT_GUIDS_ATTR  = "productGUIDs";
 
     public static final String NON_COMPLIANT_ASSET_POLICY_GUIDS  = "nonCompliantAssetPolicyGUIDs";
     public static final String ASSET_POLICIES_COUNT  = "assetPoliciesCount";
