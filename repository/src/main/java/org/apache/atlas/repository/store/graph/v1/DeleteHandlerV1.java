@@ -1219,7 +1219,7 @@ public abstract class DeleteHandlerV1 {
             }
 
             AtlasTask currentTask = RequestContext.get().getCurrentTask();
-            currentTask.setAssetsCountToPropagate((long) (addPropagationsMap.size() + removePropagationsMap.size() - 1));
+            currentTask.setAssetsCountToPropagate((long) (addPropagationsMap.size() + removePropagationsMap.size()));
             AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
             currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, currentTask.getAssetsCountToPropagate());
             graph.commit();
