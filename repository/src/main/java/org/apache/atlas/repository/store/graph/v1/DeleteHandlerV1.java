@@ -1218,13 +1218,8 @@ public abstract class DeleteHandlerV1 {
                 }
             }
 
-            // Calculate total entities to propagate and remove
-            long totalEntitiesToPropagate = addPropagationsMap.values().stream().mapToLong(List::size).sum();
-            long totalEntitiesToRemove = removePropagationsMap.values().stream().mapToLong(List::size).sum();
-
-
             AtlasTask currentTask = RequestContext.get().getCurrentTask();
-            currentTask.setAssetsCountToPropagate(totalEntitiesToPropagate + totalEntitiesToRemove - 1);
+            currentTask.setAssetsCountToPropagate((long) (addPropagationsMap.size() + removePropagationsMap.size() - 1));
             AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
             currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, currentTask.getAssetsCountToPropagate());
             graph.commit();
@@ -1234,10 +1229,9 @@ public abstract class DeleteHandlerV1 {
                 List<AtlasVertex> entitiesToAddPropagation = addPropagationsMap.get(classificationVertex);
 
                 addTagPropagation(classificationVertex, entitiesToAddPropagation);
-                propagatedCount += entitiesToAddPropagation.size();
-
-                if (propagatedCount >= 100) {
-                    currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount);
+                propagatedCount++;
+                if (propagatedCount == 100){
+                    currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount - 1);
                     currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
                     propagatedCount = 0;
                 }
@@ -1248,15 +1242,14 @@ public abstract class DeleteHandlerV1 {
 
                 removeTagPropagation(classificationVertex, entitiesToRemovePropagation);
                 propagatedCount++;
-                if (propagatedCount >= 100){
+                if (propagatedCount == 100){
                     currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount);
                     currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
                     propagatedCount = 0;
                 }
             }
-            // Apply the final propagated count
-            if (propagatedCount != 0) {
-                currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount - 1);
+            if (propagatedCount != 0){
+                currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount);
                 currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
             }
         } else {
@@ -1264,7 +1257,6 @@ public abstract class DeleteHandlerV1 {
             handleBlockedClassifications(edge, relationship.getBlockedPropagatedClassifications());
         }
     }
-
 
     public void handleBlockedClassifications(AtlasEdge edge, Set<AtlasClassification> blockedClassifications) throws AtlasBaseException {
         if (blockedClassifications != null) {
