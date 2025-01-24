@@ -26,8 +26,7 @@ on:
       - beta
       - development
       - master
-      - lineageondemand
-      - makerlogic
+      - activeedgedelete
 
 jobs:
   build:
