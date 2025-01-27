@@ -174,6 +174,19 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
     }
 
+    private Map<String, LinkedHashMap> runUpdateByQueryWithLowLevelClient(String query) throws AtlasBaseException {
+        try {
+            String responseString = performDirectUpdateByQuery(query);
+
+            Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(responseString, Map.class);
+            return responseMap;
+
+        } catch (IOException e) {
+            LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
+        }
+    }
+
     private DirectIndexQueryResult performAsyncDirectIndexQuery(SearchParams searchParams) throws AtlasBaseException, IOException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("performAsyncDirectIndexQuery");
         DirectIndexQueryResult result = null;
@@ -204,9 +217,13 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                     CompletableFuture.runAsync(() -> SearchContextCache.put(searchContextId, searchContextSequenceNo, esSearchId));
                 }
                 response = getAsyncSearchResponse(searchParams, esSearchId).get();
-                if (response ==  null) {
-                    // Rather than null (if the response is null wil help returning @204 HTTP_NO_CONTENT to the user)
-                    // return timeout exception to user
+                if (response == null) {
+                    // If the response is null, we want to return a timeout exception to the user
+                    // This should correspond to a 504 Gateway Timeout since the issue is server-side (Elasticsearch timeout)
+                    throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_GATEWAY_TIMEOUT, KeepAliveTime);
+                }
+
+                if(response.isTimedOut()) {
                     LOG.error("timeout exceeded for query {}:", searchParams.getQuery());
                     RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("elasticQueryTimeout"));
                     throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED_DUE_TO_TIMEOUT, KeepAliveTime);
@@ -294,6 +311,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                     Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(respString, Map.class);
                     Boolean isInComplete = AtlasType.fromJson(AtlasType.toJson(responseMap.get("is_partial")), Boolean.class);
                     String id = AtlasType.fromJson(AtlasType.toJson(responseMap.get("id")), String.class);
+                    boolean isTimedOut = AtlasType.fromJson(AtlasType.toJson(responseMap.get("response").get("timed_out")), Boolean.class);
 
                     if (isInComplete != null && isInComplete) {
                         /*
@@ -304,7 +322,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                         deleteAsyncSearchResponse(id);
                         future.complete(null);
                     }
-                    AsyncQueryResult result = new AsyncQueryResult(respString, false);
+                    AsyncQueryResult result = new AsyncQueryResult(respString, false, isTimedOut);
                     future.complete(result);
                 } catch (IOException e) {
                     future.completeExceptionally(e);
@@ -382,7 +400,8 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                     Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(respString, Map.class);
                     boolean isRunning = AtlasType.fromJson(AtlasType.toJson(responseMap.get("is_running")), Boolean.class);
                     String id = AtlasType.fromJson(AtlasType.toJson(responseMap.get("id")), String.class);
-                    AsyncQueryResult result = new AsyncQueryResult(respString, isRunning);
+                    boolean isTimedOut = AtlasType.fromJson(AtlasType.toJson(responseMap.get("response").get("timed_out")), Boolean.class);
+                    AsyncQueryResult result = new AsyncQueryResult(respString, isRunning, isTimedOut);
                     /*
                         * If the response is running, then we need to complete the future with the ID to retrieve this later
                         * Else we will complete the future with the response, if it completes within default timeout of 100ms
@@ -421,6 +440,30 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
 
         Request request = new Request("GET", endPoint);
+        request.setEntity(entity);
+
+        Response response;
+        try {
+            response = lowLevelRestClient.performRequest(request);
+        } catch (ResponseException rex) {
+            if (rex.getResponse().getStatusLine().getStatusCode() == 404) {
+                LOG.warn(String.format("ES index with name %s not found", index));
+                throw new AtlasBaseException(INDEX_NOT_FOUND, index);
+            } else {
+                throw new AtlasBaseException(String.format("Error in executing elastic query: %s", EntityUtils.toString(entity)), rex);
+            }
+        }
+
+        return EntityUtils.toString(response.getEntity());
+    }
+
+    private String performDirectUpdateByQuery(String query) throws AtlasBaseException, IOException {
+        HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
+        String endPoint;
+
+        endPoint = index + "/_update_by_query";
+
+        Request request = new Request("POST", endPoint);
         request.setEntity(entity);
 
         Response response;
@@ -487,6 +530,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     @Override
     public Map<String, Object> directIndexQuery(String query) throws AtlasBaseException {
         return runQueryWithLowLevelClient(query);
+    }
+
+    public Map<String, LinkedHashMap> directUpdateByQuery(String query) throws AtlasBaseException {
+        return runUpdateByQueryWithLowLevelClient(query);
     }
 
     @Override
@@ -633,6 +680,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         private boolean isRunning;
         private String id;
         private String fullResponse;
+        private boolean timedOut;
 
         private boolean success;
         // Constructor for a running process
@@ -643,10 +691,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
 
         // Constructor for a completed process
-        public AsyncQueryResult(String fullResponse, boolean isRunning) {
+        public AsyncQueryResult(String fullResponse, boolean isRunning, boolean timedOut) {
             this.isRunning = isRunning;
             this.id = null;
             this.fullResponse = fullResponse;
+            this.timedOut = timedOut;
         }
 
         public void setRunning(boolean running) {
@@ -656,6 +705,15 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         // Getters
         public boolean isRunning() {
             return isRunning;
+        }
+
+        public void setTimedOut(boolean timedOut) {
+            this.timedOut = timedOut;
+        }
+
+        // Getters
+        public boolean isTimedOut() {
+            return timedOut;
         }
 
         void setId(String id) {
