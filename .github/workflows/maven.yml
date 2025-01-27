@@ -28,7 +28,7 @@ on:
       - master
       - taskdg1924
       - taskdg1924deleteprop
-      - v1fixes
+      - tagpropv1
 
 jobs:
   build:
