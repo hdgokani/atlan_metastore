@@ -215,12 +215,18 @@ public final class Constants {
     public static final String PROCESS_OUTPUTS = "__Process.outputs";
     public static final String PROCESS_INPUTS = "__Process.inputs";
 
+    public static final String PROCESS_INPUTS_EDGE_TYPENAME = "catalog_process_inputs";
+    public static final String PROCESS_OUTPUTS_EDGE_TYPENAME = "catalog_process_outputs";
+
+
+
     public static String[] PROCESS_EDGE_LABELS = {PROCESS_OUTPUTS, PROCESS_INPUTS};
 
     public static final String PROCESS_ENTITY_TYPE = "Process";
 
     public static final String CONNECTION_PROCESS_ENTITY_TYPE = "ConnectionProcess";
     public static final String PARENT_CONNECTION_PROCESS_QUALIFIED_NAME = "parentConnectionProcessQualifiedName";
+    public static String[] PROCESS_EDGE_TYPE_NAMES = {PROCESS_INPUTS_EDGE_TYPENAME,PROCESS_OUTPUTS_EDGE_TYPENAME };
 
     /**
      * The homeId field is used when saving into Atlas a copy of an object that is being imported from another
