@@ -739,15 +739,7 @@ public class RequestContext {
     public String getRequestUri() {
         return this.requestUri;
     }
-
-    public void setEnableCache(boolean cacheEnabled) {
-        this.cacheEnabled = cacheEnabled;
-    }
-
-    public boolean isCacheEnabled() {
-        return this.cacheEnabled;
-    }
-
+    
     public boolean isIncludeClassificationNames() {
         return includeClassificationNames;
     }

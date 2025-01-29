@@ -1081,6 +1081,10 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static Boolean isEntityIncomplete(Integer value) {
+        return value != null && value.equals(INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
+    }
+
     public static Boolean getEntityHasLineage(AtlasElement element) {
         if (element.getPropertyKeys().contains(HAS_LINEAGE)) {
             return element.getProperty(HAS_LINEAGE, Boolean.class);
@@ -1108,8 +1112,22 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static Map getCustomAttributes(String customAttrsString) {
+        Map    ret               = null;
+
+        if (customAttrsString != null) {
+            ret = AtlasType.fromJson(customAttrsString, Map.class);
+        }
+
+        return ret;
+    }
+
     public static Set<String> getLabels(AtlasElement element) {
         return parseLabelsString(element.getProperty(LABELS_PROPERTY_KEY, String.class));
+    }
+
+    public static Set<String> getLabels(String labels) {
+        return parseLabelsString(labels);
     }
 
     public static Integer getProvenanceType(AtlasElement element) {
@@ -2025,6 +2043,27 @@ public final class GraphHelper {
         }
     }
 
+    /**
+     * Get all the active edges
+     * @param vertex entity vertex
+     * @return Iterator of children edges
+     */
+    public static Iterator<AtlasJanusEdge> getOnlyActiveEdges(AtlasVertex vertex, AtlasEdgeDirection direction) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.getOnlyActiveEdges");
+
+        try {
+            return vertex.query()
+                    .direction(direction)
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                    .edges()
+                    .iterator();
+        } catch (Exception e) {
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        }
+        finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
     public static Iterator<AtlasVertex> getActiveVertices(AtlasVertex vertex, String childrenEdgeLabel, AtlasEdgeDirection direction) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("CategoryPreProcessor.getEdges");
 
