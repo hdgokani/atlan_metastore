@@ -96,7 +96,7 @@ public abstract class DeleteHandlerV1 {
     private   final TaskManagement       taskManagement;
     private   final AtlasGraph           graph;
     private   final TaskUtil             taskUtil;
-
+    private static final int CHUNK_SIZE            = AtlasConfiguration.TASKS_GRAPH_COMMIT_CHUNK_SIZE.getInt();
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
         this.typeRegistry                  = typeRegistry;
@@ -1220,16 +1220,44 @@ public abstract class DeleteHandlerV1 {
                 }
             }
 
+            // update the 'assetsCountToPropagate' on in memory java object.
+            AtlasTask currentTask = RequestContext.get().getCurrentTask();
+            currentTask.setAssetsCountToPropagate((long) addPropagationsMap.size() + removePropagationsMap.size());
+
+            //update the 'assetsCountToPropagate' in the current task vertex.
+            AtlasVertex currentTaskVertex = (AtlasVertex) graph.query().has(TASK_GUID, currentTask.getGuid()).vertices().iterator().next();
+            currentTaskVertex.setProperty(TASK_ASSET_COUNT_TO_PROPAGATE, currentTask.getAssetsCountToPropagate());
+            //commiting to graph
+            graph.commit();
+
+            //total propagated count
+            int propagatedCount = 0;
             for (AtlasVertex classificationVertex : addPropagationsMap.keySet()) {
                 List<AtlasVertex> entitiesToAddPropagation = addPropagationsMap.get(classificationVertex);
 
                 addTagPropagation(classificationVertex, entitiesToAddPropagation);
+                propagatedCount++;
+                if (propagatedCount == CHUNK_SIZE){
+                    currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount - 1);
+                    currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
+                    propagatedCount = 0;
+                }
             }
 
             for (AtlasVertex classificationVertex : removePropagationsMap.keySet()) {
                 List<AtlasVertex> entitiesToRemovePropagation = removePropagationsMap.get(classificationVertex);
 
                 removeTagPropagation(classificationVertex, entitiesToRemovePropagation);
+                propagatedCount++;
+                if (propagatedCount == CHUNK_SIZE){
+                    currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount);
+                    currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
+                    propagatedCount = 0;
+                }
+            }
+            if (propagatedCount != 0){
+                currentTask.setAssetsCountPropagated(currentTask.getAssetsCountPropagated() + propagatedCount);
+                currentTaskVertex.setProperty(TASK_ASSET_COUNT_PROPAGATED, currentTask.getAssetsCountPropagated());
             }
         } else {
             // update blocked propagated classifications only if there is no change is tag propagation (don't update both)
